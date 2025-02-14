@@ -46,12 +46,14 @@ const TopHolders: React.FC<Props> = ({ mint }) => {
             const streamflowAccounts = await getStreamsByMint(mint);
             
             setStreamflowAddresses(streamflowAccounts.reduce((acc, account) => {
-                acc[account.account.escrowTokens] = {
-                    name: "Streamflow Vault",
-                    logo: "/vesting/streamflow.png"
+                if (account.account.escrowTokens) {
+                    acc[account.account.escrowTokens] = {
+                        name: "Streamflow Vault",
+                        logo: "/vesting/streamflow.png"
+                    };
                 }
                 return acc;
-            }, {} as Record<string, { name: string, logo: string }>));
+            }, { ...knownAddresses } as Record<string, { name: string, logo: string }>));
         };
 
         fetchData();
@@ -93,22 +95,27 @@ interface TopHolderProps {
 }
 
 const TopHolder = ({ topHolder, percentageOwned, index, knownAddresses }: TopHolderProps) => {
+    const knownAddress = knownAddresses[topHolder.owner];
+    const hasValidLogo = knownAddress?.logo && knownAddress.logo.length > 0;
+
     return (
         <TableRow>
             <TableCell className="pl-4">
                 {index + 1}
             </TableCell>
             <TableCell>
-                {knownAddresses[topHolder.owner] ? (
+                {knownAddress ? (
                     <div className="flex flex-row items-center gap-2">
-                        <Image
-                            src={knownAddresses[topHolder.owner].logo}
-                            alt={knownAddresses[topHolder.owner].name}
-                            width={16}
-                            height={16}
-                        />
+                        {hasValidLogo && (
+                            <Image
+                                src={knownAddress.logo}
+                                alt={knownAddress.name}
+                                width={16}
+                                height={16}
+                            />
+                        )}
                         <p className="font-bold">
-                            {knownAddresses[topHolder.owner].name}
+                            {knownAddress.name}
                         </p>
                     </div>
                 ) : (

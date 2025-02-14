@@ -57,6 +57,7 @@ const WalletAddress: React.FC<Props> = ({ address, className }) => {
                         (arkhamAddress?.arkhamEntity && arkhamAddress?.arkhamLabel?.name) ? (
                             <div className="flex flex-row items-center gap-2">
                                 {
+                                    arkhamAddress.arkhamEntity.id && 
                                     arkhamEntityLogos[arkhamAddress.arkhamEntity.id as keyof typeof arkhamEntityLogos] && (
                                         <Image
                                             src={arkhamEntityLogos[arkhamAddress.arkhamEntity.id as keyof typeof arkhamEntityLogos]}
