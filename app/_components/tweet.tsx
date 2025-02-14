@@ -1,5 +1,7 @@
 import React from 'react'
 
+import { cn } from '@/lib/utils'
+
 import type { Tweet as TweetType } from '@/services/twitter/types';
 
 interface Props {
@@ -51,8 +53,19 @@ const Tweet: React.FC<Props> = ({ tweet }) => {
         );
     };
 
+    const tweetUrl = `https://twitter.com/${user.username}/status/${tweetData.id}`;
+
     return (
-        <div className="flex flex-col gap-2">
+        <a 
+            href={tweetUrl} 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className={cn(
+                "flex flex-col gap-2 p-2 rounded-md cursor-pointer",
+                "border border-transparent transition-all duration-300",
+                "hover:border-brand-600 dark:hover:border-brand-600"
+            )}
+        >
             <div className="flex items-center gap-2 w-full overflow-hidden">
                 <img 
                     src={user.profile_image_url} 
@@ -64,7 +77,7 @@ const Tweet: React.FC<Props> = ({ tweet }) => {
             </div>
             <p className="text-sm">{tweetData.text}</p>
             {renderMedia()}
-        </div>
+        </a>
     )
 }
 

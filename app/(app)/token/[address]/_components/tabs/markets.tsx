@@ -87,10 +87,20 @@ export const MarketType = ({ type, address, tokenAddress }: { type: MarketSource
         [MarketSource.Phoenix]: "/dexes/phoenix.jpg",
     } as const;
 
+    const iconSrc = marketTypeIcons[type];
+    if (!iconSrc) {
+        return (
+            <div className="flex flex-row items-center gap-2">
+                <span>{type}</span>
+                <MarketLink source={type} address={address} tokenAddress={tokenAddress} />
+            </div>
+        );
+    }
+
     return (
         <div className="flex flex-row items-center gap-2">
             <Image 
-                src={marketTypeIcons[type]} 
+                src={iconSrc}
                 alt={type} 
                 width={16} 
                 height={16} 
@@ -104,8 +114,6 @@ export const MarketType = ({ type, address, tokenAddress }: { type: MarketSource
 
 export const MarketLink = ({ source, address, tokenAddress }: { source: MarketSource, address: string, tokenAddress: string }) => {
 
-    console.log(source, address, tokenAddress);
-
     const marketLinks = {
         [MarketSource.Raydium]: `https://raydium.io/liquidity/increase/?mode=add&pool_id=${address}`,
         [MarketSource.RaydiumClamm]: `https://raydium.io/clmm/create-position/?pool_id=${address}`,
@@ -116,9 +124,13 @@ export const MarketLink = ({ source, address, tokenAddress }: { source: MarketSo
         [MarketSource.Phoenix]: `https://app.phoenix.so/pools/${address}`,
     } as const;
 
+    const marketLink = marketLinks[source];
+    if (!marketLink) {
+        return null;
+    }
 
     return (
-        <Link href={marketLinks[source]} target="_blank">
+        <Link href={marketLink} target="_blank">
             <div className="flex flex-row items-center justify-center gap-2 hover:bg-neutral-100 dark:hover:bg-neutral-700 rounded-md p-0.5">
                 <FaExternalLinkAlt className="w-3 h-3 text-neutral-600 dark:text-neutral-400" />
             </div>

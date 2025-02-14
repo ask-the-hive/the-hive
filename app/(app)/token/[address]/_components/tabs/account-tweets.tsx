@@ -21,13 +21,12 @@ const AccountTweets: React.FC<Props> = ({ username }) => {
             {isLoading ? <Skeleton className="h-full w-full" /> : (
                 <div className="flex flex-col gap-2 flex-1 h-0 overflow-y-auto no-scrollbar">
                     {tweets.map((tweet) => (
-                        <>
+                        <React.Fragment key={tweet.tweet.id}>
                             <Tweet 
-                                key={tweet.tweet.id} 
                                 tweet={tweet} 
                             />
                             <Separator />
-                        </>
+                        </React.Fragment>
                     ))}
                 </div>
             )}
