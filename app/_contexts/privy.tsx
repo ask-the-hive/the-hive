@@ -25,7 +25,9 @@ export const PrivyProvider: React.FC<Props> = ({ children }) => {
                     accentColor: '#d19900',
                     logo: 'https://www.askthehive.ai/logo-dark.png',
                     walletChainType: 'solana-only',
+                    showWalletLoginFirst: true,
                 },
+                loginMethods: ['email', 'wallet', 'google', 'twitter', 'discord', 'github'],
                 externalWallets: {
                     solana: {
                         connectors: solanaConnectors
