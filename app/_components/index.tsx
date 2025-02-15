@@ -39,10 +39,10 @@ const nodeTypes = {
 };
 
 function ReactFlowPro({ strength = -500, distance = 150 }: ExampleProps = {}) {
-  const useNodesResult = useNodesState(initialNodes);
+  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
 
-  useForceLayout({ strength, distance });
+  const dragEvents = useForceLayout({ strength, distance });
 
   const onConnect: OnConnect = useCallback(
     (params) => setEdges((eds) => addEdge(params, eds)),
@@ -51,19 +51,19 @@ function ReactFlowPro({ strength = -500, distance = 150 }: ExampleProps = {}) {
 
   return (
     <ReactFlow
-      nodes={useNodesResult[0]}
+      nodes={nodes}
       edges={edges}
       nodeTypes={nodeTypes}
-      onNodesChange={useNodesResult[2]}
+      onNodesChange={onNodesChange}
       onEdgesChange={onEdgesChange}
       proOptions={proOptions}
       onConnect={onConnect}
-      onNodeDragStart={() => {}}
-      onNodeDrag={() => {}}
-      onNodeDragStop={() => {}}
+      onNodeDragStart={dragEvents.start}
+      onNodeDrag={dragEvents.drag}
+      onNodeDragStop={dragEvents.stop}
       nodeOrigin={nodeOrigin}
       defaultEdgeOptions={defaultEdgeOptions}
-      panOnDrag={false}
+      panOnDrag={true}
       zoomOnDoubleClick={false}
       zoomOnScroll={false}
       fitView
@@ -74,7 +74,6 @@ function ReactFlowPro({ strength = -500, distance = 150 }: ExampleProps = {}) {
 }
 
 function GraphComponent() {
-
   return (
     <ReactFlowProvider>
       <ReactFlowPro />
