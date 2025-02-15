@@ -46,16 +46,16 @@ const ChatsGroup: React.FC = () => {
 
     const [deletingChatId, setDeletingChatId] = useState<string | null>(null);
 
-    const handleDelete = async (chatId: string, e: React.MouseEvent) => {
+    const handleDelete = async (deletedChatId: string, e: React.MouseEvent) => {
         e.preventDefault();
         e.stopPropagation();
         
         if (!user || deletingChatId) return;
 
-        setDeletingChatId(chatId);
+        setDeletingChatId(deletedChatId);
         
         try {
-            const response = await fetch(`/api/chats/${chatId}`, {
+            const response = await fetch(`/api/chats/${deletedChatId}`, {
                 method: 'DELETE',
                 headers: {
                     Authorization: `Bearer ${await getAccessToken()}`,
@@ -63,7 +63,14 @@ const ChatsGroup: React.FC = () => {
             });
             
             if (response.ok) {
-                mutate(chats.filter((chat) => chat.id !== chatId));
+                mutate(chats.filter((chat) => chat.id !== deletedChatId));
+                
+                if (deletedChatId === chatId) {
+                    resetChat();
+                    if (isMobile) {
+                        setOpenMobile(false);
+                    }
+                }
             }
         } catch (error) {
             console.error('Error deleting chat:', error);
