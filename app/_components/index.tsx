@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 
 import {
   ReactFlow,
@@ -41,6 +41,12 @@ const nodeTypes = {
 function ReactFlowPro({ strength = -500, distance = 150 }: ExampleProps = {}) {
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+
+  useEffect(() => {
+    if (nodes.length === 0) {
+      setNodes(initialNodes);
+    }
+  }, [nodes.length, setNodes]);
 
   const dragEvents = useForceLayout({ strength, distance });
 

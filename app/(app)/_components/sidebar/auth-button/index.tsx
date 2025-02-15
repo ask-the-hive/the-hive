@@ -28,7 +28,7 @@ import { truncateAddress } from '@/lib/wallet';
 const AuthButton: React.FC = () => {
 
     const { user, ready, login, logout, fundWallet, linkWallet } = useLogin({
-        onComplete: async (wallet) => {
+        onComplete: async () => {
         }
     });
 
