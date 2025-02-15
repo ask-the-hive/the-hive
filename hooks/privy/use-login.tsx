@@ -9,17 +9,14 @@ export const useLogin = ({
 }: {
     onComplete?: (wallet: Wallet) => void
 } = {}) => {
-    const { user, ready, logout } = usePrivy();
+    const { user, ready, logout, linkWallet } = usePrivy();
 
-    const { wallets, createWallet } = useSolanaWallets();
+    const { wallets } = useSolanaWallets();
 
     const { login } = usePrivyLogin({
-        onComplete: async (user, isNewUser, _) => {
-            if(isNewUser && !user.wallet) {
-                const wallet = await createWallet();
-                onComplete?.(wallet);
-            } else {
-                onComplete?.(user.wallet!);
+        onComplete: async (user, _, __) => {
+            if (user.wallet) {
+                onComplete?.(user.wallet);
             }
         }
     });
@@ -35,6 +32,7 @@ export const useLogin = ({
         connectWallet,
         logout,
         wallets,
-        fundWallet
+        fundWallet,
+        linkWallet
     }
 }

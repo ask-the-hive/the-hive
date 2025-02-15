@@ -2,11 +2,13 @@
 
 import React, { useState } from 'react'
 
-import { Avatar, AvatarFallback, AvatarImage, Card, Separator } from '@/components/ui';
+import { Avatar, AvatarFallback, AvatarImage, Card, Separator, Button } from '@/components/ui';
+import { LogOut } from 'lucide-react';
 
 import Address from '@/app/_components/address';
 
 import { type User } from '@privy-io/react-auth';
+import { useLogin } from '@/hooks';
 import ChangePfp from './change-pfp';
 import { Loader2 } from 'lucide-react';
 import { pfpURL } from '@/lib/pfp';
@@ -18,10 +20,21 @@ interface Props {
 const AccountHeading: React.FC<Props> = ({ user }) => {
 
     const [isUploading, setIsUploading] = useState<boolean>(false);
+    const { logout } = useLogin();
 
     return (
         <div className="flex flex-col gap-4">
-            <h1 className="text-2xl font-bold">Account</h1>
+            <div className="flex justify-between items-center">
+                <h1 className="text-2xl font-bold">Account</h1>
+                <Button 
+                    variant="ghost" 
+                    onClick={() => logout()}
+                    className="gap-2"
+                >
+                    <LogOut className="h-4 w-4" />
+                    Log out
+                </Button>
+            </div>
             <Card className="flex flex-col gap-4 p-4">
                 <div className="flex justify-between items-center">
                     <div className="flex flex-row gap-2 items-center">
@@ -66,7 +79,7 @@ const AccountHeading: React.FC<Props> = ({ user }) => {
                 </div>
                 <Separator />
                 <div className="flex flex-col">
-                    <p className="text-xs font-bold text-neutral-600 dark:text-neutral-400">Connected Wallets</p>
+                    <p className="text-xs font-bold text-neutral-600 dark:text-neutral-400">Connected Wallet</p>
                     {
                         user.linkedAccounts.filter((account) => account.type === 'wallet').map((account) => (
                             <p className="text-sm" key={account.address}>{account.address}</p>

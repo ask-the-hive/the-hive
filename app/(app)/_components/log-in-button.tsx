@@ -12,7 +12,7 @@ interface Props {
 
 const LogInButton: React.FC<Props> = ({ onComplete }) => {
 
-    const { login, user, connectWallet } = useLogin({
+    const { login, user, linkWallet } = useLogin({
         onComplete
     })
 
@@ -21,7 +21,7 @@ const LogInButton: React.FC<Props> = ({ onComplete }) => {
     return (
         <Button 
             variant="brand"
-            onClick={() => { if(user) { connectWallet() } else { login() } }}
+            onClick={() => { if(user) { linkWallet() } else { login() } }}
             className="w-full"
         >
             Connect {address ? `${address.slice(0, 4)}...${address.slice(-4)}` : ''}

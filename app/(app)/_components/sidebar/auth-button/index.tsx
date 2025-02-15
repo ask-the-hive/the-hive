@@ -27,7 +27,10 @@ import { truncateAddress } from '@/lib/wallet';
 
 const AuthButton: React.FC = () => {
 
-    const { user, ready, login, logout, fundWallet, connectWallet } = useLogin();
+    const { user, ready, login, logout, fundWallet, linkWallet } = useLogin({
+        onComplete: async (wallet) => {
+        }
+    });
 
     const { isMobile } = useSidebar();
 
@@ -38,7 +41,7 @@ const AuthButton: React.FC = () => {
             <SidebarMenuItem>
                 <SidebarMenuButton 
                     variant="brandOutline"
-                    onClick={() => { if(user) { connectWallet() } else { login() } }}
+                    onClick={() => { if(user) { linkWallet() } else { login() } }}
                     className="w-full justify-center gap-0"
                 >
                     <LogIn className="h-4 w-4" />
