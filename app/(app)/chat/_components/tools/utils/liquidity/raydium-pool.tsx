@@ -23,7 +23,7 @@ const RaydiumPool: React.FC<Props> = ({ pair, pool }) => {
                     {timeframes.map((timeframe) => (
                         <div key={timeframe} className="flex flex-col gap-2 w-full">
                             <p className="text-sm font-medium">{timeframe.charAt(0).toUpperCase() + timeframe.slice(1)}</p>
-                            <p className="text-sm font-medium">${(pool[timeframe].apr).toLocaleString()}%</p>
+                            <p className="text-sm font-medium">{(pool[timeframe].apr).toLocaleString()}%</p>
                         </div>
                     ))}
                 </div>
