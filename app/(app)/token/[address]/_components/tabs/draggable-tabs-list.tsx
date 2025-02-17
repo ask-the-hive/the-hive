@@ -1,19 +1,18 @@
 'use client'
 
-import React, { useRef, useState, useEffect } from 'react'
-import { motion, useMotionValue, useTransform, animate, PanInfo, useSpring } from 'framer-motion'
+import React, { useRef, useState, useEffect, useCallback } from 'react'
+import { motion, useMotionValue, animate, PanInfo, useSpring } from 'framer-motion'
 import { TabsList } from '@/components/ui'
 import { cn } from '@/lib/utils'
 
 interface DraggableTabsListProps extends React.ComponentProps<typeof TabsList> {
-  onScrollToTab?: (value: string) => void;
   selectedTab?: string;
 }
 
 const DraggableTabsList = React.forwardRef<
   React.ElementRef<typeof TabsList>,
   DraggableTabsListProps
->(({ className, children, onScrollToTab, selectedTab, ...props }, ref) => {
+>(({ className, children, selectedTab, ...props }, ref) => {
   const containerRef = useRef<HTMLDivElement>(null)
   const tabsListRef = useRef<HTMLDivElement>(null)
   const [isDragging, setIsDragging] = useState(false)
@@ -25,7 +24,7 @@ const DraggableTabsList = React.forwardRef<
     mass: 0.2
   })
 
-  const updateConstraints = () => {
+  const updateConstraints = useCallback(() => {
     if (containerRef.current && tabsListRef.current) {
       const container = containerRef.current
       const tabsList = tabsListRef.current
@@ -37,7 +36,7 @@ const DraggableTabsList = React.forwardRef<
         right: Math.min(0, containerWidth - tabsWidth)
       })
     }
-  }
+  }, [])
 
   useEffect(() => {
     updateConstraints()
@@ -46,9 +45,9 @@ const DraggableTabsList = React.forwardRef<
       resizeObserver.observe(containerRef.current)
     }
     return () => resizeObserver.disconnect()
-  }, [children])
+  }, [children, updateConstraints])
 
-  const scrollToCenter = (element: HTMLElement) => {
+  const scrollToCenter = useCallback((element: HTMLElement) => {
     if (!containerRef.current) return
 
     const container = containerRef.current
@@ -69,7 +68,7 @@ const DraggableTabsList = React.forwardRef<
       damping: 40,
       mass: 0.2
     })
-  }
+  }, [constraints.right, x])
 
   useEffect(() => {
     if (selectedTab && containerRef.current && !isDragging) {
@@ -79,7 +78,7 @@ const DraggableTabsList = React.forwardRef<
         scrollToCenter(selectedElement)
       }
     }
-  }, [selectedTab, constraints.right, x, isDragging])
+  }, [selectedTab, constraints.right, x, isDragging, scrollToCenter])
 
   const handleWheel = (e: React.WheelEvent) => {
     e.preventDefault()
