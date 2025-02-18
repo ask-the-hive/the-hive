@@ -60,6 +60,7 @@
     "d3-force": "^3.0.0",
     "decimal.js": "^10.4.3",
     "dlx": "^0.2.1",
+    "framer-motion": "^12.4.3",
     "helius-sdk": "^1.4.1",
     "jsdom": "^25.0.1",
     "leva": "^0.9.35",
