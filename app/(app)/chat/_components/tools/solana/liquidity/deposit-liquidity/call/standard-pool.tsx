@@ -3,6 +3,7 @@
 import React, { useState } from 'react'
 
 import { ApiV3PoolInfoStandardItem, Percent, TokenAmount, toToken, TxVersion } from '@raydium-io/raydium-sdk-v2'
+import { VersionedTransaction } from '@solana/web3.js'
 
 import Decimal from 'decimal.js'
 
@@ -38,7 +39,7 @@ const StandardPool: React.FC<Props> = ({ pool, toolCallId }) => {
     const [otherAmountMin, setOtherAmountMin] = useState<string>("");
     const [isDepositing, setIsDepositing] = useState<boolean>(false);
 
-    const [slippage] = useState<Percent>(new Percent(25, 1000));
+    const [slippage] = useState<Percent>(new Percent(100, 1000));
 
     const { sendTransaction, wallet } = useSendTransaction();
 
@@ -102,7 +103,11 @@ const StandardPool: React.FC<Props> = ({ pool, toolCallId }) => {
                 fixedSide: baseIn ? "a" : "b",
                 txVersion: TxVersion.V0
             });
-            const txHash = await sendTransaction(transaction);
+
+            const transactionBuffer = transaction.serialize();
+            const versionedTransaction = VersionedTransaction.deserialize(transactionBuffer);
+            
+            const txHash = await sendTransaction(versionedTransaction);
             addToolResult<SolanaDepositLiquidityResultBodyType>(toolCallId, {
                 message: "Deposit liquidity successful. The user is shown the transaction hash, so you do not have to repeat it. Ask what they want to do next.",
                 body: {
@@ -111,6 +116,9 @@ const StandardPool: React.FC<Props> = ({ pool, toolCallId }) => {
             });
         } catch (error) {
             console.error(error);
+            addToolResult(toolCallId, {
+                message: `Failed to deposit liquidity: ${error instanceof Error ? error.message : "Unknown error"}`,
+            });
         }
         setIsDepositing(false);
     }
