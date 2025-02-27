@@ -6,8 +6,11 @@ export const raydiumApiClient = Raydium.load({
 })
 
 export const raydiumTransactionClient = async (address: string) => Raydium.load({
-    connection: new Connection(process.env.NEXT_PUBLIC_SOLANA_RPC_URL!),
+    connection: new Connection(process.env.NEXT_PUBLIC_SOLANA_RPC_URL!, {
+        commitment: 'confirmed',
+        confirmTransactionInitialTimeout: 60000
+    }),
     owner: new PublicKey(address),
     disableFeatureCheck: true,
-    blockhashCommitment: 'finalized',
+    blockhashCommitment: 'confirmed',
 })
