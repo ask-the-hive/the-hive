@@ -1,0 +1,1 @@
+export const BSC_TOKEN_PAGE_TOP_HOLDERS_PROMPT = "Analyze the top holders of this BSC token to understand ownership concentration, exchange presence, and distribution patterns."; 

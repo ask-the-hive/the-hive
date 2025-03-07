@@ -3,4 +3,5 @@ export type SavedToken = {
     userId: string;
     name: string;
     symbol: string;
+    logoURI: string;
 }

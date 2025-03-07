@@ -3,15 +3,28 @@
 import React from 'react'
 
 interface Props {
-    buy: number;
-    sell: number;
+    buy: number | undefined;
+    sell: number | undefined;
     buyLabel?: string;
     sellLabel?: string;
     prefix?: string;
     suffix?: string;
 }
 
-const BuySell: React.FC<Props> = ({ buy, sell, buyLabel, sellLabel, prefix, suffix }) => {
+const BuySell: React.FC<Props> = ({ 
+    buy = 0, 
+    sell = 0, 
+    buyLabel = 'Buy', 
+    sellLabel = 'Sell', 
+    prefix = '', 
+    suffix = '' 
+}) => {
+    const buyValue = buy || 0;
+    const sellValue = sell || 0;
+    const total = buyValue + sellValue;
+    const buyPercentage = total > 0 ? (buyValue / total) * 100 : 50;
+    const sellPercentage = total > 0 ? (sellValue / total) * 100 : 50;
+
     return (
         <div className="flex flex-col w-full gap-1">
             <div className="flex justify-between text-xs">
@@ -26,22 +39,22 @@ const BuySell: React.FC<Props> = ({ buy, sell, buyLabel, sellLabel, prefix, suff
                 <div 
                     className="bg-green-500 h-full"
                     style={{ 
-                        width: `${(buy / (buy + sell)) * 100}%`
+                        width: `${buyPercentage}%`
                     }}
                 />
                 <div 
                     className="bg-red-500 h-full"
                     style={{ 
-                        width: `${(sell / (buy + sell)) * 100}%`
+                        width: `${sellPercentage}%`
                     }}
                 />
             </div>
             <div className="flex justify-between text-xs">
                 <span className="text-green-500">
-                    {prefix}{buy.toLocaleString(undefined, { notation: 'compact' })}{suffix}
+                    {prefix}{buyValue.toLocaleString(undefined, { notation: 'compact' })}{suffix}
                 </span>
                 <span className="text-red-500">
-                    {prefix}{sell.toLocaleString(undefined, { notation: 'compact' })}{suffix}
+                    {prefix}{sellValue.toLocaleString(undefined, { notation: 'compact' })}{suffix}
                 </span>
             </div>
         </div>

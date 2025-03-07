@@ -1,4 +1,5 @@
 import type { TokenOverview } from "@/services/birdeye/types";
+import type { ChainType } from "@/app/_contexts/chain-context";
 
 export type TokenChatData = Pick<TokenOverview, 
   'address' | 
@@ -9,4 +10,6 @@ export type TokenChatData = Pick<TokenOverview,
   'logoURI' |
   'supply' |
   'circulatingSupply'
->;
+> & {
+  chain?: ChainType;
+};

@@ -1,33 +1,36 @@
 import { queryBirdeye } from "./base";
+import { ChainType } from "@/app/_contexts/chain-context";
 
 import type { SearchResponse } from "./types/search";
 
 interface SearchTokensParams {
     keyword: string;
-    verifyToken?: boolean;
-    offset?: number;
-    limit?: number;
+    target: string;
+    sort_by: string;
+    sort_type: string;
+    offset: number;
+    limit: number;
+    chain?: ChainType;
 }
 
 export const searchTokens = async ({
     keyword,
-    verifyToken,
+    target = "token",
+    sort_by = "volume_24h_usd",
+    sort_type = "desc",
     offset = 0,
-    limit = 20
+    limit = 10,
+    chain = 'solana'
 }: SearchTokensParams): Promise<SearchResponse> => {
     const params: Record<string, string | number> = {
         keyword,
-        chain: "solana",
-        target: "token",
-        sort_by: "liquidity",
-        sort_type: "desc",
+        chain: chain,
+        target,
+        sort_by,
+        sort_type,
         offset,
         limit
     };
 
-    if (verifyToken !== undefined) {
-        params.verify_token = verifyToken.toString();
-    }
-
-    return queryBirdeye<SearchResponse>('defi/v3/search', params);
+    return queryBirdeye<SearchResponse>('defi/v3/search', params, chain);
 } 

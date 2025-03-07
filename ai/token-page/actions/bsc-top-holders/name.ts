@@ -1,0 +1,1 @@
+export const BSC_TOKEN_PAGE_TOP_HOLDERS_NAME = "bsc-token-page-top-holders"; 

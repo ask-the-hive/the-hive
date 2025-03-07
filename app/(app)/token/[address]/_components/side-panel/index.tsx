@@ -1,17 +1,15 @@
-import React from 'react'
+'use client'
 
+import React, { useEffect, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { ArrowLeftRight, MessageSquare } from 'lucide-react';
-
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui';
+import { Tabs, TabsList, TabsTrigger, TabsContent, Skeleton } from '@/components/ui';
 
 import Swap from '@/app/_components/swap';
-
 import Chat from './chat';
-
 import { ChatProvider } from '../../_contexts';
-
-import { getTokenOverview } from '@/services/birdeye';
-import { getToken } from '@/db/services';
+import { useChain } from '@/app/_contexts/chain-context';
+import { ChainType } from '@/app/_contexts/chain-context';
 
 import type { TokenChatData } from '@/types';
 import type { Token } from '@/db/types';
@@ -20,34 +18,87 @@ interface Props {
     address: string;
 }
 
-const SidePanel: React.FC<Props> = async ({ address }) => {
+const SidePanel: React.FC<Props> = ({ address }) => {
+    const { currentChain } = useChain();
+    const searchParams = useSearchParams();
+    const chainParam = searchParams.get('chain') as ChainType | null;
+    
+    // Use URL param if available, otherwise use context
+    const chain = chainParam && (chainParam === 'solana' || chainParam === 'bsc') 
+        ? chainParam 
+        : currentChain;
+    
+    const [tokenData, setTokenData] = useState<Token | null>(null);
+    const [tokenChatData, setTokenChatData] = useState<TokenChatData | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
-    const tokenMetadata = await getTokenOverview(address);
-    const token = await getToken(address);
+    useEffect(() => {
+        const fetchTokenData = async () => {
+            setLoading(true);
+            setError(null);
+            
+            try {
+                const response = await fetch(`/api/token/${address}/data?chain=${chain}`);
+                
+                if (!response.ok) {
+                    throw new Error('Failed to fetch token data');
+                }
+                
+                const data = await response.json();
+                
+                setTokenData(data);
+                
+                // Set token chat data
+                if (data.overview) {
+                    setTokenChatData({
+                        address: data.id,
+                        name: data.name,
+                        symbol: data.symbol,
+                        decimals: data.decimals,
+                        extensions: data.extensions,
+                        logoURI: data.logoURI,
+                        supply: data.overview.supply,
+                        circulatingSupply: data.overview.circulatingSupply
+                    });
+                } else {
+                    setTokenChatData({
+                        address: data.id,
+                        name: data.name,
+                        symbol: data.symbol,
+                        decimals: data.decimals,
+                        extensions: data.extensions,
+                        logoURI: data.logoURI,
+                        supply: 0,
+                        circulatingSupply: 0
+                    });
+                }
+            } catch (error) {
+                console.error(error);
+                setError(error instanceof Error ? error.message : 'An unknown error occurred');
+            } finally {
+                setLoading(false);
+            }
+        };
 
-    // If getToken fails, use tokenMetadata to create a token object
-    const tokenData = token || (tokenMetadata ? {
-        id: tokenMetadata.address,
-        name: tokenMetadata.name,
-        symbol: tokenMetadata.symbol,
-        decimals: tokenMetadata.decimals,
-        logoURI: tokenMetadata.logoURI,
-        extensions: tokenMetadata.extensions,
-        tags: [],
-        freezeAuthority: null,
-        mintAuthority: null,
-        permanentDelegate: null
-    } as Token : null);
+        fetchTokenData();
+    }, [address, chain]);
 
-    const tokenChatData: TokenChatData = {
-        address: tokenMetadata.address,
-        name: tokenMetadata.name,
-        symbol: tokenMetadata.symbol,
-        decimals: tokenMetadata.decimals,
-        extensions: tokenMetadata.extensions,
-        logoURI: tokenMetadata.logoURI,
-        supply: tokenMetadata.supply,
-        circulatingSupply: tokenMetadata.circulatingSupply
+    if (loading) {
+        return (
+            <div className="h-full w-full p-4">
+                <Skeleton className="h-10 w-full mb-4" />
+                <Skeleton className="h-[calc(100%-40px)] w-full" />
+            </div>
+        );
+    }
+
+    if (error || !tokenData || !tokenChatData) {
+        return (
+            <div className="h-full w-full p-4 text-center">
+                <p className="text-red-500">Error loading token data</p>
+            </div>
+        );
     }
 
     return (

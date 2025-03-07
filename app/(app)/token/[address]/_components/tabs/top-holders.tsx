@@ -1,7 +1,7 @@
 "use client"
 
-import React, { useEffect, useState } from "react";
-
+import React, { useEffect, useState, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
 import Image from "next/image";
 
 import { Skeleton } from "@/components/ui";
@@ -17,12 +17,16 @@ import {
 import WalletAddress from "@/app/_components/wallet-address";
 
 import { Connection, PublicKey } from "@solana/web3.js";
+import { useChain } from "@/app/_contexts/chain-context";
+import { ChainType } from "@/app/_contexts/chain-context";
 
 import { useTopHolders } from "@/hooks/queries/token/use-top-holders";
 
 import { getStreamsByMint } from "@/services/streamflow";
 
 import { knownAddresses } from "@/lib/known-addresses";
+// import { bscKnownAddresses } from "@/lib/bsc-known-addresses";
+import { AddressType, KnownAddress } from "@/types/known-address";
 
 import type { TokenHolder } from "@/services/birdeye/types";
 
@@ -31,59 +35,133 @@ interface Props {
 }
 
 const TopHolders: React.FC<Props> = ({ mint }) => {
+    const { currentChain } = useChain();
+    const searchParams = useSearchParams();
+    const chainParam = searchParams.get('chain') as ChainType | null;
+    
+    // Use URL param if available, otherwise use context
+    const chain = chainParam && (chainParam === 'solana' || chainParam === 'bsc') 
+        ? chainParam 
+        : currentChain;
 
-    const { data: topHolders, isLoading } = useTopHolders(mint);
-
+    const { data: topHolders, isLoading, error, mutate } = useTopHolders(mint);
     const [totalSupply, setTotalSupply] = useState<number>(0);
-    const [streamflowAddresses, setStreamflowAddresses] = useState<Record<string, { name: string, logo: string }>>(knownAddresses);
+    const [knownAddressesMap, setKnownAddressesMap] = useState<Record<string, KnownAddress>>(knownAddresses);
 
-    useEffect(() => {
-        const fetchData = async () => {
+    // Function to fetch additional data based on chain
+    const fetchChainSpecificData = useCallback(async () => {
+        if (chain !== 'solana') return;
+        
+        try {
             const connection = new Connection(process.env.NEXT_PUBLIC_SOLANA_RPC_URL!);
             const mintInfo = await connection.getTokenSupply(new PublicKey(mint));
             setTotalSupply(Number(BigInt(mintInfo.value.amount) / BigInt(Math.pow(10, mintInfo.value.decimals))));
 
             const streamflowAccounts = await getStreamsByMint(mint);
             
-            setStreamflowAddresses(streamflowAccounts.reduce((acc, account) => {
+            const updatedAddresses = { ...knownAddresses };
+            
+            streamflowAccounts.forEach(account => {
                 if (account.account.escrowTokens) {
-                    acc[account.account.escrowTokens] = {
+                    updatedAddresses[account.account.escrowTokens] = {
                         name: "Streamflow Vault",
-                        logo: "/vesting/streamflow.png"
+                        logo: "/vesting/streamflow.png",
+                        type: AddressType.VestingVault
                     };
                 }
-                return acc;
-            }, { ...knownAddresses } as Record<string, { name: string, logo: string }>));
-        };
+            });
+            
+            setKnownAddressesMap(updatedAddresses);
+        } catch (error) {
+            console.error("Error fetching Solana token data:", error);
+        }
+    }, [mint, chain]);
 
-        fetchData();
-    }, [mint]);
+    // Fetch data when component mounts
+    useEffect(() => {
+        fetchChainSpecificData();
+    }, [mint, fetchChainSpecificData]);
 
+    // Manual refresh function
+    const handleRefresh = () => {
+        mutate();
+        fetchChainSpecificData();
+    };
+
+    // If chain is BSC, show a message that top holders are not supported yet
+    if (chain === 'bsc') {
+        return (
+            <div className="flex items-center justify-center h-full w-full p-4">
+                <div className="text-center max-w-md">
+                    <h3 className="text-lg font-semibold text-neutral-600 dark:text-neutral-400 mb-2">
+                        Top Holders Not Available
+                    </h3>
+                    <p className="text-sm text-neutral-500">
+                        Birdeye does not yet support top holders data for BSC tokens.
+                    </p>
+                </div>
+            </div>
+        );
+    }
+
+    // Handle loading state
     if(isLoading) {
         return <Skeleton className="h-full w-full" />
     }
 
+    // Handle error or empty data
+    if(error || !topHolders || topHolders.length === 0) {
+        return (
+            <div className="flex items-center justify-center h-full w-full p-4">
+                <div className="text-center">
+                    <p className="text-lg font-semibold text-neutral-600 dark:text-neutral-400">
+                        {error ? "Error loading top holders" : "No top holders data available"}
+                    </p>
+                    <p className="text-sm text-neutral-500 mt-2">
+                        {error ? "Please try again later" : "We couldn't find any top holders for this token"}
+                    </p>
+                    <button 
+                        onClick={handleRefresh}
+                        className="mt-4 px-4 py-2 bg-neutral-200 dark:bg-neutral-700 rounded-md hover:bg-neutral-300 dark:hover:bg-neutral-600 transition-colors"
+                    >
+                        Refresh Data
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
     return (
-        <Table>
-            <TableHeader>
-                <TableRow>
-                    <TableHead className="w-16 pl-4">Rank</TableHead>
-                    <TableHead>Holder</TableHead>
-                    <TableHead className="text-right">Amount</TableHead>
-                </TableRow>
-            </TableHeader>
-            <TableBody>
-                {topHolders.map((topHolder, index) => (
-                    <TopHolder
-                        key={topHolder.owner} 
-                        topHolder={topHolder}
-                        percentageOwned={topHolder.ui_amount / totalSupply * 100}
-                        index={index}
-                        knownAddresses={streamflowAddresses}
-                    />
-                ))}
-            </TableBody>
-        </Table>
+        <div className="flex flex-col h-full">
+            <div className="flex justify-end p-2">
+                <button 
+                    onClick={handleRefresh}
+                    className="px-3 py-1 text-xs bg-neutral-200 dark:bg-neutral-700 rounded-md hover:bg-neutral-300 dark:hover:bg-neutral-600 transition-colors"
+                >
+                    Refresh
+                </button>
+            </div>
+            <Table>
+                <TableHeader>
+                    <TableRow>
+                        <TableHead className="w-16 pl-4">Rank</TableHead>
+                        <TableHead>Holder</TableHead>
+                        <TableHead className="text-right">Amount</TableHead>
+                    </TableRow>
+                </TableHeader>
+                <TableBody>
+                    {topHolders.map((topHolder, index) => (
+                        <TopHolder
+                            key={topHolder.owner} 
+                            topHolder={topHolder}
+                            percentageOwned={totalSupply > 0 ? topHolder.ui_amount / totalSupply * 100 : 0}
+                            index={index}
+                            knownAddresses={knownAddressesMap}
+                        />
+                    ))}
+                </TableBody>
+            </Table>
+        </div>
     )
 }
 
@@ -91,7 +169,7 @@ interface TopHolderProps {
     topHolder: TokenHolder;
     percentageOwned: number;
     index: number;
-    knownAddresses: Record<string, { name: string, logo: string }>;
+    knownAddresses: Record<string, KnownAddress>;
 }
 
 const TopHolder = ({ topHolder, percentageOwned, index, knownAddresses }: TopHolderProps) => {
@@ -112,11 +190,15 @@ const TopHolder = ({ topHolder, percentageOwned, index, knownAddresses }: TopHol
                                 alt={knownAddress.name}
                                 width={16}
                                 height={16}
+                                className="rounded-full"
                             />
                         )}
                         <p className="font-bold">
                             {knownAddress.name}
                         </p>
+                        {knownAddress.type && (
+                            <span className="text-xs text-neutral-500">({knownAddress.type})</span>
+                        )}
                     </div>
                 ) : (
                     <WalletAddress 
@@ -126,7 +208,7 @@ const TopHolder = ({ topHolder, percentageOwned, index, knownAddresses }: TopHol
                 )}
             </TableCell>
             <TableCell className="text-right">
-                {topHolder.ui_amount.toLocaleString()} ({percentageOwned.toFixed(2)}%)
+                {topHolder.ui_amount.toLocaleString()} {percentageOwned > 0 && `(${percentageOwned.toFixed(2)}%)`}
             </TableCell>
         </TableRow>
     )

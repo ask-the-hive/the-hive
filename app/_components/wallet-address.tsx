@@ -13,6 +13,9 @@ import { Button, Skeleton, Tooltip, TooltipContent, TooltipProvider, TooltipTrig
 import TokenBalance from './token-balance';
 
 import { usePortfolio } from '@/hooks';
+import { useChain } from '@/app/_contexts/chain-context';
+import { useSearchParams } from 'next/navigation';
+import { ChainType } from '@/app/_contexts/chain-context';
 
 import { cn } from '@/lib/utils';
 
@@ -22,24 +25,36 @@ import { arkhamEntityLogos } from '@/lib/arkham-entity-logos';
 interface Props {
     address: string;
     className?: string;
+    chain?: ChainType;
 }
 
-const WalletAddress: React.FC<Props> = ({ address, className }) => {
+const WalletAddress: React.FC<Props> = ({ address, className, chain: propChain }) => {
+    const { currentChain } = useChain();
+    const searchParams = useSearchParams();
+    const chainParam = searchParams.get('chain') as ChainType | null;
+    
+    // Use prop chain first, then URL param if available, otherwise use context
+    const chain = propChain || (chainParam && (chainParam === 'solana' || chainParam === 'bsc') 
+        ? chainParam 
+        : currentChain);
 
     const [arkhamAddress, setArkhamAddress] = useState<ArkhamAddress | null>(null);
 
     useEffect(() => {
-        const fetchArkhamEntity = async () => {
-            try {
-                const entity = await fetch(`/api/arkham/address/${address}`)
-                const data = await entity.json();
-                setArkhamAddress(data);
-            } catch (error) {
-                console.error(error);
-            }
-        };
-        fetchArkhamEntity();
-    }, [address]);
+        // Only fetch Arkham entity for Solana addresses
+        if (chain === 'solana') {
+            const fetchArkhamEntity = async () => {
+                try {
+                    const entity = await fetch(`/api/arkham/address/${address}`)
+                    const data = await entity.json();
+                    setArkhamAddress(data);
+                } catch (error) {
+                    console.error(error);
+                }
+            };
+            fetchArkhamEntity();
+        }
+    }, [address, chain]);
     
     const [copied, setCopied] = useState(false);
 
@@ -54,7 +69,7 @@ const WalletAddress: React.FC<Props> = ({ address, className }) => {
             <Tooltip delayDuration={0}>
                 <TooltipTrigger asChild>
                     {
-                        (arkhamAddress?.arkhamEntity && arkhamAddress?.arkhamLabel?.name) ? (
+                        (chain === 'solana' && arkhamAddress?.arkhamEntity && arkhamAddress?.arkhamLabel?.name) ? (
                             <div className="flex flex-row items-center gap-2">
                                 {
                                     arkhamAddress.arkhamEntity.id && 
@@ -84,13 +99,21 @@ const WalletAddress: React.FC<Props> = ({ address, className }) => {
                     }
                 </TooltipTrigger>
                 <TooltipContent side="bottom" className="flex flex-col gap-4">
-                    <WalletBalances address={address} />
+                    <WalletBalances address={address} chain={chain} />
                     <div className="flex flex-row gap-2">
-                        <Link href={`https://solscan.io/address/${address}`} target="_blank">
-                            <Button variant="outline" size="sm">
-                                Solscan <ArrowUpRight className="size-4" />
-                            </Button>
-                        </Link>
+                        {chain === 'solana' ? (
+                            <Link href={`https://solscan.io/address/${address}`} target="_blank">
+                                <Button variant="outline" size="sm">
+                                    Solscan <ArrowUpRight className="size-4" />
+                                </Button>
+                            </Link>
+                        ) : (
+                            <Link href={`https://bscscan.com/address/${address}`} target="_blank">
+                                <Button variant="outline" size="sm">
+                                    BscScan <ArrowUpRight className="size-4" />
+                                </Button>
+                            </Link>
+                        )}
                         <Button variant="outline" size="sm" onClick={handleCopy}>
                             {copied ? "Copied" : "Copy"} <Copy className="size-4" />
                         </Button>
@@ -101,9 +124,9 @@ const WalletAddress: React.FC<Props> = ({ address, className }) => {
     )
 }
 
-const WalletBalances = ({ address }: { address: string }) => {
+const WalletBalances = ({ address, chain }: { address: string, chain: ChainType }) => {
 
-    const { data: portfolio, isLoading: portfolioLoading } = usePortfolio(address);
+    const { data: portfolio, isLoading: portfolioLoading } = usePortfolio(address, chain);
 
     return (
         <div className="flex flex-col gap-4">

@@ -1,10 +1,10 @@
 'use client'
 
-import React, { useState, useEffect, useRef } from 'react'
-
+import React, { useState, useRef } from 'react'
 import Link from 'next/link';
-
+import { useSearchParams } from 'next/navigation';
 import { Search } from 'lucide-react';
+import { useChain } from '@/app/_contexts/chain-context';
 
 import {
     Button,
@@ -14,11 +14,21 @@ import {
 
 import SaveToken from '../../_components/save-token';
 
-import { useDebounce, useSearchTokens } from '@/hooks';
+import { useDebounce } from '@/hooks';
+import { useSearchTokens } from '@/hooks/queries/token/use-search-tokens';
 
 import type { TokenSearchResult } from '@/services/birdeye/types';
+import { ChainType } from '@/app/_contexts/chain-context';
 
 const SearchBar: React.FC = () => {
+    const { currentChain } = useChain();
+    const searchParams = useSearchParams();
+    const chainParam = searchParams.get('chain') as ChainType | null;
+    
+    // Use URL param if available, otherwise use context
+    const chain = chainParam && (chainParam === 'solana' || chainParam === 'bsc') 
+        ? chainParam 
+        : currentChain;
     
     const inputRef = useRef<HTMLInputElement>(null);
 
@@ -27,34 +37,47 @@ const SearchBar: React.FC = () => {
 
     const debouncedValue = useDebounce(inputValue, 500);
 
-    const { data, isLoading, setSearch } = useSearchTokens();
-
-    useEffect(() => {
-        setSearch(debouncedValue);
-    }, [debouncedValue, setSearch]);
-
-    const tokens = data?.[0]?.result ?? [];
+    const { tokens, isLoading } = useSearchTokens(debouncedValue, chain);
 
     const sortTokens = (tokens: TokenSearchResult[]) => {
-        const priorityAddresses = new Set([
-            'So11111111111111111111111111111111111111112', // SOL
-            'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v', // USDC
-            'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB', // USDT
-        ]);
-
-        return tokens.sort((a, b) => {
-            if (priorityAddresses.has(a.address) && !priorityAddresses.has(b.address)) return -1;
-            if (!priorityAddresses.has(a.address) && priorityAddresses.has(b.address)) return 1;
-            
-            if (priorityAddresses.has(a.address) && priorityAddresses.has(b.address)) {
-                return Array.from(priorityAddresses).indexOf(a.address) - Array.from(priorityAddresses).indexOf(b.address);
-            }
-            
-            return 0;
-        });
+        // Define priority addresses for each chain
+        const priorityAddresses = {
+            solana: new Set([
+                'So11111111111111111111111111111111111111112', // SOL
+                'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v', // USDC
+                'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB', // USDT
+            ]),
+            bsc: new Set([
+                '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c', // WBNB/BNB
+                '0x55d398326f99059fF775485246999027B3197955', // USDT
+                '0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d', // USDC
+                '0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56', // BUSD
+            ])
+        };
+        
+        const currentPriorityAddresses = chain === 'bsc' ? priorityAddresses.bsc : priorityAddresses.solana;
+        
+        const searchLower = debouncedValue.toLowerCase().trim();
+        
+        const exactSymbolMatches = tokens.filter(token => 
+            token.symbol.toLowerCase() === searchLower
+        );
+        
+        const priorityTokens = tokens.filter(token => 
+            currentPriorityAddresses.has(token.address) && 
+            !exactSymbolMatches.some(t => t.address === token.address)
+        );
+        
+        const remainingTokens = tokens.filter(token => 
+            !exactSymbolMatches.some(t => t.address === token.address) && 
+            !priorityTokens.some(t => t.address === token.address)
+        );
+        
+        return [...exactSymbolMatches, ...priorityTokens, ...remainingTokens];
     };
 
     const sortedResults = sortTokens(tokens);
+    const placeholderIcon = "https://www.birdeye.so/images/unknown-token-icon.svg";
 
     return (
         <div className="flex flex-col gap-2">
@@ -92,7 +115,7 @@ const SearchBar: React.FC = () => {
                                     ) : (
                                         sortedResults.map((token: TokenSearchResult) => (
                                             <Link
-                                                href={`/token/${token.address}`}
+                                                href={`/token/${token.address}?chain=${chain}`}
                                                 key={token.address}
                                                 onMouseDown={(e) => e.preventDefault()}
                                                 className="h-fit"
@@ -102,14 +125,23 @@ const SearchBar: React.FC = () => {
                                                     className="w-full justify-start gap-4 px-2 py-1 h-fit"
                                                 >
                                                     <img
-                                                        src={token.logo_uri}
+                                                        src={token.logo_uri || placeholderIcon}
                                                         alt={token.name}
                                                         className="rounded-full size-8"
+                                                        onError={(e) => {
+                                                            (e.target as HTMLImageElement).src = placeholderIcon;
+                                                        }}
                                                     />
                                                     <div className="flex flex-col items-start">
                                                         <span className="font-bold text-sm">{token.name} ({token.symbol})</span>
                                                         <p className="text-xs text-muted-foreground">
-                                                            ${token.price.toLocaleString(undefined, { maximumFractionDigits: 5 })} <span className={token.price_change_24h_percent > 0 ? 'text-green-500' : 'text-red-500'}>({token.price_change_24h_percent > 0 ? '+' : ''}{token.price_change_24h_percent.toLocaleString(undefined, { maximumFractionDigits: 2 })}%)</span>
+                                                            ${(token.price || 0).toLocaleString(undefined, { maximumFractionDigits: 5 })} 
+                                                            {typeof token.price_change_24h_percent === 'number' && (
+                                                                <span className={token.price_change_24h_percent > 0 ? 'text-green-500' : 'text-red-500'}>
+                                                                    ({token.price_change_24h_percent > 0 ? '+' : ''}
+                                                                    {token.price_change_24h_percent.toLocaleString(undefined, { maximumFractionDigits: 2 })}%)
+                                                                </span>
+                                                            )}
                                                         </p>
                                                     </div>
                                                     <SaveToken address={token.address} />
@@ -119,7 +151,7 @@ const SearchBar: React.FC = () => {
                                     )
                                 ) : (
                                     <p className="text-xs text-muted-foreground p-2">
-                                        Start typing to search for tokens
+                                        Start typing to search for tokens by name or address
                                     </p>
                                 )}
                             </div>
