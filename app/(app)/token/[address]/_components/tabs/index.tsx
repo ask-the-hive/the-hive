@@ -110,32 +110,26 @@ const TokenDashboardTabs: React.FC<Props> = ({ address, tokenOverview }) => {
                     <FaUsers className="w-4 h-4" />
                     Active Wallets
                 </TabsTrigger>
-                {
-                    tokenOverview.extensions?.twitter && (
-                        <>
-                            <TabsTrigger 
-                                value="tweets"
-                                ref={(el) => {
-                                    if (el) tabsRef.current['tweets'] = el
-                                }}
-                                className="min-w-fit whitespace-nowrap data-[state=active]:bg-white dark:data-[state=active]:bg-neutral-800"
-                            >
-                                <FaXTwitter className="w-4 h-4" />
-                                Tweets
-                            </TabsTrigger>
-                            <TabsTrigger 
-                                value="mentions"
-                                ref={(el) => {
-                                    if (el) tabsRef.current['mentions'] = el
-                                }}
-                                className="min-w-fit whitespace-nowrap data-[state=active]:bg-white dark:data-[state=active]:bg-neutral-800"
-                            >
-                                <FaAt className="w-4 h-4" />
-                                Mentions
-                            </TabsTrigger>
-                        </>
-                    )
-                }
+                <TabsTrigger 
+                    value="tweets"
+                    ref={(el) => {
+                        if (el) tabsRef.current['tweets'] = el
+                    }}
+                    className="min-w-fit whitespace-nowrap data-[state=active]:bg-white dark:data-[state=active]:bg-neutral-800"
+                >
+                    <FaXTwitter className="w-4 h-4" />
+                    Tweets
+                </TabsTrigger>
+                <TabsTrigger 
+                    value="mentions"
+                    ref={(el) => {
+                        if (el) tabsRef.current['mentions'] = el
+                    }}
+                    className="min-w-fit whitespace-nowrap data-[state=active]:bg-white dark:data-[state=active]:bg-neutral-800"
+                >
+                    <FaAt className="w-4 h-4" />
+                    Mentions
+                </TabsTrigger>
             </DraggableTabsList>
             <div className="flex-1 h-0 overflow-y-auto w-full no-scrollbar">
                 <TabsContent value="market-stats" className="h-full m-0 p-2">
@@ -156,18 +150,38 @@ const TokenDashboardTabs: React.FC<Props> = ({ address, tokenOverview }) => {
                 <TabsContent value="users-over-time" className="h-full m-0 p-2">
                     <TokenUsersOverTime mint={address} />
                 </TabsContent>
-                {
-                    tokenOverview.extensions?.twitter && (
-                        <>
-                            <TabsContent value="tweets" className="h-full m-0 p-2">
-                                <AccountTweets username={tokenOverview.extensions.twitter.split('/').pop()!} />
-                            </TabsContent>
-                            <TabsContent value="mentions" className="h-full m-0 p-2">
-                                <AccountMentions username={tokenOverview.extensions.twitter.split('/').pop()!} />
-                            </TabsContent>
-                        </>
-                    )
-                }
+                <TabsContent value="tweets" className="h-full m-0 p-2">
+                    {tokenOverview.extensions?.twitter ? (
+                        <AccountTweets username={tokenOverview.extensions.twitter.split('/').pop()!} />
+                    ) : (
+                        <div className="flex items-center justify-center h-full w-full p-4">
+                            <div className="text-center max-w-md">
+                                <h3 className="text-lg font-semibold text-neutral-600 dark:text-neutral-400 mb-2">
+                                    Twitter Data Not Available
+                                </h3>
+                                <p className="text-sm text-neutral-500">
+                                    This token has no Twitter Presence.
+                                </p>
+                            </div>
+                        </div>
+                    )}
+                </TabsContent>
+                <TabsContent value="mentions" className="h-full m-0 p-2">
+                    {tokenOverview.extensions?.twitter ? (
+                        <AccountMentions username={tokenOverview.extensions.twitter.split('/').pop()!} />
+                    ) : (
+                        <div className="flex items-center justify-center h-full w-full p-4">
+                            <div className="text-center max-w-md">
+                                <h3 className="text-lg font-semibold text-neutral-600 dark:text-neutral-400 mb-2">
+                                    Mentions Data Not Available
+                                </h3>
+                                <p className="text-sm text-neutral-500">
+                                    This token has no Twitter Presence.
+                                </p>
+                            </div>
+                        </div>
+                    )}
+                </TabsContent>
             </div>
         </Tabs>
     )

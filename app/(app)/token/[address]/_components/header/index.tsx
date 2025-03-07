@@ -16,8 +16,6 @@ interface Props {
 }
 
 const Header: React.FC<Props> = ({ address }) => {
-
-
     const { data: tokenOverview, isLoading } = useTokenOverview(address);
 
     if (isLoading) {
@@ -32,23 +30,20 @@ const Header: React.FC<Props> = ({ address }) => {
         <div className="flex flex-col md:flex-row justify-between gap-4">
             <div className="flex items-center gap-2">
                 <img 
-                    src={tokenOverview.logoURI} 
+                    src={tokenOverview.logoURI || "https://www.birdeye.so/images/unknown-token-icon.svg"} 
                     alt={tokenOverview.name} 
                     className="w-6 h-6 rounded-full" 
                 />
                 <div className="flex flex-col">
                     <div className="flex items-center gap-2">
-                        <h1 className="text-lg font-bold">{tokenOverview.name} ({tokenOverview.symbol})</h1>
-                        <Address address={tokenOverview.address} />
+                        <h1 className="text-xl font-bold">{tokenOverview.name}</h1>
+                        <span className="text-sm text-neutral-500 dark:text-neutral-400">{tokenOverview.symbol}</span>
+                        <SaveToken address={address} />
                     </div>
+                    <Address address={address} className="text-xs" />
                 </div>
-                <SaveToken address={tokenOverview.address} />
             </div>
-            {
-                tokenOverview.extensions && (
-                    <Links extensions={tokenOverview.extensions} />
-                )
-            }
+            {tokenOverview.extensions && <Links extensions={tokenOverview.extensions} />}
         </div>
     )
 }

@@ -5,7 +5,6 @@ import React from 'react'
 import { ArrowLeftRight } from 'lucide-react';
 
 import {
-    Card,
     Skeleton,
     Table,
     TableBody,
@@ -17,17 +16,28 @@ import {
 
 import TransactionHash from '@/app/_components/transaction-hash';
 
-import TokenTransfer from './token-transfer'
-;
+import TokenTransfer from './token-transfer';
 import { useTransactions } from '@/hooks';
+import { useChain } from '@/app/_contexts/chain-context';
 
 interface Props {
     address: string;
 }
 
 const Transactions: React.FC<Props> = ({ address }) => {
+    const { currentChain, walletAddresses } = useChain();
+    
+    // Use the appropriate address for the current chain
+    const chainAddress = currentChain === 'solana' 
+        ? walletAddresses.solana || address 
+        : walletAddresses.bsc || address;
+    
+    const { data: transactions, isLoading } = useTransactions(chainAddress, currentChain);
 
-    const { data: transactions, isLoading } = useTransactions(address);
+    // Check if we have a valid address for the current chain
+    const hasValidAddress = currentChain === 'solana' 
+        ? chainAddress && !chainAddress.startsWith('0x')
+        : chainAddress && chainAddress.startsWith('0x');
 
     return (
         <div className="flex flex-col gap-4">
@@ -35,16 +45,23 @@ const Transactions: React.FC<Props> = ({ address }) => {
                 <ArrowLeftRight
                     className="w-4 h-4"
                 />
-                <h2 className="text-lg font-bold">Transactions</h2>
+                <h2 className="text-lg font-bold">Transactions {currentChain === 'bsc' ? '(BSC)' : '(Solana)'}</h2>
             </div>
-            <Card className="p-2">
+            <div className="border rounded-md p-2">
                 {
-                    isLoading ? (
+                    !hasValidAddress ? (
+                        <div className="flex flex-col items-center justify-center h-64">
+                            <p className="text-yellow-500">
+                                No {currentChain === 'solana' ? 'Solana' : 'BSC'} wallet connected. 
+                                Please link a {currentChain === 'solana' ? 'Solana' : 'BSC'} wallet.
+                            </p>
+                        </div>
+                    ) : isLoading ? (
                         <Skeleton
                             className="h-96 w-full"
                         />
                     ) : (
-                        transactions.length > 0 ? (
+                        transactions && transactions.length > 0 ? (
                             <Table>
                                 <TableHeader>
                                     <TableRow>
@@ -62,6 +79,7 @@ const Transactions: React.FC<Props> = ({ address }) => {
                                                     <TransactionHash
                                                         hash={transaction.signature}
                                                         hideTransactionText
+                                                        chain={currentChain}
                                                     />
                                                 </TableCell>
                                                 <TableCell>
@@ -75,7 +93,7 @@ const Transactions: React.FC<Props> = ({ address }) => {
                                                         <TokenTransfer
                                                             key={index}
                                                             tokenTransfer={tokenTransfer}
-                                                            address={address}
+                                                            address={chainAddress}
                                                         />
                                                     ))}
                                                 </TableCell>
@@ -85,13 +103,15 @@ const Transactions: React.FC<Props> = ({ address }) => {
                                 </TableBody>
                             </Table>
                         ) : (
-                            <p className="">
-                                No transactions found
-                            </p>
+                            <div className="flex flex-col items-center justify-center h-64">
+                                <p className="text-muted-foreground">
+                                    No transactions found
+                                </p>
+                            </div>
                         )
                     )
                 }
-            </Card>
+            </div>
         </div>
     )
 }

@@ -39,7 +39,6 @@ const TokenSelect: React.FC<Props> = ({ value, onChange, priorityTokens = [] }) 
         if (!results) return [];
         
         return results.sort((a, b) => {
-            // First check for priority tokens
             const aIndex = priorityTokens.indexOf(a.id);
             const bIndex = priorityTokens.indexOf(b.id);
             
@@ -47,7 +46,6 @@ const TokenSelect: React.FC<Props> = ({ value, onChange, priorityTokens = [] }) 
             if (aIndex !== -1) return -1;
             if (bIndex !== -1) return 1;
 
-            // keep order
             return 0;
         });
     }, [results, priorityTokens, input]);
@@ -61,7 +59,7 @@ const TokenSelect: React.FC<Props> = ({ value, onChange, priorityTokens = [] }) 
                     {
                         value ? (
                             <img 
-                                src={value.logoURI || '/placeholder.png'} 
+                                src={value.logoURI || 'https://www.birdeye.so/images/unknown-token-icon.svg'} 
                                 alt={value.name} 
                                 className="w-6 h-6 rounded-full" 
                             />
@@ -107,7 +105,7 @@ const TokenSelect: React.FC<Props> = ({ value, onChange, priorityTokens = [] }) 
                                                 }}
                                             >
                                                 <img 
-                                                    src={token.logoURI} 
+                                                    src={token.logoURI || "https://www.birdeye.so/images/unknown-token-icon.svg"} 
                                                     alt={token.name} 
                                                     className="w-6 h-6 rounded-full" 
                                                 />
@@ -120,7 +118,7 @@ const TokenSelect: React.FC<Props> = ({ value, onChange, priorityTokens = [] }) 
                                     )
                                 ) : (
                                     <p className="text-xs text-neutral-500">
-                                        Start typing to search for a token
+                                        Active Walleing to search for a token
                                     </p>
                                 )
                             }

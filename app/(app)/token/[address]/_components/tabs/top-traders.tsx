@@ -10,6 +10,9 @@ import WalletAddress from "@/app/_components/wallet-address";
 import BuySell from "@/app/(app)/_components/buy-sell";
 
 import { useTopTraders } from "@/hooks";
+import { useChain } from "@/app/_contexts/chain-context";
+import { useSearchParams } from "next/navigation";
+import { ChainType } from "@/app/_contexts/chain-context";
 
 import { knownAddresses } from "@/lib/known-addresses";
 
@@ -18,6 +21,14 @@ interface Props {
 }
 
 const TopTokenTraders: React.FC<Props> = ({ address }) => {
+    const { currentChain } = useChain();
+    const searchParams = useSearchParams();
+    const chainParam = searchParams.get('chain') as ChainType | null;
+    
+    // Use URL param if available, otherwise use context
+    const chain = chainParam && (chainParam === 'solana' || chainParam === 'bsc') 
+        ? chainParam 
+        : currentChain;
     
     const { data: topTraders, isLoading } = useTopTraders(address);
 
@@ -57,6 +68,7 @@ const TopTokenTraders: React.FC<Props> = ({ address }) => {
                                     <WalletAddress 
                                         address={trader.owner} 
                                         className="font-medium"
+                                        chain={chain}
                                     />
                                 </div>
                             )}

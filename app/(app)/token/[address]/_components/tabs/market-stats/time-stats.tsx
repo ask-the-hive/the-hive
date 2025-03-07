@@ -28,13 +28,13 @@ const TimeStats: React.FC<Props> = ({ token }) => {
     const getPriceChange = (period: TimePeriod) => {
         switch(period) {
             case '30m':
-                return token.priceChange30mPercent
+                return token.priceChange30mPercent || 0
             case '1h':
-                return token.priceChange1hPercent
+                return token.priceChange1hPercent || 0
             case '4h':
-                return token.priceChange4hPercent
+                return token.priceChange4hPercent || 0
             case '24h':
-                return token.priceChange24hPercent
+                return token.priceChange24hPercent || 0
             default:
                 return 0
         }
@@ -152,7 +152,7 @@ const StatSection: React.FC<StatSectionProps> = ({
     sell,
     buyLabel,
     sellLabel,
-    prefix,
+    prefix = '',
 }) => {
     return (
         <div className="flex gap-2 items-center h-16">
