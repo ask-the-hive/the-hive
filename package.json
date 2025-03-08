@@ -46,6 +46,7 @@
     "@solana/spl-token": "^0.4.9",
     "@solana/web3.js": "^1.98.0",
     "@streamflow/stream": "^7.2.0",
+    "@t3-oss/env-nextjs": "^0.12.0",
     "@types/jsdom": "^21.1.7",
     "@vercel/analytics": "^1.4.1",
     "@xyflow/react": "^12.3.6",

@@ -24,6 +24,16 @@ interface Props {
     address: string;
 }
 
+// Custom formatting for special sources
+const formatSource = (source: string): string => {
+    if (source === 'PANCAKESWAP') return 'PancakeSwap';
+    
+    // Default formatting for other sources
+    return source.split('_').map(word => 
+        word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+    ).join(' ');
+};
+
 const Transactions: React.FC<Props> = ({ address }) => {
     const { currentChain, walletAddresses } = useChain();
     
@@ -53,9 +63,9 @@ const Transactions: React.FC<Props> = ({ address }) => {
                             <TableHeader>
                                 <TableRow>
                                     <TableHead>Tx Hash</TableHead>
-                                    <TableHead className="text-center">Type</TableHead>
-                                    <TableHead className="text-center">Source</TableHead>
-                                    <TableHead className="">Balance Changes</TableHead>
+                                    <TableHead>Type</TableHead>
+                                    <TableHead>Source</TableHead>
+                                    <TableHead>Balance Changes</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody className="max-h-96 overflow-y-hidden">
@@ -73,7 +83,7 @@ const Transactions: React.FC<Props> = ({ address }) => {
                                                 {transaction.type.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ')}
                                             </TableCell>
                                             <TableCell>
-                                                {transaction.source.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ')}
+                                                {formatSource(transaction.source)}
                                             </TableCell>
                                             <TableCell>
                                                 {transaction.tokenTransfers?.map((tokenTransfer, index) => (
