@@ -16,7 +16,7 @@ export const platformGroup: SidebarGroup = {
         },
         {
             icon: 'Twitter',
-            label: 'Follow Us',
+            label: 'Follow Twitter',
             href: 'https://x.com/askthehive_ai',
             external: true
         },

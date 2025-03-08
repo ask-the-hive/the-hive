@@ -41,7 +41,6 @@ export const queryBirdeye = async <T>(
 
     return data.data;
   } catch (error) {
-    console.error(`Birdeye API error:`, error);
     throw error;
   }
 }
