@@ -12,9 +12,9 @@ import SavedTokensGroup from './saved-tokens-group';
 const SidebarMenu: React.FC = () => {
     return (
         <SidebarMenuUI>
+            <AccountButton />
             <ChatsGroup />
             <SavedTokensGroup />
-            <AccountButton />
             <PortfolioButton />
         </SidebarMenuUI>
     )
