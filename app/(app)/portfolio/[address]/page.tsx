@@ -1,18 +1,29 @@
 'use client'
 
 import React from 'react'
+import { useRouter } from 'next/navigation'
 
 import Header from './_components/header';
 import Tokens from './_components/tokens';
 import LiquidityPools from './_components/liquidity-pools';
 import Transactions from './_components/transactions';
-import ChainSelector from './_components/chain-selector';
 
 import { SwapModalProvider } from './_contexts/use-swap-modal';
+import { useChain } from '@/app/_contexts/chain-context';
 
-const Portfolio = ({ params }: { params: { address: string } }) => {
+const Portfolio = ({ params }: { params: Promise<{ address: string }> }) => {
+    // Unwrap params using React.use()
+    const { address } = React.use(params);
+    const router = useRouter();
+    const { currentChain, walletAddresses } = useChain();
 
-    const { address } = params;
+    // Update URL when chain changes to show correct wallet address
+    React.useEffect(() => {
+        const newAddress = currentChain === 'solana' ? walletAddresses.solana : walletAddresses.bsc;
+        if (newAddress && newAddress !== address) {
+            router.replace(`/portfolio/${newAddress}`);
+        }
+    }, [currentChain, walletAddresses, address, router]);
 
     return (
         <SwapModalProvider>
@@ -21,7 +32,6 @@ const Portfolio = ({ params }: { params: { address: string } }) => {
                     <Header
                         address={address}
                     />
-                    <ChainSelector />
                 </div>
                 <Tokens
                     address={address}

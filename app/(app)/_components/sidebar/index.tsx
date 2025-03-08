@@ -60,7 +60,7 @@ const Sidebar: React.FC<Props> = ({ children }) => {
                                     target={'_blank'}
                                 >
                                     <FaXTwitter />
-                                    <span className='truncate'>Follow Us</span>
+                                    <span className='truncate'>Follow Twitter</span>
                                 </Link>
                             </SidebarMenuButton>
                         </SidebarMenuItem>

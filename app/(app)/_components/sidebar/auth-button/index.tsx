@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useRef } from 'react'
+import React from 'react'
 
 import { ChevronsUpDown, Coins, LogIn, LogOut, Wallet, AlertCircle } from 'lucide-react';
 
@@ -30,13 +30,8 @@ import Balances from './balances';
 import { truncateAddress } from '@/lib/wallet';
 
 const AuthButton: React.FC = () => {
-    // Use ref to prevent multiple renders
-    const isInitialRender = useRef(true);
-
-    const { user, ready, login, logout, linkWallet, fundWallet, fundBscWallet, solanaWallets } = useLogin({
-        onComplete: (wallet) => {
-            console.log("Login completed with wallet:", wallet);
-        }
+    const { user, ready, login, logout, linkWallet, fundWallet, fundBscWallet } = useLogin({
+        onComplete: () => {}
     });
 
     const { 
@@ -48,27 +43,12 @@ const AuthButton: React.FC = () => {
     
     const { isMobile } = useSidebar();
 
-    // Debug log when component renders - only on first render or significant changes
-    useEffect(() => {
-        if (isInitialRender.current) {
-            console.log("Auth button initial render with:", {
-                currentChain,
-                walletAddresses,
-                currentWalletAddress,
-                solanaWallets
-            });
-            isInitialRender.current = false;
-        }
-    }, [currentChain, walletAddresses, currentWalletAddress, solanaWallets]);
-
     // Handle chain switching
     const handleChainSwitch = (chain: ChainType) => {
-        console.log(`Switching to ${chain} chain`);
         setCurrentChain(chain);
         
         // If no wallet is connected for this chain, prompt to connect
         if (!walletAddresses[chain]) {
-            console.log(`No wallet for ${chain}, prompting to connect`);
             linkWallet();
         }
     };

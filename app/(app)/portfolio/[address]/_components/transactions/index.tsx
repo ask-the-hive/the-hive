@@ -34,83 +34,69 @@ const Transactions: React.FC<Props> = ({ address }) => {
     
     const { data: transactions, isLoading } = useTransactions(chainAddress, currentChain);
 
-    // Check if we have a valid address for the current chain
-    const hasValidAddress = currentChain === 'solana' 
-        ? chainAddress && !chainAddress.startsWith('0x')
-        : chainAddress && chainAddress.startsWith('0x');
-
     return (
         <div className="flex flex-col gap-4">
             <div className="flex items-center gap-2">
                 <ArrowLeftRight
                     className="w-4 h-4"
                 />
-                <h2 className="text-lg font-bold">Transactions {currentChain === 'bsc' ? '(BSC)' : '(Solana)'}</h2>
+                <h2 className="text-lg font-bold">Transactions</h2>
             </div>
             <div className="border rounded-md p-2">
-                {
-                    !hasValidAddress ? (
+                {isLoading ? (
+                    <Skeleton
+                        className="h-96 w-full"
+                    />
+                ) : (
+                    transactions && transactions.length > 0 ? (
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Tx Hash</TableHead>
+                                    <TableHead className="text-center">Type</TableHead>
+                                    <TableHead className="text-center">Source</TableHead>
+                                    <TableHead className="">Balance Changes</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody className="max-h-96 overflow-y-hidden">
+                                {
+                                    transactions.map((transaction) => (
+                                        <TableRow key={transaction.signature}>
+                                            <TableCell>
+                                                <TransactionHash
+                                                    hash={transaction.signature}
+                                                    hideTransactionText
+                                                    chain={currentChain}
+                                                />
+                                            </TableCell>
+                                            <TableCell>
+                                                {transaction.type.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ')}
+                                            </TableCell>
+                                            <TableCell>
+                                                {transaction.source.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ')}
+                                            </TableCell>
+                                            <TableCell>
+                                                {transaction.tokenTransfers?.map((tokenTransfer, index) => (
+                                                    <TokenTransfer
+                                                        key={index}
+                                                        tokenTransfer={tokenTransfer}
+                                                        address={chainAddress}
+                                                    />
+                                                ))}
+                                            </TableCell>
+                                        </TableRow>
+                                    ))
+                                }
+                            </TableBody>
+                        </Table>
+                    ) : (
                         <div className="flex flex-col items-center justify-center h-64">
-                            <p className="text-yellow-500">
-                                No {currentChain === 'solana' ? 'Solana' : 'BSC'} wallet connected. 
-                                Please link a {currentChain === 'solana' ? 'Solana' : 'BSC'} wallet.
+                            <p className="text-muted-foreground">
+                                No transactions found
                             </p>
                         </div>
-                    ) : isLoading ? (
-                        <Skeleton
-                            className="h-96 w-full"
-                        />
-                    ) : (
-                        transactions && transactions.length > 0 ? (
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>Tx Hash</TableHead>
-                                        <TableHead className="text-center">Type</TableHead>
-                                        <TableHead className="text-center">Source</TableHead>
-                                        <TableHead className="">Balance Changes</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody className="max-h-96 overflow-y-hidden">
-                                    {
-                                        transactions.map((transaction) => (
-                                            <TableRow key={transaction.signature}>
-                                                <TableCell>
-                                                    <TransactionHash
-                                                        hash={transaction.signature}
-                                                        hideTransactionText
-                                                        chain={currentChain}
-                                                    />
-                                                </TableCell>
-                                                <TableCell>
-                                                    {transaction.type.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ')}
-                                                </TableCell>
-                                                <TableCell>
-                                                    {transaction.source.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ')}
-                                                </TableCell>
-                                                <TableCell>
-                                                    {transaction.tokenTransfers?.map((tokenTransfer, index) => (
-                                                        <TokenTransfer
-                                                            key={index}
-                                                            tokenTransfer={tokenTransfer}
-                                                            address={chainAddress}
-                                                        />
-                                                    ))}
-                                                </TableCell>
-                                            </TableRow>
-                                        ))
-                                    }
-                                </TableBody>
-                            </Table>
-                        ) : (
-                            <div className="flex flex-col items-center justify-center h-64">
-                                <p className="text-muted-foreground">
-                                    No transactions found
-                                </p>
-                            </div>
-                        )
                     )
-                }
+                )}
             </div>
         </div>
     )

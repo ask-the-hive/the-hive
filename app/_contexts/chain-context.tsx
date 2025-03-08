@@ -21,8 +21,12 @@ interface ChainContextType {
 
 const ChainContext = createContext<ChainContextType | undefined>(undefined);
 
+// Use a module-level variable to persist the chain selection across renders
+let persistedChain: ChainType = 'solana';
+
 export const ChainProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [currentChain, setCurrentChain] = useState<ChainType>('solana');
+  // Initialize with the persisted chain
+  const [currentChain, setCurrentChainState] = useState<ChainType>(persistedChain);
   const [walletAddresses, setWalletAddresses] = useState<WalletAddresses>({});
   const { user } = usePrivy();
   const { wallets: solanaWallets } = useSolanaWallets();
@@ -30,17 +34,6 @@ export const ChainProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   // Use refs to prevent infinite loops
   const processedWallets = useRef<Set<string>>(new Set());
   const isInitialMount = useRef(true);
-
-  // Debug function to log all wallets
-  const logAllWallets = useCallback(() => {
-    console.log("=== WALLET DEBUG INFO ===");
-    console.log("Current chain:", currentChain);
-    console.log("Wallet addresses:", walletAddresses);
-    console.log("User wallet:", user?.wallet);
-    console.log("Linked accounts:", user?.linkedAccounts);
-    console.log("Solana wallets:", solanaWallets);
-    console.log("========================");
-  }, [currentChain, walletAddresses, user, solanaWallets]);
 
   // Set wallet address for a specific chain
   const setWalletAddress = useCallback((chain: ChainType, address: string) => {
@@ -50,7 +43,6 @@ export const ChainProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       return;
     }
     
-    console.log(`Setting ${chain} wallet address:`, address);
     processedWallets.current.add(key);
     
     setWalletAddresses(prev => {
@@ -65,6 +57,13 @@ export const ChainProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     });
   }, []);
 
+  // Wrap setCurrentChain to persist the value
+  const setCurrentChain = useCallback((chain: ChainType) => {
+    // Update the module-level variable to persist across renders
+    persistedChain = chain;
+    setCurrentChainState(chain);
+  }, []);
+
   // Get the current wallet address based on the selected chain
   const currentWalletAddress = walletAddresses[currentChain];
 
@@ -75,7 +74,6 @@ export const ChainProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         if (wallet.address) {
           const key = `solana:${wallet.address}`;
           if (!processedWallets.current.has(key)) {
-            console.log("Setting Solana wallet from hook:", wallet.address);
             setWalletAddress('solana', wallet.address);
           }
         }
@@ -86,13 +84,6 @@ export const ChainProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   // Initialize wallet addresses when user connects or links new wallets
   useEffect(() => {
     if (!user) return;
-    
-    // Only log on initial mount or when user changes
-    if (isInitialMount.current) {
-      console.log("User updated, checking wallets:", user);
-      logAllWallets();
-      isInitialMount.current = false;
-    }
     
     // Process main wallet
     if (user.wallet?.address) {
@@ -122,16 +113,7 @@ export const ChainProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         }
       });
     }
-  }, [user, setWalletAddress, logAllWallets]);
-
-  // When switching chains, log the current state
-  useEffect(() => {
-    if (currentChain && !walletAddresses[currentChain]) {
-      console.log(`No wallet connected for ${currentChain}`);
-    } else if (currentChain && walletAddresses[currentChain]) {
-      console.log(`Using ${currentChain} wallet:`, walletAddresses[currentChain]);
-    }
-  }, [currentChain, walletAddresses]);
+  }, [user, setWalletAddress]);
 
   return (
     <ChainContext.Provider value={{ 

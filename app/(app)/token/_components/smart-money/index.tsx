@@ -85,6 +85,10 @@ const SmartMoneyTokens: React.FC = () => {
         fetchSmartMoneyTokens();
     }, [chain]);
 
+    if (chain !== 'solana') {
+        return null;
+    }
+
     return (
         <div className="flex flex-col gap-2">
             <h2 className="text-lg font-bold">Smart Money Inflows</h2>
@@ -94,14 +98,6 @@ const SmartMoneyTokens: React.FC = () => {
                     {[...Array(9)].map((_, i) => (
                         <Skeleton key={i} className="h-24 w-full" />
                     ))}
-                </div>
-            ) : error && unsupportedChain ? (
-                <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 p-4 rounded-md">
-                    <div className="flex items-center gap-2">
-                        <AlertCircle className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
-                        <h3 className="font-medium text-yellow-600 dark:text-yellow-400">Chain Not Supported</h3>
-                    </div>
-                    <p className="text-sm text-yellow-600 dark:text-yellow-400 mt-1">{error}</p>
                 </div>
             ) : error && tokens.length > 0 ? (
                 <>
@@ -130,16 +126,6 @@ const SmartMoneyTokens: React.FC = () => {
                         <h3 className="font-medium text-red-600 dark:text-red-400">Error</h3>
                     </div>
                     <p className="text-sm text-red-600 dark:text-red-400 mt-1">{error}</p>
-                </div>
-            ) : tokens.length === 0 && chain !== 'solana' ? (
-                <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 p-4 rounded-md">
-                    <div className="flex items-center gap-2">
-                        <AlertCircle className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
-                        <h3 className="font-medium text-yellow-600 dark:text-yellow-400">No smart money inflows found</h3>
-                    </div>
-                    <p className="text-sm text-yellow-600 dark:text-yellow-400 mt-1">
-                        No smart money inflows are available for the selected chain.
-                    </p>
                 </div>
             ) : tokens.length === 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
