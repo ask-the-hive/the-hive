@@ -92,7 +92,7 @@ const Tokens: React.FC<Props> = ({ address }) => {
                                                     </div>
                                                 </TableCell>
                                                 <TableCell>
-                                                    {new Decimal(token.balance).div(10 ** token.decimals).toNumber().toLocaleString(undefined, { maximumFractionDigits: 2, minimumFractionDigits: 2 })}
+                                                    {new Decimal(token.balance).div(10 ** token.decimals).toNumber().toLocaleString(undefined, { maximumFractionDigits: 4, minimumFractionDigits: 4 })}
                                                 </TableCell>
                                                 <TableCell>
                                                     ${token.priceUsd.toLocaleString(undefined, { maximumFractionDigits: 2, minimumFractionDigits: 2 })}
