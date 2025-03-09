@@ -64,11 +64,11 @@ const Balances: React.FC<Props> = ({ address, chain }) => {
                             Solana (SOL)
                         </span>
                         <span className="text-sm text-muted-foreground">
-                            {nativeBalance.toFixed(4)}
+                            {nativeBalance?.toFixed(4) ?? '0.0000'}
                         </span>
                     </div>
                 </div>
-                {tokenAccounts.map((account, index) => (
+                {tokenAccounts?.map((account, index) => (
                     <div key={`token-${index}`} className="flex flex-row items-center gap-2">
                         <img 
                             src={account.token_data.logoURI} 
@@ -102,12 +102,12 @@ const Balances: React.FC<Props> = ({ address, chain }) => {
             <Skeleton className="h-10 w-full" />
         )
 
-        if (!portfolio) return (
+        if (!portfolio || !portfolio.items) return (
             <p>No BSC balances found</p>
         )
 
         // Sort tokens to put BNB/WBNB at the top
-        const sortedTokens = [...portfolio.items].sort((a, b) => {
+        const sortedTokens = [...(portfolio.items || [])].sort((a, b) => {
             // Put BNB and WBNB at the top
             if (a.symbol.toLowerCase().includes('bnb') || a.symbol.toLowerCase().includes('wbnb')) {
                 return -1;
