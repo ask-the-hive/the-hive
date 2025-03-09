@@ -19,11 +19,29 @@ export const usePortfolio = (address: string, chain?: ChainType) => {
     const shouldFetch = chainAddress && 
                        ((effectiveChain === 'solana' && !chainAddress.startsWith('0x')) ||
                         (effectiveChain === 'bsc' && chainAddress.startsWith('0x')));
+
+    console.log('[Portfolio Debug] Fetch conditions:', {
+        chainAddress,
+        effectiveChain,
+        shouldFetch,
+        walletAddresses,
+        currentChain
+    });
     
     const { data, isLoading, error, mutate } = useSWR<Portfolio>(
         shouldFetch ? `/api/portfolio/${chainAddress}?chain=${effectiveChain}` : null,
-        async (url: string) => fetch(url).then(res => res.json())
+        async (url: string) => {
+            console.log('[Portfolio Debug] Fetching from URL:', url);
+            const response = await fetch(url);
+            const json = await response.json();
+            console.log('[Portfolio Debug] API Response:', json);
+            return json;
+        }
     );
+
+    if (error) {
+        console.error('[Portfolio Debug] Error fetching portfolio:', error);
+    }
 
     return { 
         data: data, 
