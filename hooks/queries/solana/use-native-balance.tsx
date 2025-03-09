@@ -7,43 +7,30 @@ import { ethers } from 'ethers';
 import { useChain } from '@/app/_contexts/chain-context';
 
 export const useNativeBalance = (address: string) => {
-    const { currentChain, walletAddresses } = useChain();
+    const { currentChain } = useChain();
 
-    // Use the appropriate address for the current chain
-    const chainAddress = currentChain === 'solana' 
-        ? walletAddresses.solana || address 
-        : walletAddresses.bsc || address;
-
-    const { data, isLoading, error, mutate } = useSWR(
-        chainAddress ? `native-balance/${currentChain}/${chainAddress}` : null,
-        async () => {
+    return useSWR(
+        address ? ['native-balance', address, currentChain] : null,
+        async ([, chainAddress]) => {
             try {
                 if (currentChain === 'solana') {
-                    // Only proceed if we have a valid Solana address
-                    if (!chainAddress || chainAddress.startsWith('0x')) {
-                        return 0;
-                    }
-                    
-                    const connection = new Connection(process.env.NEXT_PUBLIC_SOLANA_RPC_URL!);
+                    // Solana native balance
+                    const connection = new Connection(process.env.NEXT_PUBLIC_SOLANA_RPC_URL || 'https://api.mainnet-beta.solana.com');
                     const balance = await connection.getBalance(new PublicKey(chainAddress));
                     return balance / LAMPORTS_PER_SOL;
                 } else {
-                    // Only proceed if we have a valid BSC address
-                    if (!chainAddress || !chainAddress.startsWith('0x')) {
-                        return 0;
-                    }
-                    
                     // BSC native balance
-                    const provider = new ethers.JsonRpcProvider(process.env.NEXT_PUBLIC_BSC_RPC_URL || 'https://bsc-dataseed.binance.org/');
+                    const provider = new ethers.providers.JsonRpcProvider(process.env.NEXT_PUBLIC_BSC_RPC_URL || 'https://bsc-dataseed.binance.org/');
                     const balance = await provider.getBalance(chainAddress);
-                    return Number(ethers.formatEther(balance));
+                    return Number(ethers.utils.formatEther(balance));
                 }
             } catch (error) {
-                console.error(`Error fetching ${currentChain === 'solana' ? 'SOL' : 'BNB'} balance:`, error);
+                console.error('Error fetching native balance:', error);
                 return 0;
             }
+        },
+        {
+            refreshInterval: 10000, // Refresh every 10 seconds
         }
     );
-
-    return { data: data ?? 0, isLoading, error, mutate };
 };

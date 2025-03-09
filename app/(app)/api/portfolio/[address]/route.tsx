@@ -3,12 +3,41 @@ import { NextRequest, NextResponse } from "next/server";
 import { getPortfolio } from "@/services/birdeye";
 import { ChainType } from "@/app/_contexts/chain-context";
 
-export const GET = async (request: NextRequest, { params }: { params: Promise<{ address: string }> }) => {
-  const { address } = await params;
-  const searchParams = request.nextUrl.searchParams;
-  const chain = searchParams.get('chain') || 'solana';
+export async function GET(
+    request: NextRequest,
+    { params }: { params: { address: string } }
+) {
+    try {
+        const searchParams = request.nextUrl.searchParams;
+        const chain = searchParams.get('chain') as ChainType || 'solana';
+        const address = params.address;
 
-  const portfolio = await getPortfolio(address, chain as ChainType);
+        console.log('[Portfolio API Debug] Request params:', {
+            chain,
+            address,
+            url: request.url
+        });
 
-  return NextResponse.json(portfolio);
+        const portfolio = await getPortfolio(address, chain);
+        
+        console.log('[Portfolio API Debug] Portfolio response:', {
+            chain,
+            address,
+            itemCount: portfolio?.items?.length || 0,
+            totalUsd: portfolio?.totalUsd || 0,
+            items: portfolio?.items?.map(item => ({
+                symbol: item.symbol,
+                balance: item.balance,
+                valueUsd: item.valueUsd
+            })) || []
+        });
+
+        return NextResponse.json(portfolio);
+    } catch (error) {
+        console.error('[Portfolio API Debug] Error:', error);
+        return NextResponse.json(
+            { error: 'Failed to fetch portfolio' },
+            { status: 500 }
+        );
+    }
 }

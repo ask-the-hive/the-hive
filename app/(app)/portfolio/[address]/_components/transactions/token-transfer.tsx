@@ -101,7 +101,7 @@ const TokenTransfer: React.FC<Props> = ({ tokenTransfer, address }) => {
                 
                 <p className={cn("text-xs", isPositive ? "text-green-500" : "text-red-500")}>
                     {isPositive ? "+" : "-"}
-                    {amount.toLocaleString(undefined, { maximumFractionDigits: 5, minimumFractionDigits: 2 })} {symbol}
+                    {amount.toLocaleString(undefined, { maximumFractionDigits: 2, minimumFractionDigits: 2 })} {symbol}
                 </p>
             </div>
         )
