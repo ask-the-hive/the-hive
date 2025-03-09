@@ -20,9 +20,9 @@ export const useNativeBalance = (address: string) => {
                     return balance / LAMPORTS_PER_SOL;
                 } else {
                     // BSC native balance
-                    const provider = new ethers.providers.JsonRpcProvider(process.env.NEXT_PUBLIC_BSC_RPC_URL || 'https://bsc-dataseed.binance.org/');
+                    const provider = new ethers.JsonRpcProvider(process.env.NEXT_PUBLIC_BSC_RPC_URL || 'https://bsc-dataseed.binance.org/');
                     const balance = await provider.getBalance(chainAddress);
-                    return Number(ethers.utils.formatEther(balance));
+                    return Number(ethers.formatEther(balance));
                 }
             } catch (error) {
                 console.error('Error fetching native balance:', error);

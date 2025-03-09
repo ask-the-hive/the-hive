@@ -157,10 +157,10 @@ const TokenDashboardTabs: React.FC<Props> = ({ address, tokenOverview }) => {
                         <div className="flex items-center justify-center h-full w-full p-4">
                             <div className="text-center max-w-md">
                                 <h3 className="text-lg font-semibold text-neutral-600 dark:text-neutral-400 mb-2">
-                                    Twitter Data Not Available
+                                    Tweets Data Not Available
                                 </h3>
                                 <p className="text-sm text-neutral-500">
-                                    This token has no Twitter Presence.
+                                    This token has no Twitter account linked.
                                 </p>
                             </div>
                         </div>
@@ -176,7 +176,7 @@ const TokenDashboardTabs: React.FC<Props> = ({ address, tokenOverview }) => {
                                     Mentions Data Not Available
                                 </h3>
                                 <p className="text-sm text-neutral-500">
-                                    This token has no Twitter Presence.
+                                    This token has no Twitter account linked.
                                 </p>
                             </div>
                         </div>
