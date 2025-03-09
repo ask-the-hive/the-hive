@@ -20,6 +20,7 @@ import {
 import { useSwapModal } from '../../_contexts/use-swap-modal';
 import { usePortfolio } from '@/hooks';
 import { useChain } from '@/app/_contexts/chain-context';
+import { cn } from '@/lib/utils';
 
 interface Props {
     address: string
@@ -66,7 +67,7 @@ const Tokens: React.FC<Props> = ({ address }) => {
                                     <TableHead>Balance</TableHead>
                                     <TableHead>Price</TableHead>
                                     <TableHead>Value</TableHead>
-                                    {currentChain === 'solana' && <TableHead>Actions</TableHead>}
+                                    <TableHead>Actions</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody className="max-h-96 overflow-y-auto">
@@ -100,26 +101,30 @@ const Tokens: React.FC<Props> = ({ address }) => {
                                                 <TableCell>
                                                     ${token.valueUsd.toLocaleString(undefined, { maximumFractionDigits: 2, minimumFractionDigits: 2 })}
                                                 </TableCell>
-                                                {currentChain === 'solana' && (
-                                                    <TableCell>
-                                                        <div className="flex gap-2">
-                                                            <Button
-                                                                variant="outline"
-                                                                size="sm"
-                                                                onClick={() => openBuy(token.address)}
-                                                            >
-                                                                Buy
-                                                            </Button>
-                                                            <Button
-                                                                variant="outline"
-                                                                size="sm"
-                                                                onClick={() => openSell(token.address)}
-                                                            >
-                                                                Sell
-                                                            </Button>
-                                                        </div>
-                                                    </TableCell>
-                                                )}
+                                                <TableCell>
+                                                    <div className="flex gap-2">
+                                                        <Button
+                                                            size="sm"
+                                                            onClick={() => openBuy(token.address)}
+                                                            className={cn(
+                                                                "bg-emerald-500 hover:bg-emerald-600 text-black border-0",
+                                                                "dark:bg-emerald-600 dark:hover:bg-emerald-700 dark:text-white"
+                                                            )}
+                                                        >
+                                                            Buy
+                                                        </Button>
+                                                        <Button
+                                                            size="sm"
+                                                            onClick={() => openSell(token.address)}
+                                                            className={cn(
+                                                                "bg-red-500 hover:bg-red-600 text-black border-0",
+                                                                "dark:bg-red-600 dark:hover:bg-red-700 dark:text-white"
+                                                            )}
+                                                        >
+                                                            Sell
+                                                        </Button>
+                                                    </div>
+                                                </TableCell>
                                             </TableRow>
                                         ))
                                 }
