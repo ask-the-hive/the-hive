@@ -4,6 +4,7 @@ import React from 'react'
 import { useRouter } from 'next/navigation'
 import { useChain, ChainType } from '@/app/_contexts/chain-context'
 import { useLogin } from '@/hooks'
+import ChainIcon from '@/app/(app)/_components/chain-icon'
 
 import SearchBar from './_components/search-bar'
 import TrendingTokens from './_components/trending-tokens'
@@ -40,22 +41,18 @@ const TokenPage: React.FC = () => {
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                         <Button variant="outline" className="flex items-center gap-2">
-                            <img 
-                                src={currentChain === 'solana' ? '/solana.png' : '/bsc.png'} 
-                                alt={currentChain === 'solana' ? 'Solana' : 'BSC'} 
-                                className="w-4 h-4" 
-                            />
+                            <ChainIcon chain={currentChain} className="w-4 h-4" />
                             {currentChain === 'solana' ? 'Solana' : 'BSC'}
                             <ChevronDown className="h-4 w-4" />
                         </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                         <DropdownMenuItem onClick={() => handleChainSwitch('solana')} className="flex items-center gap-2">
-                            <img src="/solana.png" alt="Solana" className="w-4 h-4" />
+                            <ChainIcon chain="solana" className="w-4 h-4" />
                             Solana
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => handleChainSwitch('bsc')} className="flex items-center gap-2">
-                            <img src="/bsc.png" alt="BSC" className="w-4 h-4" />
+                            <ChainIcon chain="bsc" className="w-4 h-4" />
                             BSC
                         </DropdownMenuItem>
                     </DropdownMenuContent>

@@ -107,8 +107,8 @@ const Tokens: React.FC<Props> = ({ address }) => {
                                                             size="sm"
                                                             onClick={() => openBuy(token.address)}
                                                             className={cn(
-                                                                "bg-emerald-500 hover:bg-emerald-600 text-black border-0",
-                                                                "dark:bg-emerald-600 dark:hover:bg-emerald-700 dark:text-white"
+                                                                "bg-emerald-100 hover:bg-emerald-200 text-emerald-800 border border-emerald-200",
+                                                                "dark:bg-emerald-950/30 dark:hover:bg-emerald-900/50 dark:text-emerald-300 dark:border-emerald-800/50"
                                                             )}
                                                         >
                                                             Buy
@@ -117,8 +117,8 @@ const Tokens: React.FC<Props> = ({ address }) => {
                                                             size="sm"
                                                             onClick={() => openSell(token.address)}
                                                             className={cn(
-                                                                "bg-red-500 hover:bg-red-600 text-black border-0",
-                                                                "dark:bg-red-600 dark:hover:bg-red-700 dark:text-white"
+                                                                "bg-red-100 hover:bg-red-200 text-red-800 border border-red-200",
+                                                                "dark:bg-red-950/30 dark:hover:bg-red-900/50 dark:text-red-300 dark:border-red-800/50"
                                                             )}
                                                         >
                                                             Sell

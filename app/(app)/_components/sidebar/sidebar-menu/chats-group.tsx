@@ -1,8 +1,7 @@
 'use client'
 
-import React, { useState} from 'react'
-
-import { ChevronDown, Loader2, MessageSquare, Trash2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react'
+import { ChevronDown, Loader2, MessageSquare, Trash2, Plus } from 'lucide-react';
 
 import Link from 'next/link';
 
@@ -14,7 +13,6 @@ import {
     SidebarMenuItem, 
     SidebarMenuButton,
     Skeleton,
-    Icon,
     Collapsible,
     CollapsibleContent,
     CollapsibleTrigger,
@@ -27,8 +25,17 @@ import {
 import { useUserChats } from '@/hooks';
 
 import { useChat } from '../../../chat/_contexts/chat';
+import { useSidebarContext } from '@/app/(app)/_contexts/sidebar-context';
 
 import { cn } from '@/lib/utils';
+import { ChainType } from '@/app/_contexts/chain-context';
+import ChainIcon from '@/app/(app)/_components/chain-icon';
+
+const ChatChainIcon = ({ chain }: { chain?: ChainType }) => {
+    // Default to solana if no chain is specified, but use the chat's chain if available
+    const chainType = chain || 'solana';
+    return <ChainIcon chain={chainType} className="h-3.5 w-3.5 shrink-0" />;
+};
 
 const ChatsGroup: React.FC = () => {
 
@@ -42,9 +49,26 @@ const ChatsGroup: React.FC = () => {
 
     const { setChat, chatId, resetChat } = useChat();
 
-    const [isOpen, setIsOpen] = useState(false);
-
+    // Use the sidebar context to control the dropdown state
+    const { isChatsOpen, setIsChatsOpen } = useSidebarContext();
+    
     const [deletingChatId, setDeletingChatId] = useState<string | null>(null);
+    
+    // Track the previous chats length to detect when a new chat is added
+    const [prevChatsLength, setPrevChatsLength] = useState(0);
+    
+    // Effect to automatically open the dropdown when a new chat is added
+    useEffect(() => {
+        if (!isLoading && chats.length > prevChatsLength && prevChatsLength > 0) {
+            // A new chat was added, open the dropdown
+            setIsChatsOpen(true);
+        }
+        
+        // Update the previous chats length
+        if (!isLoading) {
+            setPrevChatsLength(chats.length);
+        }
+    }, [chats.length, isLoading, prevChatsLength, setIsChatsOpen]);
 
     const handleDelete = async (deletedChatId: string, e: React.MouseEvent) => {
         e.preventDefault();
@@ -80,7 +104,11 @@ const ChatsGroup: React.FC = () => {
     };
 
     return (
-        <Collapsible className="group/collapsible" open={isOpen} onOpenChange={setIsOpen}>
+        <Collapsible 
+            className="group/collapsible" 
+            open={isChatsOpen} 
+            onOpenChange={setIsChatsOpen}
+        >
             <SidebarMenuItem>
                 <Link href='/chat'>
                     <CollapsibleTrigger 
@@ -105,7 +133,7 @@ const ChatsGroup: React.FC = () => {
                                         }}
                                         className="h-fit w-fit p-1 hover:bg-neutral-200 dark:hover:bg-neutral-600 rounded-md"
                                     >
-                                        <Icon name='Plus' />
+                                        <Plus className="w-4 h-4" />
                                     </div>
                                     <ChevronDown 
                                         className="h-[14px] w-[14px] transition-transform group-data-[state=open]/collapsible:rotate-180 text-neutral-500 dark:text-neutral-500" 
@@ -136,7 +164,10 @@ const ChatsGroup: React.FC = () => {
                                                     href={`/chat`} 
                                                     className="flex items-center justify-between w-full"
                                                 >
-                                                    <span className='truncate'>{chat.tagline}</span>
+                                                    <div className="flex items-center gap-2 truncate">
+                                                        <ChatChainIcon chain={chat.chain} />
+                                                        <span className='truncate'>{chat.tagline}</span>
+                                                    </div>
                                                     <div
                                                         onClick={(e) => handleDelete(chat.id, e)}
                                                         className={cn(

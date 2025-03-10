@@ -6,6 +6,7 @@ import { ChevronsUpDown, Coins, LogIn, LogOut, Wallet, AlertCircle } from 'lucid
 
 import { useLogin } from '@/hooks';
 import { useChain, ChainType } from '@/app/_contexts/chain-context';
+import ChainIcon from '@/app/(app)/_components/chain-icon';
 
 import {
     SidebarMenu,
@@ -121,7 +122,7 @@ const AuthButton: React.FC = () => {
                                 <div className="flex items-center space-x-2">
                                     <RadioGroupItem value="solana" id="solana" />
                                     <Label htmlFor="solana" className="flex items-center gap-1">
-                                        <img src="/solana.png" alt="Solana" className="w-4 h-4" />
+                                        <ChainIcon chain="solana" className="w-4 h-4" />
                                         Solana
                                         {!walletAddresses.solana && <AlertCircle className="w-3 h-3 text-yellow-500" />}
                                     </Label>
@@ -129,7 +130,7 @@ const AuthButton: React.FC = () => {
                                 <div className="flex items-center space-x-2">
                                     <RadioGroupItem value="bsc" id="bsc" />
                                     <Label htmlFor="bsc" className="flex items-center gap-1">
-                                        <img src="/bsc.png" alt="BSC" className="w-4 h-4" />
+                                        <ChainIcon chain="bsc" className="w-4 h-4" />
                                         BSC
                                         {!walletAddresses.bsc && <AlertCircle className="w-3 h-3 text-yellow-500" />}
                                     </Label>
