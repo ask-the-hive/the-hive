@@ -76,6 +76,24 @@ export const updateChatTagline = async (id: Chat["id"], userId: Chat["userId"], 
     );
 };
 
+/**
+ * **DATABASE SERVICE**
+ * 
+ * Updates a chat's chain.
+ * 
+ * @param {Chat["id"]} id - The ID of the chat to update.
+ * @param {Chat["userId"]} userId - The user ID associated with the chat.
+ * @param {Chat["chain"]} chain - The new chain for the chat.
+ * @returns {Promise<boolean>} True if the update was successful, false otherwise.
+ */
+export const updateChatChain = async (id: Chat["id"], userId: Chat["userId"], chain: Chat["chain"]): Promise<boolean> => {
+    return update(
+        await getChatsContainer(),
+        id,
+        userId,
+        [{ op: PatchOperationType.add, path: "/chain", value: chain }]
+    );
+};
 
 /**
  * **DATABASE SERVICE**
@@ -99,15 +117,29 @@ export const addMessageToChat = async (id: Chat["id"], userId: Chat["userId"], m
 /**
  * **DATABASE SERVICE**
  * 
- * Updates a chat's messages.
+ * Updates a chat's messages and optionally its chain.
  * 
  * @param {Chat["id"]} id - The ID of the chat to update.
  * @param {Chat["userId"]} userId - The user ID associated with the chat.
- * @param {Message[]} messages - The new messages.
+ * @param {Object} updates - The updates to apply to the chat.
+ * @param {Message[]} updates.messages - The new messages.
+ * @param {Chat["chain"]} [updates.chain] - Optional new chain value.
  * @returns {Promise<boolean>} True if the update was successful, false otherwise.
  */
-export const updateChatMessages = async (id: Chat["id"], userId: Chat["userId"], messages: Message[]): Promise<boolean> => {
-    return update(await getChatsContainer(), id, userId, [{ op: PatchOperationType.set, path: `/messages`, value: messages }]);
+export const updateChatMessages = async (
+    id: Chat["id"], 
+    userId: Chat["userId"], 
+    updates: { messages: Message[], chain?: Chat["chain"] }
+): Promise<boolean> => {
+    const operations = [
+        { op: PatchOperationType.set, path: `/messages`, value: updates.messages }
+    ];
+    
+    if (updates.chain) {
+        operations.push({ op: PatchOperationType.set, path: `/chain`, value: updates.chain });
+    }
+    
+    return update(await getChatsContainer(), id, userId, operations);
 };
 
 // DELETE

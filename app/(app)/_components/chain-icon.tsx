@@ -10,7 +10,7 @@ interface Props {
 }
 
 const ChainIcon: React.FC<Props> = ({ chain, className = "size-8" }) => {
-    const iconPath = chain === 'bsc' ? '/chains/bsc.svg' : '/chains/solana.svg';
+    const iconPath = chain === 'bsc' ? '/chains/bsc.png' : '/chains/solana.png';
     
     return (
         <Image

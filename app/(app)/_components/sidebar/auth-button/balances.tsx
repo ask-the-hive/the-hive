@@ -3,6 +3,7 @@
 import React, { useMemo } from 'react'
 
 import { Skeleton } from '@/components/ui';
+import ChainIcon from '@/app/(app)/_components/chain-icon';
 
 import { useNativeBalance, useTokenAccounts, usePortfolio } from '@/hooks';
 import { ChainType } from '@/app/_contexts/chain-context';
@@ -54,11 +55,7 @@ const Balances: React.FC<Props> = ({ address, chain }) => {
         return (
             <div className="flex flex-col gap-2 max-h-48 overflow-y-auto px-2">
                 <div className="flex flex-row items-center gap-2">
-                    <img 
-                        src={"/solana.png"} 
-                        alt={"Solana"} 
-                        className="w-6 h-6 rounded-full" 
-                    />
+                    <ChainIcon chain="solana" className="w-6 h-6" />
                     <div className="flex flex-col">
                         <span className="text-sm font-medium">
                             Solana (SOL)
@@ -68,26 +65,36 @@ const Balances: React.FC<Props> = ({ address, chain }) => {
                         </span>
                     </div>
                 </div>
-                {tokenAccounts?.map((account, index) => (
-                    <div key={`token-${index}`} className="flex flex-row items-center gap-2">
-                        <img 
-                            src={account.token_data.logoURI} 
-                            alt={account.token_data.name} 
-                            className="w-6 h-6 rounded-full" 
-                        />
-                        <div className="flex flex-col">
-                            <span className="text-sm font-medium">
-                                {account.token_data.name} ({account.token_data.symbol.toUpperCase()})
-                            </span>
-                            <span className="text-sm text-muted-foreground">
-                                {(account.amount / 10 ** account.token_data.decimals).toFixed(4)}
-                            </span>
-                        </div>
-                    </div>
-                ))}
+                {tokenAccounts && tokenAccounts.length > 0 && (
+                    <>
+                        {tokenAccounts.map((account, index) => (
+                            <div key={index} className="flex flex-row items-center gap-2">
+                                {account.token_data.logoURI ? (
+                                    <img 
+                                        src={account.token_data.logoURI} 
+                                        alt={account.token_data.name || account.token_data.symbol || 'Token'} 
+                                        className="w-6 h-6 rounded-full" 
+                                    />
+                                ) : (
+                                    <div className="w-6 h-6 rounded-full bg-neutral-200 dark:bg-neutral-800 flex items-center justify-center">
+                                        <span className="text-xs">{account.token_data.symbol?.charAt(0) || '?'}</span>
+                                    </div>
+                                )}
+                                <div className="flex flex-col">
+                                    <span className="text-sm font-medium">
+                                        {account.token_data.name || account.token_data.symbol || 'Unknown Token'}
+                                    </span>
+                                    <span className="text-sm text-muted-foreground">
+                                        {(account.amount / 10 ** account.token_data.decimals).toFixed(4)} {account.token_data.symbol}
+                                    </span>
+                                </div>
+                            </div>
+                        ))}
+                    </>
+                )}
             </div>
         )
-    } else {
+    } else if (chain === 'bsc') {
         // Check if we have a valid BSC address
         if (!chainAddress || !chainAddress.startsWith('0x')) {
             return (
@@ -97,11 +104,11 @@ const Balances: React.FC<Props> = ({ address, chain }) => {
             );
         }
         
-        // BSC balances
         if (isPortfolioLoading) return (
             <Skeleton className="h-10 w-full" />
         )
 
+        // BSC balances
         if (!portfolio || !portfolio.items) return (
             <p>No BSC balances found</p>
         )
@@ -133,13 +140,21 @@ const Balances: React.FC<Props> = ({ address, chain }) => {
                         displaySymbol = 'BNB';
                     }
                     
+                    // Use ChainIcon for BNB
+                    const isBNB = token.symbol.toLowerCase() === 'bnb' || 
+                                 token.symbol.toLowerCase() === 'wbnb';
+                    
                     return (
                         <div key={`token-${index}`} className="flex flex-row items-center gap-2">
-                            <img 
-                                src={token.logoURI || "/bsc.png"} 
-                                alt={token.name} 
-                                className="w-6 h-6 rounded-full" 
-                            />
+                            {isBNB ? (
+                                <ChainIcon chain="bsc" className="w-6 h-6" />
+                            ) : (
+                                <img 
+                                    src={token.logoURI || "/bsc.png"} 
+                                    alt={token.name} 
+                                    className="w-6 h-6 rounded-full" 
+                                />
+                            )}
                             <div className="flex flex-col">
                                 <span className="text-sm font-medium">
                                     {displayName} ({displaySymbol})
@@ -154,6 +169,12 @@ const Balances: React.FC<Props> = ({ address, chain }) => {
             </div>
         )
     }
+
+    return (
+        <div className="px-2 py-2 text-sm">
+            No balances available
+        </div>
+    )
 }
 
 export default Balances;
