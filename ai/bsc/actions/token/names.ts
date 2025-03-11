@@ -4,6 +4,7 @@ import { BSC_TOKEN_HOLDERS_NAME } from "./token-holders/name";
 import { BSC_TOKEN_TOP_TRADERS_NAME } from "./top-traders/name";
 import { BSC_BUBBLE_MAPS_NAME } from "./bubble-maps/name";
 import { BSC_TOP_HOLDERS_NAME } from "./top-holders/name";
+import { BSC_PRICE_CHART_NAME } from "./price-chart/name";
 
 export const BSC_TOKEN_ACTION_NAMES = {
   GET_TOKEN_DATA: BSC_GET_TOKEN_DATA_NAME,
@@ -12,4 +13,5 @@ export const BSC_TOKEN_ACTION_NAMES = {
   TOKEN_TOP_TRADERS: BSC_TOKEN_TOP_TRADERS_NAME,
   BUBBLE_MAPS: BSC_BUBBLE_MAPS_NAME,
   TOP_HOLDERS: BSC_TOP_HOLDERS_NAME,
+  PRICE_CHART: BSC_PRICE_CHART_NAME,
 } as const; 

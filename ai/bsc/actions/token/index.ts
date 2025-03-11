@@ -4,6 +4,7 @@ import { BscTokenHoldersAction } from "./token-holders";
 import { BscTopTokenTradersAction } from "./top-traders";
 import { BscGetBubbleMapsAction } from "./bubble-maps";
 import { BscTopHoldersAction } from "./top-holders";
+import { BscPriceChartAction } from "./price-chart";
 
 export const bscTokenActions = [
   new BscGetTokenDataAction(),
@@ -12,4 +13,5 @@ export const bscTokenActions = [
   new BscTopTokenTradersAction(),
   new BscGetBubbleMapsAction(),
   new BscTopHoldersAction(),
+  new BscPriceChartAction(),
 ]; 

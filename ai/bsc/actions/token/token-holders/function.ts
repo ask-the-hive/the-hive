@@ -1,5 +1,5 @@
 import { searchTokens } from "@/services/birdeye";
-import { getTokenTopHolders } from "@/services/moralis";
+import { getTokenHolders } from "@/services/moralis/get-token-holders";
 
 import type { TokenHoldersArgumentsType, TokenHoldersResultBodyType } from "./types";
 import type { BscActionResult } from "../../bsc-action";
@@ -28,8 +28,7 @@ export async function getNumHolders(
     }
 
     // Then get the number of holders using the token's address
-    const holders = await getTokenTopHolders(token.address);
-    const numHolders = holders.length;
+    const numHolders = await getTokenHolders(token.address);
 
     return {
       message: `The number of holders for the BSC token have been retrieved and displayed to the user. Now ask them what they want to do next.`,
