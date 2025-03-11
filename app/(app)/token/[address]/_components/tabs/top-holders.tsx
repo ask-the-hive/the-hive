@@ -25,7 +25,7 @@ import { useTopHolders } from "@/hooks/queries/token/use-top-holders";
 import { getStreamsByMint } from "@/services/streamflow";
 
 import { knownAddresses } from "@/lib/known-addresses";
-// import { bscKnownAddresses } from "@/lib/bsc-known-addresses";
+import { bscKnownAddresses } from "@/lib/bsc-known-addresses";
 import { AddressType, KnownAddress } from "@/types/known-address";
 
 import type { TokenHolder } from "@/services/birdeye/types";
@@ -44,65 +44,50 @@ const TopHolders: React.FC<Props> = ({ mint }) => {
         ? chainParam 
         : currentChain;
 
-    const { data: topHolders, isLoading, error, mutate } = useTopHolders(mint);
+    const { data: topHolders, isLoading, error } = useTopHolders(mint);
     const [totalSupply, setTotalSupply] = useState<number>(0);
-    const [knownAddressesMap, setKnownAddressesMap] = useState<Record<string, KnownAddress>>(knownAddresses);
+    const [knownAddressesMap, setKnownAddressesMap] = useState<Record<string, KnownAddress>>(
+        chain === 'bsc' ? bscKnownAddresses : knownAddresses
+    );
 
     // Function to fetch additional data based on chain
     const fetchChainSpecificData = useCallback(async () => {
-        if (chain !== 'solana') return;
-        
-        try {
-            const connection = new Connection(process.env.NEXT_PUBLIC_SOLANA_RPC_URL!);
-            const mintInfo = await connection.getTokenSupply(new PublicKey(mint));
-            setTotalSupply(Number(BigInt(mintInfo.value.amount) / BigInt(Math.pow(10, mintInfo.value.decimals))));
+        if (chain === 'solana') {
+            try {
+                const connection = new Connection(process.env.NEXT_PUBLIC_SOLANA_RPC_URL!);
+                const mintInfo = await connection.getTokenSupply(new PublicKey(mint));
+                setTotalSupply(Number(BigInt(mintInfo.value.amount) / BigInt(Math.pow(10, mintInfo.value.decimals))));
 
-            const streamflowAccounts = await getStreamsByMint(mint);
-            
-            const updatedAddresses = { ...knownAddresses };
-            
-            streamflowAccounts.forEach(account => {
-                if (account.account.escrowTokens) {
-                    updatedAddresses[account.account.escrowTokens] = {
-                        name: "Streamflow Vault",
-                        logo: "/vesting/streamflow.png",
-                        type: AddressType.VestingVault
-                    };
-                }
-            });
-            
-            setKnownAddressesMap(updatedAddresses);
-        } catch (error) {
-            console.error("Error fetching Solana token data:", error);
+                const streamflowAccounts = await getStreamsByMint(mint);
+                
+                const updatedAddresses = { ...knownAddresses };
+                
+                streamflowAccounts.forEach(account => {
+                    if (account.account.escrowTokens) {
+                        updatedAddresses[account.account.escrowTokens] = {
+                            name: "Streamflow Vault",
+                            logo: "/vesting/streamflow.png",
+                            type: AddressType.VestingVault
+                        };
+                    }
+                });
+                
+                setKnownAddressesMap(updatedAddresses);
+            } catch (error) {
+                console.error("Error fetching Solana token data:", error);
+            }
         }
     }, [mint, chain]);
+
+    // Update known addresses when chain changes
+    useEffect(() => {
+        setKnownAddressesMap(chain === 'bsc' ? bscKnownAddresses : knownAddresses);
+    }, [chain]);
 
     // Fetch data when component mounts
     useEffect(() => {
         fetchChainSpecificData();
     }, [mint, fetchChainSpecificData]);
-
-    // Manual refresh function
-    const handleRefresh = () => {
-        mutate();
-        fetchChainSpecificData();
-    };
-
-    // If chain is BSC, show a message that top holders are not supported yet
-    if (chain === 'bsc') {
-        return (
-            <div className="flex items-center justify-center h-full w-full p-4">
-                <div className="text-center max-w-md">
-                    <h3 className="text-lg font-semibold text-neutral-600 dark:text-neutral-400 mb-2">
-                        Top Holders Not Available
-                    </h3>
-                    <p className="text-sm text-neutral-500">
-                        Birdeye does not yet support top holders data for BSC tokens.
-                    </p>
-                </div>
-            </div>
-        );
-    }
 
     // Handle loading state
     if(isLoading) {
@@ -120,12 +105,6 @@ const TopHolders: React.FC<Props> = ({ mint }) => {
                     <p className="text-sm text-neutral-500 mt-2">
                         {error ? "Please try again later" : "We couldn't find any top holders for this token"}
                     </p>
-                    <button 
-                        onClick={handleRefresh}
-                        className="mt-4 px-4 py-2 bg-neutral-200 dark:bg-neutral-700 rounded-md hover:bg-neutral-300 dark:hover:bg-neutral-600 transition-colors"
-                    >
-                        Refresh Data
-                    </button>
                 </div>
             </div>
         );
@@ -133,14 +112,6 @@ const TopHolders: React.FC<Props> = ({ mint }) => {
 
     return (
         <div className="flex flex-col h-full">
-            <div className="flex justify-end p-2">
-                <button 
-                    onClick={handleRefresh}
-                    className="px-3 py-1 text-xs bg-neutral-200 dark:bg-neutral-700 rounded-md hover:bg-neutral-300 dark:hover:bg-neutral-600 transition-colors"
-                >
-                    Refresh
-                </button>
-            </div>
             <Table>
                 <TableHeader>
                     <TableRow>
@@ -154,9 +125,10 @@ const TopHolders: React.FC<Props> = ({ mint }) => {
                         <TopHolder
                             key={topHolder.owner} 
                             topHolder={topHolder}
-                            percentageOwned={totalSupply > 0 ? topHolder.ui_amount / totalSupply * 100 : 0}
+                            percentageOwned={chain === 'bsc' ? (topHolder.percentage || 0) : (totalSupply > 0 ? topHolder.ui_amount / totalSupply * 100 : 0)}
                             index={index}
                             knownAddresses={knownAddressesMap}
+                            chain={chain}
                         />
                     ))}
                 </TableBody>
@@ -170,9 +142,10 @@ interface TopHolderProps {
     percentageOwned: number;
     index: number;
     knownAddresses: Record<string, KnownAddress>;
+    chain: ChainType;
 }
 
-const TopHolder = ({ topHolder, percentageOwned, index, knownAddresses }: TopHolderProps) => {
+const TopHolder = ({ topHolder, percentageOwned, index, knownAddresses, chain }: TopHolderProps) => {
     const knownAddress = knownAddresses[topHolder.owner];
     const hasValidLogo = knownAddress?.logo && knownAddress.logo.length > 0;
 
@@ -204,6 +177,7 @@ const TopHolder = ({ topHolder, percentageOwned, index, knownAddresses }: TopHol
                     <WalletAddress 
                         address={topHolder.owner} 
                         className="font-bold"
+                        chain={chain}
                     />
                 )}
             </TableCell>

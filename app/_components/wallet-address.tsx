@@ -138,7 +138,7 @@ const WalletBalances = ({ address, chain }: { address: string, chain: ChainType 
                     portfolioLoading ? (
                         <Skeleton className="h-4 w-24" /> 
                     ) : (
-                        portfolio && (
+                        portfolio?.totalUsd !== undefined && (
                             <p className="text-xs font-bold">
                                 ${portfolio.totalUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })}
                             </p>
@@ -150,7 +150,7 @@ const WalletBalances = ({ address, chain }: { address: string, chain: ChainType 
                 portfolioLoading ? (
                     <Skeleton className="h-16 w-full" />
                 ) : (
-                    portfolio ? (
+                    portfolio?.items ? (
                         <div className="flex flex-col gap-2 max-h-48 overflow-y-auto">
                             {portfolio.items.filter((item) => item.valueUsd > 0.01).map((token) => (
                                 <TokenBalance 
@@ -166,7 +166,6 @@ const WalletBalances = ({ address, chain }: { address: string, chain: ChainType 
                     ) : (
                         <p className="text-sm text-muted-foreground">No balances found</p>
                     )
-                    
                 )
             }
         </div>

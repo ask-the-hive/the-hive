@@ -15,10 +15,10 @@ export const usePortfolio = (address: string | undefined, chain: ChainType) => {
     // Use the provided chain or fall back to the current chain
     const effectiveChain = chain || currentChain || 'solana';
     
-    // Use the appropriate address for the current chain
-    const chainAddress = effectiveChain === 'solana' 
-        ? walletAddresses.solana || address || DEFAULT_ADDRESSES.solana
-        : walletAddresses.bsc || address || DEFAULT_ADDRESSES.bsc;
+    // If an address is provided, use it directly without falling back to walletAddresses
+    const chainAddress = address || (effectiveChain === 'solana' 
+        ? walletAddresses.solana || DEFAULT_ADDRESSES.solana
+        : walletAddresses.bsc || DEFAULT_ADDRESSES.bsc);
     
     // Only fetch if we have a valid address for the chain
     const shouldFetch = chainAddress && 

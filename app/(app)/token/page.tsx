@@ -1,9 +1,8 @@
 'use client'
 
 import React from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useChain, ChainType } from '@/app/_contexts/chain-context'
-import { useLogin } from '@/hooks'
 import ChainIcon from '@/app/(app)/_components/chain-icon'
 
 import SearchBar from './_components/search-bar'
@@ -19,17 +18,19 @@ import { Button } from '@/components/ui/button'
 import { ChevronDown } from 'lucide-react'
 
 const TokenPage: React.FC = () => {
-    const { currentChain, setCurrentChain } = useChain();
+    const { currentChain } = useChain();
     const router = useRouter();
+    const searchParams = useSearchParams();
+    
+    // Use URL param if available, otherwise use context
+    const chainParam = searchParams.get('chain') as ChainType | null;
+    const chain = chainParam && (chainParam === 'solana' || chainParam === 'bsc') 
+        ? chainParam 
+        : currentChain;
 
-    // Update URL when chain changes
-    React.useEffect(() => {
-        router.replace(`/token?chain=${currentChain}`);
-    }, [currentChain, router]);
-
-    // Handle chain switching
-    const handleChainSwitch = (chain: ChainType) => {
-        setCurrentChain(chain);
+    // Handle chain switching - only updates URL, not global context
+    const handleChainSwitch = (newChain: ChainType) => {
+        router.replace(`/token?chain=${newChain}`);
     };
 
     return (
@@ -41,8 +42,8 @@ const TokenPage: React.FC = () => {
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                         <Button variant="outline" className="flex items-center gap-2">
-                            <ChainIcon chain={currentChain} className="w-4 h-4" />
-                            {currentChain === 'solana' ? 'Solana' : 'BSC'}
+                            <ChainIcon chain={chain} className="w-4 h-4" />
+                            {chain === 'solana' ? 'Solana' : 'BSC'}
                             <ChevronDown className="h-4 w-4" />
                         </Button>
                     </DropdownMenuTrigger>
@@ -60,7 +61,7 @@ const TokenPage: React.FC = () => {
             </div>
             <SearchBar />
             <TrendingTokens />
-            {currentChain === 'solana' && <SmartMoneyTokens />}
+            {chain === 'solana' && <SmartMoneyTokens />}
         </div>
     )
 }
