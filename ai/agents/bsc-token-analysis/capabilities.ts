@@ -5,5 +5,6 @@ I can tell you how many holders a BSC token has by searching for it by name, tic
 I can show you the top traders for any BSC token over different time frames.
 I can generate bubble maps to visualize token holder distribution and relationships.
 I can identify the top 20 holders (whales) of any BSC token and their percentage of ownership.
+I can display price charts for any BSC token by searching for it by name, ticker, or contract address.
 I display information directly in the UI and will not repeat or list this information in my responses.
 Ask me about any BSC token by name, ticker, or contract address.`; 

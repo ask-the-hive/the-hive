@@ -27,7 +27,15 @@ import {
     PriceChart,
     GetSmartMoneyInflows,
 } from './solana'
-import { BubbleMaps as BscBubbleMaps, TopHolders as BscTopHolders } from './bsc'
+import {
+    BubbleMaps as BscBubbleMaps,
+    TopHolders as BscTopHolders,
+    PriceChart as BscPriceChart,
+    GetTokenData as BscGetTokenData,
+    GetTokenAddress as BscGetTokenAddress,
+    TokenHolders as BscTokenHolders,
+    TopTraders as BscTopTraders
+} from './bsc'
 import { SearchRecentTweets } from './twitter'
 import { SearchKnowledge } from './knowledge'
 import { InvokeAgent } from './invoke'
@@ -62,6 +70,11 @@ import {
 } from '@/ai/action-names'
 import { BSC_BUBBLE_MAPS_NAME } from '@/ai/bsc/actions/token/bubble-maps/name'
 import { BSC_TOP_HOLDERS_NAME } from '@/ai/bsc/actions/token/top-holders/name'
+import { BSC_PRICE_CHART_NAME } from '@/ai/bsc/actions/token/price-chart/name'
+import { BSC_GET_TOKEN_DATA_NAME } from '@/ai/bsc/actions/token/get-token-data/name'
+import { BSC_GET_TOKEN_ADDRESS_NAME } from '@/ai/bsc/actions/token/get-token-address/name'
+import { BSC_TOKEN_HOLDERS_NAME } from '@/ai/bsc/actions/token/token-holders/name'
+import { BSC_TOKEN_TOP_TRADERS_NAME } from '@/ai/bsc/actions/token/top-traders/name'
 
 import type { ToolInvocation as ToolInvocationType } from 'ai'
 
@@ -83,6 +96,16 @@ const ToolInvocation: React.FC<Props> = ({ tool, prevToolAgent }) => {
                 return <BscBubbleMaps tool={tool} prevToolAgent={prevToolAgent} />
             case BSC_TOP_HOLDERS_NAME:
                 return <BscTopHolders tool={tool} prevToolAgent={prevToolAgent} />
+            case BSC_PRICE_CHART_NAME:
+                return <BscPriceChart tool={tool} prevToolAgent={prevToolAgent} />
+            case BSC_GET_TOKEN_DATA_NAME:
+                return <BscGetTokenData tool={tool} prevToolAgent={prevToolAgent} />
+            case BSC_GET_TOKEN_ADDRESS_NAME:
+                return <BscGetTokenAddress tool={tool} prevToolAgent={prevToolAgent} />
+            case BSC_TOKEN_HOLDERS_NAME:
+                return <BscTokenHolders tool={tool} prevToolAgent={prevToolAgent} />
+            case BSC_TOKEN_TOP_TRADERS_NAME:
+                return <BscTopTraders tool={tool} prevToolAgent={prevToolAgent} />
             // Add other BSC tools here as they are implemented
             default:
                 console.log(`Unknown BSC tool: ${toolName}`);

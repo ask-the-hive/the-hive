@@ -10,6 +10,8 @@ import { BscGetBubbleMapsAction } from "@/ai/bsc/actions/token/bubble-maps";
 import { BSC_BUBBLE_MAPS_NAME } from "@/ai/bsc/actions/token/bubble-maps/name";
 import { BscTopHoldersAction } from "@/ai/bsc/actions/token/top-holders";
 import { BSC_TOP_HOLDERS_NAME } from "@/ai/bsc/actions/token/top-holders/name";
+import { BscPriceChartAction } from "@/ai/bsc/actions/token/price-chart";
+import { BSC_PRICE_CHART_NAME } from "@/ai/bsc/actions/token/price-chart/name";
 import { bscTool } from "@/ai/bsc";
 
 export const BSC_TOKEN_ANALYSIS_TOOLS = {
@@ -19,4 +21,5 @@ export const BSC_TOKEN_ANALYSIS_TOOLS = {
   [`bsctokenanalysis-${BSC_TOKEN_TOP_TRADERS_NAME}`]: bscTool(new BscTopTokenTradersAction()),
   [`bsctokenanalysis-${BSC_BUBBLE_MAPS_NAME}`]: bscTool(new BscGetBubbleMapsAction()),
   [`bsctokenanalysis-${BSC_TOP_HOLDERS_NAME}`]: bscTool(new BscTopHoldersAction()),
+  [`bsctokenanalysis-${BSC_PRICE_CHART_NAME}`]: bscTool(new BscPriceChartAction()),
 }; 
