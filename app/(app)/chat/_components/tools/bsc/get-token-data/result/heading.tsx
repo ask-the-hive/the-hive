@@ -35,7 +35,7 @@ const GetTokenDataResultHeading: React.FC<Props> = ({ token }) => {
                     <div className="flex flex-col md:flex-row md:items-center md:gap-2">
                         <h1 className="text-xl font-bold">{token.name} ({token.symbol})</h1>
                         <Address address={token.address} />
-                        <Link href={`/token/bsc/${token.address}`}>
+                        <Link href={`/token/${token.address}?chain=bsc`}>
                             <Button variant="brandOutline" className="p-1 h-6 text-xs w-fit">
                                 See More
                             </Button>
