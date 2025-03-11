@@ -15,7 +15,7 @@ import {
     Transfer,
     GetTokenAddress,
     GetTopHolders,
-    BubbleMaps,
+    BubbleMaps as SolanaBubbleMaps,
     GetPools,
     DepositLiquidity,
     NumHolders,
@@ -27,6 +27,7 @@ import {
     PriceChart,
     GetSmartMoneyInflows,
 } from './solana'
+import { BubbleMaps as BscBubbleMaps, TopHolders as BscTopHolders } from './bsc'
 import { SearchRecentTweets } from './twitter'
 import { SearchKnowledge } from './knowledge'
 import { InvokeAgent } from './invoke'
@@ -59,6 +60,8 @@ import {
     SOLANA_TOKEN_PRICE_CHART_NAME,
     SOLANA_GET_SMART_MONEY_INFLOWS_NAME,
 } from '@/ai/action-names'
+import { BSC_BUBBLE_MAPS_NAME } from '@/ai/bsc/actions/token/bubble-maps/name'
+import { BSC_TOP_HOLDERS_NAME } from '@/ai/bsc/actions/token/top-holders/name'
 
 import type { ToolInvocation as ToolInvocationType } from 'ai'
 
@@ -70,8 +73,28 @@ interface Props {
 const ToolInvocation: React.FC<Props> = ({ tool, prevToolAgent }) => {
 
     const toolParts = tool.toolName.split("-");
+    const toolAgent = toolParts[0];
     const toolName = toolParts.slice(1).join("-");
     
+    // Handle BSC tools
+    if (toolAgent === 'bsctokenanalysis') {
+        switch(toolName) {
+            case BSC_BUBBLE_MAPS_NAME:
+                return <BscBubbleMaps tool={tool} prevToolAgent={prevToolAgent} />
+            case BSC_TOP_HOLDERS_NAME:
+                return <BscTopHolders tool={tool} prevToolAgent={prevToolAgent} />
+            // Add other BSC tools here as they are implemented
+            default:
+                console.log(`Unknown BSC tool: ${toolName}`);
+                return (
+                    <pre className="whitespace-pre-wrap">
+                        {JSON.stringify(tool, null, 2)}
+                    </pre>
+                );
+        }
+    }
+    
+    // Handle Solana tools
     switch(toolName) {
         case SOLANA_BALANCE_NAME:
             return <Balance tool={tool} prevToolAgent={prevToolAgent} />
@@ -104,7 +127,7 @@ const ToolInvocation: React.FC<Props> = ({ tool, prevToolAgent }) => {
         case SOLANA_TOP_HOLDERS_NAME:
             return <GetTopHolders tool={tool} prevToolAgent={prevToolAgent} />
         case SOLANA_BUBBLE_MAPS_NAME:
-            return <BubbleMaps tool={tool} prevToolAgent={prevToolAgent} />
+            return <SolanaBubbleMaps tool={tool} prevToolAgent={prevToolAgent} />
         case SOLANA_TOKEN_HOLDERS_NAME:
             return <NumHolders tool={tool} prevToolAgent={prevToolAgent} />
         case SOLANA_GET_POOLS_NAME:

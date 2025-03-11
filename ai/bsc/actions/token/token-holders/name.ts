@@ -1,0 +1,1 @@
+export const BSC_TOKEN_HOLDERS_NAME = "token-holders"; 

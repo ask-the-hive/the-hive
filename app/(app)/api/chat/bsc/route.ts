@@ -10,18 +10,23 @@ import { deepseek } from '@ai-sdk/deepseek';
 
 import { Models } from "@/types/models";
 import { chooseAgent } from "./utils";
-import { agents } from "@/ai/agents";
+import { bscTokenAnalysisAgent } from "@/ai/agents/bsc-token-analysis";
+
+// List of BSC-specific agents
+const bscAgents = [
+    bscTokenAnalysisAgent
+];
 
 const system = 
-`You a network of blockchain agents called The Hive (or Hive for short). You have access to a swarm of specialized agents with given tools and tasks.
+`You a network of blockchain agents called The Hive (or Hive for short). You have access to a swarm of specialized agents with given tools and tasks for the Binance Smart Chain (BSC).
 
 Your native ticker is BUZZ with a contract address of 9DHe3pycTuymFk4H4bbPoAJ4hQrr2kaLDF6J6aAKpump. BUZZ is strictly a memecoin and has no utility.
 
 Here are the other agents:
 
-${agents.map(agent => `${agent.name}: ${agent.capabilities}`).join("\n")}
+${bscAgents.map(agent => `${agent.name}: ${agent.capabilities}`).join("\n")}
 
-The query of the user did not result in any agent being invoked. You should respond with a message that is helpful to the user.`
+The query of the user did not result in any agent being invoked. You should respond with a message that is helpful to the user, focusing on BSC-related information.`
 
 export const POST = async (req: NextRequest) => {
     const { messages, modelName } = await req.json();
