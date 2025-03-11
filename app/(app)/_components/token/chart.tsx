@@ -2,7 +2,8 @@
 
 import React, { useState } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { Button, CandlestickChart, Skeleton } from '@/components/ui';
+import { Button, Skeleton } from '@/components/ui';
+import { CandlestickChart } from '@/components/ui/candlestick-chart';
 
 import { usePriceChart } from '@/hooks/queries/price/use-price-chart';
 
@@ -12,6 +13,7 @@ import { ChainType } from '@/app/_contexts/chain-context';
 
 import type { UTCTimestamp } from 'lightweight-charts';
 import { CandlestickGranularity } from '@/services/hellomoon/types';
+import MoralisChart from './moralis-chart';
 
 const WINDOWS = [
     { 
@@ -63,10 +65,14 @@ const TokenChart: React.FC<Props> = ({ mint }) => {
     const [numDays, setNumDays] = useState<number>(1);
 
     const { data, isLoading } = usePriceChart(mint, timeframe, numDays, chain);
-
     const price = data.length > 0 ? data[data.length - 1].close : 0;
     const open = data.length > 0 ? data[0].open : 0;
     const change = ((price - open) / open) * 100;
+
+    // If it's a BSC token, use the Moralis chart
+    if (chain === 'bsc') {
+        return <MoralisChart tokenAddress={mint} price={price} priceChange={change} />;
+    }
 
     return (
         <div className='flex flex-col h-full w-full'>
@@ -76,7 +82,7 @@ const TokenChart: React.FC<Props> = ({ mint }) => {
                         <Skeleton className='h-4 w-24' />
                     ) : (
                         <p className='text-md md:text-lg font-bold'>
-                            ${data[data.length - 1]?.close.toLocaleString(undefined, { maximumFractionDigits: 5 }) || '0.00'} <span className={cn(change > 0 ? 'text-green-500' : 'text-red-500')}>({change > 0 ? '+' : ''}{change.toLocaleString(undefined, { maximumFractionDigits: 2 })}%)</span>
+                            ${price.toLocaleString(undefined, { maximumFractionDigits: 5 }) || '0.00'} <span className={cn(change > 0 ? 'text-green-500' : 'text-red-500')}>({change > 0 ? '+' : ''}{change.toLocaleString(undefined, { maximumFractionDigits: 2 })}%)</span>
                         </p>
                     )
                 }

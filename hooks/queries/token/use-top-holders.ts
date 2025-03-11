@@ -17,11 +17,8 @@ export const useTopHolders = (address: string) => {
         ? chainParam 
         : currentChain;
 
-    // Skip fetching for BSC tokens
-    const shouldFetch = chain !== 'bsc';
-
     const { data, isLoading, error, mutate } = useSWR<TokenHolder[]>(
-        shouldFetch ? [`/api/token/${address}/top-holders`, chain] : null, 
+        [`/api/token/${address}/top-holders`, chain], 
         ([url, currentChain]) => fetch(`${url}?chain=${currentChain}`).then(res => res.json()),
         {
             revalidateOnFocus: false,
@@ -32,7 +29,7 @@ export const useTopHolders = (address: string) => {
 
     return { 
         data: data || [], 
-        isLoading: shouldFetch && isLoading,
+        isLoading,
         error,
         mutate
     };

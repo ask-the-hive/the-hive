@@ -85,7 +85,7 @@ const Balances: React.FC<Props> = ({ address, chain }) => {
                                         {account.token_data.name || account.token_data.symbol || 'Unknown Token'}
                                     </span>
                                     <span className="text-sm text-muted-foreground">
-                                        {(account.amount / 10 ** account.token_data.decimals).toFixed(4)} {account.token_data.symbol}
+                                        {(account.amount / 10 ** account.token_data.decimals).toFixed(4)}
                                     </span>
                                 </div>
                             </div>

@@ -57,23 +57,17 @@ const SearchBar: React.FC = () => {
         
         const currentPriorityAddresses = chain === 'bsc' ? priorityAddresses.bsc : priorityAddresses.solana;
         
-        const searchLower = debouncedValue.toLowerCase().trim();
-        
-        const exactSymbolMatches = tokens.filter(token => 
-            token.symbol.toLowerCase() === searchLower
-        );
-        
+        // Split tokens into priority and non-priority
         const priorityTokens = tokens.filter(token => 
-            currentPriorityAddresses.has(token.address) && 
-            !exactSymbolMatches.some(t => t.address === token.address)
+            currentPriorityAddresses.has(token.address)
         );
         
-        const remainingTokens = tokens.filter(token => 
-            !exactSymbolMatches.some(t => t.address === token.address) && 
-            !priorityTokens.some(t => t.address === token.address)
+        const nonPriorityTokens = tokens.filter(token => 
+            !currentPriorityAddresses.has(token.address)
         );
         
-        return [...exactSymbolMatches, ...priorityTokens, ...remainingTokens];
+        // Return priority tokens first, followed by the rest (already sorted by volume from API)
+        return [...priorityTokens, ...nonPriorityTokens];
     };
 
     const sortedResults = sortTokens(tokens);
