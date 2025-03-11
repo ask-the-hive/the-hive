@@ -56,7 +56,7 @@ export const GET = async (req: NextRequest) => {
     } catch (error) {
         console.error('Error fetching smart money tokens:', error);
         return NextResponse.json(
-            { error: 'Failed to fetch smart money tokens.' }, 
+            { error: 'Failed to fetch smart money tokens. Please try again later.'}, 
             { status: 500 }
         );
     }

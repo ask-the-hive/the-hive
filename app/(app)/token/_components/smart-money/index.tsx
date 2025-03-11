@@ -53,7 +53,7 @@ const SmartMoneyTokens: React.FC = () => {
                 const data = await response.json();
                 
                 if (!response.ok) {
-                    throw new Error(data.error || 'Failed to fetch smart money tokens');
+                    throw new Error(data.error || 'Failed to fetch smart money inflows. Please try again later.');
                 }
                 
                 // Store successful response in cache
