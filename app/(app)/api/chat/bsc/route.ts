@@ -11,10 +11,12 @@ import { deepseek } from '@ai-sdk/deepseek';
 import { Models } from "@/types/models";
 import { chooseAgent } from "./utils";
 import { bscTokenAnalysisAgent } from "@/ai/agents/bsc-token-analysis";
+import { bscMarketAgent } from "@/ai/agents/bsc-market";
 
 // List of BSC-specific agents
 const bscAgents = [
-    bscTokenAnalysisAgent
+    bscTokenAnalysisAgent,
+    bscMarketAgent
 ];
 
 const system = 

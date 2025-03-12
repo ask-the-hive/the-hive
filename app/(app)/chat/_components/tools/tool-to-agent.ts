@@ -21,6 +21,7 @@ export const toolToAgent = {
     "social": SOCIAL_AGENT_NAME,
     "tokenanalysis": TOKEN_ANALYSIS_AGENT_NAME,
     "bsctokenanalysis": TOKEN_ANALYSIS_AGENT_NAME,
+    "bscmarket": MARKET_AGENT_NAME,
     "liquidity": LIQUIDITY_AGENT_NAME
 }
 

@@ -3,11 +3,13 @@ import { z } from "zod";
 import { generateObject, LanguageModelV1, Message } from "ai";
 
 import { bscTokenAnalysisAgent } from "@/ai/agents/bsc-token-analysis";
+import { bscMarketAgent } from "@/ai/agents/bsc-market";
 import { Agent } from "@/ai/agent";
 
 // List of BSC-specific agents
 const bscAgents = [
-    bscTokenAnalysisAgent
+    bscTokenAnalysisAgent,
+    bscMarketAgent
 ];
 
 export const system = 
