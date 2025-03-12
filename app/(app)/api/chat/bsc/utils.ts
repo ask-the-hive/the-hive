@@ -4,12 +4,14 @@ import { generateObject, LanguageModelV1, Message } from "ai";
 
 import { bscTokenAnalysisAgent } from "@/ai/agents/bsc-token-analysis";
 import { bscMarketAgent } from "@/ai/agents/bsc-market";
+import { bscWalletAgent } from "@/ai/agents/bsc-wallet";
 import { Agent } from "@/ai/agent";
 
 // List of BSC-specific agents
 const bscAgents = [
     bscTokenAnalysisAgent,
-    bscMarketAgent
+    bscMarketAgent,
+    bscWalletAgent
 ];
 
 export const system = 

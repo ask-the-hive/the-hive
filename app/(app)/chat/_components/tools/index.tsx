@@ -37,6 +37,8 @@ import {
     TopTraders as BscTopTraders,
     GetTrendingTokens as BscGetTrendingTokens,
     GetTrades as BscGetTrades,
+    GetTopTraders as BscGetTopTraders,
+    GetWalletAddress as BscGetWalletAddress,
 } from './bsc'
 import { SearchRecentTweets } from './twitter'
 import { SearchKnowledge } from './knowledge'
@@ -79,6 +81,8 @@ import { BSC_TOKEN_HOLDERS_NAME } from '@/ai/bsc/actions/token/token-holders/nam
 import { BSC_TOKEN_TOP_TRADERS_NAME } from '@/ai/bsc/actions/token/top-traders/name'
 import { BSC_GET_TRADER_TRADES_NAME } from '@/ai/bsc/actions/market/get-trades/name'
 import { BSC_GET_TRENDING_TOKENS_NAME } from '@/ai/bsc/actions/market/get-trending-tokens/name'
+import { BSC_GET_TOP_TRADERS_NAME } from '@/ai/bsc/actions/market/get-top-traders/name'
+import { BSC_GET_WALLET_ADDRESS_NAME } from '@/ai/bsc/actions/wallet/get-wallet-address/name'
 
 import type { ToolInvocation as ToolInvocationType } from 'ai'
 
@@ -93,7 +97,22 @@ const ToolInvocation: React.FC<Props> = ({ tool, prevToolAgent }) => {
     const toolAgent = toolParts[0];
     const toolName = toolParts.slice(1).join("-");
     
-    // Handle BSC tools
+    // Handle BSC wallet tools
+    if (toolAgent === 'bscwallet') {
+        switch(toolName) {
+            case BSC_GET_WALLET_ADDRESS_NAME:
+                return <BscGetWalletAddress tool={tool} prevToolAgent={prevToolAgent} />
+            default:
+                console.log(`Unknown BSC wallet tool: ${toolName}`);
+                return (
+                    <pre className="whitespace-pre-wrap">
+                        {JSON.stringify(tool, null, 2)}
+                    </pre>
+                );
+        }
+    }
+    
+    // Handle BSC token analysis tools
     if (toolAgent === 'bsctokenanalysis') {
         switch(toolName) {
             case BSC_BUBBLE_MAPS_NAME:
@@ -127,6 +146,8 @@ const ToolInvocation: React.FC<Props> = ({ tool, prevToolAgent }) => {
                 return <BscGetTrendingTokens tool={tool} prevToolAgent={prevToolAgent} />
             case BSC_GET_TRADER_TRADES_NAME:
                 return <BscGetTrades tool={tool} prevToolAgent={prevToolAgent} />
+            case BSC_GET_TOP_TRADERS_NAME:
+                return <BscGetTopTraders tool={tool} prevToolAgent={prevToolAgent} />
             default:
                 console.log(`Unknown BSC market tool: ${toolName}`);
                 return (

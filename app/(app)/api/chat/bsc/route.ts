@@ -12,11 +12,13 @@ import { Models } from "@/types/models";
 import { chooseAgent } from "./utils";
 import { bscTokenAnalysisAgent } from "@/ai/agents/bsc-token-analysis";
 import { bscMarketAgent } from "@/ai/agents/bsc-market";
+import { bscWalletAgent } from "@/ai/agents/bsc-wallet";
 
 // List of BSC-specific agents
 const bscAgents = [
     bscTokenAnalysisAgent,
-    bscMarketAgent
+    bscMarketAgent,
+    bscWalletAgent
 ];
 
 const system = 

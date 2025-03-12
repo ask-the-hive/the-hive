@@ -6,4 +6,6 @@ export { default as GetTokenAddress } from './get-token-address';
 export { default as TokenHolders } from './token-holders';
 export { default as TopTraders } from './top-traders';
 export { default as GetTrendingTokens } from './get-trending-tokens';
-export { GetTrades } from './get-trades'; 
+export { GetTrades } from './get-trades';
+export { default as GetTopTraders } from './get-top-traders';
+export { default as GetWalletAddress } from './get-wallet-address'; 

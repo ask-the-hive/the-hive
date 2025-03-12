@@ -65,7 +65,7 @@ const Balances: React.FC<Props> = ({ address, chain }) => {
                         </span>
                     </div>
                 </div>
-                {tokenAccounts && tokenAccounts.length > 0 && (
+                {tokenAccounts && tokenAccounts.length > 0 ? (
                     <>
                         {tokenAccounts.map((account, index) => (
                             <div key={index} className="flex flex-row items-center gap-2">
@@ -91,6 +91,10 @@ const Balances: React.FC<Props> = ({ address, chain }) => {
                             </div>
                         ))}
                     </>
+                ) : (
+                    <div className="text-sm text-muted-foreground px-1">
+                        No tokens found
+                    </div>
                 )}
             </div>
         )
@@ -109,8 +113,10 @@ const Balances: React.FC<Props> = ({ address, chain }) => {
         )
 
         // BSC balances
-        if (!portfolio || !portfolio.items) return (
-            <p>No BSC balances found</p>
+        if (!portfolio || !portfolio.items || portfolio.items.length === 0) return (
+            <div className="px-2 py-2 text-sm text-muted-foreground">
+                No tokens found
+            </div>
         )
 
         // Sort tokens to put BNB/WBNB at the top

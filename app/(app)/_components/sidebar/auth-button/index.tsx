@@ -47,11 +47,6 @@ const AuthButton: React.FC = () => {
     // Handle chain switching
     const handleChainSwitch = (chain: ChainType) => {
         setCurrentChain(chain);
-        
-        // If no wallet is connected for this chain, prompt to connect
-        if (!walletAddresses[chain]) {
-            linkWallet();
-        }
     };
 
     if (!ready) return <Skeleton className="w-full h-8" />;
@@ -73,11 +68,11 @@ const AuthButton: React.FC = () => {
         </SidebarMenu>
     )
 
-    // Get the appropriate address to display
-    const displayAddress = currentWalletAddress || user.wallet.address;
-
     // Check if the current chain has a wallet connected
     const hasCurrentChainWallet = !!walletAddresses[currentChain];
+    
+    // Get the appropriate address to display
+    const displayAddress = hasCurrentChainWallet ? currentWalletAddress : 'No Wallet Connected';
 
     return (
         <SidebarMenu>
@@ -90,7 +85,7 @@ const AuthButton: React.FC = () => {
                         >
                             <Wallet className="size-8" />
                             <span className="ml-2">
-                                {displayAddress ? truncateAddress(displayAddress) : 'No wallet'}
+                                {displayAddress === 'No Wallet Connected' ? 'Connect Wallet' : truncateAddress(displayAddress)}
                             </span>
                         <ChevronsUpDown className="ml-auto size-4" />
                         </SidebarMenuButton>
@@ -106,7 +101,7 @@ const AuthButton: React.FC = () => {
                                 <Wallet className="size-4" />
                                 <div className="grid flex-1 text-left text-sm leading-tight">
                                     <span className="truncate font-semibold">
-                                        {displayAddress ? truncateAddress(displayAddress) : 'No wallet connected'}
+                                        {displayAddress === 'No Wallet Connected' ? displayAddress : truncateAddress(displayAddress)}
                                     </span>
                                 </div>
                             </div>
@@ -139,8 +134,12 @@ const AuthButton: React.FC = () => {
                         </div>
                         
                         <DropdownMenuSeparator />
-                        {currentWalletAddress && (
-                            <Balances address={currentWalletAddress} chain={currentChain} />
+                        {hasCurrentChainWallet ? (
+                            <Balances address={currentWalletAddress!} chain={currentChain} />
+                        ) : (
+                            <div className="px-2 py-2 text-sm text-muted-foreground">
+                                No tokens found
+                            </div>
                         )}
                         <DropdownMenuSeparator />
                         <DropdownMenuGroup>
@@ -148,7 +147,7 @@ const AuthButton: React.FC = () => {
                             {!hasCurrentChainWallet && (
                                 <DropdownMenuItem onClick={() => linkWallet()}>
                                     <Wallet className="size-4" />
-                                    Link New Wallet
+                                    Connect Wallet
                                 </DropdownMenuItem>
                             )}
                             
