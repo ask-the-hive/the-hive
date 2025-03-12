@@ -14,7 +14,9 @@ import {
 
 import { 
     GetTrendingTokens as BscGetTrendingTokens,
-    GetTrades as BscGetTrades
+    GetTrades as BscGetTrades,
+    GetTopTraders as BscGetTopTraders,
+    GetWalletAddress as BscGetWalletAddress
 } from "./bsc";
 
 export const toolToComponent = {
@@ -31,5 +33,7 @@ export const toolToComponent = {
     "market-get-smart-money-inflows": SolanaGetSmartMoneyInflows,
     "bscmarket-get-trending-tokens": BscGetTrendingTokens,
     "bscmarket-bsc-get-trader-trades": BscGetTrades,
+    "bscmarket-bsc-get-top-traders": BscGetTopTraders,
+    "bscwallet-bsc-get-wallet-address": BscGetWalletAddress,
     // ... rest of the mappings
 } 

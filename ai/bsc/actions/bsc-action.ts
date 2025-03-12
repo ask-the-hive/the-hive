@@ -9,5 +9,5 @@ export interface BscAction<Schema extends z.ZodType<any, any>, ResultBody = unde
     name: string;
     description: string;
     argsSchema: Schema;
-    func: (args: z.infer<Schema>) => Promise<BscActionResult<ResultBody>>;
+    func?: (args: z.infer<Schema>) => Promise<BscActionResult<ResultBody>>;
 } 

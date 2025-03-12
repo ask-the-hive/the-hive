@@ -6,7 +6,8 @@ import {
     TOKEN_ANALYSIS_AGENT_NAME, 
     TRADING_AGENT_NAME, 
     SOCIAL_AGENT_NAME,
-    LIQUIDITY_AGENT_NAME
+    LIQUIDITY_AGENT_NAME,
+    BSC_WALLET_AGENT_NAME
 } from "@/ai/agents/names";
 
 import type { IconName } from "@/types";
@@ -22,6 +23,7 @@ export const toolToAgent = {
     "tokenanalysis": TOKEN_ANALYSIS_AGENT_NAME,
     "bsctokenanalysis": TOKEN_ANALYSIS_AGENT_NAME,
     "bscmarket": MARKET_AGENT_NAME,
+    "bscwallet": BSC_WALLET_AGENT_NAME,
     "liquidity": LIQUIDITY_AGENT_NAME
 }
 
@@ -36,6 +38,7 @@ export const getAgentIcon = (agentName: string): IconName => {
         case STAKING_AGENT_NAME:
             return "Beef";
         case WALLET_AGENT_NAME:
+        case BSC_WALLET_AGENT_NAME:
             return "Wallet";
         case MARKET_AGENT_NAME:
             return "ChartLine";

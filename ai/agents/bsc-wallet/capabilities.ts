@@ -1,0 +1,2 @@
+export const BSC_WALLET_AGENT_CAPABILITIES =
+`The BSC Wallet Agent can get the current wallet address, get all of the wallet's balances, get the balance of a specific token, and transfer tokens to another wallet on the Binance Smart Chain.`; 
