@@ -1,14 +1,14 @@
 import React from 'react'
 
 import { Card } from '@/components/ui/card';
-import SaveToken from '@/app/(app)/_components/save-token';
 import Link from 'next/link';
+import SaveToken from '@/app/(app)/_components/save-token';
 
-import ToolCard from '../tool-card';
+import ToolCard from '../../tool-card';
 
 import type { ToolInvocation } from 'ai';
-import type { GetTrendingTokensResultBodyType, GetTrendingTokensResultType } from '@/ai';
-import type { TrendingToken } from '@/services/birdeye/types';
+import type { GetTrendingTokensResultBodyType } from '@/ai/bsc/actions/market/get-trending-tokens/types';
+import type { TrendingToken } from '@/services/birdeye/types/trending';
 
 interface Props {
     tool: ToolInvocation,
@@ -16,19 +16,17 @@ interface Props {
 }
 
 const GetTrendingTokens: React.FC<Props> = ({ tool, prevToolAgent }) => {
-    
-
     return (
         <ToolCard 
             tool={tool}
-            loadingText={`Getting Trending Tokens...`}
+            loadingText={`Getting Trending BSC Tokens...`}
             result={{
-                heading: (result: GetTrendingTokensResultType) => result.body 
-                    ? `Fetched Trending Tokens`
-                    : `Failed to fetch trending tokens`,
-                body: (result: GetTrendingTokensResultType) => result.body 
+                heading: (result: any) => result.body 
+                    ? `Fetched Trending BSC Tokens`
+                    : `Failed to fetch trending BSC tokens`,
+                body: (result: any) => result.body 
                     ? <TrendingTokens body={result.body} />
-                    :  "No trending tokens found"
+                    : "No trending tokens found"
             }}
             defaultOpen={true}
             prevToolAgent={prevToolAgent}
@@ -38,7 +36,6 @@ const GetTrendingTokens: React.FC<Props> = ({ tool, prevToolAgent }) => {
 }
 
 const TrendingTokens = ({ body }: { body: GetTrendingTokensResultBodyType }) => {
-
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
             {body.tokens.map((token: TrendingToken) => (
@@ -55,7 +52,7 @@ const TokenCard = ({ token }: { token: TrendingToken }) => {
     const placeholderIcon = "https://www.birdeye.so/images/unknown-token-icon.svg";
     
     return (
-        <Link href={`/token/${token.address}`}>
+        <Link href={`/token/${token.address}?chain=bsc`}>
             <Card className="flex flex-col gap-2 p-2 justify-center hover:border-brand-600 dark:hover:border-brand-600 transition-all duration-300">
                 <div className="flex flex-row items-center gap-2 justify-between">
                     <div className="flex flex-row items-center gap-2">
@@ -69,24 +66,17 @@ const TokenCard = ({ token }: { token: TrendingToken }) => {
                         />
                         <div className="flex flex-col">
                             <p className="text-sm font-bold">{token.name} ({token.symbol})</p>
-                            <p className="text-xs text-muted-foreground">
-                                ${token.price?.toLocaleString(undefined, { maximumFractionDigits: 5 }) ?? '0'}
-                                {token.price24hChangePercent !== undefined && token.price24hChangePercent !== null && (
-                                    <span className={token.price24hChangePercent > 0 ? 'text-green-500' : 'text-red-500'}>
-                                        {' '}({token.price24hChangePercent > 0 ? '+' : ''}{token.price24hChangePercent.toLocaleString(undefined, { maximumFractionDigits: 2 })}%)
-                                    </span>
-                                )}
-                            </p>
+                            <p className="text-xs text-muted-foreground">${token.price.toLocaleString(undefined, { maximumFractionDigits: 5})} <span className={token.price24hChangePercent > 0 ? 'text-green-500' : 'text-red-500'}>({token.price24hChangePercent > 0 ? '+' : ''}{token.price24hChangePercent.toLocaleString(undefined, { maximumFractionDigits: 2 })}%)</span></p>
                         </div>
                     </div>
                     <SaveToken address={token.address} />
                 </div>
                 <div className="flex flex-col">
-                    <p className="text-xs text-muted-foreground">24h Volume: ${token.volume24hUSD?.toLocaleString() ?? '0'}</p>
+                    <p className="text-xs text-muted-foreground">24h Volume: ${token.volume24hUSD.toLocaleString()}</p>
                 </div>
             </Card>
         </Link>
     )
 }
 
-export default GetTrendingTokens;
+export default GetTrendingTokens; 

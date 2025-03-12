@@ -14,4 +14,5 @@ export * from './popover';
 export * from './progress';
 export * from './collapsible';
 export * from './avatar';
-export * from './separator'; 
+export * from './separator';
+export * from './card'; 

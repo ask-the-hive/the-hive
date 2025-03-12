@@ -34,7 +34,9 @@ import {
     GetTokenData as BscGetTokenData,
     GetTokenAddress as BscGetTokenAddress,
     TokenHolders as BscTokenHolders,
-    TopTraders as BscTopTraders
+    TopTraders as BscTopTraders,
+    GetTrendingTokens as BscGetTrendingTokens,
+    GetTrades as BscGetTrades,
 } from './bsc'
 import { SearchRecentTweets } from './twitter'
 import { SearchKnowledge } from './knowledge'
@@ -75,6 +77,8 @@ import { BSC_GET_TOKEN_DATA_NAME } from '@/ai/bsc/actions/token/get-token-data/n
 import { BSC_GET_TOKEN_ADDRESS_NAME } from '@/ai/bsc/actions/token/get-token-address/name'
 import { BSC_TOKEN_HOLDERS_NAME } from '@/ai/bsc/actions/token/token-holders/name'
 import { BSC_TOKEN_TOP_TRADERS_NAME } from '@/ai/bsc/actions/token/top-traders/name'
+import { BSC_GET_TRADER_TRADES_NAME } from '@/ai/bsc/actions/market/get-trades/name'
+import { BSC_GET_TRENDING_TOKENS_NAME } from '@/ai/bsc/actions/market/get-trending-tokens/name'
 
 import type { ToolInvocation as ToolInvocationType } from 'ai'
 
@@ -109,6 +113,22 @@ const ToolInvocation: React.FC<Props> = ({ tool, prevToolAgent }) => {
             // Add other BSC tools here as they are implemented
             default:
                 console.log(`Unknown BSC tool: ${toolName}`);
+                return (
+                    <pre className="whitespace-pre-wrap">
+                        {JSON.stringify(tool, null, 2)}
+                    </pre>
+                );
+        }
+    }
+    
+    if (toolAgent === 'bscmarket') {
+        switch(toolName) {
+            case BSC_GET_TRENDING_TOKENS_NAME:
+                return <BscGetTrendingTokens tool={tool} prevToolAgent={prevToolAgent} />
+            case BSC_GET_TRADER_TRADES_NAME:
+                return <BscGetTrades tool={tool} prevToolAgent={prevToolAgent} />
+            default:
+                console.log(`Unknown BSC market tool: ${toolName}`);
                 return (
                     <pre className="whitespace-pre-wrap">
                         {JSON.stringify(tool, null, 2)}
