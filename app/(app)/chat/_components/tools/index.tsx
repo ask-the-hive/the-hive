@@ -39,6 +39,7 @@ import {
     GetTrades as BscGetTrades,
     GetTopTraders as BscGetTopTraders,
     GetWalletAddress as BscGetWalletAddress,
+    Balance as BscBalance
 } from './bsc'
 import { SearchRecentTweets } from './twitter'
 import { SearchKnowledge } from './knowledge'
@@ -83,6 +84,7 @@ import { BSC_GET_TRADER_TRADES_NAME } from '@/ai/bsc/actions/market/get-trades/n
 import { BSC_GET_TRENDING_TOKENS_NAME } from '@/ai/bsc/actions/market/get-trending-tokens/name'
 import { BSC_GET_TOP_TRADERS_NAME } from '@/ai/bsc/actions/market/get-top-traders/name'
 import { BSC_GET_WALLET_ADDRESS_NAME } from '@/ai/bsc/actions/wallet/get-wallet-address/name'
+import { BSC_BALANCE_NAME } from '@/ai/bsc/actions/wallet/balance/name'
 
 import type { ToolInvocation as ToolInvocationType } from 'ai'
 
@@ -102,6 +104,8 @@ const ToolInvocation: React.FC<Props> = ({ tool, prevToolAgent }) => {
         switch(toolName) {
             case BSC_GET_WALLET_ADDRESS_NAME:
                 return <BscGetWalletAddress tool={tool} prevToolAgent={prevToolAgent} />
+            case BSC_BALANCE_NAME:
+                return <BscBalance tool={tool} prevToolAgent={prevToolAgent} />
             default:
                 console.log(`Unknown BSC wallet tool: ${toolName}`);
                 return (
