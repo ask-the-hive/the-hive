@@ -19,11 +19,11 @@ const GetTrendingTokens: React.FC<Props> = ({ tool, prevToolAgent }) => {
     return (
         <ToolCard 
             tool={tool}
-            loadingText={`Getting Trending BSC Tokens...`}
+            loadingText={`Getting Trending Tokens...`}
             result={{
                 heading: (result: any) => result.body 
-                    ? `Fetched Trending BSC Tokens`
-                    : `Failed to fetch trending BSC tokens`,
+                    ? `Fetched Trending Tokens`
+                    : `Failed to fetch trending tokens`,
                 body: (result: any) => result.body 
                     ? <TrendingTokens body={result.body} />
                     : "No trending tokens found"
