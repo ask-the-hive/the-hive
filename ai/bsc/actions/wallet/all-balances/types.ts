@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 import type { AllBalancesInputSchema } from "./input-schema";
-import type { BscActionResult } from "../../../bsc-action";
+import type { BscActionResult } from "../../bsc-action";
 
 export type AllBalancesArgumentsType = z.infer<typeof AllBalancesInputSchema>;
 

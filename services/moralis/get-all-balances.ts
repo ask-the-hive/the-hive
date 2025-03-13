@@ -54,8 +54,19 @@ export const getAllBalances = async (address: string): Promise<TokenBalancesResp
       page_size: jsonResponse.page_size || 100,
       result: jsonResponse.result.map(token => ({
         ...token,
+        token_address: token.token_address || '',
+        verified_contract: !!token.verified_contract,
         logo: token.logo || null,
-        thumbnail: token.thumbnail || null
+        thumbnail: token.thumbnail || null,
+        total_supply: token.total_supply || null,
+        total_supply_formatted: token.total_supply_formatted || null,
+        percentage_relative_to_total_supply: token.percentage_relative_to_total_supply !== undefined ? token.percentage_relative_to_total_supply : null,
+        usd_price: typeof token.usd_price === 'string' ? parseFloat(token.usd_price) : token.usd_price || 0,
+        usd_price_24hr_percent_change: typeof token.usd_price_24hr_percent_change === 'string' ? parseFloat(token.usd_price_24hr_percent_change) : token.usd_price_24hr_percent_change || 0,
+        usd_price_24hr_usd_change: typeof token.usd_price_24hr_usd_change === 'string' ? parseFloat(token.usd_price_24hr_usd_change) : token.usd_price_24hr_usd_change || 0,
+        usd_value: typeof token.usd_value === 'string' ? parseFloat(token.usd_value) : token.usd_value || 0,
+        usd_value_24hr_usd_change: typeof token.usd_value_24hr_usd_change === 'string' ? parseFloat(token.usd_value_24hr_usd_change) : token.usd_value_24hr_usd_change || 0,
+        portfolio_percentage: typeof token.portfolio_percentage === 'string' ? parseFloat(token.portfolio_percentage) : token.portfolio_percentage || 0
       }))
     };
   } catch (error) {

@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react'
-import { useRouter, usePathname, useSearchParams } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Label } from '@/components/ui/label'
 import { useChain } from '@/app/_contexts/chain-context'
@@ -9,7 +9,6 @@ import { ChainType } from '@/app/_contexts/chain-context'
 
 const ChainSelector = () => {
     const router = useRouter()
-    const pathname = usePathname()
     const searchParams = useSearchParams()
     const { currentChain, setCurrentChain, walletAddresses } = useChain()
 

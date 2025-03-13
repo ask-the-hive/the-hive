@@ -36,7 +36,11 @@ const Tokens: React.FC<Props> = ({ address }) => {
     
     const { data: portfolio, isLoading } = usePortfolio(chainAddress, currentChain);
 
-    const { openSell, openBuy } = useSwapModal();
+    const { onOpen } = useSwapModal();
+    
+    // Helper functions to open buy/sell modals
+    const openBuy = (tokenAddress: string) => onOpen('buy', tokenAddress);
+    const openSell = (tokenAddress: string) => onOpen('sell', tokenAddress);
 
     return (
         <div className="flex flex-col gap-4">

@@ -1,12 +1,13 @@
 import React from 'react'
 
 import { 
-    AnimatedShinyText, 
     Collapsible, 
     CollapsibleTrigger, 
-    CollapsibleContent, 
-    Icon 
+    CollapsibleContent
 } from '@/components/ui'
+
+import { Icon } from '@/components/ui/icon'
+import { AnimatedShinyText } from '@/components/ui/animated-shiny-text'
 
 import { cn } from '@/lib/utils'
 
@@ -29,10 +30,9 @@ interface Props<ActionResultBodyType, ActionArgsType> {
     defaultOpen?: boolean,
     className?: string,
     prevToolAgent?: string,
-    inputDisabledMessage?: string,
 }
 
-const ToolCard = <ActionResultBodyType, ActionArgsType>({ tool, loadingText, result, call, defaultOpen = true, className, prevToolAgent, inputDisabledMessage }: Props<ActionResultBodyType, ActionArgsType>) => {
+const ToolCard = <ActionResultBodyType, ActionArgsType>({ tool, loadingText, result, call, defaultOpen = true, className, prevToolAgent }: Props<ActionResultBodyType, ActionArgsType>) => {
 
     const agentName = getAgentName(tool);
 

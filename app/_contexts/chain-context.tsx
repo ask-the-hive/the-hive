@@ -34,7 +34,6 @@ export const ChainProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   
   // Use refs to prevent infinite loops
   const processedWallets = useRef<Set<string>>(new Set());
-  const isInitialMount = useRef(true);
 
   // Debug logging
   useEffect(() => {

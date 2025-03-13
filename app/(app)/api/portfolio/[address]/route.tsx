@@ -1,43 +1,22 @@
-import { NextRequest, NextResponse } from "next/server";
-
 import { getPortfolio } from "@/services/birdeye";
+import { NextRequest, NextResponse } from "next/server";
 import { ChainType } from "@/app/_contexts/chain-context";
 
 export async function GET(
-    request: NextRequest,
-    { params }: { params: { address: string } }
+  request: NextRequest,
+  { params }: { params: Promise<{ address: string }> }
 ) {
-    try {
-        const searchParams = request.nextUrl.searchParams;
-        const chain = searchParams.get('chain') as ChainType || 'solana';
-        const address = params.address;
-
-        console.log('[Portfolio API Debug] Request params:', {
-            chain,
-            address,
-            url: request.url
-        });
-
-        const portfolio = await getPortfolio(address, chain);
-        
-        console.log('[Portfolio API Debug] Portfolio response:', {
-            chain,
-            address,
-            itemCount: portfolio?.items?.length || 0,
-            totalUsd: portfolio?.totalUsd || 0,
-            items: portfolio?.items?.map(item => ({
-                symbol: item.symbol,
-                balance: item.balance,
-                valueUsd: item.valueUsd
-            })) || []
-        });
-
-        return NextResponse.json(portfolio);
-    } catch (error) {
-        console.error('[Portfolio API Debug] Error:', error);
-        return NextResponse.json(
-            { error: 'Failed to fetch portfolio' },
-            { status: 500 }
-        );
-    }
+  const { address } = await params;
+  const chain = (request.nextUrl.searchParams.get('chain') as ChainType) || 'solana';
+  
+  console.debug("Request params:", { address, chain });
+  
+  try {
+    const portfolio = await getPortfolio(address, chain);
+    console.debug("Portfolio response:", portfolio);
+    return NextResponse.json(portfolio);
+  } catch (error) {
+    console.error("Error fetching portfolio:", error);
+    return NextResponse.json({ error: "Failed to fetch portfolio" }, { status: 500 });
+  }
 }

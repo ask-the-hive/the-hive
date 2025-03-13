@@ -4,7 +4,6 @@ import React from 'react'
 
 import GetTokenDataResultHeading from './heading';
 import Stats from './stats';
-// @ts-ignore
 import TwentyFourHrStats from './24hr-stats';
 
 import type { GetTokenDataResultBodyType } from '@/ai/bsc/actions/token/get-token-data/types';

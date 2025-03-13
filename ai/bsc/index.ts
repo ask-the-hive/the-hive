@@ -18,8 +18,13 @@ export const bscTool = <Schema extends z.ZodType<any, any>, ResultBody>(
     description: action.description,
     parameters: action.argsSchema,
     execute: async (args) => {
-      const result = await action.func(args);
-      return result;
+      if (action.func) {
+        const result = await action.func(args);
+        return result;
+      }
+      return {
+        message: "This action is not implemented yet.",
+      };
     }
   });
 }
