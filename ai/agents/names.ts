@@ -9,3 +9,4 @@ export * from "./liquidity/name";
 export * from "./bsc-token-analysis/name";
 export * from "./bsc-market/name";
 export * from "./bsc-wallet/name";
+export * from "./bsc-knowledge/name";

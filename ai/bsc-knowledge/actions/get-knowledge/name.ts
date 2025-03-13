@@ -1,0 +1,1 @@
+export const BSC_GET_KNOWLEDGE_NAME = "bsc_get_knowledge"; 

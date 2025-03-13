@@ -5,13 +5,15 @@ import { generateObject, LanguageModelV1, Message } from "ai";
 import { bscTokenAnalysisAgent } from "@/ai/agents/bsc-token-analysis";
 import { bscMarketAgent } from "@/ai/agents/bsc-market";
 import { bscWalletAgent } from "@/ai/agents/bsc-wallet";
+import { bscKnowledgeAgent } from "@/ai/agents/bsc-knowledge";
 import { Agent } from "@/ai/agent";
 
 // List of BSC-specific agents
 const bscAgents = [
     bscTokenAnalysisAgent,
     bscMarketAgent,
-    bscWalletAgent
+    bscWalletAgent,
+    bscKnowledgeAgent
 ];
 
 export const system = 
