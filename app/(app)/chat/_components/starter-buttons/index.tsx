@@ -1,8 +1,9 @@
 import React from 'react'
 
 import StarterButton from './starter-button';
+import { useChat } from '../../_contexts/chat';
 
-const starterButtons = [
+const solanaButtons = [
     {
         title: "Trending",
         description: "Search the trending tokens",
@@ -12,7 +13,7 @@ const starterButtons = [
     {
         title: "Stake",
         description: "Stake Sol",
-        icon: "Coins" as const,
+        icon: "Beef" as const,
         prompt: "Find me the best staking yields"
     },
     {
@@ -27,12 +28,42 @@ const starterButtons = [
         icon: "Brain" as const,
         prompt: "Get me developer docs for Orca"
     }
-] as const
+] as const;
+
+const bscButtons = [
+    {
+        title: "Trending",
+        description: "Search the trending tokens",
+        icon: "Coins" as const,
+        prompt: "Show me the trending tokens"
+    },
+    {
+        title: "Balance",
+        description: "Check wallet balances",
+        icon: "Wallet" as const,
+        prompt: "Show me my wallet balances"
+    },
+    {
+        title: "Analyze",
+        description: "Analyze token metrics",
+        icon: "ChartLine" as const,
+        prompt: "Let's analyze a token"
+    },
+    {
+        title: "Knowledge",
+        description: "Learn about the ecosystem",
+        icon: "Brain" as const,
+        prompt: "Tell me about BSC ecosystem protocols"
+    }
+] as const;
 
 const StarterButtons = () => {
+    const { chain } = useChat();
+    const buttons = chain === 'solana' ? solanaButtons : bscButtons;
+
     return (
         <div className="grid grid-cols-2 gap-2">
-            {starterButtons.map((button) => (
+            {buttons.map((button) => (
                 <StarterButton 
                     key={button.title} 
                     {...button}

@@ -1,6 +1,7 @@
 'use client'
 
 import React from 'react'
+import { Card } from '@/components/ui'
 
 interface Props {
     balance: number;
@@ -24,18 +25,21 @@ const TokenBalance: React.FC<Props> = ({
     // Use name as fallback for the alt text
     const altText = `${displaySymbol || name || "Unknown"} token logo`;
     
+    // Calculate the actual balance
+    const actualBalance = balance / Math.pow(10, decimals);
+    
     return (
-        <div className="flex items-center gap-2">
+        <Card className="flex items-center gap-2 p-2">
             <img 
-                src={logoURI} 
+                src={logoURI || "https://www.birdeye.so/images/unknown-token-icon.svg"} 
                 alt={altText} 
                 className="w-6 h-6 rounded-full" 
             />
             <div className="flex flex-col">
-                <span className="text-sm font-medium">{(balance / Math.pow(10, decimals)).toFixed(4)}</span>
+                <span className="text-sm font-medium">{actualBalance.toLocaleString(undefined, { maximumFractionDigits: 4, minimumFractionDigits: 4 })}</span>
                 <span className="text-xs text-muted-foreground">{displaySymbol}</span>
             </div>
-        </div>
+        </Card>
     )
 }
 
