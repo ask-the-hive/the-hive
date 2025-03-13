@@ -1,0 +1,1 @@
+export { default as GetKnowledge } from './get-knowledge'; 

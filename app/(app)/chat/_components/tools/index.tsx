@@ -45,6 +45,7 @@ import {
 import { SearchRecentTweets } from './twitter'
 import { SearchKnowledge } from './knowledge'
 import { InvokeAgent } from './invoke'
+import { GetKnowledge } from './bsc-knowledge'
 
 import { 
     SOLANA_BALANCE_NAME,
@@ -73,6 +74,7 @@ import {
     SOLANA_TOKEN_TOP_TRADERS_NAME,
     SOLANA_TOKEN_PRICE_CHART_NAME,
     SOLANA_GET_SMART_MONEY_INFLOWS_NAME,
+    BSC_GET_KNOWLEDGE_NAME
 } from '@/ai/action-names'
 import { BSC_BUBBLE_MAPS_NAME } from '@/ai/bsc/actions/token/bubble-maps/name'
 import { BSC_TOP_HOLDERS_NAME } from '@/ai/bsc/actions/token/top-holders/name'
@@ -223,6 +225,8 @@ const ToolInvocation: React.FC<Props> = ({ tool, prevToolAgent }) => {
             return <PriceChart tool={tool} prevToolAgent={prevToolAgent} />
         case SOLANA_GET_SMART_MONEY_INFLOWS_NAME:
             return <GetSmartMoneyInflows tool={tool} prevToolAgent={prevToolAgent} />
+        case BSC_GET_KNOWLEDGE_NAME:
+            return <GetKnowledge tool={tool} prevToolAgent={prevToolAgent} />
         default:
             return (
                 <pre className="whitespace-pre-wrap">

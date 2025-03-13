@@ -7,7 +7,8 @@ import {
     TRADING_AGENT_NAME, 
     SOCIAL_AGENT_NAME,
     LIQUIDITY_AGENT_NAME,
-    BSC_WALLET_AGENT_NAME
+    BSC_WALLET_AGENT_NAME,
+    BSC_KNOWLEDGE_AGENT_NAME
 } from "@/ai/agents/names";
 
 import type { IconName } from "@/types";
@@ -24,6 +25,7 @@ export const toolToAgent = {
     "bsctokenanalysis": TOKEN_ANALYSIS_AGENT_NAME,
     "bscmarket": MARKET_AGENT_NAME,
     "bscwallet": BSC_WALLET_AGENT_NAME,
+    "bscknowledge": BSC_KNOWLEDGE_AGENT_NAME,
     "liquidity": LIQUIDITY_AGENT_NAME
 }
 
