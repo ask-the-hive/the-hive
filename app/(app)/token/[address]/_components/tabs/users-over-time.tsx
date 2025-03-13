@@ -43,7 +43,7 @@ const TokenUsersOverTime: React.FC<Props> = ({ mint }) => {
                         Active Wallets Data Not Available
                     </h3>
                     <p className="text-sm text-neutral-500">
-                        Active wallets data is currently not supported for BSC tokens.
+                        Active wallets data is currently not available for BSC tokens.
                     </p>
                 </div>
             </div>
