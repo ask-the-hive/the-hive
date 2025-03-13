@@ -1,0 +1,1 @@
+export const BSC_ALL_BALANCES_NAME = "all-balances"; 

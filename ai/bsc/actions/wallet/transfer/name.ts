@@ -1,0 +1,1 @@
+export const BSC_TRANSFER_NAME = "bsc_transfer"; 
