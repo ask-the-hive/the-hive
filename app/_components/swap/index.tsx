@@ -22,7 +22,6 @@ import { cn } from '@/lib/utils';
 
 import { useChain } from '@/app/_contexts/chain-context';
 
-import type { QuoteResponse } from '@jup-ag/api';
 import type { Token } from '@/db/types';
 
 interface Props {

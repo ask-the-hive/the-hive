@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { PrivyClient } from "@privy-io/server-auth";
 
 import { addSavedToken, deleteSavedToken, getSavedToken } from "@/db/services";
-import { getTokenMetadata, getTokenOverview } from "@/services/birdeye";
+import { getTokenOverview } from "@/services/birdeye";
 import { ChainType } from "@/app/_contexts/chain-context";
 
 const privy = new PrivyClient(

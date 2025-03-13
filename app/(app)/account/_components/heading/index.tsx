@@ -3,15 +3,11 @@
 import React, { useState } from 'react'
 
 import { Avatar, AvatarFallback, AvatarImage, Separator, Button, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui';
-import { Icon } from '@/components/ui/icon';
 import { Card } from '@/components/ui/card';
 import { LogOut, Upload, User } from 'lucide-react';
 
-import Address from '@/app/_components/address';
-
 import { type User as PrivyUser } from '@privy-io/react-auth';
 import { useLogin } from '@/hooks';
-import { useChain } from '@/app/_contexts/chain-context';
 import { Loader2 } from 'lucide-react';
 import { pfpURL } from '@/lib/pfp';
 import { uploadImage } from '@/services/storage';
@@ -25,7 +21,6 @@ const AccountHeading: React.FC<Props> = ({ user }) => {
     const [isUploading, setIsUploading] = useState<boolean>(false);
     const [copied, setCopied] = useState(false);
     const { logout } = useLogin();
-    const { walletAddresses } = useChain();
 
     // Helper function to determine wallet chain
     const getWalletChain = (address: string) => {

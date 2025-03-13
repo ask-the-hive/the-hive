@@ -4,11 +4,13 @@ import { add, del, find, get, update } from "./base";
 
 import { getChatsContainer } from "../containers";
 
-import { Chat } from "../types";
+import { Chat } from "../types/chat";
 
 import { PatchOperationType } from "@azure/cosmos";
 
 import { Message } from "ai";
+
+import { ChainType } from "@/app/_contexts/chain-context";
 
 // CREATE
 
@@ -123,20 +125,24 @@ export const addMessageToChat = async (id: Chat["id"], userId: Chat["userId"], m
  * @param {Chat["userId"]} userId - The user ID associated with the chat.
  * @param {Object} updates - The updates to apply to the chat.
  * @param {Message[]} updates.messages - The new messages.
- * @param {Chat["chain"]} [updates.chain] - Optional new chain value.
+ * @param {ChainType} [updates.chain] - Optional new chain value.
  * @returns {Promise<boolean>} True if the update was successful, false otherwise.
  */
 export const updateChatMessages = async (
     id: Chat["id"], 
     userId: Chat["userId"], 
-    updates: { messages: Message[], chain?: Chat["chain"] }
+    updates: { messages: Message[], chain?: ChainType }
 ): Promise<boolean> => {
     const operations = [
         { op: PatchOperationType.set, path: `/messages`, value: updates.messages }
     ];
     
     if (updates.chain) {
-        operations.push({ op: PatchOperationType.set, path: `/chain`, value: updates.chain });
+        operations.push({ 
+            op: PatchOperationType.set, 
+            path: `/chain`, 
+            value: updates.chain 
+        } as any);
     }
     
     return update(await getChatsContainer(), id, userId, operations);

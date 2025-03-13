@@ -1,4 +1,4 @@
-import { SwapQuoteRequestParams, SwapQuoter } from '@0x/swap-ts-sdk';
+import { createClientV2 } from '@0x/swap-ts-sdk';
 
 const ZEROX_API_URL = 'https://bsc.api.0x.org';
 

@@ -31,7 +31,6 @@ const SmartMoneyTokens: React.FC = () => {
     const [tokens, setTokens] = useState<SmartMoneyToken[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [unsupportedChain, setUnsupportedChain] = useState(false);
     
     // Store previously fetched data per chain
     const previousData = useRef<Record<string, SmartMoneyToken[]>>({});
@@ -46,7 +45,6 @@ const SmartMoneyTokens: React.FC = () => {
             
             setLoading(true);
             setError(null);
-            setUnsupportedChain(false);
             
             try {
                 const response = await fetch(`/api/token/smart-money?chain=${chain}`);

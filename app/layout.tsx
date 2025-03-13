@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import type { Metadata, Viewport } from "next";
 
 import { DM_Sans, DM_Mono } from "next/font/google";

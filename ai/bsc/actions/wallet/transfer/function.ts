@@ -1,5 +1,5 @@
 import type { TransferArgumentsType, TransferResultBodyType } from "./types";
-import type { BscActionResult } from "../../../bsc-action";
+import type { BscActionResult } from "../../bsc-action";
 import { BscGetTokenAddressAction } from "../../token/get-token-address";
 
 export async function transfer(

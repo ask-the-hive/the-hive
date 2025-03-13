@@ -31,7 +31,7 @@ const SavedTokensGroup: React.FC = () => {
 
     const pathname = usePathname();
 
-    const { ready, user } = usePrivy();
+    const { user } = usePrivy();
 
     const { savedTokens, isLoading } = useSavedTokens();
 

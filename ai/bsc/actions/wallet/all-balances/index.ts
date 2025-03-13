@@ -4,7 +4,7 @@ import { AllBalancesInputSchema } from "./input-schema";
 import { getAllBalances } from "./function";
 import type { AllBalancesResultBodyType } from "./types";
 
-import type { BscAction } from "../../../bsc-action";
+import type { BscAction } from "../../bsc-action";
 
 export class BscAllBalancesAction implements BscAction<typeof AllBalancesInputSchema, AllBalancesResultBodyType> {
   public name = BSC_ALL_BALANCES_NAME;

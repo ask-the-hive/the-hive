@@ -4,7 +4,7 @@ import ToolCard from '../../tool-card';
 import { GetTrades as GetTradesComponent } from './get-trades';
 
 import type { ToolInvocation } from 'ai';
-import type { GetTraderTradesResultType } from '@/ai/bsc/actions/market/get-trades/types';
+import type { GetTraderTradesResultType } from '../../../../../../../ai/bsc/actions/market/get-trades/types';
 
 interface Props {
     tool: ToolInvocation;
@@ -21,7 +21,11 @@ export function GetTrades({ tool, prevToolAgent }: Props) {
                     ? "Recent Trades"
                     : "Failed to fetch trades",
                 body: (result: GetTraderTradesResultType) => result.body 
-                    ? <GetTradesComponent tokensTraded={result.body.tokensTraded} />
+                    ? <GetTradesComponent 
+                        tokensTraded={result.body.tokensTraded} 
+                        tool={tool} 
+                        prevToolAgent={prevToolAgent} 
+                      />
                     : "No trades found"
             }}
             defaultOpen={true}

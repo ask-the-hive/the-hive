@@ -1,7 +1,6 @@
 'use client'
 
 import React from 'react'
-import { formatPercent } from '@/lib/format'
 import TokenBalance from '../utils/token-balance'
 import ToolCard from '../tool-card'
 

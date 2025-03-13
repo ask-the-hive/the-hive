@@ -1,19 +1,32 @@
 import React, { useState } from 'react';
-import { formatNumber } from "@/lib/format-number";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { TokenTraded } from "@/ai/bsc/actions/market/get-trades/types";
+import { TokenTraded } from "../../../../../../../ai/bsc/actions/market/get-trades/types";
+import type { ToolInvocation as ToolInvocationType } from 'ai';
 
 const UNKNOWN_TOKEN_ICON = "https://www.birdeye.so/images/unknown-token-icon.svg";
 
 interface GetTradesProps {
-  tokensTraded: Record<string, TokenTraded>;
+  tokensTraded?: Record<string, TokenTraded>;
+  tool?: ToolInvocationType;
+  prevToolAgent?: string;
 }
 
-export function GetTrades({ tokensTraded }: GetTradesProps) {
+// Define a type for the tool result
+interface ToolResult {
+  body?: {
+    tokensTraded?: Record<string, TokenTraded>;
+  };
+}
+
+export function GetTrades({ tokensTraded = {}, tool }: GetTradesProps) {
   const [showAll, setShowAll] = useState(false);
-  const tokens = Object.entries(tokensTraded).sort((a, b) => b[1].usdChange - a[1].usdChange);
+  
+  // Extract tokensTraded from tool if provided
+  const toolResult = tool as unknown as { result?: ToolResult };
+  const tradeData = tokensTraded || (toolResult?.result?.body?.tokensTraded || {});
+  const tokens = Object.entries(tradeData).sort((a, b) => b[1].usdChange - a[1].usdChange);
 
   return (
     <Card className="flex flex-col gap-2 w-full p-2">

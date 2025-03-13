@@ -1,5 +1,5 @@
 import type { AllBalancesArgumentsType, AllBalancesResultBodyType } from "./types";
-import type { BscActionResult } from "../../../bsc-action";
+import type { BscActionResult } from "../../bsc-action";
 import { getAllBalances as getMoralisBalances } from "@/services/moralis/get-all-balances";
 
 export async function getAllBalances(

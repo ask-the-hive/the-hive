@@ -9,8 +9,6 @@ import { useChain } from '@/app/_contexts/chain-context'
 
 import { cn } from '@/lib/utils'
 
-import type { TokenTransfer as SolanaTokenTransfer } from 'helius-sdk'
-
 // Generic token transfer interface that works for both Solana and BSC
 interface GenericTokenTransfer {
     // Solana specific
@@ -31,81 +29,57 @@ interface GenericTokenTransfer {
 }
 
 interface Props {
-    tokenTransfer: GenericTokenTransfer,
-    address: string
+    tokenTransfer: GenericTokenTransfer;
+    address?: string;
 }
 
 const DEFAULT_FALLBACK = "https://www.birdeye.so/images/unknown-token-icon.svg";
 
-const TokenTransfer: React.FC<Props> = ({ tokenTransfer, address }) => {
+const TokenTransfer: React.FC<Props> = ({ tokenTransfer }) => {
     const { currentChain } = useChain();
     const isSolana = currentChain === 'solana';
     const [imgError, setImgError] = useState(false);
 
+    // Always call the hook, but only use its result when needed
+    const { data: solanaTokenData, isLoading: isSolanaTokenLoading } = useTokenDataByAddress(tokenTransfer.mint || '');
+
     // For Solana transfers
     if (isSolana && tokenTransfer.mint) {
-        const solanaTransfer = tokenTransfer as SolanaTokenTransfer;
-        const { data, isLoading } = useTokenDataByAddress(solanaTransfer.mint);
-
-        if (isLoading) return <Skeleton className="w-8 h-4 rounded-full" />;
-
-        const symbol = data?.symbol ? data.symbol.toUpperCase() : "UNKNOWN";
+        if (isSolanaTokenLoading) return <Skeleton className="w-8 h-4 rounded-full" />;
 
         return (
             <div className="flex items-center gap-2">
-                {
-                    data ? (
-                        <img 
-                            src={imgError ? DEFAULT_FALLBACK : data.logoURI} 
-                            alt={data.name} 
-                            className="w-4 h-4 rounded-full"
-                            onError={(e) => {
-                                setImgError(true);
-                                (e.target as HTMLImageElement).src = DEFAULT_FALLBACK;
-                            }}
-                        />
-                    ) : (
-                        <div className="w-4 h-4 rounded-full bg-neutral-100 dark:bg-neutral-700" />
-                    )
-                }
-                
-                <p className={cn("text-xs", solanaTransfer.toUserAccount === address ? "text-green-500" : "text-red-500")}>
-                    {solanaTransfer.toUserAccount === address ? "+" : "-"}
-                    {solanaTransfer.tokenAmount.toLocaleString(undefined, { maximumFractionDigits: 2, minimumFractionDigits: 2 })} {symbol}
-                </p>
-            </div>
-        )
-    } else {
-        // For BSC transfers
-        if (!tokenTransfer.token) {
-            return null; // Skip if no token data
-        }
-
-        const tokenAmount = tokenTransfer.amount || 0;
-        const isPositive = tokenAmount > 0;
-        const amount = Math.abs(tokenAmount);
-        const symbol = tokenTransfer.token?.symbol ? tokenTransfer.token.symbol.toUpperCase() : "UNKNOWN";
-        const logo = tokenTransfer.token?.logo || DEFAULT_FALLBACK;
-
-        return (
-            <div className="flex items-center gap-2">
-                <img 
-                    src={imgError ? DEFAULT_FALLBACK : logo} 
-                    alt={symbol} 
-                    className="w-4 h-4 rounded-full"
-                    onError={(e) => {
-                        setImgError(true);
-                        (e.target as HTMLImageElement).src = DEFAULT_FALLBACK;
-                    }}
+                <img
+                    src={imgError ? DEFAULT_FALLBACK : solanaTokenData?.logoURI || DEFAULT_FALLBACK}
+                    onError={() => setImgError(true)}
+                    className={cn("w-6 h-6 rounded-full", imgError && "opacity-50")}
                 />
-                
-                <p className={cn("text-xs", isPositive ? "text-green-500" : "text-red-500")}>
-                    {isPositive ? "+" : "-"}
-                    {amount.toLocaleString(undefined, { maximumFractionDigits: 2, minimumFractionDigits: 2 })} {symbol}
-                </p>
+                <div className="flex flex-col">
+                    <span className="text-sm font-medium">{solanaTokenData?.symbol || "Unknown"}</span>
+                    <span className="text-xs text-muted-foreground">{solanaTokenData?.name || "Unknown Token"}</span>
+                </div>
             </div>
-        )
+        );
     }
+
+    // For BSC transfers
+    if (tokenTransfer.token) {
+        return (
+            <div className="flex items-center gap-2">
+                <img
+                    src={imgError ? DEFAULT_FALLBACK : tokenTransfer.token.logo || DEFAULT_FALLBACK}
+                    onError={() => setImgError(true)}
+                    className={cn("w-6 h-6 rounded-full", imgError && "opacity-50")}
+                />
+                <div className="flex flex-col">
+                    <span className="text-sm font-medium">{tokenTransfer.token.symbol}</span>
+                    <span className="text-xs text-muted-foreground">{tokenTransfer.token.name}</span>
+                </div>
+            </div>
+        );
+    }
+
+    return null;
 }
 
-export default TokenTransfer
+export default TokenTransfer;

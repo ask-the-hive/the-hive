@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { TransferInputSchema } from "./input-schema";
-import { BscActionResult } from "../../../bsc-action";
+import { BscActionResult } from "../../bsc-action";
 
 export type TransferSchemaType = typeof TransferInputSchema;
 
