@@ -185,6 +185,8 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
                     return `Complete or cancel your withdraw`;
                 case SOLANA_GET_WALLET_ADDRESS_NAME:
                     return `Connect your wallet`;
+                case "bsc_transfer":
+                    return `Complete or cancel your transfer`;
                 default:
                     return '';
             }

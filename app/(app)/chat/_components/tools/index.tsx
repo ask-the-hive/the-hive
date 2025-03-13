@@ -29,17 +29,18 @@ import {
 } from './solana'
 import {
     BubbleMaps as BscBubbleMaps,
-    TopHolders as BscTopHolders,
     PriceChart as BscPriceChart,
-    GetTokenData as BscGetTokenData,
     GetTokenAddress as BscGetTokenAddress,
+    GetTokenData as BscGetTokenData,
     TokenHolders as BscTokenHolders,
+    TopHolders as BscTopHolders,
     TopTraders as BscTopTraders,
+    GetWalletAddress as BscGetWalletAddress,
+    GetBscBalance,
+    GetBscAllBalances,
     GetTrendingTokens as BscGetTrendingTokens,
     GetTrades as BscGetTrades,
-    GetTopTraders as BscGetTopTraders,
-    GetWalletAddress as BscGetWalletAddress,
-    Balance as BscBalance
+    Transfer as BscTransfer
 } from './bsc'
 import { SearchRecentTweets } from './twitter'
 import { SearchKnowledge } from './knowledge'
@@ -85,6 +86,8 @@ import { BSC_GET_TRENDING_TOKENS_NAME } from '@/ai/bsc/actions/market/get-trendi
 import { BSC_GET_TOP_TRADERS_NAME } from '@/ai/bsc/actions/market/get-top-traders/name'
 import { BSC_GET_WALLET_ADDRESS_NAME } from '@/ai/bsc/actions/wallet/get-wallet-address/name'
 import { BSC_BALANCE_NAME } from '@/ai/bsc/actions/wallet/balance/name'
+import { BSC_ALL_BALANCES_NAME } from '@/ai/bsc/actions/wallet/all-balances/name'
+import { BSC_TRANSFER_NAME } from '@/ai/bsc/actions/wallet/transfer/name'
 
 import type { ToolInvocation as ToolInvocationType } from 'ai'
 
@@ -105,7 +108,11 @@ const ToolInvocation: React.FC<Props> = ({ tool, prevToolAgent }) => {
             case BSC_GET_WALLET_ADDRESS_NAME:
                 return <BscGetWalletAddress tool={tool} prevToolAgent={prevToolAgent} />
             case BSC_BALANCE_NAME:
-                return <BscBalance tool={tool} prevToolAgent={prevToolAgent} />
+                return <GetBscBalance tool={tool} prevToolAgent={prevToolAgent} />
+            case BSC_ALL_BALANCES_NAME:
+                return <GetBscAllBalances tool={tool} prevToolAgent={prevToolAgent} />
+            case BSC_TRANSFER_NAME:
+                return <BscTransfer tool={tool} prevToolAgent={prevToolAgent} />
             default:
                 console.log(`Unknown BSC wallet tool: ${toolName}`);
                 return (
@@ -151,7 +158,7 @@ const ToolInvocation: React.FC<Props> = ({ tool, prevToolAgent }) => {
             case BSC_GET_TRADER_TRADES_NAME:
                 return <BscGetTrades tool={tool} prevToolAgent={prevToolAgent} />
             case BSC_GET_TOP_TRADERS_NAME:
-                return <BscGetTopTraders tool={tool} prevToolAgent={prevToolAgent} />
+                return <BscTopTraders tool={tool} prevToolAgent={prevToolAgent} />
             default:
                 console.log(`Unknown BSC market tool: ${toolName}`);
                 return (

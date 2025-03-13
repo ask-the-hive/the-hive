@@ -29,9 +29,10 @@ interface Props<ActionResultBodyType, ActionArgsType> {
     defaultOpen?: boolean,
     className?: string,
     prevToolAgent?: string,
+    inputDisabledMessage?: string,
 }
 
-const ToolCard = <ActionResultBodyType, ActionArgsType>({ tool, loadingText, result, call, defaultOpen = true, className, prevToolAgent }: Props<ActionResultBodyType, ActionArgsType>) => {
+const ToolCard = <ActionResultBodyType, ActionArgsType>({ tool, loadingText, result, call, defaultOpen = true, className, prevToolAgent, inputDisabledMessage }: Props<ActionResultBodyType, ActionArgsType>) => {
 
     const agentName = getAgentName(tool);
 

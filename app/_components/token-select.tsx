@@ -118,7 +118,7 @@ const TokenSelect: React.FC<Props> = ({ value, onChange, priorityTokens = [] }) 
                                     )
                                 ) : (
                                     <p className="text-xs text-neutral-500">
-                                        Active Walleing to search for a token
+                                        Search for a token
                                     </p>
                                 )
                             }
