@@ -59,7 +59,8 @@ const SidePanel: React.FC<Props> = ({ address }) => {
                         extensions: data.extensions,
                         logoURI: data.logoURI,
                         supply: data.overview.supply,
-                        circulatingSupply: data.overview.circulatingSupply
+                        circulatingSupply: data.overview.circulatingSupply,
+                        chain
                     });
                 } else {
                     setTokenChatData({
@@ -70,7 +71,8 @@ const SidePanel: React.FC<Props> = ({ address }) => {
                         extensions: data.extensions,
                         logoURI: data.logoURI,
                         supply: 0,
-                        circulatingSupply: 0
+                        circulatingSupply: 0,
+                        chain
                     });
                 }
             } catch (error) {

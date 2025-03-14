@@ -44,8 +44,11 @@ export async function getBSCTokenPageTradingActivity(token: TokenChatData, _: To
       chain: 'bsc'
     });
     
-    // Ensure we have items array, even if empty
-    const topTraders = topTradersResponse?.items || [];
+    // Ensure we have items array and format trader data
+    const topTraders = (topTradersResponse?.items || []).map(trader => ({
+      address: trader.owner || 'Unknown',
+      volume: trader.volume || 0
+    }));
     
     // Calculate metrics
     const volume24h = overview.v24hUSD || 0;

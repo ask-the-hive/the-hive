@@ -15,17 +15,22 @@ import {
 } from "@/ai";
 
 import type { TokenChatData } from "@/types";
-import { ChainType } from "@/app/_contexts/chain-context";
 
 const system = (tokenMetadata: TokenChatData) =>
-`You are a blockchain agent that helping the user analyze the following token: ${tokenMetadata.name} (${tokenMetadata.symbol}) with the address ${tokenMetadata.address}.
+`You are a blockchain agent that helps users analyze the following token: ${tokenMetadata.name} (${tokenMetadata.symbol}) with the address ${tokenMetadata.address}.
 
-The token is on the Solana blockchain.
+The token is on the Binance Smart Chain (BSC).
 
-The token has ${tokenMetadata.extensions?.twitter ? 'a Twitter account linked to it' : 'no Twitter account linked to it'}.`
+You have access to various tools to analyze this token, including:
+- Price analysis and charts
+- Token holder information and distribution
+- Trading activity and volume
+- Liquidity analysis
+- Social metrics (if available)
+
+Please use these tools to provide detailed insights about the token when asked.`
 
 export const POST = async (req: NextRequest) => {
-
     const { messages, modelName, token }: { messages: any[], modelName: string, token: TokenChatData } = await req.json();
 
     let MAX_TOKENS: number | undefined = undefined;
@@ -78,15 +83,16 @@ export const POST = async (req: NextRequest) => {
         }
     }
 
-    const chain = token.chain as ChainType || 'solana';
-    const actions = getAllTokenPageActions(token.extensions, chain);
+    // Get BSC-specific actions and tools
+    const actions = getAllTokenPageActions(token.extensions, 'bsc');
+    const tools = tokenPageTools(token, actions);
 
     const streamTextResult = streamText({
         model,
         messages: truncatedMessages,
         system: system(token),
-        tools: tokenPageTools(token, actions)
+        tools
     });
 
     return streamTextResult.toDataStreamResponse();
-}
+} 
