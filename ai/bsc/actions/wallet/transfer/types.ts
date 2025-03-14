@@ -13,6 +13,8 @@ export type TransferResultBodyType = {
     transaction?: string;
     cancelled?: boolean;
     error?: string;
+    walletAddress?: string;
+    success?: boolean;
 };
 
 export type TransferResultType = BscActionResult<TransferResultBodyType>; 

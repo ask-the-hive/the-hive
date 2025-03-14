@@ -14,12 +14,19 @@ import { useState, useEffect } from "react";
 import { BNB_METADATA, WBNB_ADDRESS, WBNB_METADATA } from "@/lib/config/bsc";
 import { ERC20_ABI } from "@/lib/config/abis/erc20";
 import ToolCard from "../../tool-card";
+import { Card } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { ChevronDown } from "lucide-react";
+import LogInButton from "@/app/(app)/_components/log-in-button";
+import { Skeleton } from "@/components/ui/skeleton";
+import TokenInput from "./token-input";
 
 interface TransferArgs {
     to: string;
     amount: number;
     tokenAddress?: string;
     tokenSymbol?: string;
+    walletAddress: string;
 }
 
 interface TransferResult {
@@ -60,8 +67,9 @@ const TransferCall: React.FC<TransferCallProps> = ({ args, toolCallId }) => {
     
     console.log("Current chain in TransferCall:", currentChain);
     
-    // Get the BSC wallet
-    const bscWallet = wallets.find(w => w.address.startsWith('0x')) || user?.wallet;
+    // Get the BSC wallet from args.walletAddress
+    const bscWallet = wallets.find(w => w.address === args.walletAddress) || 
+                     (user?.wallet?.address === args.walletAddress ? user.wallet : null);
     
     console.log("BSC wallet:", bscWallet?.address);
 
@@ -254,36 +262,59 @@ const TransferCall: React.FC<TransferCallProps> = ({ args, toolCallId }) => {
         }
     };
 
+    // Define priority tokens for BSC
+    const priorityTokens = [
+        '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c', // WBNB
+        '0x55d398326f99059fF775485246999027B3197955', // USDT
+        '0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d', // USDC
+        '0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56', // BUSD
+    ];
+
+    if (tokenLoading) {
+        return <Skeleton className="h-48 w-96" />;
+    }
+
     return (
-        <div className="flex flex-col gap-4">
-            <div className="flex flex-col gap-2">
-                <label className="text-sm font-medium">Amount</label>
-                <Input
-                    type="number"
-                    value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
-                    placeholder="Enter amount"
+        <Card className="flex flex-col gap-2 p-2">
+            <div className="flex flex-col items-center gap-2">
+                <TokenInput
+                    token={token}
+                    label="Transfer"
+                    amount={amount}
+                    onChange={(newAmount) => {
+                        setAmount(newAmount);
+                    }}
+                    onChangeToken={(newToken) => {
+                        setToken(newToken);
+                    }}
+                    priorityTokens={priorityTokens}
                 />
-            </div>
-            <div className="flex flex-col gap-2">
-                <label className="text-sm font-medium">To Address</label>
+                <ChevronDown className="w-4 h-4" />
                 <Input
                     value={toAddress}
-                    onChange={(e) => setToAddress(e.target.value)}
-                    placeholder="Enter recipient address"
+                    onChange={(e) => {
+                        setToAddress(e.target.value);
+                    }}
+                    placeholder="To address"
                 />
             </div>
-            <div className="flex flex-row gap-2">
-                <Button
-                    className="flex-1"
-                    onClick={onTransfer}
-                    disabled={isTransferring || !bscWallet}
-                >
-                    {isTransferring ? "Transferring..." : "Transfer"}
-                </Button>
+            <Separator />
+            <div className="flex flex-col gap-2">
+                {
+                    bscWallet ? (
+                        <Button
+                            variant="brand"
+                            onClick={onTransfer}
+                            disabled={isTransferring || !token || !amount || Number(amount) <= 0 || !toAddress}
+                        >
+                            {isTransferring ? "Transferring..." : "Transfer"}
+                        </Button>
+                    ) : (
+                        <LogInButton />
+                    )
+                }
                 <Button
                     variant="outline"
-                    className="flex-1"
                     onClick={() => {
                         addToolResult<TransferResult>(toolCallId, {
                             message: "Transfer cancelled",
@@ -298,43 +329,47 @@ const TransferCall: React.FC<TransferCallProps> = ({ args, toolCallId }) => {
                     Cancel
                 </Button>
             </div>
-        </div>
+        </Card>
     );
 };
 
 const Transfer: React.FC<Props> = ({ tool, prevToolAgent }) => {
+    console.log("BSC Transfer component rendered", { tool, prevToolAgent });
+
     return (
-        <ToolCard<TransferResult, TransferArgs>
+        <ToolCard<TransferResult, TransferArgs> 
             tool={tool}
-            loadingText="Preparing transfer..."
+            loadingText={`Preparing transfer...`}   
             result={{
-                heading: (result) => result.body?.success ? "Transfer successful" : "Transfer failed",
-                body: (result) => (
-                    <div className="flex flex-col gap-2">
-                        {result.body?.success ? (
-                            <>
-                                <p>Transaction hash: <a href={`https://bscscan.com/tx/${result.body?.txHash}`} target="_blank" rel="noopener noreferrer" className="text-brand-600 hover:underline">{result.body?.txHash}</a></p>
-                                <p>Amount: {result.body?.amount} {result.body?.symbol}</p>
-                                <p>To: {result.body?.to}</p>
-                            </>
-                        ) : (
-                            <p className="text-red-500">{result.body?.error || "Unknown error"}</p>
-                        )}
-                    </div>
-                )
-            }}
-            call={{
-                heading: "Transfer",
-                body: (toolCallId, args) => (
-                    <TransferCall
-                        args={args}
-                        toolCallId={toolCallId}
-                    />
-                )
+                heading: (result) => {
+                    console.log("Transfer result:", result);
+                    return result.body?.success 
+                        ? `Transfer successful`
+                        : result.body?.error 
+                            ? "Transfer failed" 
+                            : "Confirm Transfer";
+                },
+                body: (result) => {
+                    console.log("Transfer result body:", result.body);
+                    if (result.body?.success) {
+                        return `Successfully transferred ${result.body.amount} ${result.body.symbol} to ${result.body.to}`;
+                    }
+                    if (result.body?.error) {
+                        return result.body.error;
+                    }
+                    // If no success or error, show the transfer UI
+                    return <TransferCall toolCallId={tool.toolCallId} args={{
+                        to: tool.args.to,
+                        amount: tool.args.amount,
+                        tokenAddress: tool.args.tokenAddress,
+                        tokenSymbol: tool.args.tokenSymbol,
+                        walletAddress: tool.args.walletAddress
+                    }} />;
+                }
             }}
             prevToolAgent={prevToolAgent}
         />
-    );
-};
+    )
+}
 
 export default Transfer 
