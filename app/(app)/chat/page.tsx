@@ -1,8 +1,10 @@
+export const dynamic = 'force-dynamic';
+
 import Chat from "./_components/chat";
 
 import NotLoggedInAlert from "./_components/not-logged-in-alert";
 
-export default function Home() {
+const ChatPage = () => {
   return (
     <div className="flex-1 h-0 overflow-y-hidden w-full">
       <Chat />
@@ -10,3 +12,5 @@ export default function Home() {
     </div>
   );
 }
+
+export default ChatPage;

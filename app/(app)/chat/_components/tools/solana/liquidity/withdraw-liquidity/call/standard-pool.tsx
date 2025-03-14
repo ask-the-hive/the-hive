@@ -175,7 +175,7 @@ const StandardPool: React.FC<Props> = ({ pool, toolCallId }) => {
 export const OutputToken = ({ symbol, amount, logoURI, decimals }: { symbol: string, amount: string, logoURI: string, decimals: number }) => {
     return (
         <div className="flex gap-2 items-center bg-neutral-100 dark:bg-neutral-700 rounded-md p-2 flex-1">
-            <img src={logoURI} alt={symbol} className="w-6 h-6 rounded-full" />
+            <img src={logoURI || "https://www.birdeye.so/images/unknown-token-icon.svg"} alt={symbol} className="w-6 h-6 rounded-full" />
             <div className="flex flex-col">
                 <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400">{symbol}</p>
                 <p className="text-sm">{new Decimal(amount).div(10 ** decimals).toNumber().toLocaleString()}</p>

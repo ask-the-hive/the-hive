@@ -1,0 +1,1 @@
+export const BSC_TOKEN_PAGE_LIQUIDITY_PROMPT = "Analyze the liquidity of this BSC token to understand its trading depth, volume, and market health."; 

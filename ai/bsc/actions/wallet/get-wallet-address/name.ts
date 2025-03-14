@@ -1,0 +1,1 @@
+export const BSC_GET_WALLET_ADDRESS_NAME = "bsc-get-wallet-address"; 

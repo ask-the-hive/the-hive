@@ -15,11 +15,13 @@ import {
 
 import SaveToken from '../(app)/_components/save-token';
 
-import { useTokenSearch } from '@/hooks/search';
+import { useSearchTokens } from '@/hooks/queries/token';
+import { useChain } from '@/app/_contexts/chain-context';
 
 import { cn } from '@/lib/utils';
 
 import { Token } from '@/db/types';
+import type { TokenSearchResult } from '@/services/birdeye/types';
 
 interface Props {
     value: Token | null,
@@ -28,29 +30,37 @@ interface Props {
 }
 
 const TokenSelect: React.FC<Props> = ({ value, onChange, priorityTokens = [] }) => {
-
+    const { currentChain } = useChain();
     const [open, setOpen] = useState(false);
-
     const [input, setInput] = useState("");
 
-    const { results, loading } = useTokenSearch(input);
+    const { tokens, isLoading } = useSearchTokens(input, currentChain);
 
     const sortedResults = React.useMemo(() => {
-        if (!results) return [];
+        if (!tokens) return [];
         
-        return results.sort((a, b) => {
-            // First check for priority tokens
-            const aIndex = priorityTokens.indexOf(a.id);
-            const bIndex = priorityTokens.indexOf(b.id);
+        return tokens.sort((a: TokenSearchResult, b: TokenSearchResult) => {
+            const aIndex = priorityTokens.indexOf(a.address);
+            const bIndex = priorityTokens.indexOf(b.address);
             
             if (aIndex !== -1 && bIndex !== -1) return aIndex - bIndex;
             if (aIndex !== -1) return -1;
             if (bIndex !== -1) return 1;
 
-            // keep order
             return 0;
-        });
-    }, [results, priorityTokens, input]);
+        }).map((token: TokenSearchResult) => ({
+            id: token.address,
+            symbol: token.symbol,
+            name: token.name,
+            logoURI: token.logo_uri,
+            decimals: 0, // We don't need decimals for display
+            tags: [],
+            extensions: {},
+            freezeAuthority: null,
+            mintAuthority: null,
+            permanentDelegate: null,
+        }));
+    }, [tokens, priorityTokens, input]);
 
     return (
         <Popover open={open} onOpenChange={setOpen}>
@@ -61,7 +71,7 @@ const TokenSelect: React.FC<Props> = ({ value, onChange, priorityTokens = [] }) 
                     {
                         value ? (
                             <img 
-                                src={value.logoURI || '/placeholder.png'} 
+                                src={value.logoURI || 'https://www.birdeye.so/images/unknown-token-icon.svg'} 
                                 alt={value.name} 
                                 className="w-6 h-6 rounded-full" 
                             />
@@ -85,7 +95,7 @@ const TokenSelect: React.FC<Props> = ({ value, onChange, priorityTokens = [] }) 
                     onChange={(e) => setInput(e.target.value)}
                 />
                 {
-                    loading ? (
+                    isLoading ? (
                         <Skeleton className="h-48 w-full" />
                     ) : (
                         <div className="flex flex-col gap-2 max-h-[300px] overflow-y-scroll">
@@ -96,7 +106,7 @@ const TokenSelect: React.FC<Props> = ({ value, onChange, priorityTokens = [] }) 
                                             No results for &quot;{input}&quot;
                                         </p>
                                     ) : (
-                                        sortedResults.map((token) => (
+                                        sortedResults.map((token: Token) => (
                                             <Button 
                                                 key={token.id}
                                                 variant="ghost"
@@ -107,7 +117,7 @@ const TokenSelect: React.FC<Props> = ({ value, onChange, priorityTokens = [] }) 
                                                 }}
                                             >
                                                 <img 
-                                                    src={token.logoURI} 
+                                                    src={token.logoURI || "https://www.birdeye.so/images/unknown-token-icon.svg"} 
                                                     alt={token.name} 
                                                     className="w-6 h-6 rounded-full" 
                                                 />
@@ -120,7 +130,7 @@ const TokenSelect: React.FC<Props> = ({ value, onChange, priorityTokens = [] }) 
                                     )
                                 ) : (
                                     <p className="text-xs text-neutral-500">
-                                        Start typing to search for a token
+                                        Search for a token
                                     </p>
                                 )
                             }

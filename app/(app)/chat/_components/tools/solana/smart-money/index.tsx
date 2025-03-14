@@ -22,7 +22,7 @@ const SmartMoneyInflows: React.FC<Props> = ({ tool, prevToolAgent }) => {
             result={{
                 heading: (result: GetSmartMoneyInflowsResultType) => result.body 
                     ? `Fetched Smart Money Inflows`
-                    : `Failed to fetch smart money inflows`,
+                    : `Failed to fetch smart money inflows. Please try again later.`,
                 body: (result: GetSmartMoneyInflowsResultType) => result.body 
                     ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">

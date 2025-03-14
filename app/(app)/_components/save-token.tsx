@@ -35,10 +35,6 @@ const SaveToken: React.FC<Props> = ({ address, className }) => {
 
         if (isTokenSaved) {
             await deleteToken();
-            const searchInput = document.querySelector('input[placeholder="Search tokens..."]') as HTMLInputElement;
-            if (searchInput) {
-                searchInput.focus();
-            }
         } else {
             await saveToken();
         }

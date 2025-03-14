@@ -1,49 +1,52 @@
-import { NextResponse } from "next/server";
-
+import { NextRequest, NextResponse } from "next/server";
 import { getToken } from "@/db/services";
+import { getTokenOverview } from "@/services/birdeye";
+import type { ChainType } from "@/app/_contexts/chain-context";
 
-import { NextRequest } from "next/server";
-import { getMint } from "@solana/spl-token";
-import { PublicKey } from "@solana/web3.js";
-import { Connection } from "@solana/web3.js";
-import { getPoolFromLpMint, raydiumAuthorityAddress } from "@/services/raydium";
-import { Token } from "@/db/types";
-
-interface Params {
-    address: string;
-}
-
-export const GET = async (request: NextRequest, { params }: { params: Promise<Params> }) => {
-    const address = (await params).address;
+export async function GET(
+    req: NextRequest,
+    { params }: { params: Promise<{ address: string }> }
+) {
+    const { address } = await params;
+    const searchParams = req.nextUrl.searchParams;
+    const chainParam = searchParams.get('chain') || 'solana';
+    const chain = (chainParam === 'solana' || chainParam === 'bsc') ? chainParam as ChainType : 'solana';
+    
     try {
-        const tokenData = await getToken(address);
-        if(tokenData) return NextResponse.json(tokenData);
-
-        const mintData = await getMint(new Connection(process.env.NEXT_PUBLIC_SOLANA_RPC_URL!), new PublicKey(address));
-
-        if(mintData.mintAuthority?.toBase58() === raydiumAuthorityAddress) {
-            const pool = await getPoolFromLpMint(address);
-            if(!pool) return NextResponse.json(null);
-
-            const lpTokenData: Token = {
-                id: address,
-                name: `${pool.mintA.symbol}/${pool.mintB.symbol}`,
-                symbol: `${pool.mintA.symbol}/${pool.mintB.symbol}`,
-                decimals: 6,
-                tags: [],
-                logoURI: "/dexes/raydium.png",
-                mintAuthority: mintData.mintAuthority?.toBase58() || null,
-                freezeAuthority: mintData.freezeAuthority?.toBase58() || null,
-                permanentDelegate: null,
-                extensions: {}
+        const token = await getToken(address);
+        
+        if (!token) {
+            const tokenMetadata = await getTokenOverview(address, chain);
+            
+            if (!tokenMetadata) {
+                return NextResponse.json(
+                    { error: 'Token not found' },
+                    { status: 404 }
+                );
             }
-
-            return NextResponse.json(lpTokenData);
+            
+            // Return token data from Birdeye
+            return NextResponse.json({
+                id: tokenMetadata.address,
+                name: tokenMetadata.name,
+                symbol: tokenMetadata.symbol,
+                decimals: tokenMetadata.decimals,
+                logoURI: tokenMetadata.logoURI,
+                extensions: tokenMetadata.extensions,
+                tags: [],
+                freezeAuthority: null,
+                mintAuthority: null,
+                permanentDelegate: null,
+                overview: tokenMetadata
+            });
         }
-
-        return NextResponse.json(null, { status: 404 });
-    } catch (e) {
-        console.error(e);
-        return NextResponse.json(null, { status: 500 });
+        
+        return NextResponse.json(token);
+    } catch (error) {
+        console.error('Error fetching token data:', error);
+        return NextResponse.json(
+            { error: 'Failed to fetch token data' },
+            { status: 500 }
+        );
     }
 }

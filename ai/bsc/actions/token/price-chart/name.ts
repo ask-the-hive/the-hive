@@ -1,0 +1,1 @@
+export const BSC_PRICE_CHART_NAME = "price-chart"; 

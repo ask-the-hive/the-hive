@@ -1,0 +1,1 @@
+export const BSC_TOKEN_TOP_TRADERS_NAME = "token-top-traders"; 

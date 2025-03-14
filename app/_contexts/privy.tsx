@@ -4,6 +4,7 @@ import React from 'react';
 
 import {PrivyProvider as PrivyProviderBase} from '@privy-io/react-auth';
 import {toSolanaWalletConnectors} from '@privy-io/react-auth/solana';
+import { bsc } from 'viem/chains';
 
 import '@/components/utils/suppress-console'
 
@@ -16,6 +17,8 @@ const solanaConnectors = toSolanaWalletConnectors({
 });
 
 export const PrivyProvider: React.FC<Props> = ({ children }) => {
+    console.log("Initializing PrivyProvider with BSC support");
+    
     return (
         <PrivyProviderBase
             appId={process.env.NEXT_PUBLIC_PRIVY_APP_ID!}
@@ -24,7 +27,7 @@ export const PrivyProvider: React.FC<Props> = ({ children }) => {
                     theme: 'dark',
                     accentColor: '#d19900',
                     logo: 'https://www.askthehive.ai/logo-dark.png',
-                    walletChainType: 'solana-only',
+                    walletChainType: 'ethereum-and-solana',
                     showWalletLoginFirst: true,
                 },
                 loginMethods: ['email', 'wallet', 'google', 'twitter', 'discord', 'github'],
@@ -38,7 +41,9 @@ export const PrivyProvider: React.FC<Props> = ({ children }) => {
                         name: 'mainnet-beta',
                         rpcUrl: process.env.NEXT_PUBLIC_SOLANA_RPC_URL!,
                     }
-                ]
+                ],
+                supportedChains: [bsc],
+                defaultChain: bsc,
             }}
         >
             {children}

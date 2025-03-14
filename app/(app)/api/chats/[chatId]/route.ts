@@ -6,6 +6,7 @@ import { privy } from "@/services/privy";
 import { generateText } from "ai";
 import { Message } from "ai";
 import { openai } from "@ai-sdk/openai";
+import { ChainType } from "@/app/_contexts/chain-context";
 
 export const GET = async (req: NextRequest, { params }: { params: Promise<{ chatId: string }> }) => {
 
@@ -43,7 +44,7 @@ export const GET = async (req: NextRequest, { params }: { params: Promise<{ chat
 export const POST = async (req: NextRequest, { params }: { params: Promise<{ chatId: string }> }) => {
     const { chatId } = await params;
 
-    const { messages } = await req.json();
+    const { messages, chain } = await req.json();
 
     try {
         // Get the authorization header
@@ -75,9 +76,14 @@ export const POST = async (req: NextRequest, { params }: { params: Promise<{ cha
                 userId,
                 messages,
                 tagline: await generateTagline(messages),
+                chain: chain as ChainType || 'solana',
             }));
         } else {
-            return NextResponse.json(await updateChatMessages(chatId, userId, messages));
+            // Update messages and chain if provided
+            return NextResponse.json(await updateChatMessages(chatId, userId, {
+                messages,
+                chain: chain as ChainType
+            }));
         }
     } catch (error) {
         console.error("Error in /api/chats/[chatId]:", error);

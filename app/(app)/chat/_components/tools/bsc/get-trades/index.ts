@@ -1,0 +1,1 @@
+export { GetTrades } from './get-trades'; 

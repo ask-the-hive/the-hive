@@ -7,6 +7,7 @@ import { Models } from '@/types/models';
 import { usePrivy } from '@privy-io/react-auth';
 import { generateId } from 'ai';
 import { useUserChats } from '@/hooks';
+import { ChainType } from '@/app/_contexts/chain-context';
 
 import {
     SOLANA_GET_WALLET_ADDRESS_NAME,
@@ -40,6 +41,8 @@ interface ChatContextType {
     isResponseLoading: boolean;
     model: Models;
     setModel: (model: Models) => void;
+    chain: ChainType;
+    setChain: (chain: ChainType) => void;
     setChat: (chatId: string) => void;
     resetChat: () => void;
     chatId: string;
@@ -57,6 +60,8 @@ const ChatContext = createContext<ChatContextType>({
     addToolResult: () => {},
     model: Models.OpenAI,
     setModel: () => {},
+    chain: 'solana',
+    setChain: () => {},
     setChat: () => {},
     resetChat: () => {},
     chatId: '',
@@ -68,12 +73,12 @@ interface ChatProviderProps {
 }
 
 export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
-
     const { user, getAccessToken } = usePrivy();
 
     const [chatId, setChatId] = useState<string>(generateId());
     const [isResponseLoading, setIsResponseLoading] = useState(false);
     const [model, setModel] = useState<Models>(Models.OpenAI);
+    const [chain, setChain] = useState<ChainType>('solana');
 
     const { mutate } = useUserChats();
 
@@ -87,6 +92,7 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
         const chatData = await chat.json();
         if (chatData) {
             setMessages(chatData.messages);
+            setChain(chatData.chain || 'solana'); // Set the chain from saved chat data
         }
     }
 
@@ -100,12 +106,13 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
         onResponse: () => {
             setIsResponseLoading(false);
         },
-        api: '/api/chat/solana',
+        api: `/api/chat/${chain}`,
         body: {
             model,
             modelName: model,
             userId: user?.id,
             chatId,
+            chain,
         },
     });
     
@@ -126,6 +133,7 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
                     },
                     body: JSON.stringify({
                         messages,
+                        chain, // Include chain in saved chat data
                     }),
                 });
                 const data = await response.json();
@@ -177,6 +185,8 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
                     return `Complete or cancel your withdraw`;
                 case SOLANA_GET_WALLET_ADDRESS_NAME:
                     return `Connect your wallet`;
+                case "bsc_transfer":
+                    return `Complete or cancel your transfer`;
                 default:
                     return '';
             }
@@ -199,6 +209,8 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
             addToolResult,
             model,
             setModel,
+            chain,
+            setChain,
             setChat,
             resetChat,
             chatId,
