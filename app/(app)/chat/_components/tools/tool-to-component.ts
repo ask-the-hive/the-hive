@@ -18,7 +18,8 @@ import {
     GetTopTraders as BscGetTopTraders,
     GetWalletAddress as BscGetWalletAddress,
     GetBscBalance,
-    Transfer
+    Transfer,
+    Trade as BscTrade
 } from "./bsc";
 
 export const toolToComponent = {
@@ -39,5 +40,6 @@ export const toolToComponent = {
     "bscwallet-bsc-get-wallet-address": BscGetWalletAddress,
     "bscwallet-bsc_balance": GetBscBalance,
     "bscwallet-bsc_transfer": Transfer,
+    "bsctrading-bsc_trade": BscTrade,
     // ... rest of the mappings
 } 

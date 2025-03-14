@@ -44,10 +44,10 @@ const bscButtons = [
         prompt: "Let's get some liquidity pools"
     },
     {
-        title: "Tokens",
-        description: "Analyze token metrics",
-        icon: "Coins" as const,
-        prompt: "Let's analyze a token"
+        title: "Trade",
+        description: "Swap using 0x Protocol",
+        icon: "ChartCandlestick" as const,
+        prompt: "Let's trade some tokens"
     },
     {
         title: "Knowledge",

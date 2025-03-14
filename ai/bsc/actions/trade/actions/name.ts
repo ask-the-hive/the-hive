@@ -1,0 +1,1 @@
+export const BSC_TRADE_NAME = "bsc_trade"; 
