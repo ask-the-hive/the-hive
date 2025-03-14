@@ -24,7 +24,6 @@ export const searchTokens = async ({
 }: SearchTokensParams): Promise<SearchResponse> => {
     const params: Record<string, string | number> = {
         keyword,
-        chain: chain,
         target,
         sort_by,
         sort_type,

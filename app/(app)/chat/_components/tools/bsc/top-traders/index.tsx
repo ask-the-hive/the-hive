@@ -38,6 +38,16 @@ const TopTraders: React.FC<Props> = ({ tool, prevToolAgent }) => {
 
 const TopTradersTable = ({ body }: { body: TopTokenTradersResultBodyType }) => {
     const [showAll, setShowAll] = useState(false);
+    
+    const topTraders = Array.isArray(body.topTraders) ? body.topTraders : [];
+    
+    if (topTraders.length === 0) {
+        return (
+            <Card className="flex flex-col gap-2 w-full p-2">
+                <p className="text-center py-4">No traders found for this token.</p>
+            </Card>
+        );
+    }
 
     return (
         <Card className="flex flex-col gap-2 w-full p-2">
@@ -51,7 +61,7 @@ const TopTradersTable = ({ body }: { body: TopTokenTradersResultBodyType }) => {
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {body.topTraders.slice(0, showAll ? body.topTraders.length : 5).map((trader, index) => (
+                    {topTraders.slice(0, showAll ? topTraders.length : 5).map((trader, index) => (
                         <TableRow key={trader.owner}>
                             <TableCell>{index + 1}</TableCell>
                             <TableCell className="">
@@ -134,7 +144,7 @@ const TopTradersTable = ({ body }: { body: TopTokenTradersResultBodyType }) => {
                     ))}
                 </TableBody>
             </Table>
-            {body.topTraders.length > 5 && (
+            {topTraders.length > 5 && (
                 <Button
                     variant="ghost"
                     onClick={() => setShowAll(!showAll)}

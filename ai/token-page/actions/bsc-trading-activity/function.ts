@@ -15,6 +15,32 @@ export interface TokenPageTradingActivityResultBodyType {
   averageTradeSize: number;
 }
 
+// Helper function to format large numbers
+function formatNumber(num: number): string {
+  if (num >= 1000000) {
+    return (num / 1000000).toFixed(2) + 'M';
+  } else if (num >= 1000) {
+    return (num / 1000).toFixed(2) + 'K';
+  } else {
+    return num.toFixed(2);
+  }
+}
+
+// Helper function to describe volume
+function describeVolume(volume: number): string {
+  if (volume > 1000000) {
+    return "very high trading volume";
+  } else if (volume > 500000) {
+    return "high trading volume";
+  } else if (volume > 100000) {
+    return "moderate trading volume";
+  } else if (volume > 10000) {
+    return "low trading volume";
+  } else {
+    return "very low trading volume";
+  }
+}
+
 export async function getBSCTokenPageTradingActivity(token: TokenChatData, _: TokenPageTradingActivityArgumentsType): Promise<SolanaActionResult<TokenPageTradingActivityResultBodyType>> {
   try {
     // Get token overview for volume data
@@ -68,7 +94,9 @@ export async function getBSCTokenPageTradingActivity(token: TokenChatData, _: To
 3. Number of Trades: ${tradeCount}
 4. Average Trade Size: $${formattedAvgSize}
 
-The token shows ${describeVolume(volume24h)} with ${describeTraderActivity(tradeCount)} in the last 24 hours.`,
+The token shows ${describeVolume(volume24h)} with ${describeTraderActivity(tradeCount)} in the last 24 hours.
+
+Note: The top traders for this token are displayed in the UI. DO NOT list or reiterate the top traders in your response.`,
       body: {
         topTraders: topTraders,
         volume24h,
@@ -89,34 +117,6 @@ The token shows ${describeVolume(volume24h)} with ${describeTraderActivity(trade
         averageTradeSize: 0
       }
     };
-  }
-}
-
-// Helper function to format numbers
-function formatNumber(num: number): string {
-  if (num >= 1_000_000_000) {
-    return (num / 1_000_000_000).toFixed(2) + 'B';
-  } else if (num >= 1_000_000) {
-    return (num / 1_000_000).toFixed(2) + 'M';
-  } else if (num >= 1_000) {
-    return (num / 1_000).toFixed(2) + 'K';
-  } else {
-    return num.toFixed(2);
-  }
-}
-
-// Helper function to describe volume
-function describeVolume(volume: number): string {
-  if (volume > 10_000_000) {
-    return "extremely high trading volume";
-  } else if (volume > 1_000_000) {
-    return "high trading volume";
-  } else if (volume > 100_000) {
-    return "moderate trading volume";
-  } else if (volume > 10_000) {
-    return "low trading volume";
-  } else {
-    return "very low trading volume";
   }
 }
 

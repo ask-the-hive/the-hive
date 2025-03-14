@@ -19,6 +19,8 @@ export const queryBirdeye = async <T>(
   }
 
   const xChainValue = chain === 'bsc' ? 'bsc' : 'solana';
+  
+  console.log(`Making Birdeye API request to ${url.toString()} with chain ${chain}`);
 
   try {
     const response = await fetch(url.toString(), {
@@ -29,18 +31,26 @@ export const queryBirdeye = async <T>(
       }
     });
 
+    const responseData = await response.json();
+    console.log(`Birdeye API response for ${endpoint}:`, responseData);
+
     if (!response.ok) {
-      throw new Error(`Birdeye API error: ${response.status} ${response.statusText}`);
+      throw new Error(`Birdeye API error: ${response.status} ${response.statusText} - ${JSON.stringify(responseData)}`);
     }
 
-    const data: BaseResponse<T> = await response.json();
+    const data: BaseResponse<T> = responseData;
 
     if (!data.success) {
-      throw new Error(`Birdeye API error: Request failed`);
+      throw new Error(`Birdeye API error: ${data.message || 'Request failed'}`);
+    }
+
+    if (!data.data || (Array.isArray(data.data) && data.data.length === 0)) {
+      console.log(`No data returned from Birdeye API for ${endpoint}`);
     }
 
     return data.data;
   } catch (error) {
+    console.error(`Birdeye API error for ${endpoint}:`, error);
     throw error;
   }
 }
