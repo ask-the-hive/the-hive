@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from 'react';
 import { Card } from '@/components/ui';
 import { useChat } from '@/app/(app)/chat/_contexts/chat';
-import { useTokenMetadata } from '@/hooks/queries/token/use-token-metadata';
 import { Skeleton } from '@/components/ui/skeleton';
 import { usePrivy } from '@privy-io/react-auth';
 import { useWallets } from '@privy-io/react-auth';
@@ -15,7 +14,6 @@ import { ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import LogInButton from '@/app/(app)/_components/log-in-button';
-import { ethers } from 'ethers';
 import type { Token } from '@/db/types/token';
 
 interface Props {
@@ -165,7 +163,9 @@ const SwapCallBody: React.FC<Props> = ({ toolCallId, args }) => {
         setIsSwapping(true);
 
         try {
-            const signer = await (bscWallet as any).getEthersJsSigner();
+            // Call the signer but we don't need to use it for now
+            await (bscWallet as any).getEthersJsSigner();
+            
             // TODO: Implement 0x API swap logic here
             // For now, just return a mock success
             addToolResult<TradeResultBodyType>(toolCallId, {
