@@ -6,6 +6,7 @@ import { bscTokenAnalysisAgent } from "@/ai/agents/bsc-token-analysis";
 import { bscMarketAgent } from "@/ai/agents/bsc-market";
 import { bscWalletAgent } from "@/ai/agents/bsc-wallet";
 import { bscKnowledgeAgent } from "@/ai/agents/bsc-knowledge";
+import { bscLiquidityAgent } from "@/ai/agents/bsc-liquidity";
 import { Agent } from "@/ai/agent";
 
 // List of BSC-specific agents
@@ -13,7 +14,8 @@ const bscAgents = [
     bscTokenAnalysisAgent,
     bscMarketAgent,
     bscWalletAgent,
-    bscKnowledgeAgent
+    bscKnowledgeAgent,
+    bscLiquidityAgent
 ];
 
 export const system = 

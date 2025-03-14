@@ -8,7 +8,8 @@ import {
     SOCIAL_AGENT_NAME,
     LIQUIDITY_AGENT_NAME,
     BSC_WALLET_AGENT_NAME,
-    BSC_KNOWLEDGE_AGENT_NAME
+    BSC_KNOWLEDGE_AGENT_NAME,
+    BSC_LIQUIDITY_AGENT_NAME
 } from "@/ai/agents/names";
 
 import type { IconName } from "@/types";
@@ -26,7 +27,8 @@ export const toolToAgent = {
     "bscmarket": MARKET_AGENT_NAME,
     "bscwallet": BSC_WALLET_AGENT_NAME,
     "bscknowledge": BSC_KNOWLEDGE_AGENT_NAME,
-    "liquidity": LIQUIDITY_AGENT_NAME
+    "liquidity": LIQUIDITY_AGENT_NAME,
+    "bscliquidity": BSC_LIQUIDITY_AGENT_NAME
 }
 
 export const getAgentName = (tool: ToolInvocation) => {
@@ -53,6 +55,7 @@ export const getAgentIcon = (agentName: string): IconName => {
         case TOKEN_ANALYSIS_AGENT_NAME:
             return "Coins";
         case LIQUIDITY_AGENT_NAME:
+        case BSC_LIQUIDITY_AGENT_NAME:
             return "Droplet";
         default:
             return "Brain";

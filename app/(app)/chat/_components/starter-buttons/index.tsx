@@ -51,9 +51,9 @@ const bscButtons = [
     },
     {
         title: "Knowledge",
-        description: "Learn about protocols",
+        description: "Get developer docs for protocols",
         icon: "Brain" as const,
-        prompt: "Tell me about BSC ecosystem protocols"
+        prompt: "Get me developer docs for PancakeSwap"
     }
 ] as const;
 

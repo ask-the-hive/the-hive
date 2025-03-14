@@ -5,7 +5,6 @@ import { Card } from '@/components/ui'
 
 interface Props {
     balance: number;
-    decimals?: number;
     logoURI?: string;
     symbol?: string;
     token?: string;
@@ -14,7 +13,6 @@ interface Props {
 
 const TokenBalance: React.FC<Props> = ({ 
     balance, 
-    decimals = 18, 
     logoURI, 
     symbol, 
     token, 
@@ -25,8 +23,7 @@ const TokenBalance: React.FC<Props> = ({
     // Use name as fallback for the alt text
     const altText = `${displaySymbol || name || "Unknown"} token logo`;
     
-    // Calculate the actual balance
-    const actualBalance = balance / Math.pow(10, decimals);
+    // The balance is already in the correct format, no need to divide by 10^decimals
     
     return (
         <Card className="flex items-center gap-2 p-2">
@@ -36,7 +33,7 @@ const TokenBalance: React.FC<Props> = ({
                 className="w-6 h-6 rounded-full" 
             />
             <div className="flex flex-col">
-                <span className="text-sm font-medium">{actualBalance.toLocaleString(undefined, { maximumFractionDigits: 4, minimumFractionDigits: 4 })}</span>
+                <span className="text-sm font-medium">{balance.toLocaleString(undefined, { maximumFractionDigits: 4, minimumFractionDigits: 4 })}</span>
                 <span className="text-xs text-muted-foreground">{displaySymbol}</span>
             </div>
         </Card>
