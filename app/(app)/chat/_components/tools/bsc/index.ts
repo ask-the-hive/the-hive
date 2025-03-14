@@ -13,4 +13,4 @@ export { default as GetBscBalance } from './balance';
 export { default as GetBscAllBalances } from './all-balances';
 export { default as Transfer } from './transfer';
 export * from './liquidity'; 
-//export * from './trade';
+export { default as Trade } from './trade';

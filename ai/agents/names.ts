@@ -11,3 +11,4 @@ export * from "./bsc-market/name";
 export * from "./bsc-wallet/name";
 export * from "./bsc-knowledge/name";
 export * from "./bsc-liquidity/name";
+export * from "./bsc-trading/name";

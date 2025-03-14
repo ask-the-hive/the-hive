@@ -1,0 +1,1 @@
+export const BSC_TRADING_AGENT_NAME = "Trading Agent"; 
