@@ -40,7 +40,8 @@ import {
     GetBscAllBalances,
     GetTrendingTokens as BscGetTrendingTokens,
     GetTrades as BscGetTrades,
-    Transfer as BscTransfer
+    Transfer as BscTransfer,
+    GetPools as BscGetPools
 } from './bsc'
 import { SearchRecentTweets } from './twitter'
 import { SearchKnowledge } from './knowledge'
@@ -90,6 +91,7 @@ import { BSC_GET_WALLET_ADDRESS_NAME } from '@/ai/bsc/actions/wallet/get-wallet-
 import { BSC_BALANCE_NAME } from '@/ai/bsc/actions/wallet/balance/name'
 import { BSC_ALL_BALANCES_NAME } from '@/ai/bsc/actions/wallet/all-balances/name'
 import { BSC_TRANSFER_NAME } from '@/ai/bsc/actions/wallet/transfer/name'
+import { BSC_GET_POOLS_NAME } from '@/ai/bsc/actions/liquidity/names'
 
 import type { ToolInvocation as ToolInvocationType } from 'ai'
 
@@ -163,6 +165,21 @@ const ToolInvocation: React.FC<Props> = ({ tool, prevToolAgent }) => {
                 return <BscTopTraders tool={tool} prevToolAgent={prevToolAgent} />
             default:
                 console.log(`Unknown BSC market tool: ${toolName}`);
+                return (
+                    <pre className="whitespace-pre-wrap">
+                        {JSON.stringify(tool, null, 2)}
+                    </pre>
+                );
+        }
+    }
+    
+    // Handle BSC liquidity tools
+    if (toolAgent === 'bscliquidity') {
+        switch(toolName) {
+            case BSC_GET_POOLS_NAME:
+                return <BscGetPools tool={tool} prevToolAgent={prevToolAgent} />
+            default:
+                console.log(`Unknown BSC liquidity tool: ${toolName}`);
                 return (
                     <pre className="whitespace-pre-wrap">
                         {JSON.stringify(tool, null, 2)}

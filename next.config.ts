@@ -11,6 +11,11 @@ const nextConfig: NextConfig = {
     "@ai-sdk/google",
     "@ai-sdk/deepseek"
   ],
+  images: {
+    domains: [
+      "logo.moralis.io"
+    ],
+  },
   webpack: (config, { isServer }) => {
     if (!isServer) {
       // Replace child_process with an empty module on the client side
