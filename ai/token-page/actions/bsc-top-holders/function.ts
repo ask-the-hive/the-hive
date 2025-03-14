@@ -1,4 +1,4 @@
-import { getTokenHolders } from "@/services/birdeye";
+import { getTokenTopHolders } from "@/services/moralis";
 import { knownAddresses } from "@/lib/known-addresses";
 
 import type { TokenPageTopHoldersResultBodyType, TokenPageTopHoldersArgumentsType } from "../top-holders/types";
@@ -8,33 +8,28 @@ import { AddressType, KnownAddress } from "@/types/known-address";
 
 export async function getBSCTokenPageTopHolders(token: TokenChatData, _: TokenPageTopHoldersArgumentsType): Promise<SolanaActionResult<TokenPageTopHoldersResultBodyType>> {
     try {
-        const numHolders = 50;
-        
-        const tokenHolders = await getTokenHolders({
-            address: token.address,
-            limit: numHolders,
-            chain: 'bsc'
-        });
+        // Get token holders from Moralis
+        const tokenHolders = await getTokenTopHolders(token.address);
 
-        if (!tokenHolders || !tokenHolders.items || tokenHolders.items.length === 0) {
+        if (!tokenHolders || tokenHolders.length === 0) {
             return {
                 message: `Could not find holder data for this BSC token.`,
             };
         }
 
         // Map holders to a consistent format
-        const holdersWithAnnotations = tokenHolders.items.map((holder: any) => {
-            const holderAddress = holder.owner;
+        const holdersWithAnnotations = tokenHolders.map((holder) => {
+            const holderAddress = holder.address;
             const knownAddress = knownAddresses[holderAddress];
             return {
-                owner_account: holderAddress,
                 owner: knownAddress?.name || holderAddress,
                 type: knownAddress?.type || AddressType.EOA,
-                percentOfSupply: holder.ui_amount / token.supply // Calculate percentage of supply
+                percentOfSupply: holder.percentage / 100 // Convert percentage to decimal
             };
         });
 
-        const { eoa, vesting, exchange } = holdersWithAnnotations.reduce((acc: any, holder: any) => {
+        // Separate holders by type
+        const { eoa, vesting, exchange } = holdersWithAnnotations.reduce((acc, holder) => {
             if (holder.type === AddressType.EOA) {
                 acc.eoa.push({
                     name: holder.owner,
@@ -62,13 +57,13 @@ export async function getBSCTokenPageTopHolders(token: TokenChatData, _: TokenPa
         } as Record<string, { name: string, type: AddressType, percentOfSupply: number }[]>);
 
         // Calculate basic holder percentages
-        const top10HoldersPercent = eoa.slice(0, 10).reduce((acc: number, curr: any) => acc + curr.percentOfSupply, 0);
-        const top20HoldersPercent = eoa.slice(0, 20).reduce((acc: number, curr: any) => acc + curr.percentOfSupply, 0);
-        const exchangeHoldersPercent = exchange.reduce((acc: number, curr: any) => acc + curr.percentOfSupply, 0);
-        const vestedHoldersPercent = vesting.reduce((acc: number, curr: any) => acc + curr.percentOfSupply, 0);
+        const top10HoldersPercent = eoa.slice(0, 10).reduce((acc, curr) => acc + curr.percentOfSupply, 0);
+        const top20HoldersPercent = eoa.slice(0, 20).reduce((acc, curr) => acc + curr.percentOfSupply, 0);
+        const exchangeHoldersPercent = exchange.reduce((acc, curr) => acc + curr.percentOfSupply, 0);
+        const vestedHoldersPercent = vesting.reduce((acc, curr) => acc + curr.percentOfSupply, 0);
 
         // Calculate concentration metrics
-        const top5HoldersPercent = eoa.slice(0, 5).reduce((acc: number, curr: any) => acc + curr.percentOfSupply, 0);
+        const top5HoldersPercent = eoa.slice(0, 5).reduce((acc, curr) => acc + curr.percentOfSupply, 0);
         const largestHolder = eoa[0]?.percentOfSupply || 0;
         
         // Calculate distribution patterns
