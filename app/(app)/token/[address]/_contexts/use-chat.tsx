@@ -82,7 +82,7 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ token, children }) =
         onResponse: () => {
             setIsResponseLoading(false);
         },
-        api: `/api/chat/token`,
+        api: token.chain === 'bsc' ? `/api/chat/bsc-token` : `/api/chat/token`,
         body: {
             model,
             modelName: model,

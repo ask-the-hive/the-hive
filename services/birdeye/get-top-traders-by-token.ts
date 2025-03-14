@@ -1,4 +1,5 @@
 import { queryBirdeye } from "./base";
+import { ChainType } from "@/app/_contexts/chain-context";
 
 import { 
     TopTradersByTokenTimeFrame, 
@@ -14,6 +15,7 @@ interface GetTopTradersByTokenParams {
     sortBy?: TopTradersByTokenSortBy;
     offset?: number;
     limit?: number;
+    chain?: ChainType;
 }
 
 export const getTopTradersByToken = async ({
@@ -22,7 +24,8 @@ export const getTopTradersByToken = async ({
     sortType = TopTradersByTokenSortType.Descending,
     sortBy = TopTradersByTokenSortBy.Volume,
     offset = 0,
-    limit = 10
+    limit = 10,
+    chain = 'solana'
 }: GetTopTradersByTokenParams): Promise<TopTradersByTokenResponse> => {
     return queryBirdeye<TopTradersByTokenResponse>(
         'defi/v2/tokens/top_traders',
@@ -33,6 +36,7 @@ export const getTopTradersByToken = async ({
             sort_by: sortBy,
             offset,
             limit
-        }
+        },
+        chain
     );
 } 

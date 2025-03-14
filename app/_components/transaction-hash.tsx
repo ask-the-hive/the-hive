@@ -11,20 +11,36 @@ import { Button, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from
 import { cn } from '@/lib/utils';
 
 import { truncateAddress } from '@/lib/wallet';
+import { ChainType } from '@/app/_contexts/chain-context';
 
 interface Props {
     hash: string;
     className?: string;
-    hideTransactionText?: boolean
+    hideTransactionText?: boolean;
+    chain?: ChainType;
 }
 
-const TransactionHash: React.FC<Props> = ({ hash, className, hideTransactionText }) => {
+const TransactionHash: React.FC<Props> = ({ hash, className, hideTransactionText, chain = 'solana' }) => {
     const [copied, setCopied] = useState(false);
 
     const handleCopy = () => {
         navigator.clipboard.writeText(hash);
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
+    };
+
+    const getExplorerUrl = () => {
+        if (chain === 'bsc') {
+            return `https://bscscan.com/tx/${hash}`;
+        }
+        return `https://solscan.io/tx/${hash}`;
+    };
+
+    const getExplorerName = () => {
+        if (chain === 'bsc') {
+            return 'BscScan';
+        }
+        return 'Solscan';
     };
 
     return (
@@ -51,9 +67,9 @@ const TransactionHash: React.FC<Props> = ({ hash, className, hideTransactionText
                             <Button variant="outline" size="sm" onClick={handleCopy}>
                                 {copied ? "Copied" : "Copy Hash"}
                             </Button>
-                            <Link href={`https://solscan.io/tx/${hash}`} target="_blank">
+                            <Link href={getExplorerUrl()} target="_blank">
                                 <Button variant="outline" size="sm">
-                                    Solscan <ArrowUpRight className="size-4" />
+                                    {getExplorerName()} <ArrowUpRight className="size-4" />
                                 </Button>
                             </Link>
                         </div>

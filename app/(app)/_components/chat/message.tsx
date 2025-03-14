@@ -90,11 +90,6 @@ const Message: React.FC<Props> = ({ message, ToolComponent, className, previousM
             </div>
             <div className={cn("pt-2 w-full max-w-full md:flex-1 md:w-0 overflow-hidden flex flex-col gap-2", compressed && "gap-0 md:w-full pt-0")}>
                 {
-                    message.content && (
-                        <MessageMarkdown content={message.content} compressed={compressed} />
-                    )
-                }
-                {
                     message.toolInvocations && message.toolInvocations.length > 0 && (
                         <div className="flex flex-col gap-2">
                             {message.toolInvocations.map((tool, index) => (
@@ -115,6 +110,11 @@ const Message: React.FC<Props> = ({ message, ToolComponent, className, previousM
                                 />
                             ))}
                         </div>
+                    )
+                }
+                {
+                    message.content && (
+                        <MessageMarkdown content={message.content} compressed={compressed} />
                     )
                 }
             </div>

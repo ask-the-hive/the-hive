@@ -1,0 +1,1 @@
+export const BSC_TOP_HOLDERS_NAME = "top-holders"; 

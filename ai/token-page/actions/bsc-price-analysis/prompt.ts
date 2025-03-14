@@ -1,0 +1,1 @@
+export const BSC_TOKEN_PAGE_PRICE_ANALYSIS_PROMPT = "Analyze the price action and trading activity of this BSC token to understand its volatility, trends, and market metrics."; 

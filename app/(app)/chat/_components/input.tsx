@@ -15,6 +15,7 @@ import { useChat } from '../_contexts/chat';
 import { cn } from '@/lib/utils';
 
 import ModelSelector from '../../_components/chat/model-selector';
+import ChainSelector from '../../_components/chat/chain-selector';
 import { usePrivy } from '@privy-io/react-auth';
 import FollowUpSuggestions from './follow-up-suggestions';
 
@@ -22,7 +23,7 @@ const ChatInput: React.FC = () => {
 
     const { user } = usePrivy();
 
-    const { input, setInput, onSubmit, isLoading, model, setModel, inputDisabledMessage } = useChat();
+    const { input, setInput, onSubmit, isLoading, model, setModel, chain, setChain, messages, inputDisabledMessage } = useChat();
 
     const { onKeyDown } = useEnterSubmit({ onSubmit: onSubmit })
 
@@ -72,11 +73,18 @@ const ChatInput: React.FC = () => {
                     />
                 </OptionalTooltip>
                 <div className="flex items-center justify-between px-2 pb-2">
-                    <ModelSelector
-                        model={model}
-                        onModelChange={setModel}
-                        disabled={isLoading}
-                    />
+                    <div className="flex items-center gap-2">
+                        <ModelSelector
+                            model={model}
+                            onModelChange={setModel}
+                            disabled={isLoading || messages.length > 0}
+                        />
+                        <ChainSelector
+                            chain={chain}
+                            onChainChange={setChain}
+                            disabled={isLoading || messages.length > 0}
+                        />
+                    </div>
                     <TooltipProvider>
                         <Tooltip delayDuration={0}>
                             <TooltipTrigger asChild>
