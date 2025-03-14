@@ -7,7 +7,7 @@ const solanaButtons = [
     {
         title: "Trending",
         description: "Search the trending tokens",
-        icon: "Coins" as const,
+        icon: "ChartLine" as const,
         prompt: "Show me the trending tokens"
     }, 
     {
@@ -34,19 +34,19 @@ const bscButtons = [
     {
         title: "Trending",
         description: "Search the trending tokens",
-        icon: "Coins" as const,
+        icon: "ChartLine" as const,
         prompt: "Show me the trending tokens"
     },
     {
-        title: "Balance",
-        description: "Check wallet balances",
-        icon: "Wallet" as const,
-        prompt: "Show me my wallet balances"
+        title: "Liquidity",
+        description: "Get liquidity pools",
+        icon: "Droplet" as const,
+        prompt: "Let's get some liquidity pools"
     },
     {
-        title: "Analyze",
+        title: "Tokens",
         description: "Analyze token metrics",
-        icon: "ChartLine" as const,
+        icon: "Coins" as const,
         prompt: "Let's analyze a token"
     },
     {

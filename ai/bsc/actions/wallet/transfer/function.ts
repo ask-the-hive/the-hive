@@ -17,6 +17,10 @@ export async function transfer(
             if (!result.body?.address) {
                 return {
                     message: `Could not find token address for symbol: ${tokenSymbol}`,
+                    body: {
+                        error: `Could not find token address for symbol: ${tokenSymbol}`,
+                        cancelled: true
+                    }
                 };
             }
             tokenAddress = result.body.address;
@@ -29,13 +33,18 @@ export async function transfer(
                 amount: args.amount,
                 recipient: args.to,
                 token: tokenSymbol || "BNB",
-                transaction: "" // Will be filled by the UI component
+                transaction: "", // Will be filled by the UI component
+                walletAddress: args.walletAddress // Include the wallet address
             }
         };
     } catch (error) {
         console.error('Transfer error:', error);
         return {
             message: `Error preparing transfer: ${error}`,
+            body: {
+                error: error instanceof Error ? error.message : String(error),
+                cancelled: true
+            }
         };
     }
 } 
