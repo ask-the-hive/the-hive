@@ -29,6 +29,7 @@ export const toolToAgent = {
     "bscwallet": BSC_WALLET_AGENT_NAME,
     "bscknowledge": BSC_KNOWLEDGE_AGENT_NAME,
     "liquidity": LIQUIDITY_AGENT_NAME,
+    "bscliquidity": BSC_LIQUIDITY_AGENT_NAME,
     "bsctrading": BSC_TRADING_AGENT_NAME,
 }
 
