@@ -1,6 +1,13 @@
 export const BSC_BUBBLE_MAPS_PROMPT = 
-`Get the bubble map of a token on the Binance Smart Chain (BSC).
+`Analyze and display the bubble map data for a token on the Binance Smart Chain (BSC).
 
-You can search for a token by its name, ticker, or contract address. The bubble map shows the distribution of holders of the token and is helpful for identifying the top holders and their relationships.
+This will show:
+1. The actual distribution of token holders
+2. Identification of major holders and their wallet addresses
+3. Relationships between significant holders
+4. Potential concentration of ownership
+5. Analysis of holder behavior and patterns
 
-Note: Bubble maps are only available for certain tokens on BSC. If a bubble map is not available for the requested token, a message will be displayed indicating this.`; 
+You can search for a token by its name, ticker, or contract address. The data will help identify ownership patterns, potential risks, and market dynamics.
+
+Note: If bubble map data is not available for the requested token, I will suggest alternative ways to analyze the token's holder distribution.`; 
