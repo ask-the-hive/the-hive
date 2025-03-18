@@ -22,8 +22,6 @@ import {
     SidebarMenuSubButton,
 } from '@/components/ui';
 
-import { Badge } from '@/components/ui/badge';
-
 import { useSavedTokens } from '@/hooks';
 import SaveToken from '../../save-token';
 
@@ -52,9 +50,6 @@ const SavedTokensGroup: React.FC = () => {
                                 <div className="flex items-center gap-2">
                                     <Coins className="h-4 w-4" />
                                     <h1 className="text-sm font-semibold">Tokens</h1>
-                                    <Badge variant="brandOutline" className="text-[10px] h-5 w-fit px-1 rounded-md">
-                                        New
-                                    </Badge>
                                 </div>
                                 <ChevronDown 
                                     className="h-[14px] w-[14px] transition-transform group-data-[state=open]/collapsible:rotate-180 text-neutral-500 dark:text-neutral-500" 

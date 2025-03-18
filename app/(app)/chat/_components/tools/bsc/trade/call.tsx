@@ -15,6 +15,15 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import LogInButton from '@/app/(app)/_components/log-in-button';
 import type { Token } from '@/db/types/token';
+import { 
+    createWalletClient, 
+    custom, 
+    publicActions,
+    parseUnits,
+    formatUnits,
+    type Address,
+} from 'viem';
+import { bsc } from 'viem/chains';
 
 interface Props {
     toolCallId: string;
@@ -163,15 +172,84 @@ const SwapCallBody: React.FC<Props> = ({ toolCallId, args }) => {
         setIsSwapping(true);
 
         try {
-            // Call the signer but we don't need to use it for now
-            await (bscWallet as any).getEthersJsSigner();
+            // Get the provider from the wallet
+            const provider = await (bscWallet as any).getEthereumProvider();
             
-            // TODO: Implement 0x API swap logic here
-            // For now, just return a mock success
+            // Create Viem wallet client
+            const client = createWalletClient({
+                account: bscWallet.address as Address,
+                chain: bsc,
+                transport: custom(provider)
+            }).extend(publicActions);
+
+            // Calculate sell amount in token decimals
+            const sellAmountRaw = parseUnits(
+                inputAmount, 
+                Number(inputToken.decimals)
+            );
+            
+            const sellToken = inputToken.id === "BNB" ? "BNB" : inputToken.id;
+            const buyToken = outputToken.id === "BNB" ? "BNB" : outputToken.id;
+
+            // Check user's balance first
+            let balance: bigint;
+            if (sellToken === "BNB") {
+                balance = await client.getBalance({ address: bscWallet.address as Address });
+            } else {
+                balance = await client.readContract({
+                    address: sellToken as Address,
+                    abi: [{
+                        name: 'balanceOf',
+                        type: 'function',
+                        stateMutability: 'view',
+                        inputs: [{ name: 'account', type: 'address' }],
+                        outputs: [{ name: '', type: 'uint256' }]
+                    }],
+                    functionName: 'balanceOf',
+                    args: [bscWallet.address as Address]
+                });
+            }
+
+            if (balance < sellAmountRaw) {
+                throw new Error(`Insufficient balance: ${formatUnits(balance, inputToken.decimals)} ${inputToken.symbol} < ${inputAmount} ${inputToken.symbol}`);
+            }
+
+            // Get the quote with transaction data
+            console.log("Getting swap quote...");
+            const quoteResponse = await fetch(
+                `/api/swap/bsc/quote?` + new URLSearchParams({
+                    sellToken: sellToken === "BNB" ? WBNB_ADDRESS : sellToken,
+                    buyToken: buyToken === "BNB" ? WBNB_ADDRESS : buyToken,
+                    sellAmount: sellAmountRaw.toString(),
+                    taker: bscWallet.address
+                }).toString()
+            );
+
+            if (!quoteResponse.ok) {
+                const errorData = await quoteResponse.json();
+                console.error("Quote error:", errorData);
+                throw new Error(`Failed to get swap quote: ${errorData.reason || errorData.message || 'Unknown error'}`);
+            }
+
+            const quote = await quoteResponse.json();
+            console.log("Received swap quote:", quote);
+
+            // Execute the swap using the transaction data from the quote
+            console.log("Executing swap transaction...");
+            const tx = await client.sendTransaction({
+                account: bscWallet.address as Address,
+                to: quote.transaction.to as Address,
+                data: quote.transaction.data as `0x${string}`,
+                value: quote.transaction.value ? BigInt(quote.transaction.value) : undefined,
+                gas: quote.transaction.gas ? BigInt(quote.transaction.gas) : undefined,
+                gasPrice: quote.transaction.gasPrice ? BigInt(quote.transaction.gasPrice) : undefined
+            });
+            console.log("Swap transaction sent:", tx);
+
             addToolResult<TradeResultBodyType>(toolCallId, {
-                message: `Successfully swapped ${inputAmount} ${inputToken.symbol} for ${outputToken.symbol}`,
+                message: `Successfully swapped ${inputAmount} ${inputToken.symbol} for ${formatUnits(BigInt(quote.buyAmount), outputToken.decimals)} ${outputToken.symbol}`,
                 body: {
-                    transaction: "0x...", // Will be replaced with actual transaction hash
+                    transaction: tx,
                     inputAmount: Number(inputAmount),
                     inputToken: inputToken.symbol,
                     outputToken: outputToken.symbol,
@@ -257,13 +335,14 @@ const SwapCallBody: React.FC<Props> = ({ toolCallId, args }) => {
                     variant="outline"
                     onClick={() => {
                         addToolResult<TradeResultBodyType>(toolCallId, {
-                            message: "Swap cancelled",
+                            message: "Swap cancelled by user",
                             body: {
                                 transaction: "",
-                                inputAmount: 0,
-                                inputToken: "",
-                                outputToken: "",
+                                inputAmount: Number(inputAmount || "0"),
+                                inputToken: inputToken?.symbol || "",
+                                outputToken: outputToken?.symbol || "",
                                 walletAddress: args.walletAddress,
+                                success: false,
                                 error: "Swap cancelled by user"
                             }
                         });
