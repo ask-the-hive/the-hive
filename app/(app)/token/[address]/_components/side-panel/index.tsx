@@ -10,9 +10,24 @@ import Chat from './chat';
 import { ChatProvider } from '../../_contexts';
 import { useChain } from '@/app/_contexts/chain-context';
 import { ChainType } from '@/app/_contexts/chain-context';
+import { WBNB_METADATA } from '@/lib/config/bsc';
 
 import type { TokenChatData } from '@/types';
 import type { Token } from '@/db/types';
+
+// SOL token metadata
+const SOL_METADATA: Token = {
+    id: "So11111111111111111111111111111111111111112",
+    name: "Solana",
+    symbol: "SOL",
+    decimals: 9,
+    tags: [],
+    logoURI: "https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/So11111111111111111111111111111111111111112/logo.png",
+    freezeAuthority: null,
+    mintAuthority: null,
+    permanentDelegate: null,
+    extensions: {}
+};
 
 interface Props {
     address: string;
@@ -32,6 +47,9 @@ const SidePanel: React.FC<Props> = ({ address }) => {
     const [tokenChatData, setTokenChatData] = useState<TokenChatData | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+
+    // Get the initial sell token based on chain
+    const initialSellToken = chain === 'bsc' ? WBNB_METADATA : SOL_METADATA;
 
     useEffect(() => {
         const fetchTokenData = async () => {
@@ -129,7 +147,7 @@ const SidePanel: React.FC<Props> = ({ address }) => {
                 </TabsContent>
                 <TabsContent value="trade" className="h-full m-0 p-2">
                     <Swap 
-                        initialInputToken={null}
+                        initialInputToken={initialSellToken}
                         initialOutputToken={tokenData}
                         inputLabel="Sell"
                         outputLabel="Buy"
