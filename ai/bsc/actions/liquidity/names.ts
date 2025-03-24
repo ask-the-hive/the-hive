@@ -1,0 +1,1 @@
+export const BSC_GET_POOLS_NAME = "bsc-get-pools"; 

@@ -30,9 +30,25 @@ const TokenUsersOverTime: React.FC<Props> = ({ mint }) => {
 
     const { mode } = useColorMode();
 
-    const { data, isLoading } = useTokenUsersOverTime(mint);
+    const { data, isLoading, chain } = useTokenUsersOverTime(mint);
 
     if (isLoading) return <Skeleton className="h-full w-full" />;
+
+    // Show a message for BSC tokens
+    if (chain === 'bsc') {
+        return (
+            <div className="flex items-center justify-center h-full w-full p-4">
+                <div className="text-center max-w-md">
+                    <h3 className="text-lg font-semibold text-neutral-600 dark:text-neutral-400 mb-2">
+                        Active Wallets Data Not Available
+                    </h3>
+                    <p className="text-sm text-neutral-500">
+                        Active wallets data is currently not available for BSC tokens.
+                    </p>
+                </div>
+            </div>
+        );
+    }
 
     if(!data) return <div>No data</div>;
 

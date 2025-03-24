@@ -1,12 +1,13 @@
 import React from 'react'
 
 import { 
-    AnimatedShinyText, 
     Collapsible, 
     CollapsibleTrigger, 
-    CollapsibleContent, 
-    Icon 
+    CollapsibleContent
 } from '@/components/ui'
+
+import { Icon } from '@/components/ui/icon'
+import { AnimatedShinyText } from '@/components/ui/animated-shiny-text'
 
 import { cn } from '@/lib/utils'
 

@@ -1,0 +1,1 @@
+export const BSC_TOKEN_PAGE_TRADING_ACTIVITY_PROMPT = "Analyze the trading activity of this BSC token, including volume, transactions, and trader behavior."; 

@@ -11,3 +11,4 @@ export * from './get-token-overview';
 export * from './get-token-metadata';
 export * from './get-token-holders';
 export * from './get-markets-list';
+export * from './get-token-price-history';

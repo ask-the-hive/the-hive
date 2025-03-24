@@ -10,6 +10,7 @@ export async function getTopTokenTraders(
     let topTraders = await getTopTradersByToken({
       address: args.tokenAddress,
       timeFrame: args.timeFrame,
+      chain: 'solana'
     });
 
     return {

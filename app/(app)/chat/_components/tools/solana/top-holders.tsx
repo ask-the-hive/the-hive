@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react'
 
 import Image from 'next/image';
 
-import { Button, Card } from '@/components/ui';
+import { Button } from '@/components/ui';
+import { Card } from '@/components/ui/card';
 
 import WalletAddress from '@/app/_components/wallet-address';
 
@@ -30,7 +31,7 @@ const GetTopHolders: React.FC<Props> = ({ tool, prevToolAgent }) => {
             loadingText={`Getting Top Holders...`}
             result={{
                 heading: (result: TopHoldersResultType) => result.body 
-                    ? `Fetched Top 20 Holders`
+                    ? `Fetched Top Holders`
                     : `Failed to fetch top holders`,
                 body: (result: TopHoldersResultType) => result.body 
                     ? <TopHolders body={result.body} mint={tool.args.tokenAddress} />

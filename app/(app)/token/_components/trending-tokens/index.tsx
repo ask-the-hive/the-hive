@@ -1,24 +1,107 @@
-import React from 'react'
+'use client'
+
+import React, { useEffect, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
+import { useChain } from '@/app/_contexts/chain-context';
 
 import TrendingTokenCard from './trending-token-card';
+import { Skeleton } from '@/components/ui';
+import { AlertCircle } from 'lucide-react';
 
-import { getTrendingTokens } from '@/services/birdeye'
+import type { TrendingToken } from '@/services/birdeye/types/trending';
+import { ChainType } from '@/app/_contexts/chain-context';
 
-const TrendingTokens: React.FC = async () => {
+const TrendingTokens: React.FC = () => {
+    const { currentChain } = useChain();
+    const searchParams = useSearchParams();
+    const chainParam = searchParams.get('chain') as ChainType | null;
+    
+    const chain = chainParam && (chainParam === 'solana' || chainParam === 'bsc') 
+        ? chainParam 
+        : currentChain;
+        
+    const [tokens, setTokens] = useState<TrendingToken[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const [unsupportedChain, setUnsupportedChain] = useState(false);
 
-    const { tokens } = await getTrendingTokens(0, 9).catch((error) => {
-        console.error(error);
-        return { tokens: [] };
-    });
+    useEffect(() => {
+        const fetchTrendingTokens = async () => {
+            setLoading(true);
+            setError(null);
+            setUnsupportedChain(false);
+            
+            try {
+                const response = await fetch(`/api/token/trending?chain=${chain}`);
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    if (data.unsupportedChain) {
+                        setUnsupportedChain(true);
+                        setError("Trending Tokens are not yet available for BSC.");
+                    } else {
+                        throw new Error(data.error || `Failed to fetch trending tokens for ${chain} chain`);
+                    }
+                } else {
+                    setTokens(data.tokens || []);
+                }
+            } catch (error) {
+                console.error(error);
+                setError(error instanceof Error ? error.message : 'An unknown error occurred');
+                setTokens([]);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchTrendingTokens();
+    }, [chain]);
 
     return (
         <div className="flex flex-col gap-2">
             <h2 className="text-lg font-bold">Trending Tokens</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-                {tokens.map((token) => (
-                    <TrendingTokenCard key={token.address} token={token} />
-                ))}
-            </div>
+            
+            {loading ? (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                    {[...Array(9)].map((_, i) => (
+                        <Skeleton key={i} className="h-24 w-full" />
+                    ))}
+                </div>
+            ) : unsupportedChain ? (
+                <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 p-4 rounded-md">
+                    <div className="flex items-center gap-2">
+                        <AlertCircle className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
+                        <h3 className="font-medium text-yellow-600 dark:text-yellow-400">Chain Not Supported</h3>
+                    </div>
+                    <p className="text-sm text-yellow-600 dark:text-yellow-400 mt-1">
+                        {error}
+                    </p>
+                </div>
+            ) : error ? (
+                <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-4 rounded-md">
+                    <div className="flex items-center gap-2">
+                        <AlertCircle className="h-4 w-4 text-red-600 dark:text-red-400" />
+                        <h3 className="font-medium text-red-600 dark:text-red-400">Error</h3>
+                    </div>
+                    <p className="text-sm text-red-600 dark:text-red-400 mt-1">{error}</p>
+                </div>
+            ) : tokens.length === 0 ? (
+                <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 p-4 rounded-md">
+                    <div className="flex items-center gap-2">
+                        <AlertCircle className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
+                        <h3 className="font-medium text-yellow-600 dark:text-yellow-400">No trending tokens found</h3>
+                    </div>
+                    <p className="text-sm text-yellow-600 dark:text-yellow-400 mt-1">
+                        No trending tokens are available for the selected chain.
+                    </p>
+                </div>
+            ) : (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                    {tokens.map((token) => (
+                        <TrendingTokenCard key={token.address} token={token} />
+                    ))}
+                </div>
+            )}
         </div>
     )
 }

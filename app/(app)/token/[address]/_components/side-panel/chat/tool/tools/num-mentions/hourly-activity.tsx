@@ -8,7 +8,10 @@ interface Props {
 }
 
 const HourlyActivity: React.FC<Props> = ({ hourlyStats }) => {
-    const formatNumber = (num: number) => num.toLocaleString(undefined, {maximumFractionDigits: 2, notation: 'compact'});
+    const formatNumber = (num: number | null | undefined) => {
+        if (num === null || num === undefined) return '0';
+        return num.toLocaleString(undefined, {maximumFractionDigits: 2, notation: 'compact'});
+    };
 
     return (
         <StatsSection title="Hourly Activity">

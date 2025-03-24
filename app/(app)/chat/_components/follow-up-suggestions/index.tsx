@@ -27,8 +27,25 @@ const generateFollowUpSuggestions = async (messages: Message[], model: Models) =
                 'Expires': '0'
             },
         });
-        
-        return await response.json() as Suggestion[];
+
+        // Check if response is ok and has content
+        if (!response.ok) {
+            console.warn("Failed to fetch suggestions:", response.status, response.statusText);
+            return [];
+        }
+
+        const text = await response.text();
+        if (!text || text.trim() === '') {
+            console.warn("Empty response received from suggestions API");
+            return [];
+        }
+
+        try {
+            return JSON.parse(text) as Suggestion[];
+        } catch (parseError) {
+            console.error("Failed to parse suggestions response:", parseError);
+            return [];
+        }
     } catch (error) {
         console.error("Error generating suggestions:", error);
         return [];

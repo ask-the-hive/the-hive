@@ -1,0 +1,1 @@
+export const BSC_GET_TRENDING_TOKENS_NAME = "get-trending-tokens"; 

@@ -16,7 +16,7 @@ const TokenDisplay: React.FC<Props> = ({ token }) => {
             className="w-fit shrink-0 flex items-center bg-neutral-200 dark:bg-neutral-700 rounded-md px-2 py-1 gap-2 cursor-pointer transition-colors duration-200"
         >
             <img 
-                src={token.logoURI}
+                src={token.logoURI || "https://www.birdeye.so/images/unknown-token-icon.svg"}
                 alt={token.name} 
                 className="w-6 h-6 rounded-full" 
             />

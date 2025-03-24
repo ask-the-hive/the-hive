@@ -11,7 +11,6 @@ import { usePrivy } from '@privy-io/react-auth';
 import { usePathname } from 'next/navigation';
 
 import { 
-    Badge,
     SidebarMenuItem, 
     SidebarMenuButton,
     Skeleton,
@@ -30,7 +29,7 @@ const SavedTokensGroup: React.FC = () => {
 
     const pathname = usePathname();
 
-    const { ready, user } = usePrivy();
+    const { user } = usePrivy();
 
     const { savedTokens, isLoading } = useSavedTokens();
 
@@ -51,9 +50,6 @@ const SavedTokensGroup: React.FC = () => {
                                 <div className="flex items-center gap-2">
                                     <Coins className="h-4 w-4" />
                                     <h1 className="text-sm font-semibold">Tokens</h1>
-                                    <Badge variant="brandOutline" className="text-[10px] h-5 w-fit px-1 rounded-md">
-                                        New
-                                    </Badge>
                                 </div>
                                 <ChevronDown 
                                     className="h-[14px] w-[14px] transition-transform group-data-[state=open]/collapsible:rotate-180 text-neutral-500 dark:text-neutral-500" 
@@ -65,7 +61,7 @@ const SavedTokensGroup: React.FC = () => {
                 <CollapsibleContent>
                     <SidebarMenuSub className="flex-1 overflow-hidden relative flex flex-col">
                         {
-                            isLoading || !ready ? (
+                            isLoading ? (
                                 <Skeleton className="h-10 w-full" />
                             ) : (
                                 savedTokens.length > 0 ? (
@@ -79,12 +75,19 @@ const SavedTokensGroup: React.FC = () => {
                                             >
                                                 <Link 
                                                     href={`/token/${savedToken.id}`} 
-                                                    className='w-full flex items-center justify-between'
+                                                    className="flex items-center justify-between w-full gap-2"
                                                 >
-                                                    <span className='truncate'>${savedToken.symbol}</span>
+                                                    <div className="flex items-center gap-2 min-w-0">
+                                                        <img 
+                                                            src={savedToken.logoURI} 
+                                                            alt={savedToken.name}
+                                                            className="w-4 h-4 rounded-full flex-shrink-0"
+                                                        />
+                                                        <span className='truncate'>{savedToken.symbol}</span>
+                                                    </div>
                                                     <SaveToken 
                                                         address={savedToken.id} 
-                                                        className='hover:bg-neutral-300 dark:hover:bg-neutral-600'
+                                                        className='hover:bg-neutral-300 dark:hover:bg-neutral-600 flex-shrink-0'
                                                     />
                                                 </Link>
                                             </SidebarMenuSubButton>

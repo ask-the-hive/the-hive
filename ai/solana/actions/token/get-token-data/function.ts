@@ -1,20 +1,18 @@
-
-
 import type { SolanaActionResult } from "../../solana-action";
 import type { GetTokenDataArgumentsType, GetTokenDataResultBodyType } from "./types";
 import { searchTokens, getTokenOverview } from "@/services/birdeye";
 
-/**
- * Gets the token data for a given ticker.
- *
- * @param connection - The Solana connection instance
- * @param args - The input arguments for the action
- * @returns A message containing the token data
- */
 export async function getTokenData(args: GetTokenDataArgumentsType): Promise<SolanaActionResult<GetTokenDataResultBodyType>> {
   try {
 
-    const { items } = await searchTokens({ keyword: args.search });
+    const { items } = await searchTokens({
+      keyword: args.search,
+      target: "token",
+      sort_by: "volume_24h_usd",
+      sort_type: "desc",
+      offset: 0,
+      limit: 10
+    });
 
     const token = items?.[0]?.result?.[0];
 

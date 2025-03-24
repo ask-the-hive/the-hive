@@ -1,27 +1,42 @@
+'use client'
+
 import React from 'react'
-
+import { useSearchParams } from 'next/navigation'
 import { Card } from '@/components/ui'
-
 import type { TrendingToken } from '@/services/birdeye/types'
 import Link from 'next/link'
-
+import { useChain } from '@/app/_contexts/chain-context'
 import SaveToken from '@/app/(app)/_components/save-token'
+import { ChainType } from '@/app/_contexts/chain-context'
 
 interface Props {
     token: TrendingToken
 }
 
 const TrendingTokenCard: React.FC<Props> = ({ token }) => {
+    const { currentChain } = useChain();
+    const searchParams = useSearchParams();
+    const chainParam = searchParams.get('chain') as ChainType | null;
+    
+    // Use URL param if available, otherwise use context
+    const chain = chainParam && (chainParam === 'solana' || chainParam === 'bsc') 
+        ? chainParam 
+        : currentChain;
+    
+    const placeholderIcon = "https://www.birdeye.so/images/unknown-token-icon.svg";
     
     return (
-        <Link href={`/token/${token.address}`}>
+        <Link href={`/token/${token.address}?chain=${chain}`}>
             <Card className="flex flex-col gap-2 p-2 justify-between hover:border-brand-600 dark:hover:border-brand-600 transition-all duration-300 cursor-pointer h-full">
                 <div className="flex flex-row items-center justify-between">
                     <div className="flex flex-row items-center gap-2">
                         <img 
-                            src={token.logoURI} 
+                            src={token.logoURI || placeholderIcon} 
                             alt={token.name} 
                             className="size-8 rounded-full" 
+                            onError={(e) => {
+                                (e.target as HTMLImageElement).src = placeholderIcon;
+                            }}
                         />
                         <div className="flex flex-col">
                             <p className="text-sm font-bold">{token.name} ({token.symbol})</p>

@@ -1,11 +1,24 @@
 export enum MarketSource {
+    // Solana markets
     Raydium = "Raydium",
     RaydiumClamm = "Raydium Clamm",
     RaydiumCp = "Raydium Cp",
     MeteoraDlmm = "Meteora Dlmm",
     Meteora = "Meteora",
     Orca = "Orca",
-    Phoenix = "Phoenix"
+    Phoenix = "Phoenix",
+    
+    // BSC markets
+    PancakeSwap = "PancakeSwap",
+    Uniswap = "Uniswap",
+    BiSwap = "BiSwap",
+    MDEX = "MDEX",
+    ApeSwap = "ApeSwap",
+    BabySwap = "BabySwap",
+    BakerySwap = "BakerySwap",
+    BSWSwap = "BSWSwap",
+    ThenaFusion = "Thena Fusion",
+    ThenaAlgebra = "Thena Algebra"
 }
 
 export interface TokenInfo {

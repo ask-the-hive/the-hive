@@ -20,7 +20,8 @@ import { getSwapObj, getQuote } from '@/services/jupiter';
 
 import { cn } from '@/lib/utils';
 
-import type { QuoteResponse } from '@jup-ag/api';
+import { useChain } from '@/app/_contexts/chain-context';
+
 import type { Token } from '@/db/types';
 
 interface Props {
@@ -50,15 +51,16 @@ const Swap: React.FC<Props> = ({
     className,
     inputLabel,
     outputLabel,
+    priorityTokens
 }) => {
-
+    const { currentChain } = useChain();
     const [inputAmount, setInputAmount] = useState<string>(initialInputAmount || "");
     const [inputToken, setInputToken] = useState<Token | null>(initialInputToken);
     const [outputAmount, setOutputAmount] = useState<string>("");
     const [outputToken, setOutputToken] = useState<Token | null>(initialOutputToken);
 
     const [isQuoteLoading, setIsQuoteLoading] = useState<boolean>(false);
-    const [quoteResponse, setQuoteResponse] = useState<QuoteResponse | null>(null);
+    const [quoteResponse, setQuoteResponse] = useState<any | null>(null);
     const [isSwapping, setIsSwapping] = useState<boolean>(false);
 
     const { sendTransaction, wallet } = useSendTransaction();
@@ -77,11 +79,17 @@ const Swap: React.FC<Props> = ({
         if(!wallet || !quoteResponse) return;
         setIsSwapping(true);
         try {
-            const { swapTransaction} = await getSwapObj(wallet.address, quoteResponse);
-            const swapTransactionBuf = Buffer.from(swapTransaction, "base64");
-            const transaction = VersionedTransaction.deserialize(swapTransactionBuf);
-            const txHash = await sendTransaction(transaction);
-            onSuccess?.(txHash);
+            if (currentChain === 'solana') {
+                const { swapTransaction } = await getSwapObj(wallet.address, quoteResponse);
+                const swapTransactionBuf = Buffer.from(swapTransaction, "base64");
+                const transaction = VersionedTransaction.deserialize(swapTransactionBuf);
+                const txHash = await sendTransaction(transaction);
+                onSuccess?.(txHash);
+            } else {
+                // For BSC, we'll use the 0x swap quote
+                const txHash = await sendTransaction(quoteResponse);
+                onSuccess?.(txHash);
+            }
         } catch (error) {
             onError?.(error instanceof Error ? error.message : "Unknown error");
         } finally {
@@ -94,12 +102,24 @@ const Swap: React.FC<Props> = ({
             const fetchQuoteAndUpdate = async () => {
                 setIsQuoteLoading(true);
                 setOutputAmount("");
-                const quote = await getQuote(inputToken.id, outputToken.id, parseFloat(inputAmount) * (10 ** inputToken.decimals));
-                setQuoteResponse(quote);
-                setOutputAmount(new Decimal(quote.outAmount).div(new Decimal(10).pow(outputToken.decimals)).toString());
-                setIsQuoteLoading(false);
+                try {
+                    if (currentChain === 'solana') {
+                        const quote = await getQuote(inputToken.id, outputToken.id, parseFloat(inputAmount) * (10 ** inputToken.decimals));
+                        setQuoteResponse(quote);
+                        setOutputAmount(new Decimal(quote.outAmount).div(new Decimal(10).pow(outputToken.decimals)).toString());
+                    } else {
+                        // For BSC, use 0x API
+                        const response = await fetch(`/api/swap/bsc/quote?sellToken=${inputToken.id}&buyToken=${outputToken.id}&sellAmount=${parseFloat(inputAmount) * (10 ** inputToken.decimals)}`);
+                        const quote = await response.json();
+                        setQuoteResponse(quote);
+                        setOutputAmount(new Decimal(quote.buyAmount).div(new Decimal(10).pow(outputToken.decimals)).toString());
+                    }
+                } catch (error) {
+                    console.error('Error fetching quote:', error);
+                } finally {
+                    setIsQuoteLoading(false);
+                }
             }
-
 
             if (inputAmount && Number(inputAmount) > 0) {
                 fetchQuoteAndUpdate();
@@ -108,7 +128,19 @@ const Swap: React.FC<Props> = ({
                 setOutputAmount("");
             }
         }
-    }, [inputToken, outputToken, inputAmount]);
+    }, [inputToken, outputToken, inputAmount, currentChain]);
+
+    const defaultPriorityTokens = currentChain === 'solana' 
+        ? [
+            'So11111111111111111111111111111111111111112', // SOL
+            'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v', // USDC
+            'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB', // USDT
+        ]
+        : [
+            '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c', // WBNB
+            '0x55d398326f99059fF775485246999027B3197955', // USDT
+            '0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d', // USDC
+        ];
 
     return (
         <div className={cn("flex flex-col gap-4 w-96 max-w-full", className)}>
@@ -120,11 +152,7 @@ const Swap: React.FC<Props> = ({
                     token={inputToken}
                     onChangeToken={setInputToken}
                     address={wallet?.address}
-                    priorityTokens={[
-                        'So11111111111111111111111111111111111111112', // SOL
-                        'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v', // USDC
-                        'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB', // USDT
-                    ]}
+                    priorityTokens={priorityTokens || defaultPriorityTokens}
                 />
                 <Button 
                     variant="ghost" 
@@ -140,11 +168,7 @@ const Swap: React.FC<Props> = ({
                     token={outputToken}
                     onChangeToken={setOutputToken}
                     address={wallet?.address}
-                    priorityTokens={[
-                        'So11111111111111111111111111111111111111112', // SOL
-                        'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v', // USDC
-                        'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB', // USDT
-                    ]}
+                    priorityTokens={priorityTokens || defaultPriorityTokens}
                 />
             </div>
             <Separator />
