@@ -1,30 +1,13 @@
 import type { TradeArgumentsType, TradeResultBodyType } from "./types";
 import type { BscActionResult } from "../../bsc-action";
-import { BscGetTokenDataAction } from "../../token/get-token-data";
 
 export async function trade(
     args: TradeArgumentsType
 ): Promise<BscActionResult<TradeResultBodyType>> {
     try {
-        // Get token data if addresses are provided
-        let inputTokenSymbol = "BNB";
-        let outputTokenSymbol = "";
-
-        if (args.inputTokenAddress) {
-            const getTokenDataAction = new BscGetTokenDataAction();
-            const result = await getTokenDataAction.func({ search: args.inputTokenAddress });
-            if (result.body?.token?.symbol) {
-                inputTokenSymbol = result.body.token.symbol;
-            }
-        }
-
-        if (args.outputTokenAddress) {
-            const getTokenDataAction = new BscGetTokenDataAction();
-            const result = await getTokenDataAction.func({ search: args.outputTokenAddress });
-            if (result.body?.token?.symbol) {
-                outputTokenSymbol = result.body.token.symbol;
-            }
-        }
+        // Get token symbols from input
+        let inputTokenSymbol = args.inputTokenAddress || "BNB";
+        let outputTokenSymbol = args.outputTokenAddress || "";
 
         // Return a message that will trigger the UI component
         return {

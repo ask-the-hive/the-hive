@@ -34,7 +34,6 @@ const TokenSelect: React.FC<Props> = ({ value, onChange, priorityTokens = [] }) 
     const searchParams = useSearchParams();
     const chainParam = searchParams.get('chain') as ChainType | null;
     
-    // Use URL param if available, otherwise use context
     const chain = chainParam && (chainParam === 'solana' || chainParam === 'bsc') 
         ? chainParam 
         : currentChain;
@@ -61,7 +60,7 @@ const TokenSelect: React.FC<Props> = ({ value, onChange, priorityTokens = [] }) 
             symbol: token.symbol,
             name: token.name,
             logoURI: token.logo_uri,
-            decimals: 0, // We don't need decimals for display
+            decimals: 0,
             tags: [],
             extensions: {},
             freezeAuthority: null,

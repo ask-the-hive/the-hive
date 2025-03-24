@@ -1,6 +1,7 @@
 import { searchTokens } from "@/services/birdeye";
 import { NextRequest, NextResponse } from "next/server";
 import { ChainType } from "@/app/_contexts/chain-context";
+import type { TokenSearchResult } from "@/services/birdeye/types/search";
 
 const PLACEHOLDER_ICON = "https://www.birdeye.so/images/unknown-token-icon.svg";
 
@@ -14,8 +15,12 @@ export const GET = async (req: NextRequest) => {
     }
     
     try {
+        // Always use uppercase for search since Birdeye API is case-sensitive
+        const searchQuery = query.toUpperCase();
+        let allTokens: TokenSearchResult[] = [];
+
         const searchResponse = await searchTokens({
-            keyword: query,
+            keyword: searchQuery,
             target: "token",
             sort_by: "volume_24h_usd",
             sort_type: "desc",
@@ -24,9 +29,12 @@ export const GET = async (req: NextRequest) => {
             chain: chain === 'bsc' ? 'bsc' : 'solana',
         });
 
-        const allTokens = searchResponse.items.flatMap(item => item.result);
+        allTokens = searchResponse.items.flatMap(item => item.result);
 
-        const formattedTokens = allTokens.map(token => ({
+        // Remove duplicates based on address
+        const uniqueTokens = Array.from(new Map(allTokens.map(token => [token.address, token])).values());
+
+        const formattedTokens = uniqueTokens.map(token => ({
             address: token.address,
             name: token.name,
             symbol: token.symbol,
@@ -45,8 +53,12 @@ export const GET = async (req: NextRequest) => {
 export const POST = async (req: NextRequest) => {
     const { search, chain = 'solana' } = await req.json();
     
-    const tokens = await searchTokens({
-        keyword: search,
+    // Always use uppercase for search since Birdeye API is case-sensitive
+    const searchQuery = search.toUpperCase();
+    let allTokenResults: TokenSearchResult[] = [];
+
+    const searchResponse = await searchTokens({
+        keyword: searchQuery,
         target: "token",
         sort_by: "volume_24h_usd",
         sort_type: "desc",
@@ -55,5 +67,10 @@ export const POST = async (req: NextRequest) => {
         chain: chain === 'bsc' ? 'bsc' : 'solana',
     });
 
-    return NextResponse.json(tokens.items);
+    allTokenResults = searchResponse.items.flatMap(item => item.result);
+
+    // Remove duplicates based on address
+    const uniqueTokens = Array.from(new Map(allTokenResults.map(token => [token.address, token])).values());
+
+    return NextResponse.json(uniqueTokens);
 }

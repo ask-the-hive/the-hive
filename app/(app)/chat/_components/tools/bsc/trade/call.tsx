@@ -7,7 +7,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { usePrivy } from '@privy-io/react-auth';
 import { useWallets } from '@privy-io/react-auth';
 import { useChain } from '@/app/_contexts/chain-context';
-import { BNB_METADATA, WBNB_ADDRESS, WBNB_METADATA } from '@/lib/config/bsc';
+import { BNB_METADATA, WBNB_ADDRESS } from '@/lib/config/bsc';
 import type { TradeArgumentsType, TradeResultBodyType } from '@/ai/bsc/actions/trade/actions/types';
 import TokenInput from '../../bsc/transfer/token-input';
 import { ChevronDown } from 'lucide-react';
@@ -53,9 +53,6 @@ const SwapCallBody: React.FC<Props> = ({ toolCallId, args }) => {
         if (!args.inputTokenAddress || args.inputTokenAddress === "BNB") {
             return BNB_METADATA;
         }
-        if (args.inputTokenAddress.toLowerCase() === WBNB_ADDRESS) {
-            return WBNB_METADATA;
-        }
         return null;
     });
 
@@ -63,9 +60,6 @@ const SwapCallBody: React.FC<Props> = ({ toolCallId, args }) => {
     const [outputToken, setOutputToken] = useState<Token | null>(() => {
         if (!args.outputTokenAddress || args.outputTokenAddress === "BNB") {
             return BNB_METADATA;
-        }
-        if (args.outputTokenAddress.toLowerCase() === WBNB_ADDRESS) {
-            return WBNB_METADATA;
         }
         return null;
     });
@@ -77,55 +71,51 @@ const SwapCallBody: React.FC<Props> = ({ toolCallId, args }) => {
             try {
                 // Handle input token
                 if (args.inputTokenAddress && args.inputTokenAddress !== "BNB") {
-                    if (args.inputTokenAddress.toLowerCase() === WBNB_ADDRESS) {
-                        setInputToken(WBNB_METADATA);
-                    } else {
-                        // Search for token using the API endpoint
-                        const response = await fetch(`/api/token/search?query=${encodeURIComponent(args.inputTokenAddress)}&chain=bsc&search_mode=fuzzy`);
-                        const data = await response.json();
-                        
-                        const token = data.tokens?.[0];
-                        if (token) {
-                            setInputToken({
-                                id: token.address,
-                                name: token.name || "Unknown Token",
-                                symbol: token.symbol || "UNKNOWN",
-                                logoURI: token.logo_uri || "",
-                                decimals: 18, // Default to 18 decimals for BSC tokens
-                                tags: [],
-                                freezeAuthority: null,
-                                mintAuthority: null,
-                                permanentDelegate: null,
-                                extensions: {}
-                            });
-                        }
+                    // Always use uppercase symbol for search
+                    const searchQuery = args.inputTokenAddress.toUpperCase();
+                    // Search for token using the API endpoint
+                    const response = await fetch(`/api/token/search?query=${encodeURIComponent(searchQuery)}&chain=bsc&search_mode=fuzzy`);
+                    const data = await response.json();
+                    
+                    const token = data.tokens?.[0];
+                    if (token) {
+                        setInputToken({
+                            id: token.address,
+                            name: token.name || "Unknown Token",
+                            symbol: token.symbol || "UNKNOWN",
+                            logoURI: token.logo_uri || "",
+                            decimals: 18, // Default to 18 decimals for BSC tokens
+                            tags: [],
+                            freezeAuthority: null,
+                            mintAuthority: null,
+                            permanentDelegate: null,
+                            extensions: {}
+                        });
                     }
                 }
 
                 // Handle output token
                 if (args.outputTokenAddress && args.outputTokenAddress !== "BNB") {
-                    if (args.outputTokenAddress.toLowerCase() === WBNB_ADDRESS) {
-                        setOutputToken(WBNB_METADATA);
-                    } else {
-                        // Search for token using the API endpoint
-                        const response = await fetch(`/api/token/search?query=${encodeURIComponent(args.outputTokenAddress)}&chain=bsc&search_mode=fuzzy`);
-                        const data = await response.json();
-                        
-                        const token = data.tokens?.[0];
-                        if (token) {
-                            setOutputToken({
-                                id: token.address,
-                                name: token.name || "Unknown Token",
-                                symbol: token.symbol || "UNKNOWN",
-                                logoURI: token.logo_uri || "",
-                                decimals: 18, // Default to 18 decimals for BSC tokens
-                                tags: [],
-                                freezeAuthority: null,
-                                mintAuthority: null,
-                                permanentDelegate: null,
-                                extensions: {}
-                            });
-                        }
+                    // Always use uppercase symbol for search
+                    const searchQuery = args.outputTokenAddress.toUpperCase();
+                    // Search for token using the API endpoint
+                    const response = await fetch(`/api/token/search?query=${encodeURIComponent(searchQuery)}&chain=bsc&search_mode=fuzzy`);
+                    const data = await response.json();
+                    
+                    const token = data.tokens?.[0];
+                    if (token) {
+                        setOutputToken({
+                            id: token.address,
+                            name: token.name || "Unknown Token",
+                            symbol: token.symbol || "UNKNOWN",
+                            logoURI: token.logo_uri || "",
+                            decimals: 18, // Default to 18 decimals for BSC tokens
+                            tags: [],
+                            freezeAuthority: null,
+                            mintAuthority: null,
+                            permanentDelegate: null,
+                            extensions: {}
+                        });
                     }
                 }
             } catch (error) {
