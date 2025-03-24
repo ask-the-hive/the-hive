@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
-
+import { useSearchParams } from 'next/navigation'
 import { ChevronsUpDown } from 'lucide-react';
 
 import { 
@@ -16,7 +16,7 @@ import {
 import SaveToken from '../(app)/_components/save-token';
 
 import { useSearchTokens } from '@/hooks/queries/token';
-import { useChain } from '@/app/_contexts/chain-context';
+import { useChain, ChainType } from '@/app/_contexts/chain-context';
 
 import { cn } from '@/lib/utils';
 
@@ -31,10 +31,18 @@ interface Props {
 
 const TokenSelect: React.FC<Props> = ({ value, onChange, priorityTokens = [] }) => {
     const { currentChain } = useChain();
+    const searchParams = useSearchParams();
+    const chainParam = searchParams.get('chain') as ChainType | null;
+    
+    // Use URL param if available, otherwise use context
+    const chain = chainParam && (chainParam === 'solana' || chainParam === 'bsc') 
+        ? chainParam 
+        : currentChain;
+    
     const [open, setOpen] = useState(false);
     const [input, setInput] = useState("");
 
-    const { tokens, isLoading } = useSearchTokens(input, currentChain);
+    const { tokens, isLoading } = useSearchTokens(input, chain);
 
     const sortedResults = React.useMemo(() => {
         if (!tokens) return [];
