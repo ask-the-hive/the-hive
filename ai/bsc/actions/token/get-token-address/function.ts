@@ -5,8 +5,11 @@ import type { GetTokenAddressArgumentsType, GetTokenAddressResultBodyType } from
 
 export async function getTokenAddress(args: GetTokenAddressArgumentsType): Promise<BscActionResult<GetTokenAddressResultBodyType>> {
   try {
+    // Convert keyword to uppercase for case-insensitive search
+    const searchQuery = args.keyword.toUpperCase();
+    
     const token = await searchTokens({
-      keyword: args.keyword,
+      keyword: searchQuery,
       target: "token",
       sort_by: "volume_24h_usd",
       sort_type: "desc",
