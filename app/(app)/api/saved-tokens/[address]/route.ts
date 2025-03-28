@@ -93,7 +93,8 @@ export const POST = async (request: Request, { params }: { params: Promise<{ add
             userId,
             name: tokenData.name || 'Unknown',
             symbol: tokenData.symbol || 'Unknown',
-            logoURI: tokenData.logoURI || "https://www.birdeye.so/images/unknown-token-icon.svg"
+            logoURI: tokenData.logoURI || "https://www.birdeye.so/images/unknown-token-icon.svg",
+            chain
         });
         
         return NextResponse.json(savedToken);

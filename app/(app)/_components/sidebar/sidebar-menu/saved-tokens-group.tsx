@@ -74,7 +74,7 @@ const SavedTokensGroup: React.FC = () => {
                                                 isActive={pathname.includes(`/token/${savedToken.id}`)}
                                             >
                                                 <Link 
-                                                    href={`/token/${savedToken.id}`} 
+                                                    href={`/token/${savedToken.id}?chain=${savedToken.chain}`} 
                                                     className="flex items-center justify-between w-full gap-2"
                                                 >
                                                     <div className="flex items-center gap-2 min-w-0">
