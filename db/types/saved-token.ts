@@ -4,4 +4,5 @@ export type SavedToken = {
     name: string;
     symbol: string;
     logoURI: string;
+    chain: 'solana' | 'bsc';
 }
