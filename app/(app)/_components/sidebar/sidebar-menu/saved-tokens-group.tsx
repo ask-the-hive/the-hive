@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 
 import { ChevronDown, Coins } from 'lucide-react';
 
@@ -34,6 +34,51 @@ const SavedTokensGroup: React.FC = () => {
     const { savedTokens, isLoading } = useSavedTokens();
 
     const [isOpen, setIsOpen] = useState(false);
+    const [tokenLogos, setTokenLogos] = useState<Record<string, string>>({});
+
+    useEffect(() => {
+        const fetchMissingLogos = async () => {
+            if (!savedTokens) return;
+
+            const missingLogos = savedTokens.filter(token => !token.logoURI);
+            if (missingLogos.length === 0) return;
+
+            const newLogos: Record<string, string> = {};
+            
+            await Promise.all(
+                missingLogos.map(async (token) => {
+                    try {
+                        const response = await fetch(`/api/token/${token.id}/metadata?chain=${token.chain || 'solana'}`);
+                        if (!response.ok) throw new Error('Failed to fetch token metadata');
+                        
+                        const data = await response.json();
+                        if (data.logo_uri) {
+                            newLogos[token.id] = data.logo_uri;
+                        }
+                    } catch (error) {
+                        console.error(`Failed to fetch logo for token ${token.id}:`, error);
+                    }
+                })
+            );
+
+            if (Object.keys(newLogos).length > 0) {
+                setTokenLogos(prev => ({ ...prev, ...newLogos }));
+            }
+        };
+
+        fetchMissingLogos();
+    }, [savedTokens]);
+
+    const getTokenLogo = (token: any) => {
+        // First try the saved token's logo URI
+        if (token.logoURI) return token.logoURI;
+        
+        // Then try the fetched logos from our state
+        if (tokenLogos[token.id]) return tokenLogos[token.id];
+        
+        // Finally, fall back to the default unknown token icon
+        return "https://www.birdeye.so/images/unknown-token-icon.svg";
+    };
 
     return (
         <Collapsible className="group/collapsible" open={isOpen} onOpenChange={setIsOpen}>
@@ -79,7 +124,7 @@ const SavedTokensGroup: React.FC = () => {
                                                 >
                                                     <div className="flex items-center gap-2 min-w-0">
                                                         <img 
-                                                            src={savedToken.logoURI} 
+                                                            src={getTokenLogo(savedToken)} 
                                                             alt={savedToken.name}
                                                             className="w-4 h-4 rounded-full flex-shrink-0"
                                                         />
