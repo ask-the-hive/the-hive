@@ -3,7 +3,8 @@ import { NextResponse } from "next/server";
 import { PrivyClient } from "@privy-io/server-auth";
 
 import { addSavedToken, deleteSavedToken, getSavedToken } from "@/db/services";
-import { getTokenMetadata } from "@/services/birdeye";
+import { getTokenOverview } from "@/services/birdeye";
+import { ChainType } from "@/app/_contexts/chain-context";
 
 const privy = new PrivyClient(
     process.env.NEXT_PUBLIC_PRIVY_APP_ID!,
@@ -72,8 +73,12 @@ export const POST = async (request: Request, { params }: { params: Promise<{ add
         }
 
         const { address } = await params;
+        
+        // Determine chain based on address format
+        const chain: ChainType = address.startsWith('0x') ? 'bsc' : 'solana';
 
-        const tokenData = await getTokenMetadata(address);
+        // Get token metadata from Birdeye with the correct chain
+        const tokenData = await getTokenOverview(address, chain);
 
         if (!tokenData) {
             return NextResponse.json(
@@ -81,14 +86,15 @@ export const POST = async (request: Request, { params }: { params: Promise<{ add
                 { status: 404 }
             );
         }
-        
 
         // Get the user's saved tokens
         const savedToken = await addSavedToken({
             id: address,
             userId,
-            name: tokenData.name,
-            symbol: tokenData.symbol,
+            name: tokenData.name || 'Unknown',
+            symbol: tokenData.symbol || 'Unknown',
+            logoURI: tokenData.logoURI || "https://www.birdeye.so/images/unknown-token-icon.svg",
+            chain
         });
         
         return NextResponse.json(savedToken);

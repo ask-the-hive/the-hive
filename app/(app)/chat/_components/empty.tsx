@@ -7,8 +7,12 @@ import StarterButtons from './starter-buttons';
 
 import { cn } from '@/lib/utils';
 import Logo from '@/components/ui/logo';
+import { useChat } from '../_contexts/chat';
 
 const EmptyChat: React.FC = () => {
+    const { chain } = useChat();
+
+    const chainName = chain === 'solana' ? 'Solana' : 'BSC';
 
     return (
         <div className={cn(
@@ -23,7 +27,7 @@ const EmptyChat: React.FC = () => {
                             How can <span className="text-brand-600 font-bold inline">We</span> help you?
                         </h1>
                         <p className="text-center text-sm text-neutral-600 dark:text-neutral-400">
-                            Orchestrate a hive mind of DeFi Agents to act on Solana
+                            Orchestrate a hive mind of DeFi Agents to act on {chainName}
                         </p>
                     </div>
                 </div>

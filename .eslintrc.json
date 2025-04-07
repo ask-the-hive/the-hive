@@ -1,0 +1,14 @@
+{
+  "extends": "next/core-web-vitals",
+  "rules": {
+    "@next/next/no-img-element": "off",
+    "react-hooks/exhaustive-deps": "warn",
+    "@typescript-eslint/no-unused-vars": "warn",
+    "@typescript-eslint/ban-ts-comment": ["error", {
+      "ts-expect-error": "allow-with-description",
+      "minimumDescriptionLength": 10
+    }],
+    "jsx-a11y/alt-text": "warn",
+    "react-hooks/rules-of-hooks": "warn"
+  }
+} 

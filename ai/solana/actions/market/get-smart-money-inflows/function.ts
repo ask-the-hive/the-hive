@@ -7,13 +7,6 @@ import { getPrices, getTokenMetadata } from "@/services/birdeye";
 
 import type { Price, TokenMetadata } from "@/services/birdeye/types";
 
-/**
- * Gets the trending tokens from Birdeye API.
- *
- * @param solanaKit - The Solana agent kit instance
- * @param args - The input arguments for the action
- * @returns A message containing the trending tokens information
- */
 export async function getSmartMoneyInflows(
   args: GetSmartMoneyInflowsArgumentsType
 ): Promise<SolanaActionResult<GetSmartMoneyInflowsResultBodyType>> {

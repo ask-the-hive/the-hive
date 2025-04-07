@@ -1,0 +1,1 @@
+export const BSC_TOKEN_PAGE_TRADING_ACTIVITY_NAME = "bsc-token-page-trading-activity"; 

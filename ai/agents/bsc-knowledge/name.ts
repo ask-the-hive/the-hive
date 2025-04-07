@@ -1,0 +1,1 @@
+export const BSC_KNOWLEDGE_AGENT_NAME = "Knowledge Agent"; 

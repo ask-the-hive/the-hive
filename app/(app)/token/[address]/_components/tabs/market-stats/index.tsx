@@ -13,7 +13,6 @@ interface Props {
 }
 
 const MarketStats: React.FC<Props> = ({ address }) => {
-
     const { data: tokenOverview, isLoading } = useTokenOverview(address);
 
     if(isLoading) {
@@ -45,7 +44,7 @@ const MarketStats: React.FC<Props> = ({ address }) => {
 
 interface StatItemProps {
     label: string;
-    value: number;
+    value: number | undefined;
     formatOptions?: Intl.NumberFormatOptions;
     prefix?: string;
 }
@@ -57,7 +56,10 @@ const StatItem: React.FC<StatItemProps> = ({ label, value, formatOptions = {}, p
                 {label}
             </h3>
             <p className="text-sm">
-                {prefix}{value.toLocaleString(undefined, { notation: 'compact', ...formatOptions })}
+                {value !== undefined && value !== null 
+                    ? `${prefix}${value.toLocaleString(undefined, { notation: 'compact', ...formatOptions })}`
+                    : `${prefix}N/A`
+                }
             </p>
         </div>
     );

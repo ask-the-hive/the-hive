@@ -1,31 +1,31 @@
 "use client"
 
 import { useState } from "react";
-
 import useSWR from "swr";
-
+import { useSearchParams } from "next/navigation";
+import { useChain } from "@/app/_contexts/chain-context";
 import type { SearchResultItem } from "@/services/birdeye/types";
+import { ChainType } from '@/app/_contexts/chain-context';
 
-export const useSearchTokens = () => {
+const fetcher = (url: string) => fetch(url).then(res => res.json());
 
-    const [search, setSearch] = useState("");
+export const useSearchTokens = (query: string, chainOverride?: ChainType) => {
+    const { currentChain } = useChain();
+    const searchParams = useSearchParams();
+    const chainParam = searchParams.get('chain') as ChainType | null;
+    
+    const chain = chainOverride || (chainParam && (chainParam === 'solana' || chainParam === 'bsc')
+        ? chainParam
+        : currentChain);
 
-    const { data, isLoading, error } = useSWR<SearchResultItem[]>(`/api/token/search?search=${search}`, async () => {
-        if (!search) return [];
-        
-        const response = await fetch("/api/token/search", {
-            method: "POST",
-            body: JSON.stringify({ search }),
-        });
-
-        return response.json();
-    });
+    const { data, error, isLoading } = useSWR(
+        query.length > 0 ? `/api/token/search?query=${encodeURIComponent(query)}&chain=${chain}` : null,
+        fetcher
+    );
 
     return {
-        data: data ?? [],
+        tokens: data?.tokens || [],
         isLoading,
-        error,
-        search,
-        setSearch,
+        error
     };
-}
+};

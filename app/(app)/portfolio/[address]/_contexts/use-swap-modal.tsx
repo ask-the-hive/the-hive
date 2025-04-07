@@ -1,86 +1,92 @@
 "use client";
 
-import React, { createContext, useContext, ReactNode, useState } from 'react';
-
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui';
-
+import React, { createContext, useContext, useState } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import Swap from '@/app/_components/swap';
-
-import type { Token } from '@/db/types'
+import { Token } from '@/db/types/token';
 
 interface SwapModalContextType {
     isOpen: boolean;
-    openSell: (tokenAddress: string) => Promise<void>;
-    openBuy: (tokenAddress: string) => Promise<void>;
-    inputToken: Token | null;
-    outputToken: Token | null;
-    setInputToken: (token: Token) => void;
-    setOutputToken: (token: Token) => void;
+    mode: 'buy' | 'sell';
+    tokenAddress: string;
+    onOpen: (mode: 'buy' | 'sell', tokenAddress: string) => void;
+    onClose: () => void;
 }
 
-const SwapModalContextType = createContext<SwapModalContextType>({
+const SwapModalContext = createContext<SwapModalContextType>({
     isOpen: false,
-    openSell: async () => {},
-    openBuy: async () => {},
-    inputToken: null,
-    outputToken: null,
-    setInputToken: () => {},
-    setOutputToken: () => {}
+    mode: 'buy',
+    tokenAddress: '',
+    onOpen: () => {},
+    onClose: () => {},
 });
 
-export const SwapModalProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+export const useSwapModal = () => useContext(SwapModalContext);
 
-    const [isOpen, setIsOpen] = useState<boolean>(false);
+export const SwapModalProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const [mode, setMode] = useState<'buy' | 'sell'>('buy');
+    const [tokenAddress, setTokenAddress] = useState('');
 
-    const [inputToken, setInputToken] = useState<Token | null>(null);
-    const [outputToken, setOutputToken] = useState<Token | null>(null);
-
-    const openSell = async (tokenAddress: string) => {
-        const token = await fetch(`/api/token/${tokenAddress}/data`).then(res => res.json());
-        if(!token) return;
-        setInputToken(token);
-        setOutputToken(null);
+    const onOpen = (mode: 'buy' | 'sell', tokenAddress: string) => {
+        setMode(mode);
+        setTokenAddress(tokenAddress);
         setIsOpen(true);
-    }
+    };
 
-    const openBuy = async (tokenAddress: string) => {
-        const token = await fetch(`/api/token/${tokenAddress}/data`).then(res => res.json());
-        if(!token) return;
-        setInputToken(null);
-        setOutputToken(token);
-        setIsOpen(true);
-    }
+    const onClose = () => {
+        setIsOpen(false);
+    };
+
+    const onSuccess = () => {
+        onClose();
+    };
+
+    const onError = (error: string) => {
+        console.error('Swap error:', error);
+    };
+
+    const token: Token = {
+        id: tokenAddress,
+        name: '',
+        symbol: '',
+        decimals: 0,
+        logoURI: '',
+        tags: [],
+        freezeAuthority: null,
+        mintAuthority: null,
+        permanentDelegate: null,
+        extensions: {}
+    };
 
     return (
-        <SwapModalContextType.Provider value={{ 
-            isOpen, 
-            openSell, 
-            openBuy, 
-            inputToken, 
-            outputToken, 
-            setInputToken, 
-            setOutputToken 
+        <SwapModalContext.Provider value={{
+            isOpen,
+            mode,
+            tokenAddress,
+            onOpen,
+            onClose,
         }}>
+            {children}
             <Dialog open={isOpen} onOpenChange={setIsOpen}>
-                <DialogContent className="w-fit">
+                <DialogContent>
                     <DialogHeader>
                         <DialogTitle>
-                            Swap
+                            {mode === 'buy' ? 'Buy' : 'Sell'}
                         </DialogTitle>
                     </DialogHeader>
-                    <Swap 
-                        initialInputToken={inputToken}
-                        initialOutputToken={outputToken}
-                        inputLabel="From"
-                        outputLabel="To"
-                        onSuccess={() => setIsOpen(false)}
-                        onCancel={() => setIsOpen(false)}
+                    <Swap
+                        initialInputToken={mode === 'buy' ? null : token}
+                        initialOutputToken={mode === 'buy' ? token : null}
+                        inputLabel={mode === 'buy' ? 'Pay with' : 'Sell'}
+                        outputLabel={mode === 'buy' ? 'Buy' : 'Receive'}
+                        onSuccess={onSuccess}
+                        onError={onError}
                     />
                 </DialogContent>
             </Dialog>
-            {children}
-        </SwapModalContextType.Provider>
+        </SwapModalContext.Provider>
     );
 };
 
-export const useSwapModal = () => useContext(SwapModalContextType);
+export default SwapModalProvider;

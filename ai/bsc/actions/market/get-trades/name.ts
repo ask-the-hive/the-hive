@@ -1,0 +1,1 @@
+export const BSC_GET_TRADER_TRADES_NAME = "bsc-get-trader-trades"; 

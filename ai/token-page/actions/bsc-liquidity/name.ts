@@ -1,0 +1,1 @@
+export const BSC_TOKEN_PAGE_LIQUIDITY_NAME = "bsc-token-page-liquidity"; 
