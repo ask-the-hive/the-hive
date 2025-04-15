@@ -21,13 +21,13 @@ const Stats: React.FC<Props> = ({ token }) => {
                     <h3 className="text-sm font-semibold">
                         Market Cap
                     </h3>
-                    <p>${token.mc.toLocaleString(undefined, { maximumFractionDigits: 2 })}</p>
+                    <p>${token.mc ? token.mc.toLocaleString(undefined, { maximumFractionDigits: 2 }) : 'N/A'}</p>
                 </div>
                 <div className="flex flex-col">
                     <h3 className="text-sm font-semibold">
                         Liquidity
                     </h3>
-                    <p>${token.liquidity.toLocaleString(undefined, { maximumFractionDigits: 2 })}</p>
+                    <p>${token.liquidity ? token.liquidity.toLocaleString(undefined, { maximumFractionDigits: 2 }) : 'N/A'}</p>
                 </div>
                 <div className="flex flex-col">
                     <h3 className="text-sm font-semibold">
