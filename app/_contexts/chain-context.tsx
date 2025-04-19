@@ -4,11 +4,12 @@ import React, { createContext, useContext, useState, ReactNode, useEffect, useCa
 import { usePrivy, useWallets } from '@privy-io/react-auth';
 import { useSolanaWallets } from '@privy-io/react-auth/solana';
 
-export type ChainType = 'solana' | 'bsc';
+export type ChainType = 'solana' | 'bsc' | 'base';
 
 interface WalletAddresses {
   solana?: string;
   bsc?: string;
+  base?: string;
 }
 
 interface ChainContextType {

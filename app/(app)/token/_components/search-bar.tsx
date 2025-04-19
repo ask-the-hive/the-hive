@@ -26,7 +26,7 @@ const SearchBar: React.FC = () => {
     const chainParam = searchParams.get('chain') as ChainType | null;
     
     // Use URL param if available, otherwise use context
-    const chain = chainParam && (chainParam === 'solana' || chainParam === 'bsc') 
+    const chain = chainParam && (chainParam === 'solana' || chainParam === 'bsc' || chainParam === 'base') 
         ? chainParam 
         : currentChain;
     
@@ -52,10 +52,15 @@ const SearchBar: React.FC = () => {
                 '0x55d398326f99059fF775485246999027B3197955', // USDT
                 '0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d', // USDC
                 '0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56', // BUSD
+            ]),
+            base: new Set([
+                '0x4200000000000000000000000000000000000006', // WETH
+                '0xd9aAEc86B65D86f6A7B5B1b0c42FFA531710b6CA', // USDC
+                '0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb', // DAI
             ])
         };
         
-        const currentPriorityAddresses = chain === 'bsc' ? priorityAddresses.bsc : priorityAddresses.solana;
+        const currentPriorityAddresses = priorityAddresses[chain] || new Set();
         
         // Split tokens into priority and non-priority
         const priorityTokens = tokens.filter(token => 

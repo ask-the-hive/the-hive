@@ -8,7 +8,7 @@ export const queryBirdeye = async <T>(
 ): Promise<T> => {
   const url = new URL(`https://public-api.birdeye.so/${endpoint}`);
   
-  url.searchParams.append('chain', chain === 'bsc' ? 'bsc' : 'solana');
+  url.searchParams.append('chain', chain);
   
   if (params) {
     Object.entries(params).forEach(([key, value]) => {
@@ -18,7 +18,7 @@ export const queryBirdeye = async <T>(
     });
   }
 
-  const xChainValue = chain === 'bsc' ? 'bsc' : 'solana';
+  const xChainValue = chain;
   
   console.log(`Making Birdeye API request to ${url.toString()} with chain ${chain}`);
 

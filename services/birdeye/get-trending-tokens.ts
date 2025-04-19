@@ -10,7 +10,6 @@ export const getTrendingTokens = async (
     return queryBirdeye<TrendingTokensResponse>(
         'defi/token_trending',
         {
-            chain: chain === 'bsc' ? 'bsc' : 'solana',
             sort_by: 'rank',
             sort_type: 'asc',
             offset,
