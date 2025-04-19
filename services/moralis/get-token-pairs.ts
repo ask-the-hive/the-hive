@@ -1,4 +1,5 @@
 import fetch from 'node-fetch';
+import { ChainType } from '@/app/_contexts/chain-context';
 
 interface MoralisPairResponse {
   cursor: string;
@@ -37,12 +38,13 @@ export interface TokenInfo {
 }
 
 /**
- * Get token pairs for a given token address on BSC
+ * Get token pairs for a given token address on BSC or Base chain
  * @param tokenAddress The address of the token to get pairs for
+ * @param chain The chain to get pairs for (bsc or base)
  * @returns An array of token pairs
  */
-export async function getTokenPairs(tokenAddress: string): Promise<MoralisPair[]> {
-  console.log(`[Moralis] Getting token pairs for address: ${tokenAddress}`);
+export async function getTokenPairs(tokenAddress: string, chain: ChainType = 'bsc'): Promise<MoralisPair[]> {
+  console.log(`[Moralis] Getting token pairs for address: ${tokenAddress} on chain: ${chain}`);
   console.log(`[Moralis] API Key exists: ${!!process.env.MORALIS_API_KEY}`);
   
   try {
@@ -54,9 +56,12 @@ export async function getTokenPairs(tokenAddress: string): Promise<MoralisPair[]
       },
     };
 
-    console.log(`[Moralis] Making API request to: https://deep-index.moralis.io/api/v2.2/erc20/${tokenAddress}/pairs?chain=bsc`);
+    // Map chain to Moralis chain ID
+    const moralisChain = chain === 'bsc' ? 'bsc' : 'base';
     
-    const response = await fetch(`https://deep-index.moralis.io/api/v2.2/erc20/${tokenAddress}/pairs?chain=bsc`, options);
+    console.log(`[Moralis] Making API request to: https://deep-index.moralis.io/api/v2.2/erc20/${tokenAddress}/pairs?chain=${moralisChain}`);
+    
+    const response = await fetch(`https://deep-index.moralis.io/api/v2.2/erc20/${tokenAddress}/pairs?chain=${moralisChain}`, options);
     
     console.log(`[Moralis] Response status: ${response.status} ${response.statusText}`);
     

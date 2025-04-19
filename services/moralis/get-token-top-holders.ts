@@ -1,4 +1,5 @@
 import Moralis from 'moralis';
+import { ChainType } from '@/app/_contexts/chain-context';
 
 // Track if Moralis has been started
 let isMoralisStarted = false;
@@ -12,23 +13,20 @@ export interface TokenHolder {
 }
 
 interface MoralisTokenOwner {
-  balance: string;
-  balance_formatted: string;
-  is_contract: boolean;
   owner_address: string;
   owner_address_label: string | null;
-  entity: any;
-  entity_logo: any;
-  usd_value: string;
+  balance: string;
+  balance_formatted: string;
   percentage_relative_to_total_supply: number;
 }
 
 /**
- * Gets the top holders for a BSC token using Moralis API
+ * Gets the top holders for a BSC or Base token using Moralis API
  * @param address The token contract address
+ * @param chain The chain to get holders for (bsc or base)
  * @returns Array of top token holders
  */
-export async function getTokenTopHolders(address: string): Promise<TokenHolder[]> {
+export async function getTokenTopHolders(address: string, chain: ChainType = 'bsc'): Promise<TokenHolder[]> {
   try {
     // Start Moralis only if it hasn't been started yet
     if (!isMoralisStarted) {
@@ -51,7 +49,7 @@ export async function getTokenTopHolders(address: string): Promise<TokenHolder[]
 
     // Get token owners
     const response = await Moralis.EvmApi.token.getTokenOwners({
-      chain: "0x38", // BSC chain ID
+      chain: chain === 'bsc' ? "0x38" : "0x2105", // BSC: 0x38, Base: 0x2105
       limit: 20,
       order: "DESC",
       tokenAddress: address

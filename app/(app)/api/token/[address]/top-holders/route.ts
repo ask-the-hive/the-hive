@@ -11,14 +11,14 @@ export const GET = async (request: NextRequest, { params }: { params: Promise<{ 
     console.log(`Fetching top holders for token ${address} on chain ${chain}`);
 
     try {
-        if (chain === 'bsc') {
-            // Use Moralis for BSC tokens
-            const topHolders = await getTokenTopHolders(address);
+        if (chain === 'bsc' || chain === 'base') {
+            // Use Moralis for BSC and Base tokens
+            const topHolders = await getTokenTopHolders(address, chain as ChainType);
             
             // Map Moralis response to match Birdeye format
             const mappedHolders = topHolders.map(holder => ({
                 amount: holder.amount,
-                decimals: 18, // BSC tokens typically use 18 decimals
+                decimals: 18, // BSC and Base tokens typically use 18 decimals
                 mint: address,
                 owner: holder.address,
                 token_account: holder.address,
@@ -26,7 +26,7 @@ export const GET = async (request: NextRequest, { params }: { params: Promise<{ 
                 percentage: holder.percentage // Add the percentage from Moralis
             }));
             
-            console.log(`Successfully fetched ${mappedHolders.length} top holders for BSC token ${address}`);
+            console.log(`Successfully fetched ${mappedHolders.length} top holders for ${chain.toUpperCase()} token ${address}`);
             return NextResponse.json(mappedHolders);
         } else {
             // Use Birdeye for Solana tokens

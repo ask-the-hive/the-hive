@@ -1,4 +1,5 @@
 import { MarketSource } from "../types";
+import { ChainType } from "@/app/_contexts/chain-context";
 
 // Known BSC DEX factory addresses and router addresses
 // These can be used to identify the DEX based on the pool address
@@ -60,12 +61,13 @@ export const BSC_DEX_IDENTIFIERS = {
 };
 
 /**
- * Helper function to identify BSC DEX based on the address and name
+ * Helper function to identify DEX based on the address and name
  * @param address The contract address
  * @param name The market name
+ * @param chain The chain type (bsc or base)
  * @returns The identified MarketSource enum value
  */
-export const identifyBscDex = (address: string, name: string = ''): MarketSource => {
+export const identifyDex = (address: string, name: string = '', chain: ChainType = 'bsc'): MarketSource => {
     // Convert address and name to lowercase for case-insensitive matching
     const lowerAddress = address.toLowerCase();
     const lowerName = name.toLowerCase();
@@ -115,6 +117,6 @@ export const identifyBscDex = (address: string, name: string = ''): MarketSource
         }
     }
     
-    // If we can't identify the DEX, default to PancakeSwap as it's the most common on BSC
-    return MarketSource.PancakeSwap;
+    // Return different defaults based on chain
+    return chain === 'base' ? MarketSource.Uniswap : MarketSource.PancakeSwap;
 }; 

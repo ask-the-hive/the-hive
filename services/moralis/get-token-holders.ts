@@ -1,3 +1,5 @@
+import { ChainType } from "@/app/_contexts/chain-context";
+
 interface TokenHoldersResponse {
   totalHolders: number;
   page: number;
@@ -7,13 +9,16 @@ interface TokenHoldersResponse {
 }
 
 /**
- * Gets the number of holders for a BSC token using Moralis API
+ * Gets the number of holders for a BSC or Base token using Moralis API
  * @param address The token contract address
+ * @param chain The chain to get holders for (bsc or base)
  * @returns The total number of token holders
  */
-export async function getTokenHolders(address: string): Promise<number> {
+export async function getTokenHolders(address: string, chain: ChainType = 'bsc'): Promise<number> {
   try {
-    const url = `https://deep-index.moralis.io/api/v2.2/erc20/${address}/holders?chain=bsc`;
+    // Map chain to Moralis chain ID
+    const moralisChain = chain === 'bsc' ? 'bsc' : 'base';
+    const url = `https://deep-index.moralis.io/api/v2.2/erc20/${address}/holders?chain=${moralisChain}`;
     
     const response = await fetch(url, {
       headers: {

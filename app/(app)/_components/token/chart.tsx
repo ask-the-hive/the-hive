@@ -57,7 +57,7 @@ const TokenChart: React.FC<Props> = ({ mint }) => {
     const searchParams = useSearchParams();
     const chainParam = searchParams.get('chain') as ChainType | null;
     
-    const chain = chainParam && (chainParam === 'solana' || chainParam === 'bsc') 
+    const chain = chainParam && (chainParam === 'solana' || chainParam === 'bsc' || chainParam === 'base') 
         ? chainParam 
         : currentChain;
 
@@ -69,8 +69,8 @@ const TokenChart: React.FC<Props> = ({ mint }) => {
     const open = data.length > 0 ? data[0].open : 0;
     const change = ((price - open) / open) * 100;
 
-    // If it's a BSC token, use the Moralis chart
-    if (chain === 'bsc') {
+    // If it's a BSC or Base token, use the Moralis chart
+    if (chain === 'bsc' || chain === 'base') {
         return <MoralisChart tokenAddress={mint} price={price} priceChange={change} />;
     }
 

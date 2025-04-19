@@ -18,7 +18,12 @@ export enum MarketSource {
     BakerySwap = "BakerySwap",
     BSWSwap = "BSWSwap",
     ThenaFusion = "Thena Fusion",
-    ThenaAlgebra = "Thena Algebra"
+    ThenaAlgebra = "Thena Algebra",
+
+    // Base markets
+    BaseSwap = "BaseSwap",
+    Aerodrome = "Aerodrome",
+    SwapBased = "SwapBased"
 }
 
 export interface TokenInfo {

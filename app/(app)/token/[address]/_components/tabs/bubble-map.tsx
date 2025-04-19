@@ -18,12 +18,12 @@ export const BubbleMap: React.FC<Props> = ({ address }) => {
     const [isLoading, setIsLoading] = useState(true);
     
     // Use URL param if available, otherwise use context
-    const chain = chainParam && (chainParam === 'solana' || chainParam === 'bsc') 
+    const chain = chainParam && (chainParam === 'solana' || chainParam === 'bsc' || chainParam === 'base') 
         ? chainParam 
         : currentChain;
 
     // Map chain to the correct chain identifier for BubbleMaps URL
-    const chainIdentifier = chain === 'solana' ? 'sol' : 'bsc';
+    const chainIdentifier = chain === 'solana' ? 'sol' : chain === 'bsc' ? 'bsc' : 'base';
     
     useEffect(() => {
         const checkAvailability = async () => {

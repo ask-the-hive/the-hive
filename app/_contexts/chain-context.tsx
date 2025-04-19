@@ -101,7 +101,7 @@ export const ChainProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     if (walletsReady && wallets.length > 0) {
       console.log("Processing wallets from useWallets:", wallets.length);
       
-      // Filter for EVM wallets (BSC)
+      // Filter for EVM wallets (BSC and Base)
       const evmWallets = wallets.filter(wallet => 
         wallet.address.startsWith('0x')
       );
@@ -110,10 +110,16 @@ export const ChainProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       
       evmWallets.forEach(wallet => {
         if (wallet.address) {
-          const key = `bsc:${wallet.address}`;
-          if (!processedWallets.current.has(key)) {
+          // Set both BSC and Base addresses for EVM wallets
+          const bscKey = `bsc:${wallet.address}`;
+          const baseKey = `base:${wallet.address}`;
+          if (!processedWallets.current.has(bscKey)) {
             console.log("Setting BSC address from useWallets:", wallet.address);
             setWalletAddress('bsc', wallet.address);
+          }
+          if (!processedWallets.current.has(baseKey)) {
+            console.log("Setting Base address from useWallets:", wallet.address);
+            setWalletAddress('base', wallet.address);
           }
         }
       });
@@ -132,7 +138,7 @@ export const ChainProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     
     // Process main wallet
     if (user.wallet?.address) {
-      // Determine if the address is a Solana address (base58) or BSC address (0x...)
+      // Determine if the address is a Solana address (base58) or EVM address (0x...)
       const isSolanaAddress = user.wallet.walletClientType === 'solana' || 
                              !user.wallet.address.startsWith('0x');
       
@@ -140,8 +146,10 @@ export const ChainProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         console.log("Setting Solana address from main wallet:", user.wallet.address);
         setWalletAddress('solana', user.wallet.address);
       } else {
-        console.log("Setting BSC address from main wallet:", user.wallet.address);
+        // For EVM addresses, set both BSC and Base
+        console.log("Setting BSC and Base addresses from main wallet:", user.wallet.address);
         setWalletAddress('bsc', user.wallet.address);
+        setWalletAddress('base', user.wallet.address);
       }
     }
     
@@ -158,8 +166,10 @@ export const ChainProvider: React.FC<{ children: ReactNode }> = ({ children }) =
               console.log("Setting Solana address from linked account:", walletAccount.address);
               setWalletAddress('solana', walletAccount.address);
             } else {
-              console.log("Setting BSC address from linked account:", walletAccount.address);
+              // For EVM addresses, set both BSC and Base
+              console.log("Setting BSC and Base addresses from linked account:", walletAccount.address);
               setWalletAddress('bsc', walletAccount.address);
+              setWalletAddress('base', walletAccount.address);
             }
           }
         }
