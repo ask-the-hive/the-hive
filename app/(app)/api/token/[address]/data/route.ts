@@ -10,7 +10,7 @@ export async function GET(
     const { address } = await params;
     const searchParams = req.nextUrl.searchParams;
     const chainParam = searchParams.get('chain') || 'solana';
-    const chain = (chainParam === 'solana' || chainParam === 'bsc') ? chainParam as ChainType : 'solana';
+    const chain = (chainParam === 'solana' || chainParam === 'bsc' || chainParam === 'base') ? chainParam as ChainType : 'solana';
     
     try {
         const token = await getToken(address);

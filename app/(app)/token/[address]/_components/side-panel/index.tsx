@@ -11,6 +11,7 @@ import { ChatProvider } from '../../_contexts';
 import { useChain } from '@/app/_contexts/chain-context';
 import { ChainType } from '@/app/_contexts/chain-context';
 import { WBNB_METADATA } from '@/lib/config/bsc';
+import { WETH_METADATA } from '@/lib/config/base';
 
 import type { TokenChatData } from '@/types';
 import type { Token } from '@/db/types';
@@ -39,7 +40,7 @@ const SidePanel: React.FC<Props> = ({ address }) => {
     const chainParam = searchParams.get('chain') as ChainType | null;
     
     // Use URL param if available, otherwise use context
-    const chain = chainParam && (chainParam === 'solana' || chainParam === 'bsc') 
+    const chain = chainParam && (chainParam === 'solana' || chainParam === 'bsc' || chainParam === 'base') 
         ? chainParam 
         : currentChain;
     
@@ -49,7 +50,11 @@ const SidePanel: React.FC<Props> = ({ address }) => {
     const [error, setError] = useState<string | null>(null);
 
     // Get the initial sell token based on chain
-    const initialSellToken = chain === 'bsc' ? WBNB_METADATA : SOL_METADATA;
+    const initialSellToken = chain === 'bsc' 
+        ? WBNB_METADATA 
+        : chain === 'base'
+            ? WETH_METADATA
+            : SOL_METADATA;
 
     useEffect(() => {
         const fetchTokenData = async () => {
