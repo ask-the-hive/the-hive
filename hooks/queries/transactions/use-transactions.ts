@@ -15,12 +15,14 @@ export const useTransactions = (address: string, chain?: ChainType) => {
     // Use the appropriate address for the current chain
     const chainAddress = effectiveChain === 'solana' 
         ? walletAddresses.solana || address 
-        : walletAddresses.bsc || address;
+        : effectiveChain === 'bsc'
+            ? walletAddresses.bsc || address
+            : walletAddresses.base || address;
     
     // Only fetch if we have a valid address for the chain
     const shouldFetch = chainAddress && 
                        ((effectiveChain === 'solana' && !chainAddress.startsWith('0x')) ||
-                        (effectiveChain === 'bsc' && chainAddress.startsWith('0x')));
+                        ((effectiveChain === 'bsc' || effectiveChain === 'base') && chainAddress.startsWith('0x')));
     
     const { data, isLoading, error, mutate } = useSWR<EnrichedTransaction[]>(
         shouldFetch ? `/api/transactions/${chainAddress}?chain=${effectiveChain}` : null,

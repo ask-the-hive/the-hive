@@ -21,8 +21,10 @@ const Balances: React.FC<Props> = ({ address, chain }) => {
     const chainAddress = useMemo(() => {
         return chain === 'solana' 
             ? walletAddresses.solana || address 
-            : walletAddresses.bsc || address;
-    }, [chain, walletAddresses.solana, walletAddresses.bsc, address]);
+            : chain === 'bsc'
+                ? walletAddresses.bsc || address
+                : walletAddresses.base || address;
+    }, [chain, walletAddresses.solana, walletAddresses.bsc, walletAddresses.base, address]);
 
     // For Solana native balances and token accounts
     const { data: tokenAccounts, isLoading: isTokenAccountsLoading, error: tokenAccountsError } = 
@@ -30,7 +32,7 @@ const Balances: React.FC<Props> = ({ address, chain }) => {
     const { data: nativeBalance, isLoading: isNativeBalanceLoading, error: nativeBalanceError } = 
         useNativeBalance(chainAddress);
     
-    // For BSC portfolio
+    // For BSC and Base portfolio
     const { data: portfolio, isLoading: isPortfolioLoading } = 
         usePortfolio(chainAddress, chain);
 
@@ -98,12 +100,12 @@ const Balances: React.FC<Props> = ({ address, chain }) => {
                 )}
             </div>
         )
-    } else if (chain === 'bsc') {
-        // Check if we have a valid BSC address
+    } else if (chain === 'bsc' || chain === 'base') {
+        // Check if we have a valid EVM address
         if (!chainAddress || !chainAddress.startsWith('0x')) {
             return (
                 <div className="px-2 py-2 text-sm text-yellow-500">
-                    No BSC wallet connected. Please link a BSC wallet.
+                    No {chain.toUpperCase()} wallet connected. Please link a wallet.
                 </div>
             );
         }
@@ -112,22 +114,25 @@ const Balances: React.FC<Props> = ({ address, chain }) => {
             <Skeleton className="h-10 w-full" />
         )
 
-        // BSC balances
+        // BSC/Base balances
         if (!portfolio || !portfolio.items || portfolio.items.length === 0) return (
             <div className="px-2 py-2 text-sm text-muted-foreground">
                 No tokens found
             </div>
         )
 
-        // Sort tokens to put BNB/WBNB at the top
+        // Sort tokens to put native tokens at the top
         const sortedTokens = [...(portfolio.items || [])].sort((a, b) => {
-            // Put BNB and WBNB at the top
-            if (a.symbol.toLowerCase().includes('bnb') || a.symbol.toLowerCase().includes('wbnb')) {
-                return -1;
-            }
-            if (b.symbol.toLowerCase().includes('bnb') || b.symbol.toLowerCase().includes('wbnb')) {
-                return 1;
-            }
+            // Put native tokens at the top
+            const isANative = chain === 'bsc' 
+                ? (a.symbol.toLowerCase().includes('bnb') || a.symbol.toLowerCase().includes('wbnb'))
+                : (a.symbol.toLowerCase().includes('eth') || a.symbol.toLowerCase().includes('weth'));
+            const isBNative = chain === 'bsc'
+                ? (b.symbol.toLowerCase().includes('bnb') || b.symbol.toLowerCase().includes('wbnb'))
+                : (b.symbol.toLowerCase().includes('eth') || b.symbol.toLowerCase().includes('weth'));
+            
+            if (isANative) return -1;
+            if (isBNative) return 1;
             // Otherwise sort by value
             return b.valueUsd - a.valueUsd;
         });
@@ -139,24 +144,40 @@ const Balances: React.FC<Props> = ({ address, chain }) => {
                     let displayName = token.name;
                     let displaySymbol = token.symbol.toUpperCase();
                     
-                    // For Wrapped BNB, show as Binance Coin (BNB)
-                    if (token.name.toLowerCase().includes('wrapped bnb') || 
-                        token.symbol.toLowerCase() === 'wbnb') {
+                    // For Wrapped native tokens, show as native token
+                    if (chain === 'bsc' && (token.name.toLowerCase().includes('wrapped bnb') || token.symbol.toLowerCase() === 'wbnb')) {
                         displayName = 'Binance Coin';
                         displaySymbol = 'BNB';
+                    } else if (chain === 'base' && (token.name.toLowerCase().includes('wrapped eth') || token.symbol.toLowerCase() === 'weth')) {
+                        displayName = 'Ethereum';
+                        displaySymbol = 'ETH';
                     }
                     
-                    // Use ChainIcon for BNB
-                    const isBNB = token.symbol.toLowerCase() === 'bnb' || 
-                                 token.symbol.toLowerCase() === 'wbnb';
+                    // Use ChainIcon for native tokens
+                    const isNative = chain === 'bsc'
+                        ? (token.symbol.toLowerCase() === 'bnb' || token.symbol.toLowerCase() === 'wbnb')
+                        : (token.symbol.toLowerCase() === 'eth' || token.symbol.toLowerCase() === 'weth');
                     
                     return (
                         <div key={`token-${index}`} className="flex flex-row items-center gap-2">
-                            {isBNB ? (
-                                <ChainIcon chain="bsc" className="w-6 h-6" />
+                            {isNative ? (
+                                chain === 'base' ? (
+                                    <img 
+                                        src="https://cdn.moralis.io/eth/0x.png"
+                                        alt="Ethereum"
+                                        className="w-6 h-6 rounded-full"
+                                    />
+                                ) : (
+                                    <ChainIcon chain={chain} className="w-6 h-6" />
+                                )
                             ) : (
                                 <img 
-                                    src={token.logoURI || "/bsc.png"} 
+                                    src={
+                                        // Special case for Base test token
+                                        chain === 'base' && token.symbol === 'BASE' && token.name === 'Base Token'
+                                            ? 'https://basescan.org/assets/base/images/svg/empty-token.svg?v=25.4.2.0'
+                                            : token.logoURI || `/${chain}.png`
+                                    } 
                                     alt={token.name} 
                                     className="w-6 h-6 rounded-full" 
                                 />
@@ -173,7 +194,7 @@ const Balances: React.FC<Props> = ({ address, chain }) => {
                     );
                 })}
             </div>
-        )
+        );
     }
 
     return (

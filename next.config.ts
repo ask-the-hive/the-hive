@@ -13,7 +13,8 @@ const nextConfig: NextConfig = {
   ],
   images: {
     domains: [
-      "logo.moralis.io"
+      "logo.moralis.io",
+      "avatars.githubusercontent.com"
     ],
   },
   webpack: (config, { isServer }) => {

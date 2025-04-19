@@ -107,6 +107,12 @@ const WalletAddress: React.FC<Props> = ({ address, className, chain: propChain }
                                     Solscan <ArrowUpRight className="size-4" />
                                 </Button>
                             </Link>
+                        ) : chain === 'base' ? (
+                            <Link href={`https://basescan.org/address/${address}`} target="_blank">
+                                <Button variant="outline" size="sm">
+                                    BaseScan <ArrowUpRight className="size-4" />
+                                </Button>
+                            </Link>
                         ) : (
                             <Link href={`https://bscscan.com/address/${address}`} target="_blank">
                                 <Button variant="outline" size="sm">

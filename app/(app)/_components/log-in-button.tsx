@@ -25,7 +25,7 @@ const LogInButton: React.FC<Props> = ({ onComplete }) => {
         console.log("Getting wallet address for chain:", currentChain);
         
         // First check wallets from the appropriate hook based on chain
-        if (currentChain === 'bsc') {
+        if (currentChain === 'bsc' || currentChain === 'base') {
             // Find EVM wallets
             const evmWallets = wallets.filter(w => w.address.startsWith('0x'));
             console.log("EVM wallets found:", evmWallets.length);
@@ -48,9 +48,11 @@ const LogInButton: React.FC<Props> = ({ onComplete }) => {
         }
         
         // Fallback to chain context
-        const contextAddress = currentChain === 'bsc' 
-            ? walletAddresses.bsc
-            : walletAddresses.solana;
+        const contextAddress = currentChain === 'solana'
+            ? walletAddresses.solana
+            : currentChain === 'bsc'
+                ? walletAddresses.bsc
+                : walletAddresses.base;
             
         console.log("Using address from context:", contextAddress);
         
@@ -58,6 +60,7 @@ const LogInButton: React.FC<Props> = ({ onComplete }) => {
         if (!contextAddress && user?.wallet?.address) {
             const isUserWalletEvm = user.wallet.address.startsWith('0x');
             if ((currentChain === 'bsc' && isUserWalletEvm) || 
+                (currentChain === 'base' && isUserWalletEvm) ||
                 (currentChain === 'solana' && !isUserWalletEvm)) {
                 console.log("Using user's main wallet:", user.wallet.address);
                 return user.wallet.address;

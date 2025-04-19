@@ -26,7 +26,7 @@ const ChainIcon: React.FC<Props> = ({ chain, className = "size-8" }) => {
                     : 'Solana Chain'}
             width={32}
             height={32}
-            className={className}
+            className={`rounded-full ${className}`}
         />
     );
 }
