@@ -1,7 +1,6 @@
 'use client'
 
 import React, { useState } from 'react'
-import { useSearchParams } from 'next/navigation'
 import { ChevronsUpDown } from 'lucide-react';
 
 import { 
@@ -16,7 +15,7 @@ import {
 import SaveToken from '../(app)/_components/save-token';
 
 import { useSearchTokens } from '@/hooks/queries/token';
-import { useChain, ChainType } from '@/app/_contexts/chain-context';
+import { useChain } from '@/app/_contexts/chain-context';
 
 import { cn } from '@/lib/utils';
 
@@ -31,12 +30,9 @@ interface Props {
 
 const TokenSelect: React.FC<Props> = ({ value, onChange, priorityTokens = [] }) => {
     const { currentChain } = useChain();
-    const searchParams = useSearchParams();
-    const chainParam = searchParams.get('chain') as ChainType | null;
     
-    const chain = chainParam && (chainParam === 'solana' || chainParam === 'bsc' || chainParam === 'base') 
-        ? chainParam 
-        : currentChain;
+    // Always use currentChain for token search in swap modals
+    const chain = currentChain;
     
     const [open, setOpen] = useState(false);
     const [input, setInput] = useState("");
@@ -77,9 +73,9 @@ const TokenSelect: React.FC<Props> = ({ value, onChange, priorityTokens = [] }) 
                 >
                     {
                         value ? (
-                            <img 
+                            <img
                                 src={value.logoURI || 'https://www.birdeye.so/images/unknown-token-icon.svg'} 
-                                alt={value.name} 
+                                alt={value.name}
                                 className="w-6 h-6 rounded-full" 
                             />
                         ) : (
@@ -123,9 +119,9 @@ const TokenSelect: React.FC<Props> = ({ value, onChange, priorityTokens = [] }) 
                                                     onChange(token);
                                                 }}
                                             >
-                                                <img 
+                                                <img
                                                     src={token.logoURI || "https://www.birdeye.so/images/unknown-token-icon.svg"} 
-                                                    alt={token.name} 
+                                                    alt={token.name}
                                                     className="w-6 h-6 rounded-full" 
                                                 />
                                                 <p className="text-sm font-bold">
@@ -146,7 +142,7 @@ const TokenSelect: React.FC<Props> = ({ value, onChange, priorityTokens = [] }) 
                 }
             </PopoverContent>
         </Popover>
-    )
+    );
 }
 
-export default TokenSelect
+export default TokenSelect;
