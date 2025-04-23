@@ -16,7 +16,7 @@ import {
     GetTokenAddress,
     GetTopHolders,
     BubbleMaps as SolanaBubbleMaps,
-    GetPools,
+    GetPools as SolanaGetPools,
     DepositLiquidity,
     NumHolders,
     GetLpTokens,
@@ -41,7 +41,6 @@ import {
     GetTrendingTokens as BscGetTrendingTokens,
     GetTrades as BscGetTrades,
     Transfer as BscTransfer,
-    GetPools as BscGetPools,
     Trade as BscTrade,
     GetTopTraders as BscGetTopTraders
 } from './bsc'
@@ -67,6 +66,7 @@ import {
     GetTrendingTokens as BaseGetTrendingTokens,
     GetTopTraders as BaseGetTopTraders,
     GetTrades as BaseGetTrades,
+    Trade as BaseTrade,
 } from './base';
 
 import { 
@@ -106,6 +106,7 @@ import {
     BASE_GET_TRENDING_TOKENS_NAME,
     BASE_GET_TOP_TRADERS_NAME,
     BASE_GET_TRADER_TRADES_NAME,
+    BASE_TRADE_NAME,
 } from '@/ai/action-names'
 import { BSC_BUBBLE_MAPS_NAME } from '@/ai/bsc/actions/token/bubble-maps/name'
 import { BSC_TOP_HOLDERS_NAME } from '@/ai/bsc/actions/token/top-holders/name'
@@ -121,12 +122,15 @@ import { BSC_GET_WALLET_ADDRESS_NAME } from '@/ai/bsc/actions/wallet/get-wallet-
 import { BSC_BALANCE_NAME } from '@/ai/bsc/actions/wallet/balance/name'
 import { BSC_ALL_BALANCES_NAME } from '@/ai/bsc/actions/wallet/all-balances/name'
 import { BSC_TRANSFER_NAME } from '@/ai/bsc/actions/wallet/transfer/name'
-import { BSC_GET_POOLS_NAME } from '@/ai/bsc/actions/liquidity/names'
 import { BASE_GET_TOKEN_ADDRESS_NAME } from '@/ai/base/actions/token/get-token-address/name'
 import { BASE_GET_WALLET_ADDRESS_NAME } from '@/ai/base/actions/wallet/get-wallet-address/name'
 import BaseGetWalletAddress from "./base/get-wallet-address"
 import GetBalance from "./base/balance"
 import GetBaseAllBalances from "./base/all-balances"
+import { GET_POOLS_NAME as BASE_GET_POOLS_NAME } from '@/ai/base/actions/liquidity/get-pools/name'
+import { BSC_GET_POOLS_NAME } from '@/ai/bsc/actions/liquidity/names'
+import BaseGetPools from './base/get-pools'
+import BscGetPools from './bsc/liquidity/get-pools'
 
 import type { ToolInvocation as ToolInvocationType } from 'ai'
 
@@ -322,6 +326,38 @@ const ToolInvocation: React.FC<Props> = ({ tool, prevToolAgent }) => {
         }
     }
     
+    // Handle Base liquidity tools
+    if (toolAgent === 'baseliquidity') {
+        switch(toolName) {
+            case BASE_GET_POOLS_NAME:
+                return <BaseGetPools tool={tool} prevToolAgent={prevToolAgent} />
+            default:
+                console.log(`Unknown Base liquidity tool: ${toolName}`);
+                return (
+                    <pre className="whitespace-pre-wrap">
+                        {JSON.stringify(tool, null, 2)}
+                    </pre>
+                );
+        }
+    }
+    
+    // Handle Base trading tools
+    if (toolAgent === 'basetrading') {
+        switch(toolName) {
+            case BASE_GET_WALLET_ADDRESS_NAME:
+                return <BaseGetWalletAddress tool={tool} prevToolAgent={prevToolAgent} />
+            case BASE_TRADE_NAME:
+                return <BaseTrade tool={tool} prevToolAgent={prevToolAgent} />
+            default:
+                console.log(`Unknown Base trading tool: ${toolName}`);
+                return (
+                    <pre className="whitespace-pre-wrap">
+                        {JSON.stringify(tool, null, 2)}
+                    </pre>
+                );
+        }
+    }
+    
     // Handle Solana tools
     switch(toolName) {
         case SOLANA_BALANCE_NAME:
@@ -359,7 +395,7 @@ const ToolInvocation: React.FC<Props> = ({ tool, prevToolAgent }) => {
         case SOLANA_TOKEN_HOLDERS_NAME:
             return <NumHolders tool={tool} prevToolAgent={prevToolAgent} />
         case SOLANA_GET_POOLS_NAME:
-            return <GetPools tool={tool} prevToolAgent={prevToolAgent} />
+            return <SolanaGetPools tool={tool} prevToolAgent={prevToolAgent} />
         case SOLANA_DEPOSIT_LIQUIDITY_NAME:
             return <DepositLiquidity tool={tool} prevToolAgent={prevToolAgent} />
         case SOLANA_GET_LP_TOKENS_NAME:

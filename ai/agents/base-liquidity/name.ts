@@ -1,0 +1,1 @@
+export const BASE_LIQUIDITY_AGENT_NAME = "Liquidity Agent"; 

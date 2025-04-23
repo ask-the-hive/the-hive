@@ -16,3 +16,4 @@ export * from "./base/actions/wallet/transfer/name";
 export { BASE_GET_TRENDING_TOKENS_NAME } from './base/actions/market/get-trending-tokens/name';
 export { BASE_GET_TOP_TRADERS_NAME } from './base/actions/market/get-top-traders/name';
 export { BASE_GET_TRADER_TRADES_NAME } from './base/actions/market/get-trades/name';
+export { BASE_TRADE_NAME } from './base/actions/trade/actions/name';

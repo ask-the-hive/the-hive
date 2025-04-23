@@ -1,24 +1,24 @@
 'use client'
 
-import React from "react";
-import Image from "next/image";
-import Link from "next/link";
-import { ArrowUpRightIcon } from "lucide-react";
+import React from 'react'
+import Image from 'next/image'
+import Link from 'next/link'
+import { ArrowUpRightIcon } from 'lucide-react'
 
-import { Card, Button, Separator } from "@/components/ui";
-import type { MoralisPair } from "@/services/moralis/get-token-pairs";
+import { Card, Button, Separator } from '@/components/ui'
+import type { MoralisPair } from '@/services/moralis/get-token-pairs'
 
 interface Props {
-    pair: MoralisPair;
+    pair: MoralisPair
 }
 
-const BscPool: React.FC<Props> = ({ pair }) => {
+export const BasePool: React.FC<Props> = ({ pair }) => {
     // Get token info from the pair
     const baseToken = pair.pair[0];
     const quoteToken = pair.pair[1];
 
-    // Create a link to BscScan for the pair
-    const bscScanUrl = `https://bscscan.com/address/${pair.pair_address}`;
+    // Create a link to BaseScan for the pair
+    const baseScanUrl = `https://basescan.org/address/${pair.pair_address}`;
 
     // Default token logo if missing
     const defaultTokenLogo = "/placeholder-token.png";
@@ -70,9 +70,9 @@ const BscPool: React.FC<Props> = ({ pair }) => {
                         </div>
                         <h3>{baseToken.token_symbol || 'Unknown'} / {quoteToken.token_symbol || 'Unknown'}</h3>
                     </div>
-                    <Link href={bscScanUrl} target="_blank">
+                    <Link href={baseScanUrl} target="_blank">
                         <Button variant="ghost" size="sm">
-                            BscScan
+                            BaseScan
                             <ArrowUpRightIcon className="w-4 h-4" />
                         </Button>
                     </Link>
@@ -127,7 +127,5 @@ const BscPool: React.FC<Props> = ({ pair }) => {
                 </div>
             </div>
         </Card>
-    );
-};
-
-export default BscPool; 
+    )
+} 

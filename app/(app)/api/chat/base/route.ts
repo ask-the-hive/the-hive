@@ -14,13 +14,17 @@ import { baseTokenAnalysisAgent } from "@/ai/agents/base-token-analysis";
 import { baseKnowledgeAgent } from "@/ai/agents/base-knowledge";
 import { baseWalletAgent } from "@/ai/agents/base-wallet";
 import { baseMarketAgent } from "@/ai/agents/base-market";
+import { baseLiquidityAgent } from "@/ai/agents/base-liquidity";
+import { baseTradingAgent } from "@/ai/agents/base-trading";
 
 // List of Base-specific agents
 const baseAgents = [
     baseKnowledgeAgent,
     baseTokenAnalysisAgent,
     baseWalletAgent,
-    baseMarketAgent
+    baseMarketAgent,
+    baseLiquidityAgent,
+    baseTradingAgent
 ];
 
 const system = 

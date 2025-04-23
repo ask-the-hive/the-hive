@@ -16,3 +16,5 @@ export * from "./base-knowledge/name";
 export * from "./base-token-analysis/name";
 export * from "./base-wallet/name";
 export * from "./base-market/name";
+export * from "./base-liquidity/name";
+export * from "./base-trading/name";

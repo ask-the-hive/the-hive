@@ -7,13 +7,17 @@ import { baseKnowledgeAgent } from "@/ai/agents/base-knowledge";
 import { baseTokenAnalysisAgent } from "@/ai/agents/base-token-analysis";
 import { baseWalletAgent } from "@/ai/agents/base-wallet";
 import { baseMarketAgent } from "@/ai/agents/base-market";
+import { baseLiquidityAgent } from "@/ai/agents/base-liquidity";
+import { baseTradingAgent } from "@/ai/agents/base-trading";
 
 // List of Base-specific agents
 export const baseAgents: Agent[] = [
     baseKnowledgeAgent,
     baseTokenAnalysisAgent,
     baseWalletAgent,
-    baseMarketAgent
+    baseMarketAgent,
+    baseLiquidityAgent,
+    baseTradingAgent
 ];
 
 export const system = 
@@ -21,7 +25,7 @@ export const system =
 
 Given this list of agents and their capabilities, choose the one that is most appropriate for the user's request.
 
-${baseAgents.map(agent => `${agent.name}: ${agent.systemPrompt}`).join("\n")}`
+${baseAgents.map(agent => `${agent.name}: ${agent.capabilities}`).join("\n\n")}`
 
 export const chooseAgent = async (model: LanguageModelV1, messages: Message[]): Promise<Agent | null> => {
     const { object } = await generateObject({
