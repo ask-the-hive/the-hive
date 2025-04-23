@@ -13,3 +13,6 @@ export * from "./base/actions/wallet/get-wallet-address/name";
 export * from "./base/actions/wallet/balance/name";
 export * from "./base/actions/wallet/all-balances/name";
 export * from "./base/actions/wallet/transfer/name";
+export { BASE_GET_TRENDING_TOKENS_NAME } from './base/actions/market/get-trending-tokens/name';
+export { BASE_GET_TOP_TRADERS_NAME } from './base/actions/market/get-top-traders/name';
+export { BASE_GET_TRADER_TRADES_NAME } from './base/actions/market/get-trades/name';

@@ -23,6 +23,7 @@ import {
 } from "./bsc";
 
 import Transfer from "./base/transfer";
+import { GetTrendingTokens as BaseGetTrendingTokens } from "./base";
 
 export const toolToComponent = {
     "tokenanalysis-get-token-data": SolanaGetTokenData,
@@ -44,5 +45,6 @@ export const toolToComponent = {
     "bscwallet-bsc_transfer": BscTransfer,
     "bsctrading-bsc_trade": BscTrade,
     "basewallet-base_transfer": Transfer,
+    "basemarket-base_get_trending_tokens": BaseGetTrendingTokens,
     // ... rest of the mappings
 } 

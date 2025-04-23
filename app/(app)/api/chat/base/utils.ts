@@ -6,12 +6,14 @@ import { Agent } from "@/ai/agent";
 import { baseKnowledgeAgent } from "@/ai/agents/base-knowledge";
 import { baseTokenAnalysisAgent } from "@/ai/agents/base-token-analysis";
 import { baseWalletAgent } from "@/ai/agents/base-wallet";
+import { baseMarketAgent } from "@/ai/agents/base-market";
 
 // List of Base-specific agents
 export const baseAgents: Agent[] = [
     baseKnowledgeAgent,
     baseTokenAnalysisAgent,
-    baseWalletAgent
+    baseWalletAgent,
+    baseMarketAgent
 ];
 
 export const system = 

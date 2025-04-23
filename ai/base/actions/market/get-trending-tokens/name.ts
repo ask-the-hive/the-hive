@@ -1,0 +1,1 @@
+export const BASE_GET_TRENDING_TOKENS_NAME = "base_get_trending_tokens";

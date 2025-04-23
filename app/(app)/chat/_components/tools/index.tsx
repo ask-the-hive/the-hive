@@ -42,7 +42,8 @@ import {
     GetTrades as BscGetTrades,
     Transfer as BscTransfer,
     GetPools as BscGetPools,
-    Trade as BscTrade
+    Trade as BscTrade,
+    GetTopTraders as BscGetTopTraders
 } from './bsc'
 import { SearchRecentTweets } from './twitter'
 import { SearchKnowledge } from './knowledge'
@@ -62,6 +63,11 @@ import { TopHolders as BaseTopHolders } from './base'
 import { BASE_TOKEN_TOP_TRADERS_NAME } from '@/ai/base/actions/token/top-traders/name'
 import BaseTopTraders from './base/top-traders'
 import BaseTransfer from './base/transfer'
+import { 
+    GetTrendingTokens as BaseGetTrendingTokens,
+    GetTopTraders as BaseGetTopTraders,
+    GetTrades as BaseGetTrades,
+} from './base';
 
 import { 
     SOLANA_BALANCE_NAME,
@@ -96,7 +102,10 @@ import {
     BASE_GET_TOKEN_DATA_NAME,
     BASE_BALANCE_NAME,
     BASE_ALL_BALANCES_NAME,
-    BASE_TRANSFER_NAME
+    BASE_TRANSFER_NAME,
+    BASE_GET_TRENDING_TOKENS_NAME,
+    BASE_GET_TOP_TRADERS_NAME,
+    BASE_GET_TRADER_TRADES_NAME,
 } from '@/ai/action-names'
 import { BSC_BUBBLE_MAPS_NAME } from '@/ai/bsc/actions/token/bubble-maps/name'
 import { BSC_TOP_HOLDERS_NAME } from '@/ai/bsc/actions/token/top-holders/name'
@@ -203,7 +212,7 @@ const ToolInvocation: React.FC<Props> = ({ tool, prevToolAgent }) => {
             case BSC_GET_TRADER_TRADES_NAME:
                 return <BscGetTrades tool={tool} prevToolAgent={prevToolAgent} />
             case BSC_GET_TOP_TRADERS_NAME:
-                return <BscTopTraders tool={tool} prevToolAgent={prevToolAgent} />
+                return <BscGetTopTraders tool={tool} prevToolAgent={prevToolAgent} />
             default:
                 console.log(`Unknown BSC market tool: ${toolName}`);
                 return (
@@ -261,12 +270,29 @@ const ToolInvocation: React.FC<Props> = ({ tool, prevToolAgent }) => {
                 return <BaseGetTokenAddress tool={tool} prevToolAgent={prevToolAgent} />
             case BASE_TOKEN_HOLDERS_NAME:
                 return <BaseTokenHolders tool={tool} prevToolAgent={prevToolAgent} />
-            case BASE_TOP_HOLDERS_NAME:
-                return <BaseTopHolders tool={tool} prevToolAgent={prevToolAgent} />
             case BASE_TOKEN_TOP_TRADERS_NAME:
                 return <BaseTopTraders tool={tool} prevToolAgent={prevToolAgent} />
             default:
                 console.log(`Unknown Base tool: ${toolName}`);
+                return (
+                    <pre className="whitespace-pre-wrap">
+                        {JSON.stringify(tool, null, 2)}
+                    </pre>
+                );
+        }
+    }
+    
+    // Handle Base market tools
+    if (toolAgent === 'basemarket') {
+        switch(toolName) {
+            case BASE_GET_TRENDING_TOKENS_NAME:
+                return <BaseGetTrendingTokens tool={tool} prevToolAgent={prevToolAgent} />
+            case BASE_GET_TOP_TRADERS_NAME:
+                return <BaseGetTopTraders tool={tool} prevToolAgent={prevToolAgent} />
+            case BASE_GET_TRADER_TRADES_NAME:
+                return <BaseGetTrades tool={tool} prevToolAgent={prevToolAgent} />
+            default:
+                console.log(`Unknown Base market tool: ${toolName}`);
                 return (
                     <pre className="whitespace-pre-wrap">
                         {JSON.stringify(tool, null, 2)}

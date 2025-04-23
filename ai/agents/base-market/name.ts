@@ -1,0 +1,1 @@
+export const BASE_MARKET_AGENT_NAME = "Market Agent"; 

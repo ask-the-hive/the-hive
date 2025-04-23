@@ -9,8 +9,8 @@ import WalletAddress from '@/app/_components/wallet-address';
 import ToolCard from '../../tool-card';
 
 import type { ToolInvocation } from 'ai';
-import type { GetTopTradersResultBodyType } from '@/ai/bsc/actions/market/get-top-traders/types';
-import type { BscActionResult } from '@/ai/bsc/actions/bsc-action';
+import type { GetTopTradersResultBodyType } from '@/ai/base/actions/market/get-top-traders/types';
+import type { BaseActionResult } from '@/ai/base/actions/base-action';
 
 interface Props {
     tool: ToolInvocation,
@@ -23,10 +23,10 @@ const GetTopTraders: React.FC<Props> = ({ tool, prevToolAgent }) => {
             tool={tool}
             loadingText="Getting Top Traders..."
             result={{
-                heading: (result: BscActionResult<GetTopTradersResultBodyType>) => result.body 
+                heading: (result: BaseActionResult<GetTopTradersResultBodyType>) => result.body 
                     ? `Fetched Top Traders (${tool.args.timeFrame[0].toUpperCase() + tool.args.timeFrame.slice(1)})`
                     : "Failed to fetch top traders",
-                body: (result: BscActionResult<GetTopTradersResultBodyType>) => result.body 
+                body: (result: BaseActionResult<GetTopTradersResultBodyType>) => result.body 
                     ? <TopTraders body={result.body} />
                     : "No top traders found"
             }}
@@ -71,7 +71,7 @@ const TopTraders = ({ body }: { body: GetTopTradersResultBodyType }) => {
                                     <WalletAddress 
                                         address={trader.address} 
                                         className="font-medium"
-                                        chain="bsc"
+                                        chain="base"
                                     />
                                 </div>
                             </TableCell>

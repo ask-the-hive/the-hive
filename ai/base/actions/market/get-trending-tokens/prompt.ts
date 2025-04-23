@@ -1,0 +1,1 @@
+export const BASE_GET_TRENDING_TOKENS_PROMPT = "Get trending tokens on Base"; 
