@@ -50,6 +50,17 @@ import { InvokeAgent } from './invoke'
 import { GetKnowledge } from './bsc-knowledge'
 import { GetKnowledge as BaseGetKnowledge } from './base-knowledge'
 import BaseGetTokenData from './base/get-token-data'
+import { GetTokenAddress as BaseGetTokenAddress } from './base'
+import { BASE_BUBBLE_MAPS_NAME } from '@/ai/base/actions/token/bubble-maps/name'
+import { BubbleMaps as BaseBubbleMaps } from './base'
+import { BASE_PRICE_CHART_NAME } from '@/ai/base/actions/token/price-chart/name'
+import { PriceChart as BasePriceChart } from './base'
+import { BASE_TOKEN_HOLDERS_NAME } from '@/ai/base/actions/token/token-holders/name'
+import { TokenHolders as BaseTokenHolders } from './base'
+import { BASE_TOP_HOLDERS_NAME } from '@/ai/base/actions/token/top-holders/name'
+import { TopHolders as BaseTopHolders } from './base'
+import { BASE_TOKEN_TOP_TRADERS_NAME } from '@/ai/base/actions/token/top-traders/name'
+import BaseTopTraders from './base/top-traders'
 
 import { 
     SOLANA_BALANCE_NAME,
@@ -57,19 +68,19 @@ import {
     SOLANA_GET_TRENDING_TOKENS_NAME,
     SOLANA_GET_TOKEN_DATA_NAME,
     SOLANA_TRADE_NAME,
+    SOLANA_LIQUID_STAKING_YIELDS_NAME,
+    SOLANA_TRANSFER_NAME,
+    TWITTER_SEARCH_RECENT_NAME,
     SOLANA_STAKE_NAME,
     SOLANA_UNSTAKE_NAME,
     SOLANA_ALL_BALANCES_NAME,
-    TWITTER_SEARCH_RECENT_NAME,
     SEARCH_KNOWLEDGE_NAME,
-    SOLANA_LIQUID_STAKING_YIELDS_NAME,
-    SOLANA_TRANSFER_NAME,
+    INVOKE_AGENT_NAME,
     SOLANA_GET_TOKEN_ADDRESS_NAME,
     SOLANA_TOP_HOLDERS_NAME,
     SOLANA_BUBBLE_MAPS_NAME,
     SOLANA_TOKEN_HOLDERS_NAME,
     SOLANA_GET_POOLS_NAME,
-    INVOKE_AGENT_NAME,
     SOLANA_DEPOSIT_LIQUIDITY_NAME,
     SOLANA_GET_LP_TOKENS_NAME,
     SOLANA_WITHDRAW_LIQUIDITY_NAME,
@@ -98,6 +109,7 @@ import { BSC_BALANCE_NAME } from '@/ai/bsc/actions/wallet/balance/name'
 import { BSC_ALL_BALANCES_NAME } from '@/ai/bsc/actions/wallet/all-balances/name'
 import { BSC_TRANSFER_NAME } from '@/ai/bsc/actions/wallet/transfer/name'
 import { BSC_GET_POOLS_NAME } from '@/ai/bsc/actions/liquidity/names'
+import { BASE_GET_TOKEN_ADDRESS_NAME } from '@/ai/base/actions/token/get-token-address/name'
 
 import type { ToolInvocation as ToolInvocationType } from 'ai'
 
@@ -229,10 +241,25 @@ const ToolInvocation: React.FC<Props> = ({ tool, prevToolAgent }) => {
     // Handle Base token analysis tools
     if (toolAgent === 'basetokenanalysis') {
         switch(toolName) {
+            case BASE_BUBBLE_MAPS_NAME:
+                return <BaseBubbleMaps tool={tool} prevToolAgent={prevToolAgent} />
+            case BASE_TOP_HOLDERS_NAME:
+                return <BaseTopHolders tool={tool} prevToolAgent={prevToolAgent} />
+            case BASE_PRICE_CHART_NAME:
+                return <BasePriceChart tool={tool} prevToolAgent={prevToolAgent} />
             case BASE_GET_TOKEN_DATA_NAME:
                 return <BaseGetTokenData tool={tool} prevToolAgent={prevToolAgent} />
+            case BASE_GET_TOKEN_ADDRESS_NAME:
+                return <BaseGetTokenAddress tool={tool} prevToolAgent={prevToolAgent} />
+            case BASE_TOKEN_HOLDERS_NAME:
+                return <BaseTokenHolders tool={tool} prevToolAgent={prevToolAgent} />
+            case BASE_TOP_HOLDERS_NAME:
+                return <BaseTopHolders tool={tool} prevToolAgent={prevToolAgent} />
+            case BASE_TOKEN_TOP_TRADERS_NAME:
+                return <BaseTopTraders tool={tool} prevToolAgent={prevToolAgent} />
+            // Add other Base tools here as they are implemented
             default:
-                console.log(`Unknown Base token analysis tool: ${toolName}`);
+                console.log(`Unknown Base tool: ${toolName}`);
                 return (
                     <pre className="whitespace-pre-wrap">
                         {JSON.stringify(tool, null, 2)}

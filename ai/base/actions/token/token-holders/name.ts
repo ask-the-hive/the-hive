@@ -1,0 +1,1 @@
+export const BASE_TOKEN_HOLDERS_NAME = "token-holders"; 

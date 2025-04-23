@@ -14,7 +14,9 @@ const nextConfig: NextConfig = {
   images: {
     domains: [
       "logo.moralis.io",
-      "avatars.githubusercontent.com"
+      "avatars.githubusercontent.com",
+      "raw.githubusercontent.com",
+      "assets.coingecko.com"
     ],
   },
   webpack: (config, { isServer }) => {
