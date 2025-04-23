@@ -1,0 +1,1 @@
+export const BASE_GET_WALLET_ADDRESS_NAME = "base-get-wallet-address"; 

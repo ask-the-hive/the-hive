@@ -9,3 +9,7 @@ export * from "./bsc/actions/liquidity/names";
 export { BSC_TRADE_NAME } from './bsc/actions/trade/actions/name';
 export * from "./base-knowledge/actions/get-knowledge/name";
 export * from "./base/actions/token/get-token-data/name";
+export * from "./base/actions/wallet/get-wallet-address/name";
+export * from "./base/actions/wallet/balance/name";
+export * from "./base/actions/wallet/all-balances/name";
+export * from "./base/actions/wallet/transfer/name";

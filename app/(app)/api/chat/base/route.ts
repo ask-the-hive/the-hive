@@ -12,11 +12,13 @@ import { Models } from "@/types/models";
 import { chooseAgent } from "./utils";
 import { baseTokenAnalysisAgent } from "@/ai/agents/base-token-analysis";
 import { baseKnowledgeAgent } from "@/ai/agents/base-knowledge";
+import { baseWalletAgent } from "@/ai/agents/base-wallet";
 
 // List of Base-specific agents
 const baseAgents = [
     baseKnowledgeAgent,
-    baseTokenAnalysisAgent
+    baseTokenAnalysisAgent,
+    baseWalletAgent
 ];
 
 const system = 

@@ -12,7 +12,7 @@ import {
     Unstake,
     AllBalances,
     LiquidStakingYields,
-    Transfer,
+    Transfer as SolanaTransfer,
     GetTokenAddress,
     GetTopHolders,
     BubbleMaps as SolanaBubbleMaps,
@@ -61,6 +61,7 @@ import { BASE_TOP_HOLDERS_NAME } from '@/ai/base/actions/token/top-holders/name'
 import { TopHolders as BaseTopHolders } from './base'
 import { BASE_TOKEN_TOP_TRADERS_NAME } from '@/ai/base/actions/token/top-traders/name'
 import BaseTopTraders from './base/top-traders'
+import BaseTransfer from './base/transfer'
 
 import { 
     SOLANA_BALANCE_NAME,
@@ -92,7 +93,10 @@ import {
     BSC_GET_KNOWLEDGE_NAME,
     BSC_TRADE_NAME,
     BASE_GET_KNOWLEDGE_NAME,
-    BASE_GET_TOKEN_DATA_NAME
+    BASE_GET_TOKEN_DATA_NAME,
+    BASE_BALANCE_NAME,
+    BASE_ALL_BALANCES_NAME,
+    BASE_TRANSFER_NAME
 } from '@/ai/action-names'
 import { BSC_BUBBLE_MAPS_NAME } from '@/ai/bsc/actions/token/bubble-maps/name'
 import { BSC_TOP_HOLDERS_NAME } from '@/ai/bsc/actions/token/top-holders/name'
@@ -110,6 +114,10 @@ import { BSC_ALL_BALANCES_NAME } from '@/ai/bsc/actions/wallet/all-balances/name
 import { BSC_TRANSFER_NAME } from '@/ai/bsc/actions/wallet/transfer/name'
 import { BSC_GET_POOLS_NAME } from '@/ai/bsc/actions/liquidity/names'
 import { BASE_GET_TOKEN_ADDRESS_NAME } from '@/ai/base/actions/token/get-token-address/name'
+import { BASE_GET_WALLET_ADDRESS_NAME } from '@/ai/base/actions/wallet/get-wallet-address/name'
+import BaseGetWalletAddress from "./base/get-wallet-address"
+import GetBalance from "./base/balance"
+import GetBaseAllBalances from "./base/all-balances"
 
 import type { ToolInvocation as ToolInvocationType } from 'ai'
 
@@ -257,9 +265,29 @@ const ToolInvocation: React.FC<Props> = ({ tool, prevToolAgent }) => {
                 return <BaseTopHolders tool={tool} prevToolAgent={prevToolAgent} />
             case BASE_TOKEN_TOP_TRADERS_NAME:
                 return <BaseTopTraders tool={tool} prevToolAgent={prevToolAgent} />
-            // Add other Base tools here as they are implemented
             default:
                 console.log(`Unknown Base tool: ${toolName}`);
+                return (
+                    <pre className="whitespace-pre-wrap">
+                        {JSON.stringify(tool, null, 2)}
+                    </pre>
+                );
+        }
+    }
+    
+    // Handle Base wallet tools
+    if (toolAgent === 'basewallet') {
+        switch(toolName) {
+            case BASE_GET_WALLET_ADDRESS_NAME:
+                return <BaseGetWalletAddress tool={tool} prevToolAgent={prevToolAgent} />
+            case BASE_BALANCE_NAME:
+                return <GetBalance tool={tool} prevToolAgent={prevToolAgent} />
+            case BASE_ALL_BALANCES_NAME:
+                return <GetBaseAllBalances tool={tool} prevToolAgent={prevToolAgent} />
+            case BASE_TRANSFER_NAME:
+                return <BaseTransfer tool={tool} prevToolAgent={prevToolAgent} />
+            default:
+                console.log(`Unknown Base wallet tool: ${toolName}`);
                 return (
                     <pre className="whitespace-pre-wrap">
                         {JSON.stringify(tool, null, 2)}
@@ -283,7 +311,7 @@ const ToolInvocation: React.FC<Props> = ({ tool, prevToolAgent }) => {
         case SOLANA_LIQUID_STAKING_YIELDS_NAME:
             return <LiquidStakingYields tool={tool} prevToolAgent={prevToolAgent} />
         case SOLANA_TRANSFER_NAME:
-            return <Transfer tool={tool} prevToolAgent={prevToolAgent} />
+            return <SolanaTransfer tool={tool} prevToolAgent={prevToolAgent} />
         case TWITTER_SEARCH_RECENT_NAME:
             return <SearchRecentTweets tool={tool} />
         case SOLANA_STAKE_NAME:

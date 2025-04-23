@@ -5,11 +5,13 @@ import { generateObject, LanguageModelV1, Message } from "ai";
 import { Agent } from "@/ai/agent";
 import { baseKnowledgeAgent } from "@/ai/agents/base-knowledge";
 import { baseTokenAnalysisAgent } from "@/ai/agents/base-token-analysis";
+import { baseWalletAgent } from "@/ai/agents/base-wallet";
 
 // List of Base-specific agents
 export const baseAgents: Agent[] = [
     baseKnowledgeAgent,
-    baseTokenAnalysisAgent
+    baseTokenAnalysisAgent,
+    baseWalletAgent
 ];
 
 export const system = 
