@@ -151,7 +151,7 @@ const TokenDashboardTabs: React.FC<Props> = ({ address, tokenOverview }) => {
                     <TokenUsersOverTime mint={address} />
                 </TabsContent>
                 <TabsContent value="tweets" className="h-full m-0 p-2">
-                    {tokenOverview.extensions?.twitter ? (
+                    {tokenOverview?.extensions?.twitter ? (
                         <AccountTweets username={tokenOverview.extensions.twitter.split('/').pop()!} />
                     ) : (
                         <div className="flex items-center justify-center h-full w-full p-4">
@@ -167,7 +167,7 @@ const TokenDashboardTabs: React.FC<Props> = ({ address, tokenOverview }) => {
                     )}
                 </TabsContent>
                 <TabsContent value="mentions" className="h-full m-0 p-2">
-                    {tokenOverview.extensions?.twitter ? (
+                    {tokenOverview?.extensions?.twitter ? (
                         <AccountMentions username={tokenOverview.extensions.twitter.split('/').pop()!} />
                     ) : (
                         <div className="flex items-center justify-center h-full w-full p-4">

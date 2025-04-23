@@ -6,3 +6,7 @@ export * from './bsc-top-holders/name';
 export * from './bsc-liquidity/name';
 export * from './bsc-price-analysis/name';
 export * from './bsc-trading-activity/name';
+export * from './base-top-holders/name';
+export * from './base-liquidity/name';
+export * from './base-price-analysis/name';
+export * from './base-trading-activity/name';

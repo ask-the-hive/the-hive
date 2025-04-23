@@ -1,5 +1,9 @@
 import { SolanaTokenPageTopHoldersAction } from "./top-holders";
 import { BSCTokenPageTopHoldersAction } from "./bsc-top-holders";
+import { BaseTokenPageTopHoldersAction } from "./base-top-holders";
+import { BaseTokenPageLiquidityAction } from "./base-liquidity";
+import { BaseTokenPagePriceAnalysisAction } from "./base-price-analysis";
+import { BaseTokenPageTradingActivityAction } from "./base-trading-activity";
 import { TokenPageNumMentionsAction } from "./num-mentions";
 import { SolanaTokenPageLiquidityAction } from "./liquidity";
 import { BSCTokenPageLiquidityAction } from "./bsc-liquidity";
@@ -21,6 +25,16 @@ export function getAllTokenPageActions(extensions: TokenChatData['extensions'], 
     ];
   }
   
+  if (chain === 'base') {
+    return [
+      new BaseTokenPageTopHoldersAction(),
+      new BaseTokenPageLiquidityAction(),
+      new BaseTokenPagePriceAnalysisAction(),
+      new BaseTokenPageTradingActivityAction(),
+      ...(extensions?.twitter ? [new TokenPageNumMentionsAction(extensions.twitter.split("/").pop()!)] : []),
+    ];
+  }
+  
   return [
     new SolanaTokenPageTopHoldersAction(),
     new SolanaTokenPageLiquidityAction(),
@@ -32,9 +46,13 @@ export * from './types';
 
 export * from './top-holders';
 export * from './bsc-top-holders';
+export * from './base-top-holders';
 export * from './num-mentions';
 export * from './liquidity';
 export * from './bsc-liquidity';
+export * from './base-liquidity';
 export * from './price-analysis';
 export * from './bsc-price-analysis';
+export * from './base-price-analysis';
 export * from './bsc-trading-activity';
+export * from './base-trading-activity';

@@ -1,0 +1,1 @@
+export const BASE_TOKEN_PAGE_TRADING_ACTIVITY_PROMPT = "Analyze the trading activity of this Base token to understand its volume, transaction patterns, and market behavior."; 
