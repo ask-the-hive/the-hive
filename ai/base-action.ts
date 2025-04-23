@@ -31,8 +31,8 @@ export interface BaseAction<TActionSchema extends BaseActionSchemaAny, TBody, TC
    * The function to execute for this action
    */
   func?:
-    | ((client: TClient, args: z.infer<TActionSchema>) => Promise<BaseActionResult<TBody>>)
-    | ((args: z.infer<TActionSchema>) => Promise<BaseActionResult<TBody>>)
+    | ((args: z.infer<TActionSchema>, context?: any) => Promise<BaseActionResult<TBody>>)
+    | ((client: TClient, args: z.infer<TActionSchema>, context?: any) => Promise<BaseActionResult<TBody>>)
 } 
 
 export interface BaseActionAny extends BaseAction<BaseActionSchemaAny, any, any> {}

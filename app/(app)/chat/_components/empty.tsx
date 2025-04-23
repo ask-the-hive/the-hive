@@ -12,7 +12,9 @@ import { useChat } from '../_contexts/chat';
 const EmptyChat: React.FC = () => {
     const { chain } = useChat();
 
-    const chainName = chain === 'solana' ? 'Solana' : 'BSC';
+    const chainName = chain === 'solana' ? 'Solana' : 
+                     chain === 'bsc' ? 'BSC' : 
+                     'Base';
 
     return (
         <div className={cn(

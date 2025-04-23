@@ -48,6 +48,8 @@ import { SearchRecentTweets } from './twitter'
 import { SearchKnowledge } from './knowledge'
 import { InvokeAgent } from './invoke'
 import { GetKnowledge } from './bsc-knowledge'
+import { GetKnowledge as BaseGetKnowledge } from './base-knowledge'
+import BaseGetTokenData from './base/get-token-data'
 
 import { 
     SOLANA_BALANCE_NAME,
@@ -77,7 +79,9 @@ import {
     SOLANA_TOKEN_PRICE_CHART_NAME,
     SOLANA_GET_SMART_MONEY_INFLOWS_NAME,
     BSC_GET_KNOWLEDGE_NAME,
-    BSC_TRADE_NAME
+    BSC_TRADE_NAME,
+    BASE_GET_KNOWLEDGE_NAME,
+    BASE_GET_TOKEN_DATA_NAME
 } from '@/ai/action-names'
 import { BSC_BUBBLE_MAPS_NAME } from '@/ai/bsc/actions/token/bubble-maps/name'
 import { BSC_TOP_HOLDERS_NAME } from '@/ai/bsc/actions/token/top-holders/name'
@@ -107,6 +111,21 @@ const ToolInvocation: React.FC<Props> = ({ tool, prevToolAgent }) => {
     const toolParts = tool.toolName.split("-");
     const toolAgent = toolParts[0];
     const toolName = toolParts.slice(1).join("-");
+    
+    // Handle Base knowledge tools
+    if (toolAgent === 'baseknowledge') {
+        switch(toolName) {
+            case BASE_GET_KNOWLEDGE_NAME:
+                return <BaseGetKnowledge tool={tool} prevToolAgent={prevToolAgent} />
+            default:
+                console.log(`Unknown Base knowledge tool: ${toolName}`);
+                return (
+                    <pre className="whitespace-pre-wrap">
+                        {JSON.stringify(tool, null, 2)}
+                    </pre>
+                );
+        }
+    }
     
     // Handle BSC wallet tools
     if (toolAgent === 'bscwallet') {
@@ -199,6 +218,21 @@ const ToolInvocation: React.FC<Props> = ({ tool, prevToolAgent }) => {
                 return <BscTrade tool={tool} prevToolAgent={prevToolAgent} />
             default:
                 console.log(`Unknown BSC trading tool: ${toolName}`);
+                return (
+                    <pre className="whitespace-pre-wrap">
+                        {JSON.stringify(tool, null, 2)}
+                    </pre>
+                );
+        }
+    }
+    
+    // Handle Base token analysis tools
+    if (toolAgent === 'basetokenanalysis') {
+        switch(toolName) {
+            case BASE_GET_TOKEN_DATA_NAME:
+                return <BaseGetTokenData tool={tool} prevToolAgent={prevToolAgent} />
+            default:
+                console.log(`Unknown Base token analysis tool: ${toolName}`);
                 return (
                     <pre className="whitespace-pre-wrap">
                         {JSON.stringify(tool, null, 2)}

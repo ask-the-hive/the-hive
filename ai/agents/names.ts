@@ -12,3 +12,5 @@ export * from "./bsc-wallet/name";
 export * from "./bsc-knowledge/name";
 export * from "./bsc-liquidity/name";
 export * from "./bsc-trading/name";
+export * from "./base-knowledge/name";
+export * from "./base-token-analysis/name";

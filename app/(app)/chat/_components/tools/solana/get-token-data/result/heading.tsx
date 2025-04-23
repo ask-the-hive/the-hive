@@ -40,7 +40,7 @@ const GetTokenDataResultHeading: React.FC<Props> = ({ token }) => {
                                 See More
                             </Button>
                         </Link>
-                        <SaveToken address={token.address} />
+                        <SaveToken address={token.address} chain="solana" />
                     </div>
                     <p className="text-sm font-semibold flex items-center gap-1">
                         ${token.price.toLocaleString(undefined, { maximumFractionDigits: 5 })} 

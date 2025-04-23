@@ -11,6 +11,7 @@ import { bscWalletAgent } from "./bsc-wallet";
 import { bscKnowledgeAgent } from "./bsc-knowledge";
 import { bscLiquidityAgent } from "./bsc-liquidity";
 import { bscTradingAgent } from "./bsc-trading";
+import { baseTokenAnalysisAgent } from "./base-token-analysis";
 
 export const agents = [
     walletAgent,
@@ -25,5 +26,6 @@ export const agents = [
     bscWalletAgent,
     bscKnowledgeAgent,
     bscLiquidityAgent,
-    bscTradingAgent
+    bscTradingAgent,
+    baseTokenAnalysisAgent
 ];

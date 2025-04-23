@@ -7,3 +7,5 @@ export * from "./token-page/actions/names";
 export * from "./bsc-knowledge/actions/get-knowledge/name";
 export * from "./bsc/actions/liquidity/names";
 export { BSC_TRADE_NAME } from './bsc/actions/trade/actions/name';
+export * from "./base-knowledge/actions/get-knowledge/name";
+export * from "./base/actions/token/get-token-data/name";
