@@ -105,6 +105,12 @@ export const useLogin = ({
         window.open(`https://www.binance.com/en/how-to-buy/bnb?ref=HDFG54&walletAddress=${address}`, '_blank');
     };
 
+    // Function to fund Base wallet
+    const fundBaseWallet = (address: string) => {
+        // Open the Base bridge page
+        window.open(`https://bridge.base.org/deposit?destinationAddress=${address}`, '_blank');
+    };
+
     const { connectWallet } = useConnectWallet();
 
     const { fundWallet } = useFundWallet();
@@ -120,6 +126,7 @@ export const useLogin = ({
         evmWallets,
         fundWallet,
         fundBscWallet,
+        fundBaseWallet,
         linkWallet: enhancedLinkWallet
     }
 }

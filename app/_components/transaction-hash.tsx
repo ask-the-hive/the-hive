@@ -30,17 +30,25 @@ const TransactionHash: React.FC<Props> = ({ hash, className, hideTransactionText
     };
 
     const getExplorerUrl = () => {
-        if (chain === 'bsc') {
-            return `https://bscscan.com/tx/${hash}`;
+        switch (chain) {
+            case 'bsc':
+                return `https://bscscan.com/tx/${hash}`;
+            case 'base':
+                return `https://basescan.org/tx/${hash}`;
+            default:
+                return `https://solscan.io/tx/${hash}`;
         }
-        return `https://solscan.io/tx/${hash}`;
     };
 
     const getExplorerName = () => {
-        if (chain === 'bsc') {
-            return 'BscScan';
+        switch (chain) {
+            case 'bsc':
+                return 'BscScan';
+            case 'base':
+                return 'BaseScan';
+            default:
+                return 'Solscan';
         }
-        return 'Solscan';
     };
 
     return (

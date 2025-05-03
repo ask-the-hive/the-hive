@@ -1,1 +1,1 @@
-export * from './identify-bsc-dex'; 
+export * from './identify-dex'; 

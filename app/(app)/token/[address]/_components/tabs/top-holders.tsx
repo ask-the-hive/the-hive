@@ -40,14 +40,14 @@ const TopHolders: React.FC<Props> = ({ mint }) => {
     const chainParam = searchParams.get('chain') as ChainType | null;
     
     // Use URL param if available, otherwise use context
-    const chain = chainParam && (chainParam === 'solana' || chainParam === 'bsc') 
+    const chain = chainParam && (chainParam === 'solana' || chainParam === 'bsc' || chainParam === 'base') 
         ? chainParam 
         : currentChain;
 
     const { data: topHolders, isLoading, error } = useTopHolders(mint);
     const [totalSupply, setTotalSupply] = useState<number>(0);
     const [knownAddressesMap, setKnownAddressesMap] = useState<Record<string, KnownAddress>>(
-        chain === 'bsc' ? bscKnownAddresses : knownAddresses
+        chain === 'bsc' || chain === 'base' ? bscKnownAddresses : knownAddresses
     );
 
     // Function to fetch additional data based on chain
@@ -81,7 +81,7 @@ const TopHolders: React.FC<Props> = ({ mint }) => {
 
     // Update known addresses when chain changes
     useEffect(() => {
-        setKnownAddressesMap(chain === 'bsc' ? bscKnownAddresses : knownAddresses);
+        setKnownAddressesMap(chain === 'bsc' || chain === 'base' ? bscKnownAddresses : knownAddresses);
     }, [chain]);
 
     // Fetch data when component mounts
@@ -125,7 +125,7 @@ const TopHolders: React.FC<Props> = ({ mint }) => {
                         <TopHolder
                             key={topHolder.owner} 
                             topHolder={topHolder}
-                            percentageOwned={chain === 'bsc' ? (topHolder.percentage || 0) : (totalSupply > 0 ? topHolder.ui_amount / totalSupply * 100 : 0)}
+                            percentageOwned={(chain === 'bsc' || chain === 'base') ? (topHolder.percentage || 0) : (totalSupply > 0 ? topHolder.ui_amount / totalSupply * 100 : 0)}
                             index={index}
                             knownAddresses={knownAddressesMap}
                             chain={chain}

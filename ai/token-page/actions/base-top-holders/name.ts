@@ -1,0 +1,1 @@
+export const BASE_TOKEN_PAGE_TOP_HOLDERS_NAME = "base-token-page-top-holders";

@@ -16,16 +16,16 @@ export const getPortfolio = async (wallet: string, chain: ChainType = 'solana'):
   let items: PortfolioItem[] = [];
 
   try {
-    if (chain === 'bsc') {
-      // Get token balances from Moralis for BSC
-      const response = await getAllBalances(wallet);
+    if (chain === 'bsc' || chain === 'base') {
+      // Get token balances from Moralis for BSC or Base
+      const response = await getAllBalances(wallet, chain);
       
       items = response.result.map(token => ({
         address: token.token_address,
         decimals: token.decimals,
         balance: parseFloat(token.balance),
         uiAmount: parseFloat(token.balance_formatted),
-        chainId: '0x38', // BSC chain ID
+        chainId: chain === 'bsc' ? '0x38' : '0x2105', // Use correct chain ID based on chain
         name: token.name,
         symbol: token.symbol.toUpperCase(),
         logoURI: token.logo || '',

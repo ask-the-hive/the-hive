@@ -1,0 +1,1 @@
+export const BASE_GET_KNOWLEDGE_NAME = "base_get_knowledge"; 

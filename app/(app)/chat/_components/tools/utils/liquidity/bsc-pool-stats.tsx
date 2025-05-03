@@ -79,7 +79,18 @@ export const BscPoolStats: React.FC<Props> = ({ pair, children }) => {
                     </Link>
                 </div>
                 <div className="flex flex-col gap-2">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full justify-between">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full justify-between">
+                        <div className="flex flex-col justify-between gap-2">
+                            <div className="flex flex-col gap-1">
+                                <h3 className="text-md font-semibold text-neutral-600 dark:text-neutral-400">
+                                    Liquidity
+                                </h3>
+                                <p className="text-sm font-medium">
+                                    ${typeof pair.liquidity_usd === 'number' ? pair.liquidity_usd.toLocaleString() : '0'}
+                                </p>
+                            </div>
+                            <Separator />
+                        </div>
                         <div className="flex flex-col justify-between gap-2">
                             <div className="flex flex-col gap-1">
                                 <h3 className="text-md font-semibold text-neutral-600 dark:text-neutral-400">
@@ -105,10 +116,10 @@ export const BscPoolStats: React.FC<Props> = ({ pair, children }) => {
                         <div className="flex flex-col justify-between gap-2">
                             <div className="flex flex-col gap-1">
                                 <h3 className="text-md font-semibold text-neutral-600 dark:text-neutral-400">
-                                    Liquidity
+                                    24h Change
                                 </h3>
-                                <p className="text-sm font-medium">
-                                    ${typeof pair.liquidity_usd === 'number' ? pair.liquidity_usd.toLocaleString() : '0'}
+                                <p className={`text-sm font-medium ${(pair.usd_price_24hr_percent_change || 0) >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                                    {(pair.usd_price_24hr_percent_change || 0) >= 0 ? '+' : ''}{typeof pair.usd_price_24hr_percent_change === 'number' ? pair.usd_price_24hr_percent_change.toFixed(2) : '0.00'}%
                                 </p>
                             </div>
                             <Separator />

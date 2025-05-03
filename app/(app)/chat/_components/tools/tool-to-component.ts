@@ -18,9 +18,12 @@ import {
     GetTopTraders as BscGetTopTraders,
     GetWalletAddress as BscGetWalletAddress,
     GetBscBalance,
-    Transfer,
+    Transfer as BscTransfer,
     Trade as BscTrade
 } from "./bsc";
+
+import Transfer from "./base/transfer";
+import { GetTrendingTokens as BaseGetTrendingTokens } from "./base";
 
 export const toolToComponent = {
     "tokenanalysis-get-token-data": SolanaGetTokenData,
@@ -39,7 +42,9 @@ export const toolToComponent = {
     "bscmarket-bsc-get-top-traders": BscGetTopTraders,
     "bscwallet-bsc-get-wallet-address": BscGetWalletAddress,
     "bscwallet-bsc_balance": GetBscBalance,
-    "bscwallet-bsc_transfer": Transfer,
+    "bscwallet-bsc_transfer": BscTransfer,
     "bsctrading-bsc_trade": BscTrade,
+    "basewallet-base_transfer": Transfer,
+    "basemarket-base_get_trending_tokens": BaseGetTrendingTokens,
     // ... rest of the mappings
 } 

@@ -14,7 +14,7 @@ export const useSearchTokens = (query: string, chainOverride?: ChainType) => {
     const searchParams = useSearchParams();
     const chainParam = searchParams.get('chain') as ChainType | null;
     
-    const chain = chainOverride || (chainParam && (chainParam === 'solana' || chainParam === 'bsc')
+    const chain = chainOverride || (chainParam && (chainParam === 'solana' || chainParam === 'bsc' || chainParam === 'base')
         ? chainParam
         : currentChain);
 

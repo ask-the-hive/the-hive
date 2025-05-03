@@ -1,0 +1,1 @@
+export const BASE_TOKEN_PAGE_PRICE_ANALYSIS_PROMPT = "Analyze the price performance of this Base token to understand its volatility, trends, and market behavior."; 

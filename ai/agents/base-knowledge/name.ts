@@ -1,0 +1,1 @@
+export const BASE_KNOWLEDGE_AGENT_NAME = "Knowledge Agent"; 

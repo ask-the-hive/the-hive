@@ -1,0 +1,1 @@
+export const BASE_BALANCE_NAME = "base_balance"; 

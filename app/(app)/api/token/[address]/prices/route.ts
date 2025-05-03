@@ -19,12 +19,12 @@ export const POST = async (req: NextRequest, { params }: { params: Promise<{ add
                 console.error(`Error fetching Solana token prices for ${address}:`, error);
                 return NextResponse.json([], { status: 500 });
             }
-        } else if (chain === 'bsc') {
+        } else if (chain === 'bsc' || chain === 'base') {
             try {
                 const prices = await getTokenPriceHistory(address, numDays, chain as ChainType);
                 
                 if (!prices || prices.length === 0) {
-                    console.log(`No price data found for BSC token ${address}`);
+                    console.log(`No price data found for ${chain.toUpperCase()} token ${address}`);
                     return NextResponse.json([], { status: 204 });
                 }
                 
@@ -40,7 +40,7 @@ export const POST = async (req: NextRequest, { params }: { params: Promise<{ add
                 
                 return NextResponse.json(transformedPrices);
             } catch (error) {
-                console.error(`Error fetching BSC token prices for ${address}:`, error);
+                console.error(`Error fetching ${chain.toUpperCase()} token prices for ${address}:`, error);
                 return NextResponse.json([], { status: 500 });
             }
         } else {

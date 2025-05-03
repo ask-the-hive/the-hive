@@ -1,0 +1,1 @@
+export const BASE_TOKEN_PAGE_TOP_HOLDERS_PROMPT = "Analyze the top holders of this Base token to understand ownership concentration and distribution patterns."; 

@@ -13,11 +13,12 @@ import { cn } from '@/lib/utils'
 interface Props {
     address: string
     className?: string
+    chain?: 'solana' | 'bsc' | 'base'
 }
 
-const SaveToken: React.FC<Props> = ({ address, className }) => {
+const SaveToken: React.FC<Props> = ({ address, className, chain }) => {
 
-    const { saveToken, deleteToken, isLoading, isUpdating, isTokenSaved } = useSaveToken(address);
+    const { saveToken, deleteToken, isLoading, isUpdating, isTokenSaved } = useSaveToken(address, chain);
 
     if(isLoading) {
         return (

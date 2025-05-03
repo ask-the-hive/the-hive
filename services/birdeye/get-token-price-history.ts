@@ -12,8 +12,8 @@ export const getTokenPriceHistory = async (
     numDays: number = 1,
     chain: ChainType = 'solana'
 ): Promise<PriceHistoryItem[]> => {
-    // For BSC tokens, use the token_overview endpoint and extract price history
-    if (chain === 'bsc') {
+    // For BSC and Base tokens, use the token_overview endpoint and extract price history
+    if (chain === 'bsc' || chain === 'base') {
         try {
             const overview = await queryBirdeye<TokenOverview>(
                 'defi/token_overview',
@@ -82,7 +82,7 @@ export const getTokenPriceHistory = async (
             // Sort by time ascending
             return pricePoints.sort((a, b) => a.unixTime - b.unixTime);
         } catch (error) {
-            console.error(`Error fetching BSC token overview for price history:`, error);
+            console.error(`Error fetching ${chain.toUpperCase()} token overview for price history:`, error);
             return [];
         }
     }

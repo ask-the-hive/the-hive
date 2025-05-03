@@ -1,0 +1,1 @@
+export const BASE_TOKEN_PAGE_LIQUIDITY_PROMPT = "Analyze the liquidity of this Base token to understand its trading depth, volume, and market health."; 

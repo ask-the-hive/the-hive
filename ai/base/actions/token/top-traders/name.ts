@@ -1,0 +1,1 @@
+export const BASE_TOKEN_TOP_TRADERS_NAME = "token-top-traders"; 

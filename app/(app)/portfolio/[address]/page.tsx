@@ -19,7 +19,11 @@ const Portfolio = ({ params }: { params: Promise<{ address: string }> }) => {
 
     // Update URL when chain changes to show correct wallet address
     React.useEffect(() => {
-        const newAddress = currentChain === 'solana' ? walletAddresses.solana : walletAddresses.bsc;
+        const newAddress = currentChain === 'solana' 
+            ? walletAddresses.solana 
+            : currentChain === 'base'
+                ? walletAddresses.base
+                : walletAddresses.bsc;
         if (newAddress && newAddress !== address) {
             router.replace(`/portfolio/${newAddress}`);
         }

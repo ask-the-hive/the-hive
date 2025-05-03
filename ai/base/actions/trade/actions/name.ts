@@ -1,0 +1,1 @@
+export const BASE_TRADE_NAME = "trade"; 

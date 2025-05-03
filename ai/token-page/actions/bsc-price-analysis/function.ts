@@ -96,7 +96,7 @@ export async function getBSCTokenPagePriceAnalysis(token: TokenChatData, _: Toke
         
         // Market metrics
         const marketCap = overview.realMc || 0;
-        const fullyDilutedValue = overview.mc || marketCap;
+        const fullyDilutedValue = overview.marketCap || marketCap;
         
         // Technical levels (support and resistance)
         // Simple implementation - more sophisticated analysis would use pivot points, moving averages, etc.

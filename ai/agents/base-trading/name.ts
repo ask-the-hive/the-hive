@@ -1,0 +1,1 @@
+export const BASE_TRADING_AGENT_NAME = "Trading Agent"; 

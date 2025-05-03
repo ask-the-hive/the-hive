@@ -19,7 +19,7 @@ const TrendingTokenCard: React.FC<Props> = ({ token }) => {
     const chainParam = searchParams.get('chain') as ChainType | null;
     
     // Use URL param if available, otherwise use context
-    const chain = chainParam && (chainParam === 'solana' || chainParam === 'bsc') 
+    const chain = chainParam && (chainParam === 'solana' || chainParam === 'bsc' || chainParam === 'base') 
         ? chainParam 
         : currentChain;
     

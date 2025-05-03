@@ -25,7 +25,7 @@ const MarketStats: React.FC<Props> = ({ address }) => {
                 tokenOverview ? (
                     <>
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                            <StatItem label="Market Cap" value={tokenOverview.mc} prefix="$" />
+                            <StatItem label="Market Cap" value={tokenOverview.marketCap} prefix="$" />
                             <StatItem label="Liquidity" value={tokenOverview.liquidity} prefix="$" />
                             <StatItem label="# of Holders" value={tokenOverview.holder} />
                             <StatItem label="# of Markets" value={tokenOverview.numberMarkets} />

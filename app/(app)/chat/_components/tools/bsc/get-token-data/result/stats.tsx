@@ -4,10 +4,13 @@ import React from 'react'
 
 import { Card } from '@/components/ui/card'
 
-import type { TokenOverview } from '@/services/birdeye/types/token-overview'
-
 interface Props {
-    token: TokenOverview
+    token: {
+        marketCap?: number;
+        liquidity?: number;
+        holder?: number;
+        numberMarkets?: number;
+    }
 }
 
 const Stats: React.FC<Props> = ({ token }) => {
@@ -21,7 +24,7 @@ const Stats: React.FC<Props> = ({ token }) => {
                     <h3 className="text-sm font-semibold">
                         Market Cap
                     </h3>
-                    <p>${token.mc?.toLocaleString(undefined, { maximumFractionDigits: 2 })}</p>
+                    <p>${token.marketCap?.toLocaleString(undefined, { maximumFractionDigits: 2 })}</p>
                 </div>
                 <div className="flex flex-col">
                     <h3 className="text-sm font-semibold">

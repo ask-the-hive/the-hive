@@ -1,13 +1,16 @@
-import React, { useState } from 'react'
+import React, { useState } from 'react';
 
-import { Button, Card, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 import WalletAddress from '@/app/_components/wallet-address';
 
 import ToolCard from '../../tool-card';
 
 import type { ToolInvocation } from 'ai';
-import type { GetTopTradersResultBodyType, GetTopTradersResultType } from '@/ai/bsc/actions/market/get-top-traders/types';
+import type { GetTopTradersResultBodyType } from '@/ai/bsc/actions/market/get-top-traders/types';
+import type { BscActionResult } from '@/ai/bsc/actions/bsc-action';
 
 interface Props {
     tool: ToolInvocation,
@@ -15,18 +18,17 @@ interface Props {
 }
 
 const GetTopTraders: React.FC<Props> = ({ tool, prevToolAgent }) => {
-    
     return (
         <ToolCard 
             tool={tool}
-            loadingText={`Getting Top Traders...`}
+            loadingText="Getting Top Traders..."
             result={{
-                heading: (result: GetTopTradersResultType) => result.body 
+                heading: (result: BscActionResult<GetTopTradersResultBodyType>) => result.body 
                     ? `Fetched Top Traders (${tool.args.timeFrame[0].toUpperCase() + tool.args.timeFrame.slice(1)})`
-                    : `Failed to fetch top traders`,
-                body: (result: GetTopTradersResultType) => result.body 
+                    : "Failed to fetch top traders",
+                body: (result: BscActionResult<GetTopTradersResultBodyType>) => result.body 
                     ? <TopTraders body={result.body} />
-                    :  "No top traders found"
+                    : "No top traders found"
             }}
             defaultOpen={true}
             prevToolAgent={prevToolAgent}
@@ -37,6 +39,16 @@ const GetTopTraders: React.FC<Props> = ({ tool, prevToolAgent }) => {
 
 const TopTraders = ({ body }: { body: GetTopTradersResultBodyType }) => {
     const [showAll, setShowAll] = useState(false);
+    
+    const traders = Array.isArray(body.traders) ? body.traders : [];
+    
+    if (traders.length === 0) {
+        return (
+            <Card className="flex flex-col gap-2 w-full p-2">
+                <p className="text-center py-4">No traders found.</p>
+            </Card>
+        );
+    }
 
     return (
         <Card className="flex flex-col gap-2 w-full p-2">
@@ -47,29 +59,44 @@ const TopTraders = ({ body }: { body: GetTopTradersResultBodyType }) => {
                         <TableHead className="text-center">Trader</TableHead>
                         <TableHead className="text-center">PNL</TableHead>
                         <TableHead className="text-center">Volume</TableHead>
+                        <TableHead className="text-center">Trades</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {body.traders.slice(0, showAll ? body.traders.length : 5).map((trader, index) => (
+                    {traders.slice(0, showAll ? traders.length : 5).map((trader, index) => (
                         <TableRow key={trader.address}>
                             <TableCell>{index + 1}</TableCell>
-                            <TableCell className="flex flex-col items-center">
-                                <WalletAddress 
-                                    address={trader.address} 
-                                    className="font-medium"
-                                />
-                            </TableCell>
-                            <TableCell className="text-green-500">
-                                ${trader.pnl.toLocaleString(undefined, { maximumFractionDigits: 2, minimumFractionDigits: 2 })}
+                            <TableCell>
+                                <div className="flex flex-col items-center justify-center h-full">
+                                    <WalletAddress 
+                                        address={trader.address} 
+                                        className="font-medium"
+                                        chain="bsc"
+                                    />
+                                </div>
                             </TableCell>
                             <TableCell>
-                                ${trader.volume.toLocaleString(undefined, { maximumFractionDigits: 2, minimumFractionDigits: 2 })}
+                                <span className={trader.pnl >= 0 ? "text-green-500" : "text-red-500"}>
+                                    ${new Intl.NumberFormat('en-US', { 
+                                        minimumFractionDigits: 2,
+                                        maximumFractionDigits: 2
+                                    }).format(Math.abs(trader.pnl))}
+                                </span>
+                            </TableCell>
+                            <TableCell>
+                                ${new Intl.NumberFormat('en-US', { 
+                                    minimumFractionDigits: 2,
+                                    maximumFractionDigits: 2
+                                }).format(trader.volume)}
+                            </TableCell>
+                            <TableCell>
+                                {new Intl.NumberFormat('en-US').format(trader.trade_count)}
                             </TableCell>
                         </TableRow>
                     ))}
                 </TableBody>
             </Table>
-            {body.traders.length > 5 && (
+            {traders.length > 5 && (
                 <Button
                     variant="ghost"
                     onClick={() => setShowAll(!showAll)}

@@ -26,7 +26,7 @@ const TokenPage: React.FC = () => {
     
     // Use URL param if available, otherwise use context
     const chainParam = searchParams.get('chain') as ChainType | null;
-    const chain = chainParam && (chainParam === 'solana' || chainParam === 'bsc') 
+    const chain = chainParam && (chainParam === 'solana' || chainParam === 'bsc' || chainParam === 'base') 
         ? chainParam 
         : currentChain;
 
@@ -43,9 +43,9 @@ const TokenPage: React.FC = () => {
                 {/* Chain selector dropdown for all users */}
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                        <Button variant="outline" className="flex items-center gap-2">
+                        <Button variant="outline" className="flex items-center gap-2 focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0">
                             <ChainIcon chain={chain} className="w-4 h-4" />
-                            {chain === 'solana' ? 'Solana' : 'BSC'}
+                            {chain === 'solana' ? 'Solana' : chain === 'base' ? 'Base' : 'BSC'}
                             <ChevronDown className="h-4 w-4" />
                         </Button>
                     </DropdownMenuTrigger>
@@ -57,6 +57,10 @@ const TokenPage: React.FC = () => {
                         <DropdownMenuItem onClick={() => handleChainSwitch('bsc')} className="flex items-center gap-2">
                             <ChainIcon chain="bsc" className="w-4 h-4" />
                             BSC
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleChainSwitch('base')} className="flex items-center gap-2">
+                            <ChainIcon chain="base" className="w-4 h-4" />
+                            Base
                         </DropdownMenuItem>
                     </DropdownMenuContent>
                 </DropdownMenu>

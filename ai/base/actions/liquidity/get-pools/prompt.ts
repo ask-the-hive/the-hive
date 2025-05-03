@@ -1,0 +1,1 @@
+export const GET_POOLS_PROMPT = "Get liquidity pools for a Base token by address or ticker symbol"; 

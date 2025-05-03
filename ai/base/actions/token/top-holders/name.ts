@@ -1,0 +1,1 @@
+export const BASE_TOP_HOLDERS_NAME = "top-holders"; 

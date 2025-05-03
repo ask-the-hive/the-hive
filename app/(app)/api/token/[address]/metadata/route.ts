@@ -3,16 +3,20 @@ import { NextRequest, NextResponse } from "next/server";
 import { getTokenMetadata } from "@/services/birdeye";
 import { ChainType } from "@/app/_contexts/chain-context";
 
-// BNB/WBNB metadata
-const BNB_METADATA = {
-    name: "Binance Coin",
-    symbol: "BNB",
-    decimals: 18,
+// SOL token metadata
+const SOL_METADATA = {
+    name: "Solana",
+    symbol: "SOL",
+    decimals: 9,
     extensions: {},
-    logo_uri: "https://assets.coingecko.com/coins/images/825/small/bnb-icon2_2x.png"
+    logo_uri: "https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/So11111111111111111111111111111111111111112/logo.png"
 };
 
-const WBNB_ADDRESS = "0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c".toLowerCase();
+// SOL token addresses
+const SOL_TOKEN_ADDRESSES = [
+    'so11111111111111111111111111111111111111112',  // Standard SOL token
+    'so11111111111111111111111111111111111111111'   // Alternative SOL token
+];
 
 export const GET = async (request: NextRequest, { params }: { params: Promise<{ address: string }> }) => {
     const { address } = await params;
@@ -20,43 +24,49 @@ export const GET = async (request: NextRequest, { params }: { params: Promise<{ 
     
     // Get chain from query parameters, default to 'bsc'
     const searchParams = request.nextUrl.searchParams;
-    const chain = (searchParams.get('chain') || 'bsc') as ChainType;
+    const chainParam = searchParams.get('chain') || 'bsc';
+    const chain = (chainParam === 'solana' || chainParam === 'bsc' || chainParam === 'base') ? chainParam as ChainType : 'bsc';
     
     console.log(`API route: Fetching metadata for token ${address} on chain ${chain}`);
     
     try {
-        // Special handling for BNB and WBNB
-        if (normalizedAddress === "bnb" || normalizedAddress === WBNB_ADDRESS) {
+        // Special handling for SOL token
+        if (chain === 'solana' && (
+            SOL_TOKEN_ADDRESSES.includes(normalizedAddress) ||
+            normalizedAddress === 'sol'
+        )) {
             return NextResponse.json({
-                ...BNB_METADATA,
-                address: WBNB_ADDRESS,
-                name: normalizedAddress === WBNB_ADDRESS ? "Wrapped BNB" : "Binance Coin",
-                symbol: normalizedAddress === WBNB_ADDRESS ? "WBNB" : "BNB"
+                ...SOL_METADATA,
+                address: 'So11111111111111111111111111111111111111112'
             });
         }
 
         const metadata = await getTokenMetadata(address, chain);
         console.log(`API route: Successfully fetched metadata for ${address}:`, metadata);
         
-        // Special case: If the token is reporting itself as WBNB, use the same icon as BNB
-        if (metadata.symbol?.toUpperCase() === "WBNB" || 
-            metadata.address?.toLowerCase() === WBNB_ADDRESS) {
+        // If the token is SOL (by symbol), use SOL metadata
+        if (chain === 'solana' && metadata.symbol?.toUpperCase() === 'SOL') {
             return NextResponse.json({
-                ...metadata,
-                logo_uri: BNB_METADATA.logo_uri
+                ...SOL_METADATA,
+                address: 'So11111111111111111111111111111111111111112'
             });
-        }
-        
-        // Ensure we have a logo_uri
-        if (!metadata.logo_uri) {
-            console.log(`No logo found for ${address}, attempting to find from token list`);
-            // You could implement additional fallback sources for logos here
-            metadata.logo_uri = 'https://www.birdeye.so/images/unknown-token-icon.svg';
         }
         
         return NextResponse.json(metadata);
     } catch (error) {
         console.error(`API route: Error fetching metadata for ${address}:`, error);
+        
+        // If error occurs for SOL token, return hardcoded metadata
+        if (chain === 'solana' && (
+            SOL_TOKEN_ADDRESSES.includes(normalizedAddress) ||
+            normalizedAddress === 'sol'
+        )) {
+            return NextResponse.json({
+                ...SOL_METADATA,
+                address: 'So11111111111111111111111111111111111111112'
+            });
+        }
+
         return NextResponse.json(
             {
                 address,

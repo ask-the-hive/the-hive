@@ -1,0 +1,1 @@
+export const BASE_TOKEN_PAGE_PRICE_ANALYSIS_NAME = "base-token-page-price-analysis"; 

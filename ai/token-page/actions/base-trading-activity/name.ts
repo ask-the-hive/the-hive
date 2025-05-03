@@ -1,0 +1,1 @@
+export const BASE_TOKEN_PAGE_TRADING_ACTIVITY_NAME = "base-token-page-trading-activity"; 

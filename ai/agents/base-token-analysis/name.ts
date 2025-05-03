@@ -1,0 +1,1 @@
+export const BASE_TOKEN_ANALYSIS_AGENT_NAME = "Token Analysis Agent"; 

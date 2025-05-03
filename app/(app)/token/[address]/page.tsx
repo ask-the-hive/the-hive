@@ -3,7 +3,7 @@
 export const dynamic = 'force-dynamic';
 
 import React, { useEffect, useState } from "react";
-import { useParams, useSearchParams } from "next/navigation";
+import { useParams, useSearchParams, useRouter } from "next/navigation";
 import { Skeleton } from "@/components/ui";
 
 import TokenChart from "../../_components/token/chart";
@@ -18,16 +18,26 @@ const TokenPage = () => {
     const params = useParams();
     const address = params.address as string;
     const searchParams = useSearchParams();
+    const router = useRouter();
     const { currentChain } = useChain();
     
     // Use URL param if available, otherwise use context
     const chainParam = searchParams.get('chain') as ChainType | null;
-    const chain = chainParam && (chainParam === 'solana' || chainParam === 'bsc') 
+    const chain = chainParam && (chainParam === 'solana' || chainParam === 'bsc' || chainParam === 'base') 
         ? chainParam 
         : currentChain;
     
     const [tokenOverview, setTokenOverview] = useState<any>(null);
     const [loading, setLoading] = useState(true);
+
+    // Update URL when chain changes
+    useEffect(() => {
+        if (chain !== chainParam) {
+            const newSearchParams = new URLSearchParams(searchParams.toString());
+            newSearchParams.set('chain', chain);
+            router.replace(`/token/${address}?${newSearchParams.toString()}`);
+        }
+    }, [chain, chainParam, address, router, searchParams]);
 
     useEffect(() => {
         const fetchTokenOverview = async () => {
