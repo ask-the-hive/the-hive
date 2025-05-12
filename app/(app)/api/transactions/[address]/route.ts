@@ -1,5 +1,6 @@
 import { getTransactionHistory } from "@/services/helius";
 import { getBscTransactionHistory } from "@/services/bscscan/get-transaction-history";
+import { getBaseTransactionHistory } from "@/services/basescan/get-transaction-history";
 import { ChainType } from "@/app/_contexts/chain-context";
 
 import { NextRequest, NextResponse } from "next/server";
@@ -20,6 +21,15 @@ export const GET = async (req: NextRequest, { params }: { params: Promise<{ addr
             } catch (error) {
                 console.error('Error fetching BSC transactions:', error);
                 return NextResponse.json({ error: 'Failed to fetch BSC transactions' }, { status: 500 });
+            }
+        } else if (chain === 'base') {
+            try {
+                const transactions = await getBaseTransactionHistory(address);
+                console.log(`Found ${transactions.length} Base transactions`);
+                return NextResponse.json(transactions);
+            } catch (error) {
+                console.error('Error fetching Base transactions:', error);
+                return NextResponse.json({ error: 'Failed to fetch Base transactions' }, { status: 500 });
             }
         } else {
             try {

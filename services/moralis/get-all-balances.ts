@@ -1,4 +1,5 @@
 import Moralis from 'moralis';
+import { ChainType } from '@/app/_contexts/chain-context';
 
 export interface TokenBalance {
   token_address: string;
@@ -30,7 +31,13 @@ export interface TokenBalancesResponse {
   result: TokenBalance[];
 }
 
-export const getAllBalances = async (address: string): Promise<TokenBalancesResponse> => {
+// Chain ID mapping
+const CHAIN_IDS = {
+  bsc: "0x38",    // BSC Mainnet
+  base: "0x2105"  // Base Mainnet
+} as const;
+
+export const getAllBalances = async (address: string, chain: ChainType = 'bsc'): Promise<TokenBalancesResponse> => {
   try {
     if (!Moralis.Core.isStarted) {
       await Moralis.start({
@@ -38,9 +45,16 @@ export const getAllBalances = async (address: string): Promise<TokenBalancesResp
       });
     }
 
-    console.log('Fetching balances from Moralis for address:', address);
+    // Only proceed for EVM chains (BSC and Base)
+    if (chain !== 'bsc' && chain !== 'base') {
+      throw new Error(`Unsupported chain: ${chain}`);
+    }
+
+    const chainId = CHAIN_IDS[chain];
+    console.log(`Fetching balances from Moralis for address: ${address} on chain: ${chain} (${chainId})`);
+    
     const response = await Moralis.EvmApi.wallets.getWalletTokenBalancesPrice({
-      chain: "0x38",
+      chain: chainId,
       address: address
     });
 

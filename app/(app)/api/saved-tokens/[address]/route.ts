@@ -74,8 +74,10 @@ export const POST = async (request: Request, { params }: { params: Promise<{ add
 
         const { address } = await params;
         
-        // Determine chain based on address format
-        const chain: ChainType = address.startsWith('0x') ? 'bsc' : 'solana';
+        // Get chain from URL parameters, defaulting to solana if not specified
+        const url = new URL(request.url);
+        const chainParam = url.searchParams.get('chain') || 'solana';
+        const chain = (chainParam === 'solana' || chainParam === 'bsc' || chainParam === 'base') ? chainParam as ChainType : 'solana';
 
         // Get token metadata from Birdeye with the correct chain
         const tokenData = await getTokenOverview(address, chain);

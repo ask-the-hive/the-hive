@@ -26,7 +26,7 @@ export const GET = async (req: NextRequest) => {
             sort_type: "desc",
             offset: 0,
             limit: 10,
-            chain: chain === 'bsc' ? 'bsc' : 'solana',
+            chain: chain,
         });
 
         allTokens = searchResponse.items.flatMap(item => item.result);
@@ -64,7 +64,7 @@ export const POST = async (req: NextRequest) => {
         sort_type: "desc",
         offset: 0,
         limit: 10,
-        chain: chain === 'bsc' ? 'bsc' : 'solana',
+        chain: chain,
     });
 
     allTokenResults = searchResponse.items.flatMap(item => item.result);

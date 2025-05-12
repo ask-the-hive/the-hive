@@ -8,18 +8,18 @@ export const GET = async (req: NextRequest) => {
     
     try {
         // Validate chain parameter
-        if (chain !== 'solana' && chain !== 'bsc') {
+        if (chain !== 'solana' && chain !== 'bsc' && chain !== 'base') {
             return NextResponse.json(
-                { error: 'Invalid chain parameter. Must be "solana" or "bsc".' }, 
+                { error: 'Invalid chain parameter. Must be "solana", "bsc", or "base".' }, 
                 { status: 400 }
             );
         }
         
-        // Use the Birdeye API for both chains
+        // Use the Birdeye API for all chains
         const trendingTokens = await getTrendingTokens(
             0, 
             9, 
-            chain === 'bsc' ? 'bsc' : 'solana'
+            chain
         );
         
         return NextResponse.json({
@@ -32,7 +32,7 @@ export const GET = async (req: NextRequest) => {
             { 
                 tokens: [], 
                 error: `Failed to fetch trending tokens for ${chain} chain.`,
-                unsupportedChain: chain === 'bsc'
+                unsupportedChain: chain === 'bsc' || chain === 'base'
             }, 
             { status: 500 }
         );

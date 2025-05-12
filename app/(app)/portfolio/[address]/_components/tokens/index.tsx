@@ -52,7 +52,7 @@ const Tokens: React.FC<Props> = ({ address }) => {
                     </h2>
                 </div>
                 {
-                    portfolio && (
+                    portfolio?.totalUsd !== undefined && (
                         <p>
                             ${portfolio.totalUsd.toLocaleString(undefined, { maximumFractionDigits: 2, minimumFractionDigits: 2 })}
                         </p>
@@ -62,7 +62,7 @@ const Tokens: React.FC<Props> = ({ address }) => {
             {isLoading ? (
                 <Skeleton className="h-64 w-full" />
             ) : (
-                portfolio && portfolio.items.length > 0 ? (
+                portfolio && portfolio.items && portfolio.items.length > 0 ? (
                     <div className="rounded-md border">
                         <Table>
                             <TableHeader>

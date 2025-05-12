@@ -15,7 +15,7 @@ import { useChain } from "@/app/_contexts/chain-context";
 import { ChainType } from "@/app/_contexts/chain-context";
 
 import { MarketSource } from "@/services/birdeye/types";
-import { identifyBscDex } from "@/services/birdeye/utils";
+import { identifyDex } from "@/services/birdeye/utils";
 
 interface Props {
     address: string;
@@ -26,7 +26,7 @@ const TokenMarkets: React.FC<Props> = ({ address }) => {
     const searchParams = useSearchParams();
     const chainParam = searchParams.get('chain') as ChainType | null;
     
-    const chain = chainParam && (chainParam === 'solana' || chainParam === 'bsc') 
+    const chain = chainParam && (chainParam === 'solana' || chainParam === 'bsc' || chainParam === 'base') 
         ? chainParam 
         : currentChain;
     
@@ -88,10 +88,10 @@ const TokenMarkets: React.FC<Props> = ({ address }) => {
 
 export const MarketType = ({ type, address, tokenAddress, chain, marketName = '' }: { type: MarketSource, address: string, tokenAddress: string, chain: ChainType, marketName?: string }) => {
 
-    if (chain === 'bsc' && type === address) {
-        const bscMarketType = identifyBscDex(address, marketName);
-        if (bscMarketType) {
-            type = bscMarketType;
+    if (chain === 'bsc' || chain === 'base') {
+        const marketType = identifyDex(address, marketName, chain);
+        if (marketType) {
+            type = marketType;
         }
     }
 
@@ -105,7 +105,7 @@ export const MarketType = ({ type, address, tokenAddress, chain, marketName = ''
         [MarketSource.Orca]: "/dexes/orca.png",
         [MarketSource.Phoenix]: "/dexes/phoenix.jpg",
         
-        // BSC markets
+        // BSC and Base markets
         [MarketSource.PancakeSwap]: "/dexes/pancakeswap.png",
         [MarketSource.Uniswap]: "/dexes/uniswap.png",
         [MarketSource.BiSwap]: "/dexes/biswap.png",
@@ -116,22 +116,25 @@ export const MarketType = ({ type, address, tokenAddress, chain, marketName = ''
         [MarketSource.BSWSwap]: "/dexes/bswswap.png",
         [MarketSource.ThenaFusion]: "/dexes/thena.png",
         [MarketSource.ThenaAlgebra]: "/dexes/thena.png",
+        [MarketSource.BaseSwap]: "/dexes/baseswap.png",
+        [MarketSource.Aerodrome]: "/dexes/aerodrome.png",
+        [MarketSource.SwapBased]: "/dexes/swapbased.png",
     } as const;
 
     const iconSrc = marketTypeIcons[type];
     
-    // For BSC addresses that couldn't be mapped to a known DEX
-    if (chain === 'bsc' && !iconSrc && address === type) {
+    // For BSC/Base addresses that couldn't be mapped to a known DEX
+    if ((chain === 'bsc' || chain === 'base') && !iconSrc && address === type) {
         return (
             <div className="flex flex-row items-center gap-2">
                 <Image 
-                    src="/dexes/bsc-generic.png"
-                    alt="BSC DEX" 
+                    src={chain === 'bsc' ? "/dexes/bsc-generic.png" : "/dexes/base-generic.png"}
+                    alt={`${chain.toUpperCase()} DEX`} 
                     width={16} 
                     height={16} 
                     className="rounded-full"
                 />
-                <span>BSC DEX</span>
+                <span>{chain.toUpperCase()} DEX</span>
                 <MarketLink source={type} address={address} tokenAddress={tokenAddress} chain={chain} />
             </div>
         );
@@ -184,12 +187,17 @@ export const MarketLink = ({ source, address, tokenAddress, chain }: { source: M
         [MarketSource.BSWSwap]: `https://bsw.exchange/pool/${address}`,
         [MarketSource.ThenaFusion]: `https://thena.fi/liquidity/${address}`,
         [MarketSource.ThenaAlgebra]: `https://thena.fi/liquidity/${address}`,
+
+        // Base market links
+        [MarketSource.BaseSwap]: `https://baseswap.fi/pool/${address}`,
+        [MarketSource.Aerodrome]: `https://aerodrome.finance/pool/${address}`,
+        [MarketSource.SwapBased]: `https://app.swapbased.finance/pool/${address}`,
     } as const;
 
-    // Generic BSC DEX explorer link for unknown BSC DEXes
-    if (chain === 'bsc' && source === address) {
+    // Generic BSC/Base DEX explorer link for unknown DEXes
+    if ((chain === 'bsc' || chain === 'base') && source === address) {
         return (
-            <Link href={`https://bscscan.com/address/${address}`} target="_blank">
+            <Link href={`${chain === 'bsc' ? 'https://bscscan.com' : 'https://basescan.org'}/address/${address}`} target="_blank">
                 <div className="flex flex-row items-center justify-center gap-2 hover:bg-neutral-100 dark:hover:bg-neutral-700 rounded-md p-0.5">
                     <FaExternalLinkAlt className="w-3 h-3 text-neutral-600 dark:text-neutral-400" />
                 </div>

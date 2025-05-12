@@ -20,13 +20,13 @@ const ChainSelector: React.FC = () => {
     // Sync URL params with context
     useEffect(() => {
         const chainParam = searchParams.get('chain')
-        if (chainParam && (chainParam === 'solana' || chainParam === 'bsc')) {
+        if (chainParam && (chainParam === 'solana' || chainParam === 'bsc' || chainParam === 'base')) {
             setCurrentChain(chainParam)
         }
     }, [searchParams, setCurrentChain])
 
     const handleChainChange = (value: string) => {
-        const newChain = value as 'solana' | 'bsc'
+        const newChain = value as 'solana' | 'bsc' | 'base'
         setCurrentChain(newChain)
         
         // Update URL
@@ -56,6 +56,12 @@ const ChainSelector: React.FC = () => {
                         <div className="flex items-center gap-2">
                             <ChainIcon chain="bsc" className="size-4" />
                             <span>BSC</span>
+                        </div>
+                    </SelectItem>
+                    <SelectItem value="base">
+                        <div className="flex items-center gap-2">
+                            <ChainIcon chain="base" className="size-4" />
+                            <span>Base</span>
                         </div>
                     </SelectItem>
                 </SelectContent>

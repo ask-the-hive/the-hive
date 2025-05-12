@@ -16,7 +16,7 @@ const TrendingTokens: React.FC = () => {
     const searchParams = useSearchParams();
     const chainParam = searchParams.get('chain') as ChainType | null;
     
-    const chain = chainParam && (chainParam === 'solana' || chainParam === 'bsc') 
+    const chain = chainParam && (chainParam === 'solana' || chainParam === 'bsc' || chainParam === 'base') 
         ? chainParam 
         : currentChain;
         
@@ -38,7 +38,7 @@ const TrendingTokens: React.FC = () => {
                 if (!response.ok) {
                     if (data.unsupportedChain) {
                         setUnsupportedChain(true);
-                        setError("Trending Tokens are not yet available for BSC.");
+                        setError(`Trending Tokens are not yet available for ${chain.toUpperCase()}.`);
                     } else {
                         throw new Error(data.error || `Failed to fetch trending tokens for ${chain} chain`);
                     }

@@ -1,5 +1,8 @@
 import React, { useEffect, useRef } from 'react';
 import { useColorMode, ColorMode } from '@/app/_contexts';
+import { useSearchParams } from 'next/navigation';
+import { useChain } from '@/app/_contexts/chain-context';
+import { ChainType } from '@/app/_contexts/chain-context';
 
 declare global {
     interface Window {
@@ -30,12 +33,20 @@ const MoralisChart: React.FC<Props> = ({ tokenAddress, price, priceChange }) => 
     const containerRef = useRef(null);
     const { mode } = useColorMode();
     const scriptLoadedRef = useRef(false);
+    const { currentChain } = useChain();
+    const searchParams = useSearchParams();
+    const chainParam = searchParams.get('chain') as ChainType | null;
+    
+    // Use URL param if available, otherwise use context
+    const chain = chainParam && (chainParam === 'solana' || chainParam === 'bsc' || chainParam === 'base') 
+        ? chainParam 
+        : currentChain;
 
     const createWidget = () => {
         if (typeof window.createMyWidget === 'function') {
             window.createMyWidget(PRICE_CHART_ID, {
                 autoSize: true,
-                chainId: '0x38',
+                chainId: chain === 'bsc' ? '0x38' : '0x2105', // BSC: 0x38, Base: 0x2105
                 tokenAddress: tokenAddress,
                 defaultInterval: '1D',
                 timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone ?? 'Etc/UTC',
@@ -87,15 +98,15 @@ const MoralisChart: React.FC<Props> = ({ tokenAddress, price, priceChange }) => 
         return () => {
             clearInterval(interval);
         };
-    }, [tokenAddress, mode]);
+    }, [tokenAddress, mode, chain]);
 
     return (
         <div className='flex flex-col h-full w-full'>
             <div className='flex flex-col md:flex-row md:justify-between md:items-center gap-1 bg-neutral-100 dark:bg-neutral-700 p-2'>
                 <p className='text-md md:text-lg font-bold'>
-                    ${price.toLocaleString(undefined, { maximumFractionDigits: 5 }) || '0.00'} 
-                    <span className={priceChange > 0 ? 'text-green-500' : 'text-red-500'}>
-                        ({priceChange > 0 ? '+' : ''}{priceChange.toLocaleString(undefined, { maximumFractionDigits: 2 })}%)
+                    ${(price || 0).toLocaleString(undefined, { maximumFractionDigits: 5 })} 
+                    <span className={(priceChange || 0) > 0 ? 'text-green-500' : 'text-red-500'}>
+                        ({(priceChange || 0) > 0 ? '+' : ''}{(priceChange || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}%)
                     </span>
                 </p>
             </div>

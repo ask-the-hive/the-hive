@@ -16,7 +16,11 @@ const ChainSelector = () => {
         setCurrentChain(chain)
         
         // Get the appropriate wallet address for the selected chain
-        const newAddress = chain === 'solana' ? walletAddresses.solana : walletAddresses.bsc
+        const newAddress = chain === 'solana' 
+            ? walletAddresses.solana 
+            : chain === 'bsc'
+                ? walletAddresses.bsc
+                : walletAddresses.base
         
         if (!newAddress) {
             return; // Don't update URL if we don't have a wallet address for this chain
@@ -47,6 +51,13 @@ const ChainSelector = () => {
                 <Label htmlFor="bsc" className="flex items-center gap-1">
                     <img src="/chains/bsc.svg" alt="BSC" className="w-4 h-4" />
                     BSC
+                </Label>
+            </div>
+            <div className="flex items-center space-x-2">
+                <RadioGroupItem value="base" id="base" />
+                <Label htmlFor="base" className="flex items-center gap-1">
+                    <img src="/chains/base.svg" alt="Base" className="w-4 h-4" />
+                    Base
                 </Label>
             </div>
         </RadioGroup>

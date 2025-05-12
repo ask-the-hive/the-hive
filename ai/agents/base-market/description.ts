@@ -1,0 +1,1 @@
+export const BASE_MARKET_AGENT_DESCRIPTION = "I am a market analysis agent for Base. I can help you analyze market trends, track token movements, and get detailed trading activity for any wallet address on the Base network. Use me to view trades, analyze market data, and understand trading patterns."; 

@@ -1,0 +1,1 @@
+export const BASE_PRICE_CHART_NAME = "price-chart"; 

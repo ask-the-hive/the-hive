@@ -22,7 +22,7 @@ export interface TokenOverview {
     lastTradeHumanTime: string;
     price: number;
     supply: number;
-    mc: number;
+    marketCap: number;
     circulatingSupply: number;
     realMc: number;
     holder: number;

@@ -1,14 +1,24 @@
 "use client";
 
 import { useState } from "react";
-
+import { useSearchParams } from "next/navigation";
 import { usePrivy } from "@privy-io/react-auth";
+import { useChain } from "@/app/_contexts/chain-context";
+import { ChainType } from "@/app/_contexts/chain-context";
 
 import { useIsTokenSaved } from "./use-is-token-saved";
 import { useSavedTokens } from "./use-saved-tokens";
 
-export const useSaveToken = (address: string) => {
+export const useSaveToken = (address: string, chainOverride?: ChainType) => {
     const { getAccessToken } = usePrivy();
+    const { currentChain } = useChain();
+    const searchParams = useSearchParams();
+    const chainParam = searchParams.get('chain') as ChainType | null;
+    
+    // Use override if provided, otherwise use URL param if available, otherwise use context
+    const chain = chainOverride || (chainParam && (chainParam === 'solana' || chainParam === 'bsc' || chainParam === 'base') 
+        ? chainParam 
+        : currentChain);
 
     const { mutate: mutateSavedTokens } = useSavedTokens();
 
@@ -31,7 +41,7 @@ export const useSaveToken = (address: string) => {
                 throw new Error("Not authenticated");
             }
 
-            const res = await fetch(`/api/saved-tokens/${address}`, {
+            const res = await fetch(`/api/saved-tokens/${address}?chain=${chain}`, {
                 method,
                 headers: {
                     "Authorization": `Bearer ${accessToken}`

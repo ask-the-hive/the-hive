@@ -34,8 +34,8 @@ const TokenUsersOverTime: React.FC<Props> = ({ mint }) => {
 
     if (isLoading) return <Skeleton className="h-full w-full" />;
 
-    // Show a message for BSC tokens
-    if (chain === 'bsc') {
+    // Show a message for BSC and Base tokens
+    if (chain === 'bsc' || chain === 'base') {
         return (
             <div className="flex items-center justify-center h-full w-full p-4">
                 <div className="text-center max-w-md">
@@ -43,7 +43,7 @@ const TokenUsersOverTime: React.FC<Props> = ({ mint }) => {
                         Active Wallets Data Not Available
                     </h3>
                     <p className="text-sm text-neutral-500">
-                        Active wallets data is currently not available for BSC tokens.
+                        Active wallets data is currently not available for {chain.toUpperCase()} tokens.
                     </p>
                 </div>
             </div>

@@ -10,7 +10,7 @@ const starterButtons = [
     }, 
     {
         title: "Liquidity Pools",
-        icon: "Coins" as const,
+        icon: "Droplet" as const,
         prompt: "Analyze the liquidity pools of this token"
     },
     {

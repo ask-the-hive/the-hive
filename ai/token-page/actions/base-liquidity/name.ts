@@ -1,0 +1,1 @@
+export const BASE_TOKEN_PAGE_LIQUIDITY_NAME = "base-token-page-liquidity"; 

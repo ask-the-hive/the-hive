@@ -40,7 +40,9 @@ const Transactions: React.FC<Props> = ({ address }) => {
     // Use the appropriate address for the current chain
     const chainAddress = currentChain === 'solana' 
         ? walletAddresses.solana || address 
-        : walletAddresses.bsc || address;
+        : currentChain === 'bsc'
+            ? walletAddresses.bsc || address
+            : walletAddresses.base || address;
     
     const { data: transactions, isLoading } = useTransactions(chainAddress, currentChain);
 

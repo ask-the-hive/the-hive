@@ -6,7 +6,8 @@ import { Portfolio } from '@/services/birdeye/types';
 
 const DEFAULT_ADDRESSES = {
     solana: '11111111111111111111111111111111', // Solana system program
-    bsc: '0x0000000000000000000000000000000000000000' // BSC zero address
+    bsc: '0x0000000000000000000000000000000000000000', // BSC zero address
+    base: '0x0000000000000000000000000000000000000000' // Base zero address
 };
 
 export const usePortfolio = (address: string | undefined, chain: ChainType) => {
@@ -16,14 +17,18 @@ export const usePortfolio = (address: string | undefined, chain: ChainType) => {
     const effectiveChain = chain || currentChain || 'solana';
     
     // If an address is provided, use it directly without falling back to walletAddresses
-    const chainAddress = address || (effectiveChain === 'solana' 
-        ? walletAddresses.solana || DEFAULT_ADDRESSES.solana
-        : walletAddresses.bsc || DEFAULT_ADDRESSES.bsc);
+    const chainAddress = address || (
+        effectiveChain === 'solana' 
+            ? walletAddresses.solana || DEFAULT_ADDRESSES.solana
+            : effectiveChain === 'bsc'
+                ? walletAddresses.bsc || DEFAULT_ADDRESSES.bsc
+                : walletAddresses.base || DEFAULT_ADDRESSES.base
+    );
     
     // Only fetch if we have a valid address for the chain
     const shouldFetch = chainAddress && 
                        ((effectiveChain === 'solana' && !chainAddress.startsWith('0x')) ||
-                        (effectiveChain === 'bsc' && chainAddress.startsWith('0x')));
+                        ((effectiveChain === 'bsc' || effectiveChain === 'base') && chainAddress.startsWith('0x')));
 
     console.log('[Portfolio Debug] Fetch conditions:', {
         chainAddress,

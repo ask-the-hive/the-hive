@@ -22,15 +22,6 @@ const AccountHeading: React.FC<Props> = ({ user }) => {
     const [copied, setCopied] = useState(false);
     const { logout } = useLogin();
 
-    // Helper function to determine wallet chain
-    const getWalletChain = (address: string) => {
-        if (address.startsWith('0x')) {
-            return 'BSC';
-        } else {
-            return 'SOL';
-        }
-    };
-
     // Format user ID by removing the 'did:privy:' prefix
     const formatUserId = (id: string) => {
         return id.replace('did:privy:', '');
@@ -143,14 +134,37 @@ const AccountHeading: React.FC<Props> = ({ user }) => {
                 <div className="flex flex-col">
                     <p className="text-xs font-bold text-neutral-600 dark:text-neutral-400">Connected Wallets</p>
                     {
-                        user.linkedAccounts.filter((account) => account.type === 'wallet').map((account) => (
-                            <div className="flex items-center gap-2" key={account.address}>
-                                <span className="text-[10px] leading-none px-1.5 py-0.5 bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded">
-                                    {getWalletChain(account.address)}
-                                </span>
-                                <p className="text-sm">{account.address}</p>
-                            </div>
-                        ))
+                        user.linkedAccounts.filter((account) => account.type === 'wallet').map((account) => {
+                            if (account.address.startsWith('0x')) {
+                                // For EVM addresses, show both BSC and Base
+                                return (
+                                    <React.Fragment key={account.address}>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-[10px] leading-none px-1.5 py-0.5 bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded">
+                                                BSC
+                                            </span>
+                                            <p className="text-sm">{account.address}</p>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-[10px] leading-none px-1.5 py-0.5 bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded">
+                                                BASE
+                                            </span>
+                                            <p className="text-sm">{account.address}</p>
+                                        </div>
+                                    </React.Fragment>
+                                );
+                            } else {
+                                // For Solana addresses
+                                return (
+                                    <div className="flex items-center gap-2" key={account.address}>
+                                        <span className="text-[10px] leading-none px-1.5 py-0.5 bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded">
+                                            SOL
+                                        </span>
+                                        <p className="text-sm">{account.address}</p>
+                                    </div>
+                                );
+                            }
+                        })
                     }
                 </div>
             </Card>
