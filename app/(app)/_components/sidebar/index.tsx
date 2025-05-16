@@ -3,6 +3,7 @@ import React from 'react'
 import Link from 'next/link';
 
 import { FaDiscord, FaXTwitter } from 'react-icons/fa6';
+import { SiSolana } from "react-icons/si";
 
 import {
     Sidebar as SidebarUI, 
@@ -74,6 +75,19 @@ const Sidebar: React.FC<Props> = ({ children }) => {
                                 >
                                     <FaDiscord />
                                     <span className='truncate'>Join Discord</span>
+                                </Link>
+                            </SidebarMenuButton>
+                        </SidebarMenuItem>
+                        <SidebarMenuItem>
+                            <SidebarMenuButton 
+                                asChild 
+                            >
+                                <Link 
+                                    href={"https://dexscreener.com/solana/9DHe3pycTuymFk4H4bbPoAJ4hQrr2kaLDF6J6aAKpump"} 
+                                    target={'_blank'}
+                                >
+                                    <SiSolana />
+                                    <span className='truncate'>Buy $BUZZ</span>
                                 </Link>
                             </SidebarMenuButton>
                         </SidebarMenuItem>
