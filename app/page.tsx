@@ -6,7 +6,6 @@ import { BorderBeam } from '@/components/ui'
 import LlmCarousel from '@/components/ui/llm-carousel'
 import ApiCarousel from '@/components/ui/api-carousel'
 import TopBar from '@/components/ui/top-bar'
-import { ColorModeProvider } from '@/app/_contexts'
 import { ChevronDown } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/ui/collapsible'
@@ -45,9 +44,8 @@ function LandingPageContent() {
             <div className="px-4 md:px-12">
                 <div className="relative overflow-hidden pb-24 bg-neutral-100 dark:bg-neutral-800 rounded-xl border border-neutral-200 dark:border-neutral-700 mt-8">
                     {/* Modern Gradient Overlay */}
-                    <div className="absolute inset-0 z-0 pointer-events-none" style={{
-                        background: 'linear-gradient(120deg, rgba(186, 230, 253, 0.35) 0%, rgba(253, 224, 71, 0.25) 50%, rgba(192, 132, 252, 0.35) 160%)',
-                        filter: 'blur(12px)'
+                    <div className="absolute inset-0 z-0 pointer-events-none hero-gradient" style={{
+                        background: 'linear-gradient(120deg, rgba(186, 230, 253, 0.35) 0%, rgba(253, 224, 71, 0.25) 50%, rgba(192, 132, 252, 0.35) 160%)'
                     }} />
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-32">
                         <div className="text-center">
@@ -231,6 +229,16 @@ function LandingPageContent() {
                 .dark {
                     --gradient-start: #171717;
                     --gradient-end: #262626;
+                    --hero-gradient: linear-gradient(120deg, 
+                        rgba(96, 165, 250, 0.3) 0%, 
+                        rgba(234, 179, 8, 0.25) 50%, 
+                        rgba(168, 85, 247, 0.3) 160%
+                    );
+                }
+                .dark .hero-gradient {
+                    background: var(--hero-gradient);
+                    filter: blur(8px);
+                    opacity: 1;
                 }
             `}</style>
         </div>
@@ -238,9 +246,5 @@ function LandingPageContent() {
 }
 
 export default function LandingPage() {
-    return (
-        <ColorModeProvider>
-            <LandingPageContent />
-        </ColorModeProvider>
-    );
+    return <LandingPageContent />;
 }
