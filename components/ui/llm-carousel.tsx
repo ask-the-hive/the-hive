@@ -52,7 +52,7 @@ export default function LlmCarousel() {
   return (
     <div className="relative w-full flex flex-col items-center pt-24 pb-12">
       <div className="mb-6 text-2xl font-bold text-brand-600 text-center">
-        Multiple models
+        Multiple Models
       </div>
       <div className="relative overflow-hidden w-full max-w-4xl mx-auto" style={{ height: CARD_HEIGHT + 16 }}>
         {/* Fading edges */}
