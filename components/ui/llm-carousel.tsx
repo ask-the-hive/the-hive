@@ -50,7 +50,7 @@ export default function LlmCarousel() {
   }, []);
 
   return (
-    <div className="relative w-full flex flex-col items-center pt-24 pb-12">
+    <div className="relative w-full flex flex-col items-center pt-16 pb-8">
       <div className="mb-6 text-2xl font-bold text-brand-600 text-center">
         Multiple Models
       </div>
