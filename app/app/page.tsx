@@ -1,3 +1,5 @@
+'use client'
+
 import React from 'react'
 import { BorderBeam } from '@/components/ui'
 import GraphComponent from '../_components'

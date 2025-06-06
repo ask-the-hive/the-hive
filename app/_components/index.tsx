@@ -73,6 +73,14 @@ function ReactFlowPro({ strength = -500, distance = 150 }: ExampleProps = {}) {
       zoomOnDoubleClick={false}
       zoomOnScroll={false}
       fitView
+      fitViewOptions={{
+        padding: 0.7,
+        minZoom: 0.4,
+        maxZoom: 1.5,
+      }}
+      minZoom={0.4}
+      maxZoom={1.5}
+      defaultViewport={{ x: 0, y: 0, zoom: 0.6 }}
     >
       <Background />
     </ReactFlow>

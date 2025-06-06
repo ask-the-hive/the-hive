@@ -9,6 +9,7 @@ import TopBar from '@/components/ui/top-bar'
 import { ChevronDown } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/ui/collapsible'
+import GraphComponent from './_components'
 
 function FeatureCard({ title, description, index }: { title: string; description: string; index: number }) {
     return (
@@ -37,16 +38,13 @@ function FeatureCard({ title, description, index }: { title: string; description
 function LandingPageContent() {
     const [copied, setCopied] = useState(false);
     const [openFaq, setOpenFaq] = useState<number | null>(null);
+
     return (
         <div className="min-h-screen bg-white dark:bg-neutral-900">
             <TopBar />
             {/* Hero Section with Gradient */}
             <div className="px-4 md:px-12">
                 <div className="relative overflow-hidden pb-16 bg-neutral-100 dark:bg-neutral-800 rounded-xl border border-neutral-200 dark:border-neutral-700 mt-8">
-                    {/* Modern Gradient Overlay */}
-                    <div className="absolute inset-0 z-0 pointer-events-none hero-gradient" style={{
-                        background: 'linear-gradient(120deg, rgba(186, 230, 253, 0.35) 0%, rgba(253, 224, 71, 0.25) 50%, rgba(192, 132, 252, 0.35) 160%)'
-                    }} />
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-32">
                         <div className="text-center">
                             <motion.h1
@@ -66,18 +64,13 @@ function LandingPageContent() {
                                 A modular network of interoperable DeFi agents
                             </motion.p>
                             <motion.div
-                                className="relative w-72 h-72 mx-auto mb-8"
+                                className="relative w-full max-w-4xl h-[500px] mx-auto mb-8 rounded-xl border border-neutral-200 dark:border-neutral-700"
                                 initial={{ opacity: 0, scale: 0.8 }}
                                 animate={{ opacity: 1, scale: 1 }}
                                 transition={{ duration: 0.8, delay: 0.6, ease: [0.21, 1.11, 0.81, 0.99] }}
                             >
-                                <Image
-                                    src="/logo.png"
-                                    alt="The Hive Logo"
-                                    fill
-                                    className="object-contain"
-                                    priority
-                                />
+                                <GraphComponent />
+                                <BorderBeam size={100} duration={10} colorFrom="#ffe00d" colorTo="#d19900" />
                             </motion.div>
                         </div>
                     </div>
@@ -348,16 +341,6 @@ function LandingPageContent() {
                 .dark {
                     --gradient-start: #171717;
                     --gradient-end: #262626;
-                    --hero-gradient: linear-gradient(120deg, 
-                        rgba(96, 165, 250, 0.3) 0%, 
-                        rgba(234, 179, 8, 0.25) 50%, 
-                        rgba(168, 85, 247, 0.3) 160%
-                    );
-                }
-                .dark .hero-gradient {
-                    background: var(--hero-gradient);
-                    filter: blur(8px);
-                    opacity: 1;
                 }
             `}</style>
         </div>
