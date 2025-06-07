@@ -44,36 +44,12 @@ function LandingPageContent() {
             <TopBar />
             {/* Hero Section with Gradient */}
             <div className="px-4 md:px-12">
-                <div className="relative overflow-hidden pb-16 bg-neutral-100 dark:bg-neutral-800 rounded-xl border border-neutral-200 dark:border-neutral-700 mt-8">
-                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-32">
-                        <div className="text-center">
-                            <motion.h1
-                                className="text-5xl md:text-6xl font-bold text-brand-600 mb-6"
-                                initial={{ opacity: 0, y: 40 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ duration: 0.8, delay: 0.1, ease: [0.21, 1.11, 0.81, 0.99] }}
-                            >
-                                The Hive
-                            </motion.h1>
-                            <motion.p
-                                className="text-xl md:text-2xl text-neutral-600 dark:text-white mb-8 max-w-3xl mx-auto"
-                                initial={{ opacity: 0, y: 30 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ duration: 0.8, delay: 0.3, ease: [0.21, 1.11, 0.81, 0.99] }}
-                            >
-                                A modular network of interoperable DeFi agents
-                            </motion.p>
-                            <motion.div
-                                className="relative w-full max-w-4xl h-[500px] mx-auto mb-8 rounded-xl border border-neutral-200 dark:border-neutral-700"
-                                initial={{ opacity: 0, scale: 0.8 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                transition={{ duration: 0.8, delay: 0.6, ease: [0.21, 1.11, 0.81, 0.99] }}
-                            >
-                                <GraphComponent />
-                                <BorderBeam size={100} duration={10} colorFrom="#ffe00d" colorTo="#d19900" />
-                            </motion.div>
-                        </div>
+                <div className="relative overflow-hidden pb-16 bg-neutral-100 dark:bg-neutral-800 rounded-xl border border-neutral-200 dark:border-neutral-700 mt-8 min-h-[800px]">
+                    {/* Graph Component as Background */}
+                    <div className="absolute inset-0 w-full h-full">
+                        <GraphComponent />
                     </div>
+                    <BorderBeam size={100} duration={10} colorFrom="#ffe00d" colorTo="#d19900" />
                 </div>
             </div>
             <div className="max-w-4xl mx-auto px-4 mt-16 mb-16">
