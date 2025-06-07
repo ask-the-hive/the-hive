@@ -69,9 +69,9 @@ function ReactFlowPro({ strength = -500, distance = 150 }: ExampleProps = {}) {
       onNodeDragStop={dragEvents.stop}
       nodeOrigin={nodeOrigin}
       defaultEdgeOptions={defaultEdgeOptions}
-      panOnDrag={true}
+      panOnDrag={[1, 2]}
       zoomOnDoubleClick={false}
-      zoomOnScroll={false}
+      zoomOnScroll={true}
       fitView
       fitViewOptions={{
         padding: 0.7,
@@ -81,6 +81,7 @@ function ReactFlowPro({ strength = -500, distance = 150 }: ExampleProps = {}) {
       minZoom={0.4}
       maxZoom={1.5}
       defaultViewport={{ x: 0, y: 0, zoom: 0.6 }}
+      style={{ pointerEvents: 'auto' }}
     >
       <Background />
     </ReactFlow>
