@@ -28,8 +28,7 @@ export const searchTokens = async ({
         sort_by,
         sort_type,
         offset,
-        limit,
-        search_by: 'symbol'
+        limit
     };
 
     return queryBirdeye<SearchResponse>('defi/v3/search', params, chain);
