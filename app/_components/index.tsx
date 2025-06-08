@@ -22,6 +22,8 @@ import useForceLayout from '../_hooks/use-force-layout';
 
 import { initialNodes, initialEdges } from '../_data/initial-elements';
 
+import { motion } from 'framer-motion';
+
 const proOptions: ProOptions = { account: 'paid-pro', hideAttribution: true };
 
 type ExampleProps = {
@@ -56,41 +58,74 @@ function ReactFlowPro({ strength = -500, distance = 150 }: ExampleProps = {}) {
   );
 
   return (
-    <ReactFlow
-      nodes={nodes}
-      edges={edges}
-      nodeTypes={nodeTypes}
-      onNodesChange={onNodesChange}
-      onEdgesChange={onEdgesChange}
-      proOptions={proOptions}
-      onConnect={onConnect}
-      onNodeDragStart={dragEvents.start}
-      onNodeDrag={dragEvents.drag}
-      onNodeDragStop={dragEvents.stop}
-      nodeOrigin={nodeOrigin}
-      defaultEdgeOptions={defaultEdgeOptions}
-      panOnDrag={true}
-      zoomOnDoubleClick={false}
-      zoomOnScroll={false}
-      fitView
-      fitViewOptions={{
-        padding: 0.7,
-        minZoom: 0.4,
-        maxZoom: 1.5,
-      }}
-      minZoom={0.4}
-      maxZoom={1.5}
-      defaultViewport={{ x: 0, y: 0, zoom: 0.6 }}
-    >
-      <Background />
-    </ReactFlow>
+    <div className="relative w-full h-full">
+      <div className="absolute top-0 left-0 right-0 z-10 text-center pt-16">
+        <motion.h1
+          className="text-5xl md:text-6xl font-bold text-brand-600 mb-6"
+          initial={{ opacity: 0, y: 40 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.1, ease: [0.21, 1.11, 0.81, 0.99] }}
+        >
+          The Hive
+        </motion.h1>
+        <motion.p
+          className="text-xl md:text-2xl text-neutral-600 dark:text-white mb-8 max-w-3xl mx-auto"
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.3, ease: [0.21, 1.11, 0.81, 0.99] }}
+        >
+          A modular network of interoperable DeFi agents
+        </motion.p>
+      </div>
+      <ReactFlow
+        nodes={nodes}
+        edges={edges}
+        nodeTypes={nodeTypes}
+        onNodesChange={onNodesChange}
+        onEdgesChange={onEdgesChange}
+        proOptions={proOptions}
+        onConnect={onConnect}
+        onNodeDragStart={dragEvents.start}
+        onNodeDrag={dragEvents.drag}
+        onNodeDragStop={dragEvents.stop}
+        nodeOrigin={nodeOrigin}
+        defaultEdgeOptions={defaultEdgeOptions}
+        panOnDrag={[1, 2]}
+        zoomOnDoubleClick={false}
+        zoomOnScroll={true}
+        fitView
+        fitViewOptions={{
+          padding: 0.7,
+          minZoom: 0.4,
+          maxZoom: 1.5,
+        }}
+        minZoom={0.4}
+        maxZoom={1.5}
+        defaultViewport={{ x: 0, y: 150, zoom: 0.6 }}
+        style={{ 
+          pointerEvents: 'none',
+          background: 'transparent',
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          width: '100%',
+          height: '100%',
+        }}
+      >
+        <Background color="#d19900" gap={16} size={1} style={{ width: '100%', height: '100%', position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} />
+      </ReactFlow>
+    </div>
   );
 }
 
 function GraphComponent() {
   return (
     <ReactFlowProvider>
-      <ReactFlowPro />
+      <div className="absolute inset-0 w-full h-full">
+        <ReactFlowPro />
+      </div>
     </ReactFlowProvider>
   );
 }
