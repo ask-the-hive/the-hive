@@ -145,7 +145,7 @@ const SavedTokensGroup: React.FC = () => {
                                         </p>
                                     ) : (
                                         <p className='text-sm text-neutral-500 dark:text-neutral-400 pl-2'>
-                                            Sign in to view your saved tokens
+                                            Sign in to save tokens
                                         </p>
                                     )
                                 )

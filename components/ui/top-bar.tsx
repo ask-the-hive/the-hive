@@ -3,7 +3,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { ArrowLeftRight, ChartCandlestick, ContactRound, Brain, Beef, Wallet, Coins, Droplet, ChevronDown, Sun, Moon } from 'lucide-react'
 import { useColorMode, ColorMode } from '@/app/_contexts'
-import { useLogin, usePrivy } from '@privy-io/react-auth'
+import { usePrivy } from '@privy-io/react-auth'
 import { useRouter } from 'next/navigation'
 
 function ColorModeToggle() {
@@ -21,8 +21,7 @@ function ColorModeToggle() {
 
 export default function TopBar() {
     const router = useRouter();
-    const { authenticated } = usePrivy();
-    const { login } = useLogin();
+    const { } = usePrivy();
 
     return (
         <div className="fixed top-4 left-64 right-64 z-50">
@@ -207,10 +206,10 @@ export default function TopBar() {
                             </div>
                         </div>
                         <button 
-                            onClick={() => authenticated ? router.push('/chat') : login()}
+                            onClick={() => router.push('/chat')}
                             className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-brand-600 hover:bg-brand-700 transition-colors"
                         >
-                            {authenticated ? 'Go to App' : 'Login'}
+                            Go to App
                         </button>
                         <ColorModeToggle />
                     </div>

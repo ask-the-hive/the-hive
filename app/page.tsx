@@ -10,6 +10,7 @@ import { ChevronDown } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/ui/collapsible'
 import GraphComponent from './_components'
+import UserProfile from './_components/user-profile'
 
 function FeatureCard({ title, description, index }: { title: string; description: string; index: number }) {
     return (
@@ -42,6 +43,7 @@ function LandingPageContent() {
     return (
         <div className="min-h-screen bg-white dark:bg-neutral-900">
             <TopBar />
+            <UserProfile />
             {/* Hero Section with Gradient */}
             <div className="px-4 md:px-12">
                 <div className="relative overflow-hidden pb-16 bg-neutral-100 dark:bg-neutral-800 rounded-xl border border-neutral-200 dark:border-neutral-700 mt-8 min-h-[800px]">

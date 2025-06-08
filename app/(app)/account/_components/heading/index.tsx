@@ -1,26 +1,43 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 
-import { Avatar, AvatarFallback, AvatarImage, Separator, Button, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui';
+import { Avatar, AvatarFallback, AvatarImage, Separator, Button, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger, Input } from '@/components/ui';
 import { Card } from '@/components/ui/card';
-import { LogOut, Upload, User } from 'lucide-react';
+import { LogOut, Upload, User, Edit2 } from 'lucide-react';
 
 import { type User as PrivyUser } from '@privy-io/react-auth';
 import { useLogin } from '@/hooks';
 import { Loader2 } from 'lucide-react';
 import { pfpURL } from '@/lib/pfp';
 import { uploadImage } from '@/services/storage';
+import { getUserData, updateUserUsername } from './actions';
 
 interface Props {
     user: PrivyUser
 }
 
 const AccountHeading: React.FC<Props> = ({ user }) => {
-
     const [isUploading, setIsUploading] = useState<boolean>(false);
     const [copied, setCopied] = useState(false);
+    const [isEditingUsername, setIsEditingUsername] = useState(false);
+    const [username, setUsername] = useState('');
+    const [isLoading, setIsLoading] = useState(true);
     const { logout } = useLogin();
+
+    useEffect(() => {
+        const fetchUser = async () => {
+            const userData = await getUserData(user.id);
+            if (userData) {
+                setUsername(userData.username);
+            } else {
+                // If user doesn't exist in our DB, create with default username
+                setUsername(user.id.replace('did:privy:', ''));
+            }
+            setIsLoading(false);
+        };
+        fetchUser();
+    }, [user.id]);
 
     // Format user ID by removing the 'did:privy:' prefix
     const formatUserId = (id: string) => {
@@ -54,6 +71,17 @@ const AccountHeading: React.FC<Props> = ({ user }) => {
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
     };
+
+    // Handle username update
+    const handleUsernameUpdate = async () => {
+        if (!username.trim()) return;
+        await updateUserUsername(user.id, username.trim());
+        setIsEditingUsername(false);
+    };
+
+    if (isLoading) {
+        return <div className="flex justify-center items-center h-32"><Loader2 className="w-6 h-6 animate-spin" /></div>;
+    }
 
     return (
         <div className="flex flex-col gap-4">
@@ -103,22 +131,34 @@ const AccountHeading: React.FC<Props> = ({ user }) => {
                             </div>
                         </div>
                         <div className="flex flex-col">
-                            {/* Clickable user ID with copy functionality */}
-                            <TooltipProvider delayDuration={0}>
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <p 
-                                            className="text-md font-bold cursor-pointer hover:bg-neutral-100 dark:hover:bg-neutral-800 px-1 rounded transition-colors"
-                                            onClick={handleCopyUserId}
-                                        >
-                                            {formattedUserId}
-                                        </p>
-                                    </TooltipTrigger>
-                                    <TooltipContent>
-                                        {copied ? "Copied!" : "Copy to clipboard"}
-                                    </TooltipContent>
-                                </Tooltip>
-                            </TooltipProvider>
+                            {isEditingUsername ? (
+                                <div className="flex items-center gap-2">
+                                    <Input
+                                        value={username}
+                                        onChange={(e) => setUsername(e.target.value)}
+                                        className="h-8"
+                                        autoFocus
+                                    />
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={handleUsernameUpdate}
+                                    >
+                                        Save
+                                    </Button>
+                                </div>
+                            ) : (
+                                <div className="flex items-center gap-2">
+                                    <p className="text-md font-bold">{username}</p>
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => setIsEditingUsername(true)}
+                                    >
+                                        <Edit2 className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                            )}
                             <p className="text-xs text-neutral-500">
                                 Joined on {user.createdAt.toLocaleDateString()}
                             </p>
@@ -128,7 +168,21 @@ const AccountHeading: React.FC<Props> = ({ user }) => {
                 <Separator />
                 <div className="flex flex-col">
                     <p className="text-xs font-bold text-neutral-600 dark:text-neutral-400">User ID</p>
-                    <p className="text-sm">{formattedUserId}</p>
+                    <TooltipProvider delayDuration={0}>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <p 
+                                    className="text-sm cursor-pointer hover:bg-neutral-100 dark:hover:bg-neutral-800 px-1 rounded transition-colors"
+                                    onClick={handleCopyUserId}
+                                >
+                                    {formattedUserId}
+                                </p>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                {copied ? "Copied!" : "Copy to clipboard"}
+                            </TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
                 </div>
                 <Separator />
                 <div className="flex flex-col">
