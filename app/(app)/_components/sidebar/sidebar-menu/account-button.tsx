@@ -9,10 +9,13 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 import { SidebarMenuItem, SidebarMenuButton } from '@/components/ui';
+import { usePrivy } from '@privy-io/react-auth';
 
 const AccountButton: React.FC = () => {
-
     const pathname = usePathname();
+    const { user } = usePrivy();
+
+    if (!user?.wallet?.address) return null;
 
     return (
         <Link href='/account'>

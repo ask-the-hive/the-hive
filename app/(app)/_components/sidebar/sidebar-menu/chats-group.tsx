@@ -192,7 +192,7 @@ const ChatsGroup: React.FC = () => {
                                         </p>
                                     ) : (
                                         <p className='text-sm text-neutral-500 dark:text-neutral-400 pl-2'>
-                                            Sign in to view your chats
+                                            Sign in to save chats
                                         </p>
                                     )
                                 )
