@@ -40,7 +40,7 @@ const UserProfile = () => {
     if (!ready) return null;
 
     return (
-        <div className="fixed top-4 right-4 z-50">
+        <div className="fixed top-4 right-4 z-50 hidden md:block">
             <div className="bg-white dark:bg-neutral-800 shadow-lg rounded-xl border border-neutral-200 dark:border-neutral-700">
                 <div className="flex items-center h-14 px-2">
                     <div className="flex items-center gap-2">
