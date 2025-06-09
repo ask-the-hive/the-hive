@@ -26,7 +26,7 @@ const solanaButtons = [
         title: "Knowledge",
         description: "Get developer docs for protocols",
         icon: "Brain" as const,
-        prompt: "Get me developer docs for Orca"
+        prompt: "Get me developer docs for Solana Protocols"
     }
 ] as const;
 
@@ -53,7 +53,7 @@ const bscButtons = [
         title: "Knowledge",
         description: "Get developer docs for protocols",
         icon: "Brain" as const,
-        prompt: "Get me developer docs for PancakeSwap"
+        prompt: "Get me developer docs for BSC Protocols"
     }
 ] as const;
 
