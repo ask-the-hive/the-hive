@@ -68,7 +68,7 @@ const ChatInput: React.FC = () => {
                         onChange={e => {
                             setInput(e.target.value);
                         }}
-                        disabled={isLoading || !user || inputDisabledMessage !== ''}
+                        disabled={isLoading || inputDisabledMessage !== ''}
                         autoFocus
                     />
                 </OptionalTooltip>

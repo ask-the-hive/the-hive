@@ -46,7 +46,7 @@ const MoralisChart: React.FC<Props> = ({ tokenAddress, price, priceChange }) => 
         if (typeof window.createMyWidget === 'function') {
             window.createMyWidget(PRICE_CHART_ID, {
                 autoSize: true,
-                chainId: chain === 'bsc' ? '0x38' : '0x2105', // BSC: 0x38, Base: 0x2105
+                chainId: chain === 'bsc' ? '0x38' : chain === 'base' ? '0x2105' : 'solana', // BSC: 0x38, Base: 0x2105, Solana: solana
                 tokenAddress: tokenAddress,
                 defaultInterval: '1D',
                 timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone ?? 'Etc/UTC',

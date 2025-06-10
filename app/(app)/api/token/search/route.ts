@@ -5,6 +5,15 @@ import type { TokenSearchResult } from "@/services/birdeye/types/search";
 
 const PLACEHOLDER_ICON = "https://www.birdeye.so/images/unknown-token-icon.svg";
 
+// Helper to check if a string looks like an address
+const isAddress = (query: string): boolean => {
+    // Solana addresses are base58 encoded and typically 32-44 characters
+    const isSolanaAddress = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(query);
+    // BSC/Base addresses are hex and start with 0x
+    const isEvmAddress = /^0x[a-fA-F0-9]{40}$/.test(query);
+    return isSolanaAddress || isEvmAddress;
+};
+
 export const GET = async (req: NextRequest) => {
     const searchParams = req.nextUrl.searchParams;
     const query = searchParams.get('query');
@@ -15,8 +24,8 @@ export const GET = async (req: NextRequest) => {
     }
     
     try {
-        // Always use uppercase for search since Birdeye API is case-sensitive
-        const searchQuery = query.toUpperCase();
+        // If it looks like an address, preserve case. Otherwise, convert to uppercase for symbol search
+        const searchQuery = isAddress(query) ? query : query.toUpperCase();
         let allTokens: TokenSearchResult[] = [];
 
         const searchResponse = await searchTokens({
@@ -53,8 +62,8 @@ export const GET = async (req: NextRequest) => {
 export const POST = async (req: NextRequest) => {
     const { search, chain = 'solana' } = await req.json();
     
-    // Always use uppercase for search since Birdeye API is case-sensitive
-    const searchQuery = search.toUpperCase();
+    // If it looks like an address, preserve case. Otherwise, convert to uppercase for symbol search
+    const searchQuery = isAddress(search) ? search : search.toUpperCase();
     let allTokenResults: TokenSearchResult[] = [];
 
     const searchResponse = await searchTokens({

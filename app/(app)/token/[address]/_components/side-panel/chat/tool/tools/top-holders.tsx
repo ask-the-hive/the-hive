@@ -25,25 +25,25 @@ const TopHolders: React.FC<Props> = ({ tool }) => {
                                 <StatItem 
                                     label="Largest Holder"
                                     value={result.body.largestHolder}
-                                    formatter={(value) => (value * 100).toFixed(2)}
+                                    formatter={(value) => value.toFixed(2)}
                                     suffix="%"
                                 />
                                 <StatItem 
                                     label="Top 5 Holders"
                                     value={result.body.top5HoldersPercent}
-                                    formatter={(value) => (value * 100).toFixed(2)}
+                                    formatter={(value) => value.toFixed(2)}
                                     suffix="%"
                                 />
                                 <StatItem 
                                     label="Top 10 Holders"
                                     value={result.body.top10HoldersPercent}
-                                    formatter={(value) => (value * 100).toFixed(2)}
+                                    formatter={(value) => value.toFixed(2)}
                                     suffix="%"
                                 />
                                 <StatItem 
                                     label="Top 20 Holders"
                                     value={result.body.top20HoldersPercent}
-                                    formatter={(value) => (value * 100).toFixed(2)}
+                                    formatter={(value) => value.toFixed(2)}
                                     suffix="%"
                                 />
                             </StatsSection>
@@ -51,13 +51,13 @@ const TopHolders: React.FC<Props> = ({ tool }) => {
                                 <StatItem 
                                     label="Exchange Holdings"
                                     value={result.body.exchangeHoldersPercent}
-                                    formatter={(value) => (value * 100).toFixed(2)}
+                                    formatter={(value) => value.toFixed(2)}
                                     suffix="%"
                                 />
                                 <StatItem 
                                     label="Vested Tokens"
                                     value={result.body.vestedHoldersPercent}
-                                    formatter={(value) => (value * 100).toFixed(2)}
+                                    formatter={(value) => value.toFixed(2)}
                                     suffix="%"
                                 />
                                 <StatItem 
@@ -81,13 +81,13 @@ const TopHolders: React.FC<Props> = ({ tool }) => {
                                 <StatItem 
                                     label="Avg Top 10 Holding"
                                     value={result.body.avgTop10Holding}
-                                    formatter={(value) => (value * 100).toFixed(2)}
+                                    formatter={(value) => value.toFixed(2)}
                                     suffix="%"
                                 />
                                 <StatItem 
                                     label="Remaining Supply"
                                     value={result.body.remainingSupplyPercent}
-                                    formatter={(value) => (value * 100).toFixed(2)}
+                                    formatter={(value) => value.toFixed(2)}
                                     suffix="%"
                                 />
                             </StatsSection>

@@ -1,32 +1,12 @@
 'use client'
 
-import React, { useEffect } from 'react'
-
+import React from 'react'
 import { useLogin, usePrivy } from '@privy-io/react-auth';
-
-import { useRouter } from 'next/navigation';
-
 import { Button, Skeleton } from '@/components/ui';
 
 const LoginButton: React.FC = () => {
-
-    const router = useRouter();
-
     const { authenticated, ready } = usePrivy();
-
-    const { login } = useLogin({
-        onComplete: (_, __, wasAlreadyAuthenticated) => {
-            if (!wasAlreadyAuthenticated) {
-                router.replace('/chat');
-            }
-        }
-    });
-
-    useEffect(() => {
-        if (authenticated) {
-            router.replace('/chat');
-        }
-    }, [authenticated, router]);
+    const { login } = useLogin();
 
     if (!ready || authenticated) return (
         <Skeleton className="w-24 h-10" />

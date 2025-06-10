@@ -40,13 +40,20 @@ const TrendingTokenCard: React.FC<Props> = ({ token }) => {
                         />
                         <div className="flex flex-col">
                             <p className="text-sm font-bold">{token.name} ({token.symbol})</p>
-                            <p className="text-xs text-muted-foreground">${token.price.toLocaleString(undefined, { maximumFractionDigits: 5})} <span className={token.price24hChangePercent > 0 ? 'text-green-500' : 'text-red-500'}>({token.price24hChangePercent > 0 ? '+' : ''}{token.price24hChangePercent.toLocaleString(undefined, { maximumFractionDigits: 2 })}%)</span></p>
+                            <p className="text-xs text-muted-foreground">
+                                ${token.price?.toLocaleString(undefined, { maximumFractionDigits: 5 }) ?? 'N/A'}
+                                {token.price24hChangePercent != null && (
+                                    <span className={token.price24hChangePercent > 0 ? 'text-green-500' : 'text-red-500'}>
+                                        {' '}({token.price24hChangePercent > 0 ? '+' : ''}{token.price24hChangePercent.toLocaleString(undefined, { maximumFractionDigits: 2 })}%)
+                                    </span>
+                                )}
+                            </p>
                         </div>
                     </div>
                     <SaveToken address={token.address} />
                 </div>
                 <div className="flex flex-col">
-                    <p className="text-xs text-muted-foreground">24h Volume: ${token.volume24hUSD.toLocaleString()}</p>
+                    <p className="text-xs text-muted-foreground">24h Volume: ${token.volume24hUSD?.toLocaleString() ?? 'N/A'}</p>
                 </div>
             </Card>
         </Link>

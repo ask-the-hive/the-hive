@@ -26,7 +26,7 @@ export const PrivyProvider: React.FC<Props> = ({ children }) => {
                 appearance: {
                     theme: 'dark',
                     accentColor: '#d19900',
-                    logo: 'https://www.askthehive.ai/logo-dark.png',
+                    logo: '/logo.png',
                     walletChainType: 'ethereum-and-solana',
                     showWalletLoginFirst: true,
                 },

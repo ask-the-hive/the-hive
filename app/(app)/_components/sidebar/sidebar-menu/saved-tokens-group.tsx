@@ -8,7 +8,7 @@ import Link from 'next/link';
 
 import { usePrivy } from '@privy-io/react-auth';
 
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 
 import { 
     SidebarMenuItem, 
@@ -24,17 +24,21 @@ import {
 
 import { useSavedTokens } from '@/hooks';
 import SaveToken from '../../save-token';
+import { useChain } from '@/app/_contexts/chain-context';
 
 const SavedTokensGroup: React.FC = () => {
-
     const pathname = usePathname();
-
+    const searchParams = useSearchParams();
+    const { currentChain } = useChain();
     const { user } = usePrivy();
-
     const { savedTokens, isLoading } = useSavedTokens();
 
     const [isOpen, setIsOpen] = useState(false);
     const [tokenLogos, setTokenLogos] = useState<Record<string, string>>({});
+
+    // Get the current chain from URL or context
+    const chainParam = searchParams.get('chain');
+    const chain = chainParam || currentChain;
 
     useEffect(() => {
         const fetchMissingLogos = async () => {
@@ -83,7 +87,7 @@ const SavedTokensGroup: React.FC = () => {
     return (
         <Collapsible className="group/collapsible" open={isOpen} onOpenChange={setIsOpen}>
             <SidebarMenuItem>
-                <Link href='/token'>
+                <Link href={`/token?chain=${chain}`}>
                     <CollapsibleTrigger 
                         asChild
                     >
@@ -138,19 +142,18 @@ const SavedTokensGroup: React.FC = () => {
                                             </SidebarMenuSubButton>
                                         </SidebarMenuSubItem>
                                     ))
-                                ) : (
+                                ) :
                                     user ? (
                                         <p className='text-sm text-neutral-500 dark:text-neutral-400 pl-2 py-1'>
                                             No saved tokens
                                         </p>
                                     ) : (
                                         <p className='text-sm text-neutral-500 dark:text-neutral-400 pl-2'>
-                                            Sign in to view your saved tokens
+                                            Sign in to save tokens
                                         </p>
                                     )
                                 )
-                            )
-                        }
+                            }
                     </SidebarMenuSub>
                 </CollapsibleContent>
             </SidebarMenuItem>

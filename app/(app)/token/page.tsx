@@ -30,9 +30,11 @@ const TokenPage: React.FC = () => {
         ? chainParam 
         : currentChain;
 
-    // Handle chain switching - only updates URL, not global context
+    // Handle chain switching - updates both URL and context
     const handleChainSwitch = (newChain: ChainType) => {
-        router.replace(`/token?chain=${newChain}`);
+        const params = new URLSearchParams(searchParams.toString());
+        params.set('chain', newChain);
+        router.replace(`/token?${params.toString()}`);
     };
 
     return (
