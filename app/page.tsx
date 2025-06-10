@@ -11,6 +11,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/ui/collapsible'
 import GraphComponent from './_components'
 import UserProfile from './_components/user-profile'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 function FeatureCard({ title, description, index }: { title: string; description: string; index: number }) {
     return (
@@ -33,6 +34,52 @@ function FeatureCard({ title, description, index }: { title: string; description
                 </p>
             </div>
         </motion.div>
+    );
+}
+
+function TermsOfServiceDialog() {
+    return (
+        <Dialog>
+            <DialogTrigger className="text-sm text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200">
+                Terms of Service
+            </DialogTrigger>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Terms of Service</DialogTitle>
+                </DialogHeader>
+                <div className="mt-4 space-y-4 text-sm text-neutral-600 dark:text-neutral-300">
+                    <p>By using The Hive, you agree to these terms:</p>
+                    <ul className="list-disc pl-5 space-y-2">
+                        <li>You are responsible for your own actions and transactions</li>
+                        <li>We do not guarantee any investment returns</li>
+                        <li>You must comply with all applicable laws and regulations</li>
+                    </ul>
+                </div>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
+function PrivacyPolicyDialog() {
+    return (
+        <Dialog>
+            <DialogTrigger className="text-sm text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200">
+                Privacy Policy
+            </DialogTrigger>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Privacy Policy</DialogTitle>
+                </DialogHeader>
+                <div className="mt-4 space-y-4 text-sm text-neutral-600 dark:text-neutral-300">
+                    <p>Your privacy is important to us:</p>
+                    <ul className="list-disc pl-5 space-y-2">
+                        <li>We do not store your private keys or sensitive data</li>
+                        <li>We do not collect any personal information</li>
+                        <li>We use industry-standard security measures</li>
+                    </ul>
+                </div>
+            </DialogContent>
+        </Dialog>
     );
 }
 
@@ -298,16 +345,22 @@ function LandingPageContent() {
             {/* Footer Divider and Branding */}
             <div className="w-full flex flex-col items-center mt-16 mb-8">
                 <hr className="w-full max-w-4xl border-t border-neutral-200 dark:border-neutral-700 mb-8" />
-                <div className="flex flex-row items-center gap-3">
-                    <div className="relative w-10 h-10">
-                        <Image
-                            src="/logo.png"
-                            alt="The Hive Logo"
-                            fill
-                            className="object-contain"
-                        />
+                <div className="flex flex-col items-center gap-4">
+                    <div className="flex flex-row items-center gap-3">
+                        <div className="relative w-10 h-10">
+                            <Image
+                                src="/logo.png"
+                                alt="The Hive Logo"
+                                fill
+                                className="object-contain"
+                            />
+                        </div>
+                        <span className="text-lg font-bold text-brand-600 font-sans">The Hive</span>
                     </div>
-                    <span className="text-lg font-bold text-brand-600 font-sans">The Hive</span>
+                    <div className="flex gap-4">
+                        <TermsOfServiceDialog />
+                        <PrivacyPolicyDialog />
+                    </div>
                 </div>
             </div>
 
