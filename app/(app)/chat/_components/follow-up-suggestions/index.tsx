@@ -3,6 +3,7 @@ import { useChat } from '@/app/(app)/chat/_contexts/chat';
 import { Models } from '@/types/models';
 import { Button, Skeleton, Icon } from '@/components/ui';
 import { Message } from 'ai';
+import { cn } from '@/lib/utils';
 
 interface Suggestion {
     title: string;
@@ -91,28 +92,39 @@ const FollowUpSuggestions: React.FC = () => {
     if (isLoading) return null;
 
     return (
-        <div className="grid grid-cols-3 gap-2 mt-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mt-4">
             {
                 isGenerating ? (
-                    Array.from({ length: 3 }).map((_, index) => (
+                    <>
+                        {/* Mobile: Show only 1 skeleton */}
                         <Skeleton
-                            key={index}
-                            className="w-full h-[22px]"
+                            className="w-full h-[22px] md:hidden"
                         />
-                    ))
+                        {/* Desktop: Show all 3 skeletons */}
+                        {Array.from({ length: 3 }).map((_, index) => (
+                            <Skeleton
+                                key={index}
+                                className="w-full h-[22px] hidden md:block"
+                            />
+                        ))}
+                    </>
                 ) : (
-                    suggestions.map((suggestion) => (
+                    suggestions.map((suggestion, index) => (
                         <Button
                             key={`${chatId}-${suggestion.title}`}
                             variant="outline"
-                            className="w-full text-xs h-fit py-0.5"
+                            className={cn(
+                                "w-full text-xs py-0.5 h-[22px]",
+                                "flex items-center justify-center",
+                                index > 0 && "hidden md:flex"
+                            )}
                             onClick={() => {
                                 sendMessage(suggestion.prompt);
                                 setSuggestions([]);
                             }}
                         >
-                            <Icon name="Plus" className="w-3 h-3" />
-                            {suggestion.title}
+                            <Icon name="Plus" className="w-3 h-3 mr-1" />
+                            <span>{suggestion.title}</span>
                         </Button>
                     ))
                 )

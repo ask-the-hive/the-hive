@@ -57,6 +57,7 @@
     "@t3-oss/env-nextjs": "^0.12.0",
     "@types/jsdom": "^21.1.7",
     "@vercel/analytics": "^1.4.1",
+    "@vercel/speed-insights": "^1.2.0",
     "@xyflow/react": "^12.3.6",
     "abitype": "^1.0.8",
     "add": "^2.0.6",

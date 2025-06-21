@@ -1,4 +1,5 @@
 import React from 'react'
+import { SpeedInsights } from "@vercel/speed-insights/next"
 
 import { SidebarProvider } from '@/components/ui';
 
@@ -20,6 +21,7 @@ const Layout: React.FC<Props> = ({ children }) => {
                     {children}
                 </Sidebar>
             </ChatProvider>
+            <SpeedInsights />
         </SidebarProvider>
     )
 }

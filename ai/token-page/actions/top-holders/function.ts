@@ -1,5 +1,6 @@
-import { getTopTokenHolders } from "@/services/hellomoon";
+import { getTokenHolders } from "@/services/birdeye";
 import { getStreamsByMint } from "@/services/streamflow";
+import { Connection, PublicKey } from "@solana/web3.js";
 
 import { knownAddresses } from "@/lib/known-addresses";
 
@@ -12,11 +13,29 @@ export async function getTokenPageTopHolders(token: TokenChatData, _: TokenPageT
     try {
         const numHolders = 50;
         
-        const [topHolders, streamflowVaults] = await Promise.all([
-            getTopTokenHolders(token.address, numHolders),
+        // Get token holders from Birdeye and streamflow vaults
+        const [tokenHoldersResponse, streamflowVaults] = await Promise.all([
+            getTokenHolders({
+                address: token.address,
+                offset: 0,
+                limit: numHolders,
+                chain: 'solana'
+            }),
             getStreamsByMint(token.address)
         ]);
 
+        if (!tokenHoldersResponse.items || tokenHoldersResponse.items.length === 0) {
+            return {
+                message: `Could not find holder data for this Solana token.`,
+            };
+        }
+
+        // Get total supply to calculate percentages
+        const connection = new Connection(process.env.NEXT_PUBLIC_SOLANA_RPC_URL!);
+        const mintInfo = await connection.getTokenSupply(new PublicKey(token.address));
+        const totalSupply = Number(BigInt(mintInfo.value.amount) / BigInt(Math.pow(10, mintInfo.value.decimals)));
+
+        // Create known addresses map with streamflow vaults
         const knownAddressesWithStreamflow = {
             ...knownAddresses,
             ...streamflowVaults.reduce((acc, account) => {
@@ -29,15 +48,20 @@ export async function getTokenPageTopHolders(token: TokenChatData, _: TokenPageT
             }, {} as Record<string, KnownAddress>)
         }
 
-        const holdersWithAnnotations = topHolders.map((holder) => {
-            const knownAddress = knownAddressesWithStreamflow[holder.owner_account];
+        // Map holders to a consistent format and calculate percentages
+        const holdersWithAnnotations = tokenHoldersResponse.items.map((holder) => {
+            const holderAddress = holder.owner;
+            const knownAddress = knownAddressesWithStreamflow[holderAddress];
+            const percentOfSupply = holder.ui_amount / totalSupply;
+            
             return {
-                ...holder,
-                owner: knownAddress?.name || holder.owner_account,
-                type: knownAddress?.type || AddressType.EOA
+                owner: knownAddress?.name || holderAddress,
+                type: knownAddress?.type || AddressType.EOA,
+                percentOfSupply: percentOfSupply
             };
         });
 
+        // Separate holders by type
         const { eoa, vesting, exchange } = holdersWithAnnotations.reduce((acc, holder) => {
             if (holder.type === AddressType.EOA) {
                 acc.eoa.push({
@@ -93,7 +117,7 @@ export async function getTokenPageTopHolders(token: TokenChatData, _: TokenPageT
                                "Limited";
 
         return {
-            message: `Analysis of token distribution patterns:
+            message: `Analysis of Solana token distribution patterns:
 
 1. Concentration Metrics:
    - The largest single holder controls ${(largestHolder * 100).toFixed(2)}% of the supply
@@ -135,7 +159,7 @@ Discuss only the notable metrics unless asked for further details.`,
     } catch (error) {
         console.error(error);
         return {
-            message: `Error getting top holders: ${error}`,
+            message: `Error getting top holders for Solana token: ${error}`,
         };
     }
 } 
