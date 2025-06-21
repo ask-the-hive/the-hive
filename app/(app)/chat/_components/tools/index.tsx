@@ -8,11 +8,11 @@ import {
     GetTrendingTokens,
     GetTokenData,
     Trade,
+    LiquidStakingYields,
+    Transfer as SolanaTransfer,
     Stake,
     Unstake,
     AllBalances,
-    LiquidStakingYields,
-    Transfer as SolanaTransfer,
     GetTokenAddress,
     GetTopHolders,
     BubbleMaps as SolanaBubbleMaps,
@@ -25,7 +25,6 @@ import {
     GetTrades,
     GetTopTokenTraders,
     PriceChart,
-    GetSmartMoneyInflows,
 } from './solana'
 import {
     BubbleMaps as BscBubbleMaps,
@@ -95,7 +94,6 @@ import {
     SOLANA_GET_TRADER_TRADES_NAME,
     SOLANA_TOKEN_TOP_TRADERS_NAME,
     SOLANA_TOKEN_PRICE_CHART_NAME,
-    SOLANA_GET_SMART_MONEY_INFLOWS_NAME,
     BSC_GET_KNOWLEDGE_NAME,
     BSC_TRADE_NAME,
     BASE_GET_KNOWLEDGE_NAME,
@@ -410,8 +408,6 @@ const ToolInvocation: React.FC<Props> = ({ tool, prevToolAgent }) => {
             return <GetTopTokenTraders tool={tool} prevToolAgent={prevToolAgent} />
         case SOLANA_TOKEN_PRICE_CHART_NAME:
             return <PriceChart tool={tool} prevToolAgent={prevToolAgent} />
-        case SOLANA_GET_SMART_MONEY_INFLOWS_NAME:
-            return <GetSmartMoneyInflows tool={tool} prevToolAgent={prevToolAgent} />
         case BSC_GET_KNOWLEDGE_NAME:
             return <GetKnowledge tool={tool} prevToolAgent={prevToolAgent} />
         default:

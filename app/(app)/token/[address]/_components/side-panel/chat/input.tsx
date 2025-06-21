@@ -16,11 +16,7 @@ import { useChat } from '../../../_contexts';
 
 import { cn } from '@/lib/utils';
 
-import { usePrivy } from '@privy-io/react-auth';
-
 const ChatInput: React.FC = () => {
-
-    const { user } = usePrivy();
 
     const { input, setInput, onSubmit, isLoading, model, setModel, inputDisabledMessage } = useChat();
 
@@ -65,7 +61,7 @@ const ChatInput: React.FC = () => {
                     onChange={e => {
                         setInput(e.target.value);
                     }}
-                    disabled={isLoading || !user || inputDisabledMessage !== ''}
+                    disabled={isLoading || inputDisabledMessage !== ''}
                     autoFocus
                 />
             </OptionalTooltip>
@@ -81,7 +77,7 @@ const ChatInput: React.FC = () => {
                             <Button 
                                 type="submit" 
                                 size="icon" 
-                                disabled={input.trim() === '' || isLoading || !user}
+                                disabled={input.trim() === '' || isLoading}
                                 variant="ghost"
                                 className="h-8 w-8"
                             >

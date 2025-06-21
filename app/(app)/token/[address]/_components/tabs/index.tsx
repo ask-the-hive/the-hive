@@ -5,7 +5,7 @@ import React, { useRef, useEffect } from 'react'
 import { GiSwapBag } from 'react-icons/gi'
 import { IoSwapHorizontal } from 'react-icons/io5'
 import { MdBubbleChart } from 'react-icons/md'
-import { FaXTwitter, FaAt, FaWater, FaUsers } from 'react-icons/fa6'
+import { FaXTwitter, FaAt, FaWater } from 'react-icons/fa6'
 import { ChartCandlestick } from 'lucide-react'
 
 import { Tabs, TabsTrigger, TabsContent } from '@/components/ui'
@@ -17,7 +17,6 @@ import BubbleMap from './bubble-map';
 import AccountTweets from './account-tweets';
 import AccountMentions from './account-mentions';
 import TokenMarkets from './markets'
-import TokenUsersOverTime from './users-over-time'
 import MarketStats from './market-stats'
 
 import { getTokenOverview } from '@/services/birdeye';
@@ -101,16 +100,6 @@ const TokenDashboardTabs: React.FC<Props> = ({ address, tokenOverview }) => {
                     Markets
                 </TabsTrigger>
                 <TabsTrigger 
-                    value="users-over-time"
-                    ref={(el) => {
-                        if (el) tabsRef.current['users-over-time'] = el
-                    }}
-                    className="min-w-fit whitespace-nowrap data-[state=active]:bg-white dark:data-[state=active]:bg-neutral-800"
-                >
-                    <FaUsers className="w-4 h-4" />
-                    Active Wallets
-                </TabsTrigger>
-                <TabsTrigger 
                     value="tweets"
                     ref={(el) => {
                         if (el) tabsRef.current['tweets'] = el
@@ -146,9 +135,6 @@ const TokenDashboardTabs: React.FC<Props> = ({ address, tokenOverview }) => {
                 </TabsContent>
                 <TabsContent value="markets" className="h-full m-0">
                     <TokenMarkets address={address} />
-                </TabsContent>
-                <TabsContent value="users-over-time" className="h-full m-0 p-2">
-                    <TokenUsersOverTime mint={address} />
                 </TabsContent>
                 <TabsContent value="tweets" className="h-full m-0 p-2">
                     {tokenOverview?.extensions?.twitter ? (
