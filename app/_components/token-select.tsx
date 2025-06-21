@@ -52,18 +52,11 @@ const TokenSelect: React.FC<Props> = ({ value, onChange, priorityTokens = [] }) 
 
             return 0;
         }).map((token: TokenSearchResult) => ({
+            ...token,
             id: token.address,
-            symbol: token.symbol,
-            name: token.name,
-            logoURI: token.logo_uri,
-            decimals: 0,
-            tags: [],
-            extensions: {},
-            freezeAuthority: null,
-            mintAuthority: null,
-            permanentDelegate: null,
+            logoURI: token.logo_uri
         }));
-    }, [tokens, priorityTokens, input]);
+    }, [tokens, priorityTokens]);
 
     return (
         <Popover open={open} onOpenChange={setOpen}>
@@ -103,38 +96,36 @@ const TokenSelect: React.FC<Props> = ({ value, onChange, priorityTokens = [] }) 
                     ) : (
                         <div className="flex flex-col gap-2 max-h-[300px] overflow-y-scroll">
                             {
-                                input ? (
-                                    sortedResults.length === 0 ? (
-                                        <p className="text-xs text-neutral-500">
-                                            No results for &quot;{input}&quot;
-                                        </p>
-                                    ) : (
-                                        sortedResults.map((token: Token) => (
-                                            <Button 
-                                                key={token.id}
-                                                variant="ghost"
-                                                className="w-full justify-start px-1"
-                                                onClick={() => {
-                                                    setOpen(false);
-                                                    onChange(token);
-                                                }}
-                                            >
-                                                <img
-                                                    src={token.logoURI || "https://www.birdeye.so/images/unknown-token-icon.svg"} 
-                                                    alt={token.name}
-                                                    className="w-6 h-6 rounded-full" 
-                                                />
-                                                <p className="text-sm font-bold">
-                                                    {token.symbol}
-                                                </p>
-                                                <SaveToken address={token.id} />
-                                            </Button>
-                                        ))
-                                    )
-                                ) : (
+                                sortedResults.length === 0 ? (
                                     <p className="text-xs text-neutral-500">
-                                        Search for a token
+                                        {
+                                            input 
+                                                ? `No results for "${input}"`
+                                                : "No tokens found"
+                                        }
                                     </p>
+                                ) : (
+                                    sortedResults.map((token: Token) => (
+                                        <Button 
+                                            key={token.id}
+                                            variant="ghost"
+                                            className="w-full justify-start px-1"
+                                            onClick={() => {
+                                                setOpen(false);
+                                                onChange(token);
+                                            }}
+                                        >
+                                            <img
+                                                src={token.logoURI || "https://www.birdeye.so/images/unknown-token-icon.svg"} 
+                                                alt={token.name}
+                                                className="w-6 h-6 rounded-full" 
+                                            />
+                                            <p className="text-sm font-bold">
+                                                {token.symbol}
+                                            </p>
+                                            <SaveToken address={token.id} />
+                                        </Button>
+                                    ))
                                 )
                             }
                         </div>
