@@ -3,6 +3,7 @@ import { useChat } from '@/app/(app)/chat/_contexts/chat';
 import { Models } from '@/types/models';
 import { Button, Skeleton, Icon } from '@/components/ui';
 import { Message } from 'ai';
+import { cn } from '@/lib/utils';
 
 interface Suggestion {
     title: string;
@@ -91,21 +92,29 @@ const FollowUpSuggestions: React.FC = () => {
     if (isLoading) return null;
 
     return (
-        <div className="grid grid-cols-3 gap-2 mt-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mt-4">
             {
                 isGenerating ? (
-                    Array.from({ length: 3 }).map((_, index) => (
+                    Array.from({ length: 6 }).map((_, index) => (
                         <Skeleton
                             key={index}
-                            className="w-full h-[22px]"
+                            className={cn(
+                                "w-full h-[22px]",
+                                // Show only first 2 on mobile, all 6 on desktop
+                                index >= 2 && "hidden md:block"
+                            )}
                         />
                     ))
                 ) : (
-                    suggestions.map((suggestion) => (
+                    suggestions.map((suggestion, index) => (
                         <Button
                             key={`${chatId}-${suggestion.title}`}
                             variant="outline"
-                            className="w-full text-xs h-fit py-0.5"
+                            className={cn(
+                                "w-full text-xs h-fit py-0.5",
+                                // Show only first 2 on mobile, all suggestions on desktop
+                                index >= 2 && "hidden md:block"
+                            )}
                             onClick={() => {
                                 sendMessage(suggestion.prompt);
                                 setSuggestions([]);
