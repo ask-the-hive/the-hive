@@ -8,8 +8,7 @@ import {
     GetTopTokenTraders as SolanaTopTraders,
     PriceChart as SolanaPriceChart,
     GetTopTraders as SolanaGetTopTraders,
-    GetTrades as SolanaGetTraderTrades,
-    GetSmartMoneyInflows as SolanaGetSmartMoneyInflows
+    GetTrades as SolanaGetTraderTrades
 } from "./solana";
 
 import { 
@@ -36,7 +35,6 @@ export const toolToComponent = {
     "market-get-trending-tokens": SolanaGetTrendingTokens,
     "market-get-top-traders": SolanaGetTopTraders,
     "market-get-trader-trades": SolanaGetTraderTrades,
-    "market-get-smart-money-inflows": SolanaGetSmartMoneyInflows,
     "bscmarket-get-trending-tokens": BscGetTrendingTokens,
     "bscmarket-bsc-get-trader-trades": BscGetTrades,
     "bscmarket-bsc-get-top-traders": BscGetTopTraders,

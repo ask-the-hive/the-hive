@@ -9,7 +9,6 @@ import ChainIcon from '@/app/(app)/_components/chain-icon'
 
 import SearchBar from './_components/search-bar'
 import TrendingTokens from './_components/trending-tokens'
-import SmartMoneyTokens from './_components/smart-money'
 import { 
     DropdownMenu,
     DropdownMenuTrigger,
@@ -69,7 +68,6 @@ const TokenPage: React.FC = () => {
             </div>
             <SearchBar />
             <TrendingTokens />
-            {chain === 'solana' && <SmartMoneyTokens />}
         </div>
     )
 }
