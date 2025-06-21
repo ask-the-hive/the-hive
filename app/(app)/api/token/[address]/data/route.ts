@@ -13,37 +13,36 @@ export async function GET(
     const chain = (chainParam === 'solana' || chainParam === 'bsc' || chainParam === 'base') ? chainParam as ChainType : 'solana';
     
     try {
-        const token = await getToken(address);
+        // Always fetch latest data from Birdeye to get complete extensions (including Twitter)
+        const tokenMetadata = await getTokenOverview(address, chain);
         
-        if (!token) {
-            const tokenMetadata = await getTokenOverview(address, chain);
-            
-            if (!tokenMetadata) {
-                return NextResponse.json(
-                    { error: 'Token not found' },
-                    { status: 404 }
-                );
-            }
-            
-            // Return token data from Birdeye
-            return NextResponse.json({
-                id: tokenMetadata.address,
-                name: tokenMetadata.name,
-                symbol: tokenMetadata.symbol,
-                decimals: tokenMetadata.decimals,
-                logoURI: tokenMetadata.logoURI,
-                extensions: tokenMetadata.extensions,
-                tags: [],
-                freezeAuthority: null,
-                mintAuthority: null,
-                permanentDelegate: null,
-                overview: tokenMetadata
-            });
+        if (!tokenMetadata) {
+            return NextResponse.json(
+                { error: 'Token not found' },
+                { status: 404 }
+            );
         }
         
-        return NextResponse.json(token);
+        // Check if we have additional data in DB
+        const dbToken = await getToken(address);
+        
+        // Return token data with Birdeye extensions and any additional DB data
+        return NextResponse.json({
+            id: tokenMetadata.address,
+            name: tokenMetadata.name,
+            symbol: tokenMetadata.symbol,
+            decimals: tokenMetadata.decimals,
+            logoURI: tokenMetadata.logoURI,
+            extensions: tokenMetadata.extensions, // Always use Birdeye extensions for complete social data
+            tags: dbToken?.tags || [],
+            freezeAuthority: dbToken?.freezeAuthority || null,
+            mintAuthority: dbToken?.mintAuthority || null,
+            permanentDelegate: dbToken?.permanentDelegate || null,
+            overview: tokenMetadata
+        });
+        
     } catch (error) {
-        console.error('Error fetching token data:', error);
+        console.error('[TokenDataAPI] Error fetching token data:', error);
         return NextResponse.json(
             { error: 'Failed to fetch token data' },
             { status: 500 }
