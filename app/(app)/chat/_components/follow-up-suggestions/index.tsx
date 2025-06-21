@@ -92,7 +92,7 @@ const FollowUpSuggestions: React.FC = () => {
     if (isLoading) return null;
 
     return (
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mt-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mt-4">
             {
                 isGenerating ? (
                     Array.from({ length: 6 }).map((_, index) => (
@@ -100,8 +100,8 @@ const FollowUpSuggestions: React.FC = () => {
                             key={index}
                             className={cn(
                                 "w-full h-[22px]",
-                                // Show only first 2 on mobile, all 6 on desktop
-                                index >= 2 && "hidden md:block"
+                                // Show only first 1 on mobile, all 6 on desktop
+                                index >= 1 && "hidden md:block"
                             )}
                         />
                     ))
@@ -112,8 +112,8 @@ const FollowUpSuggestions: React.FC = () => {
                             variant="outline"
                             className={cn(
                                 "w-full text-xs h-fit py-0.5",
-                                // Show only first 2 on mobile, all suggestions on desktop
-                                index >= 2 && "hidden md:block"
+                                // Show only first 1 on mobile, all suggestions on desktop
+                                index >= 1 && "hidden md:block"
                             )}
                             onClick={() => {
                                 sendMessage(suggestion.prompt);
