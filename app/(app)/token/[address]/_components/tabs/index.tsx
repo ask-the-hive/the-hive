@@ -26,6 +26,30 @@ interface Props {
     tokenOverview: Awaited<ReturnType<typeof getTokenOverview>>;
 }
 
+// Helper function to validate Twitter URL and extract username
+const getValidTwitterUsername = (twitterUrl: string): string | null => {
+    try {
+        const url = new URL(twitterUrl);
+        
+        // Check if it's a Twitter/X URL
+        if (!url.hostname.includes('twitter.com') && !url.hostname.includes('x.com')) {
+            return null;
+        }
+        
+        const pathParts = url.pathname.split('/').filter(Boolean);
+        
+        // Valid profile URL should be like: twitter.com/username or twitter.com/username/
+        // Invalid URLs would be like: twitter.com/username/status/123456789
+        if (pathParts.length === 1 && pathParts[0] && !pathParts[0].includes('status')) {
+            return pathParts[0];
+        }
+        
+        return null;
+    } catch {
+        return null;
+    }
+};
+
 const TokenDashboardTabs: React.FC<Props> = ({ address, tokenOverview }) => {
     const [activeTab, setActiveTab] = React.useState('market-stats')
     const tabsRef = useRef<{ [key: string]: HTMLButtonElement }>({})
@@ -40,6 +64,11 @@ const TokenDashboardTabs: React.FC<Props> = ({ address, tokenOverview }) => {
     useEffect(() => {
         scrollToTab(activeTab)
     }, [activeTab])
+
+    // Get valid Twitter username if available
+    const validTwitterUsername = tokenOverview?.extensions?.twitter 
+        ? getValidTwitterUsername(tokenOverview.extensions.twitter)
+        : null;
 
     return (
         <Tabs 
@@ -137,8 +166,8 @@ const TokenDashboardTabs: React.FC<Props> = ({ address, tokenOverview }) => {
                     <TokenMarkets address={address} />
                 </TabsContent>
                 <TabsContent value="tweets" className="h-full m-0 p-2">
-                    {tokenOverview?.extensions?.twitter ? (
-                        <AccountTweets username={tokenOverview.extensions.twitter.split('/').pop()!} />
+                    {validTwitterUsername ? (
+                        <AccountTweets username={validTwitterUsername} />
                     ) : (
                         <div className="flex items-center justify-center h-full w-full p-4">
                             <div className="text-center max-w-md">
@@ -146,15 +175,15 @@ const TokenDashboardTabs: React.FC<Props> = ({ address, tokenOverview }) => {
                                     Tweets Data Not Available
                                 </h3>
                                 <p className="text-sm text-neutral-500">
-                                    This token has no Twitter account linked.
+                                    {tokenOverview?.name || 'This token'} has no official Twitter profile.
                                 </p>
                             </div>
                         </div>
                     )}
                 </TabsContent>
                 <TabsContent value="mentions" className="h-full m-0 p-2">
-                    {tokenOverview?.extensions?.twitter ? (
-                        <AccountMentions username={tokenOverview.extensions.twitter.split('/').pop()!} />
+                    {validTwitterUsername ? (
+                        <AccountMentions username={validTwitterUsername} />
                     ) : (
                         <div className="flex items-center justify-center h-full w-full p-4">
                             <div className="text-center max-w-md">
@@ -162,7 +191,7 @@ const TokenDashboardTabs: React.FC<Props> = ({ address, tokenOverview }) => {
                                     Mentions Data Not Available
                                 </h3>
                                 <p className="text-sm text-neutral-500">
-                                    This token has no Twitter account linked.
+                                    {tokenOverview?.name || 'This token'} has no official Twitter profile.
                                 </p>
                             </div>
                         </div>
