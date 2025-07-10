@@ -1,7 +1,11 @@
 'use client'
 
 import { useCallback, useEffect } from 'react';
+import Image from 'next/image';
+import { motion } from 'framer-motion';
 
+// Original graph imports - commented out for easy restoration
+/*
 import {
   ReactFlow,
   ProOptions,
@@ -21,9 +25,66 @@ import AgentNode from './nodes/AgentNode';
 import useForceLayout from '../_hooks/use-force-layout';
 
 import { initialNodes, initialEdges } from '../_data/initial-elements';
+*/
 
-import { motion } from 'framer-motion';
+// Logo Component
+function LogoComponent() {
+  return (
+    <div className="relative w-full h-full flex flex-col items-center justify-center">
+      {/* Text at the top */}
+      <div className="absolute top-0 left-0 right-0 z-10 text-center pt-16">
+        <motion.h1
+          className="text-5xl md:text-6xl font-bold text-brand-600 mb-6"
+          initial={{ opacity: 0, y: 40 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.1, ease: [0.21, 1.11, 0.81, 0.99] }}
+        >
+          The Hive
+        </motion.h1>
+        <motion.p
+          className="text-xl md:text-2xl text-neutral-600 dark:text-white mb-8 max-w-3xl mx-auto"
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.3, ease: [0.21, 1.11, 0.81, 0.99] }}
+        >
+          A modular network of interoperable DeFi agents
+        </motion.p>
+      </div>
+      
+      {/* Logo in the center */}
+      <motion.div
+        className="relative"
+        whileHover={{ 
+          scale: 1.1,
+          rotate: 5,
+        }}
+        transition={{ 
+          type: "spring", 
+          stiffness: 300, 
+          damping: 20 
+        }}
+      >
+        <Image
+          src="/logo.png"
+          alt="The Hive Logo"
+          width={500}
+          height={500}
+          className="drop-shadow-2xl"
+          priority
+        />
+        <motion.div
+          className="absolute inset-0 bg-gradient-to-r from-brand-400/20 to-brand-600/20 rounded-full"
+          initial={{ opacity: 0 }}
+          whileHover={{ opacity: 1 }}
+          transition={{ duration: 0.3 }}
+        />
+      </motion.div>
+    </div>
+  );
+}
 
+// Original ReactFlowPro component - commented out for easy restoration
+/*
 const proOptions: ProOptions = { account: 'paid-pro', hideAttribution: true };
 
 type ExampleProps = {
@@ -119,8 +180,20 @@ function ReactFlowPro({ strength = -500, distance = 150 }: ExampleProps = {}) {
     </div>
   );
 }
+*/
 
 function GraphComponent() {
+  // To restore the original graph, uncomment the ReactFlowProvider section below
+  // and comment out the LogoComponent section
+  
+  return (
+    <div className="absolute inset-0 w-full h-full">
+      <LogoComponent />
+    </div>
+  );
+  
+  // Original graph implementation - uncomment to restore
+  /*
   return (
     <ReactFlowProvider>
       <div className="absolute inset-0 w-full h-full">
@@ -128,6 +201,7 @@ function GraphComponent() {
       </div>
     </ReactFlowProvider>
   );
+  */
 }
 
 export default GraphComponent;
