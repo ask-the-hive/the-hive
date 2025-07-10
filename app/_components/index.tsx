@@ -1,11 +1,11 @@
 'use client'
 
-import { useCallback, useEffect } from 'react';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
 
 // Original graph imports - commented out for easy restoration
 /*
+import { useCallback, useEffect } from 'react';
 import {
   ReactFlow,
   ProOptions,
