@@ -7,9 +7,12 @@ import { useChain } from '@/app/_contexts/chain-context';
 import TrendingTokenCard from './trending-token-card';
 import { Skeleton } from '@/components/ui';
 import { AlertCircle } from 'lucide-react';
+import { TrendingUp } from 'lucide-react';
+import { FaXTwitter } from 'react-icons/fa6';
 
 import type { TrendingToken } from '@/services/birdeye/types/trending';
 import { ChainType } from '@/app/_contexts/chain-context';
+import TwitterTrendingTokens from './twitter-trending-tokens';
 
 const TrendingTokens: React.FC = () => {
     const { currentChain } = useChain();
@@ -59,7 +62,10 @@ const TrendingTokens: React.FC = () => {
 
     return (
         <div className="flex flex-col gap-2">
-            <h2 className="text-lg font-bold">Trending Tokens</h2>
+            <h2 className="text-lg font-bold flex items-center gap-2">
+                <TrendingUp className="w-5 h-5 text-brand-600" />
+                Trending Tokens
+            </h2>
             
             {loading ? (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
@@ -102,6 +108,8 @@ const TrendingTokens: React.FC = () => {
                     ))}
                 </div>
             )}
+            {/* Add Twitter trending tokens below */}
+            <TwitterTrendingTokens chain={chain} headerIcon={<FaXTwitter className="w-5 h-5 text-blue-500" />} />
         </div>
     )
 }

@@ -38,6 +38,15 @@ const SavedTokensGroup: React.FC = () => {
     const [tokenLogos, setTokenLogos] = useState<Record<string, string>>({});
     const [tokenPrices, setTokenPrices] = useState<Record<string, { price: number; priceChange24hPercent: number }>>({});
 
+    // Track previous length to detect when a token is added
+    const [prevLength, setPrevLength] = useState(savedTokens.length);
+    useEffect(() => {
+        if (savedTokens.length > prevLength) {
+            setIsOpen(true);
+        }
+        setPrevLength(savedTokens.length);
+    }, [savedTokens.length, prevLength]);
+
     // Get the current chain from URL or context
     const chainParam = searchParams.get('chain');
     const chain = chainParam || currentChain;
