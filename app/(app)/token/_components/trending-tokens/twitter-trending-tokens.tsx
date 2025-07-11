@@ -5,17 +5,13 @@ import { AlertCircle } from 'lucide-react';
 import { ChainType } from '@/app/_contexts/chain-context';
 import type { TrendingToken } from '@/services/birdeye/types/trending';
 
-interface TwitterTrendingToken extends TrendingToken {
-  // mentions: number; // Remove mentions
-}
-
 interface TwitterTrendingTokensProps {
   chain: ChainType;
   headerIcon?: React.ReactNode;
 }
 
 const TwitterTrendingTokens: React.FC<TwitterTrendingTokensProps> = ({ chain, headerIcon }) => {
-  const [tokens, setTokens] = useState<TwitterTrendingToken[]>([]);
+  const [tokens, setTokens] = useState<TrendingToken[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [unsupportedChain, setUnsupportedChain] = useState(false);
