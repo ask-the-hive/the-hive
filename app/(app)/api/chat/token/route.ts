@@ -18,22 +18,26 @@ import type { TokenChatData } from "@/types";
 import { ChainType } from "@/app/_contexts/chain-context";
 
 const system = (tokenMetadata: TokenChatData) =>
-`You are a blockchain agent that helping the user analyze the following token: ${tokenMetadata.name} (${tokenMetadata.symbol}) with the address ${tokenMetadata.address}.
+`You are a blockchain agent helping the user analyze the following token: ${tokenMetadata.name} (${tokenMetadata.symbol}) with the address ${tokenMetadata.address}.
 
 The token is on the ${tokenMetadata.chain || 'Solana'} blockchain.
 
 ${tokenMetadata.extensions?.twitter 
-  ? `The token has a Twitter account linked to it: ${tokenMetadata.extensions.twitter}`
-  : `${tokenMetadata.name} has no official Twitter profile linked to it. If the user asks about Twitter sentiment or social media analysis, inform them that this token has no official Twitter account.`
+  ? `The token has a Twitter account linked to it: ${tokenMetadata.extensions.twitter}. If the user asks about Twitter sentiment or social media analysis, use the available tools to analyze Twitter sentiment.`
+  : `${tokenMetadata.name} has no official Twitter profile linked to it. If the user asks about Twitter sentiment or social media analysis, respond that this token has no official Twitter account.`
 }
 
 You have access to various tools to analyze this token including holder analysis, trading activity, and ${tokenMetadata.extensions?.twitter ? 'Twitter sentiment analysis' : 'other metrics'}.
 
-If the user asks about Twitter sentiment but there's no Twitter account linked to this token, respond with: "${tokenMetadata.name} has no official Twitter profile linked to it, so I cannot analyze Twitter sentiment for this token. However, I can help you analyze other aspects like holder distribution, trading activity, or liquidity pools."`
+If the user asks about Twitter sentiment and the tool is available, use the tool to provide an answer. Only respond with "${tokenMetadata.name} has no official Twitter profile linked to it, so I cannot analyze Twitter sentiment for this token. However, I can help you analyze other aspects like holder distribution, trading activity, or liquidity pools." if the tool is not available.
+`
 
 export const POST = async (req: NextRequest) => {
 
     const { messages, modelName, token }: { messages: any[], modelName: string, token: TokenChatData } = await req.json();
+
+    // Log the Twitter account being used for sentiment analysis
+    console.log('[Chat API] Twitter account for sentiment:', token.extensions?.twitter);
 
     let MAX_TOKENS: number | undefined = undefined;
     let model: LanguageModelV1 | undefined = undefined;
@@ -87,6 +91,13 @@ export const POST = async (req: NextRequest) => {
 
     const chain = token.chain as ChainType || 'solana';
     const actions = getAllTokenPageActions(token.extensions, chain);
+
+    // Log the actions array to see if Twitter sentiment tool is present
+    console.log('[Chat API] actions:', actions.map(a => a?.constructor?.name || typeof a));
+
+    const tools = tokenPageTools(token, actions);
+    // Log the tools object keys to see what tools are available
+    console.log('[Chat API] tools:', Object.keys(tools));
 
     const streamTextResult = streamText({
         model,

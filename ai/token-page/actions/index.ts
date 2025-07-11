@@ -44,6 +44,10 @@ export function getAllTokenPageActions(extensions: TokenChatData['extensions'], 
     ? getValidTwitterUsername(extensions.twitter)
     : null;
 
+  // Debug log for Twitter username extraction
+  console.log('[getAllTokenPageActions] extensions.twitter:', extensions?.twitter);
+  console.log('[getAllTokenPageActions] validTwitterUsername:', validTwitterUsername);
+
   if (chain === 'bsc') {
     return [
       new BSCTokenPageTopHoldersAction(),

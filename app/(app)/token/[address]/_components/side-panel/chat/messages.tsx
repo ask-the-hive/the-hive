@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect } from 'react'
+import React from 'react'
 
 import { LoadingMessage, Message } from '@/app/(app)/_components/chat';
 
@@ -20,11 +20,11 @@ const Messages: React.FC<Props> = ({ messageClassName, token }) => {
 
     const { messages, isResponseLoading } = useChat();
 
-    const { scrollRef, messagesRef, scrollToBottom } = useScrollAnchor();
+    const { scrollRef, messagesRef } = useScrollAnchor();
     
-    useEffect(() => {
-        scrollToBottom();
-    }, [messages, scrollToBottom]);
+    // useEffect(() => {
+    //     scrollToBottom();
+    // }, [messages, scrollToBottom]);
 
     if (messages.length === 0) {
         return (

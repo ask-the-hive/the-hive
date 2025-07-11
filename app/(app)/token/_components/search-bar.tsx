@@ -133,15 +133,23 @@ const SearchBar: React.FC = () => {
                                                     />
                                                     <div className="flex flex-col items-start">
                                                         <span className="font-bold text-sm">{token.name} ({token.symbol})</span>
-                                                        <p className="text-xs text-muted-foreground">
-                                                            ${(token.price || 0).toLocaleString(undefined, { maximumFractionDigits: 5 })} 
-                                                            {typeof token.price_change_24h_percent === 'number' && (
-                                                                <span className={token.price_change_24h_percent > 0 ? 'text-green-500' : 'text-red-500'}>
-                                                                    ({token.price_change_24h_percent > 0 ? '+' : ''}
-                                                                    {token.price_change_24h_percent.toLocaleString(undefined, { maximumFractionDigits: 2 })}%)
-                                                                </span>
-                                                            )}
-                                                        </p>
+                                                        <div className="flex flex-row items-center gap-3 text-xs text-muted-foreground">
+                                                            <span>
+                                                                ${(token.price || 0).toLocaleString(undefined, { maximumFractionDigits: 5 })}
+                                                                {typeof token.price_change_24h_percent === 'number' && (
+                                                                    <span className={token.price_change_24h_percent > 0 ? 'text-green-500' : 'text-red-500'}>
+                                                                        ({token.price_change_24h_percent > 0 ? '+' : ''}
+                                                                        {token.price_change_24h_percent.toLocaleString(undefined, { maximumFractionDigits: 2 })}%)
+                                                                    </span>
+                                                                )}
+                                                            </span>
+                                                            <span className="text-muted-foreground">
+                                                                CA: {token.address.slice(0, 4)}...{token.address.slice(-4)}
+                                                            </span>
+                                                            <span className="text-muted-foreground">
+                                                                Mcap: {token.market_cap ? `$${token.market_cap.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : '—'}
+                                                            </span>
+                                                        </div>
                                                     </div>
                                                     <SaveToken address={token.address} />
                                                 </Button>

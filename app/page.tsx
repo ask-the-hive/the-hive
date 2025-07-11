@@ -12,6 +12,10 @@ import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/component
 import GraphComponent from './_components'
 import UserProfile from './_components/user-profile'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { usePrivy } from '@privy-io/react-auth';
+import { useRouter } from 'next/navigation';
+import { Loader2 } from 'lucide-react';
+import { useColorMode } from './_contexts';
 
 function FeatureCard({ title, description, index }: { title: string; description: string; index: number }) {
     return (
@@ -86,6 +90,55 @@ function PrivacyPolicyDialog() {
 function LandingPageContent() {
     const [copied, setCopied] = useState(false);
     const [openFaq, setOpenFaq] = useState<number | null>(null);
+    const { ready, authenticated } = usePrivy();
+    const router = useRouter();
+    const [checkedBackArrow, setCheckedBackArrow] = React.useState(false);
+    const [showRedirecting, setShowRedirecting] = React.useState(false);
+    const { mode } = useColorMode();
+
+    // First effect: set checkedBackArrow true after mount
+    React.useEffect(() => {
+        setCheckedBackArrow(true);
+    }, []);
+
+    // Helper to detect browser back/forward navigation
+    function isBackOrForwardNavigation() {
+        if (typeof window !== 'undefined' && 'navigation' in window.performance) {
+            // @ts-expect-error: getEntriesByType navigation is not typed in all browsers
+            const navType = window.performance.getEntriesByType('navigation')[0]?.type;
+            return navType === 'back_forward';
+        } else if (typeof window !== 'undefined' && window.performance && window.performance.navigation) {
+            // Deprecated API, fallback
+            return window.performance.navigation.type === 2;
+        }
+        return false;
+    }
+
+    // Second effect: only run redirect logic after checkedBackArrow is true
+    React.useEffect(() => {
+        if (!checkedBackArrow) return;
+        if (ready && authenticated) {
+            if (typeof window !== 'undefined') {
+                const fromBackArrow = sessionStorage.getItem('fromAppBackArrow');
+                if (fromBackArrow) {
+                    sessionStorage.removeItem('fromAppBackArrow');
+                    return; // Skip redirect
+                }
+                if (isBackOrForwardNavigation()) {
+                    return; // Skip redirect for browser back/forward
+                }
+            }
+            // Wait 1s, then show message, then after another 1s, redirect
+            const showMsgTimeout = setTimeout(() => {
+                setShowRedirecting(true);
+                const redirectTimeout = setTimeout(() => {
+                    router.replace('/chat');
+                }, 1000);
+                return () => clearTimeout(redirectTimeout);
+            }, 1000);
+            return () => clearTimeout(showMsgTimeout);
+        }
+    }, [ready, authenticated, router, checkedBackArrow]);
 
     return (
         <div className="min-h-screen bg-white dark:bg-neutral-900">
@@ -363,6 +416,24 @@ function LandingPageContent() {
                     </div>
                 </div>
             </div>
+
+            <AnimatePresence>
+                {showRedirecting && (
+                    <div className="fixed bottom-6 inset-x-0 z-50 flex justify-center pointer-events-none">
+                        <motion.div
+                            initial={{ opacity: 0, y: 40 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: 40 }}
+                            transition={{ duration: 0.3 }}
+                            className={`flex items-center gap-2 px-4 py-2 rounded-lg shadow-lg pointer-events-auto
+                                ${mode === 'dark' ? 'bg-neutral-900 text-white' : 'bg-white text-neutral-900 border border-neutral-200'}`}
+                        >
+                            <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                            <span>Welcome back! Redirecting...</span>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
 
             <style jsx global>{`
                 :root {

@@ -62,7 +62,9 @@ export const GET = async (req: NextRequest) => {
                 symbol: token.symbol,
                 logo_uri: logoUri,
                 price: token.price || 0,
-                price_change_24h_percent: token.price_change_24h_percent || 0
+                price_change_24h_percent: token.price_change_24h_percent || 0,
+                market_cap: token.market_cap || 0,
+                fdv: token.fdv || 0
             };
         }));
 
@@ -111,7 +113,9 @@ export const POST = async (req: NextRequest) => {
 
         return {
             ...token,
-            logo_uri: logoUri
+            logo_uri: logoUri,
+            market_cap: token.market_cap || 0,
+            fdv: token.fdv || 0
         };
     }));
 

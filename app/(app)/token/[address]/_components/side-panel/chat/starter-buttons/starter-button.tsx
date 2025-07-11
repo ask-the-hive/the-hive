@@ -32,7 +32,7 @@ const StarterButton: React.FC<Props> = ({ icon, title, prompt, className }) => {
         >
             <div className="flex items-center gap-2 max-w-full">
                 <Icon name={icon} className="w-4 h-4" />
-                <p className="text-sm font-bold text-wrap text-left">
+                <p className="text-sm font-bold text-wrap text-left hidden lg:inline">
                     {title}
                 </p>
             </div>
