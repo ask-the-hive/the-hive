@@ -52,16 +52,32 @@ function LogoComponent() {
       </div>
       
       {/* Logo in the center */}
-      <motion.div
+      <motion.div 
         className="relative"
+        initial={{ 
+          opacity: 0, 
+          scale: 0.3,
+          y: 100,
+          rotateY: 45,
+          rotateX: 15
+        }}
+        animate={{ 
+          opacity: 1, 
+          scale: 1,
+          y: 0,
+          rotateY: 0,
+          rotateX: 0
+        }}
         whileHover={{ 
-          scale: 1.1,
-          rotate: 5,
+          scale: 1.1
         }}
         transition={{ 
-          type: "spring", 
-          stiffness: 300, 
-          damping: 20 
+          duration: 1.2, 
+          delay: 0.5, 
+          ease: [0.21, 1.11, 0.81, 0.99],
+          type: "spring",
+          stiffness: 100,
+          damping: 15
         }}
       >
         <Image
@@ -71,12 +87,6 @@ function LogoComponent() {
           height={500}
           className="drop-shadow-2xl"
           priority
-        />
-        <motion.div
-          className="absolute inset-0 bg-gradient-to-r from-brand-400/20 to-brand-600/20 rounded-full"
-          initial={{ opacity: 0 }}
-          whileHover={{ opacity: 1 }}
-          transition={{ duration: 0.3 }}
         />
       </motion.div>
     </div>

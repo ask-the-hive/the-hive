@@ -20,9 +20,16 @@ import { ChainType } from "@/app/_contexts/chain-context";
 const system = (tokenMetadata: TokenChatData) =>
 `You are a blockchain agent that helping the user analyze the following token: ${tokenMetadata.name} (${tokenMetadata.symbol}) with the address ${tokenMetadata.address}.
 
-The token is on the Solana blockchain.
+The token is on the ${tokenMetadata.chain || 'Solana'} blockchain.
 
-The token has ${tokenMetadata.extensions?.twitter ? 'a Twitter account linked to it' : 'no Twitter account linked to it'}.`
+${tokenMetadata.extensions?.twitter 
+  ? `The token has a Twitter account linked to it: ${tokenMetadata.extensions.twitter}`
+  : `${tokenMetadata.name} has no official Twitter profile linked to it. If the user asks about Twitter sentiment or social media analysis, inform them that this token has no official Twitter account.`
+}
+
+You have access to various tools to analyze this token including holder analysis, trading activity, and ${tokenMetadata.extensions?.twitter ? 'Twitter sentiment analysis' : 'other metrics'}.
+
+If the user asks about Twitter sentiment but there's no Twitter account linked to this token, respond with: "${tokenMetadata.name} has no official Twitter profile linked to it, so I cannot analyze Twitter sentiment for this token. However, I can help you analyze other aspects like holder distribution, trading activity, or liquidity pools."`
 
 export const POST = async (req: NextRequest) => {
 

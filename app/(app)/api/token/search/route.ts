@@ -1,4 +1,4 @@
-import { searchTokens } from "@/services/birdeye";
+import { searchTokens, getTokenOverview } from "@/services/birdeye";
 import { NextRequest, NextResponse } from "next/server";
 import { ChainType } from "@/app/_contexts/chain-context";
 import type { TokenSearchResult } from "@/services/birdeye/types/search";
@@ -43,13 +43,27 @@ export const GET = async (req: NextRequest) => {
         // Remove duplicates based on address
         const uniqueTokens = Array.from(new Map(allTokens.map(token => [token.address, token])).values());
 
-        const formattedTokens = uniqueTokens.map(token => ({
-            address: token.address,
-            name: token.name,
-            symbol: token.symbol,
-            logo_uri: token.logo_uri || PLACEHOLDER_ICON,
-            price: token.price || 0,
-            price_change_24h_percent: token.price_change_24h_percent || 0
+        const formattedTokens = await Promise.all(uniqueTokens.map(async (token) => {
+            // If the token doesn't have a logo in search results, try to get it from the overview
+            let logoUri = token.logo_uri;
+            if (!logoUri || logoUri === PLACEHOLDER_ICON) {
+                try {
+                    const overview = await getTokenOverview(token.address, chain);
+                    logoUri = overview.logoURI || PLACEHOLDER_ICON;
+                } catch (error) {
+                    console.log(`Failed to fetch overview for token ${token.address}:`, error);
+                    logoUri = PLACEHOLDER_ICON;
+                }
+            }
+
+            return {
+                address: token.address,
+                name: token.name,
+                symbol: token.symbol,
+                logo_uri: logoUri,
+                price: token.price || 0,
+                price_change_24h_percent: token.price_change_24h_percent || 0
+            };
         }));
 
         return NextResponse.json({ tokens: formattedTokens });
@@ -81,5 +95,25 @@ export const POST = async (req: NextRequest) => {
     // Remove duplicates based on address
     const uniqueTokens = Array.from(new Map(allTokenResults.map(token => [token.address, token])).values());
 
-    return NextResponse.json(uniqueTokens);
+    // Enhance tokens with logo information from overview if needed
+    const enhancedTokens = await Promise.all(uniqueTokens.map(async (token) => {
+        // If the token doesn't have a logo in search results, try to get it from the overview
+        let logoUri = token.logo_uri;
+        if (!logoUri || logoUri === PLACEHOLDER_ICON) {
+            try {
+                const overview = await getTokenOverview(token.address, chain);
+                logoUri = overview.logoURI || PLACEHOLDER_ICON;
+            } catch (error) {
+                console.log(`Failed to fetch overview for token ${token.address}:`, error);
+                logoUri = PLACEHOLDER_ICON;
+            }
+        }
+
+        return {
+            ...token,
+            logo_uri: logoUri
+        };
+    }));
+
+    return NextResponse.json(enhancedTokens);
 }

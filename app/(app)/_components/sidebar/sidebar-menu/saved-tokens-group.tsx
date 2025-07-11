@@ -25,6 +25,7 @@ import {
 import { useSavedTokens } from '@/hooks';
 import SaveToken from '../../save-token';
 import { useChain } from '@/app/_contexts/chain-context';
+import { cn } from '@/lib/utils';
 
 const SavedTokensGroup: React.FC = () => {
     const pathname = usePathname();
@@ -35,32 +36,42 @@ const SavedTokensGroup: React.FC = () => {
 
     const [isOpen, setIsOpen] = useState(false);
     const [tokenLogos, setTokenLogos] = useState<Record<string, string>>({});
+    const [tokenPrices, setTokenPrices] = useState<Record<string, { price: number; priceChange24hPercent: number }>>({});
 
     // Get the current chain from URL or context
     const chainParam = searchParams.get('chain');
     const chain = chainParam || currentChain;
 
     useEffect(() => {
-        const fetchMissingLogos = async () => {
+        const fetchTokenData = async () => {
             if (!savedTokens) return;
 
-            const missingLogos = savedTokens.filter(token => !token.logoURI);
-            if (missingLogos.length === 0) return;
-
             const newLogos: Record<string, string> = {};
+            const newPrices: Record<string, { price: number; priceChange24hPercent: number }> = {};
             
             await Promise.all(
-                missingLogos.map(async (token) => {
+                savedTokens.map(async (token) => {
                     try {
-                        const response = await fetch(`/api/token/${token.id}/metadata?chain=${token.chain || 'solana'}`);
-                        if (!response.ok) throw new Error('Failed to fetch token metadata');
+                        // Fetch token overview to get both logo and price data
+                        const response = await fetch(`/api/token/${token.id}/overview?chain=${token.chain || 'solana'}`);
+                        if (!response.ok) throw new Error('Failed to fetch token overview');
                         
                         const data = await response.json();
-                        if (data.logo_uri) {
-                            newLogos[token.id] = data.logo_uri;
+                        
+                        // Update logo if missing
+                        if (!token.logoURI && data.logoURI) {
+                            newLogos[token.id] = data.logoURI;
+                        }
+                        
+                        // Update price data
+                        if (data.price !== undefined && data.priceChange24hPercent !== undefined) {
+                            newPrices[token.id] = {
+                                price: data.price,
+                                priceChange24hPercent: data.priceChange24hPercent
+                            };
                         }
                     } catch (error) {
-                        console.error(`Failed to fetch logo for token ${token.id}:`, error);
+                        console.error(`Failed to fetch data for token ${token.id}:`, error);
                     }
                 })
             );
@@ -68,9 +79,13 @@ const SavedTokensGroup: React.FC = () => {
             if (Object.keys(newLogos).length > 0) {
                 setTokenLogos(prev => ({ ...prev, ...newLogos }));
             }
+            
+            if (Object.keys(newPrices).length > 0) {
+                setTokenPrices(prev => ({ ...prev, ...newPrices }));
+            }
         };
 
-        fetchMissingLogos();
+        fetchTokenData();
     }, [savedTokens]);
 
     const getTokenLogo = (token: any) => {
@@ -134,10 +149,25 @@ const SavedTokensGroup: React.FC = () => {
                                                         />
                                                         <span className='truncate'>{savedToken.symbol}</span>
                                                     </div>
-                                                    <SaveToken 
-                                                        address={savedToken.id} 
-                                                        className='hover:bg-neutral-300 dark:hover:bg-neutral-600 flex-shrink-0'
-                                                    />
+                                                    <div className="flex items-center gap-2">
+                                                        {tokenPrices[savedToken.id] && tokenPrices[savedToken.id].priceChange24hPercent !== null && tokenPrices[savedToken.id].priceChange24hPercent !== undefined && (
+                                                            <span 
+                                                                className={cn(
+                                                                    "text-xs font-medium",
+                                                                    tokenPrices[savedToken.id].priceChange24hPercent > 0 
+                                                                        ? "text-green-500" 
+                                                                        : "text-red-500"
+                                                                )}
+                                                            >
+                                                                {tokenPrices[savedToken.id].priceChange24hPercent > 0 ? "+" : ""}
+                                                                {tokenPrices[savedToken.id].priceChange24hPercent.toFixed(2)}%
+                                                            </span>
+                                                        )}
+                                                        <SaveToken 
+                                                            address={savedToken.id} 
+                                                            className='hover:bg-neutral-300 dark:hover:bg-neutral-600 flex-shrink-0'
+                                                        />
+                                                    </div>
                                                 </Link>
                                             </SidebarMenuSubButton>
                                         </SidebarMenuSubItem>

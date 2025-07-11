@@ -90,7 +90,7 @@ const LogInButton: React.FC<Props> = ({ onComplete }) => {
             onClick={() => { if(user) { linkWallet() } else { login() } }}
             className="w-full"
         >
-            Connect {address ? `${address.slice(0, 4)}...${address.slice(-4)}` : ''}
+            Swap
         </Button>
     )
 }

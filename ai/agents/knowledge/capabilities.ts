@@ -13,4 +13,5 @@ Meteora docs (liquidity mining)
 Orca docs (decentralized exchange)
 Jito docs (solana liquid staking)
 Kamino docs (yield farming vaults and borrow/lend)
-Lulo docs (borrow/lend protocol)`;
+Lulo docs (borrow/lend protocol)
+bonk.fun (LetsBONK.fun, a community-built Solana launchpad for meme tokens that automatically buys and burns BONK, now the leading meme-token factory on Solana)`;
