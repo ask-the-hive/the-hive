@@ -51,9 +51,6 @@ const TrendingTokenCard: React.FC<Props> = ({ token }) => {
                                 </span>
                             )}
                         </p>
-                        {typeof token.mentions === 'number' && token.mentions > 0 && (
-                            <span className="text-xs text-blue-500 font-semibold mt-1">{token.mentions} Twitter mentions</span>
-                        )}
                     </div>
                 </div>
                 <div className="flex flex-col">

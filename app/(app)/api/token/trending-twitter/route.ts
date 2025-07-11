@@ -2,7 +2,6 @@ import { searchTokens } from '@/services/birdeye/search-tokens';
 import { getTokenMetadata } from '@/services/birdeye/get-token-metadata';
 import { ChainType } from '@/app/_contexts/chain-context';
 import { NextRequest, NextResponse } from 'next/server';
-import { getNumMentions } from '@/services/twitter/get-num-mentions';
 
 export const GET = async (req: NextRequest) => {
   const searchParams = req.nextUrl.searchParams;
@@ -21,8 +20,8 @@ export const GET = async (req: NextRequest) => {
     });
     const tokens = searchRes.items[0]?.result || [];
 
-    // Fetch Twitter mentions sequentially to avoid rate limits
-    const tokensWithMentions = [];
+    // Fetch token metadata, but do NOT fetch Twitter mentions
+    const tokensWithMeta = [];
     for (const token of tokens) {
       try {
         const meta = await getTokenMetadata(token.address, chain);
@@ -35,39 +34,27 @@ export const GET = async (req: NextRequest) => {
             if (parts.length > 0) username = parts[0];
           } catch {}
         }
-        let mentions = 0;
-        if (username) {
-          try {
-            const countRes = await getNumMentions(username);
-            mentions = countRes?.meta?.total_tweet_count || 0;
-          } catch {
-            mentions = 0;
-          }
-          // Add a delay to avoid rate limits
-          await new Promise(res => setTimeout(res, 400));
-        }
-        tokensWithMentions.push({
+        tokensWithMeta.push({
           ...token,
           logoURI: meta.logo_uri,
-          mentions,
+          twitterUsername: username || null,
         });
       } catch {
-        tokensWithMentions.push({
+        tokensWithMeta.push({
           ...token,
           logoURI: token.logo_uri || '',
-          mentions: 0,
+          twitterUsername: null,
         });
       }
     }
 
-    // Sort by mentions and take top 9, but include tokens with a Twitter account even if mentions is 0
-    const topByMentions = tokensWithMentions
-      .filter((t) => t.logoURI && t.logoURI !== '' && t.mentions !== undefined && t.mentions !== null && t.mentions >= 0)
-      .sort((a, b) => b.mentions - a.mentions)
+    // Just return the top 9 tokens by volume (no mentions sorting)
+    const topTokens = tokensWithMeta
+      .filter((t) => t.logoURI && t.logoURI !== '')
       .slice(0, 9);
 
     return NextResponse.json({
-      tokens: topByMentions,
+      tokens: topTokens,
       unsupportedChain: false,
     });
   } catch (error) {
