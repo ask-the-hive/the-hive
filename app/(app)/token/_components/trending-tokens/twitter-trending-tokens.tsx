@@ -6,7 +6,7 @@ import { ChainType } from '@/app/_contexts/chain-context';
 import type { TrendingToken } from '@/services/birdeye/types/trending';
 
 interface TwitterTrendingToken extends TrendingToken {
-  mentions: number;
+  // mentions: number; // Remove mentions
 }
 
 interface TwitterTrendingTokensProps {
@@ -48,7 +48,7 @@ const TwitterTrendingTokens: React.FC<TwitterTrendingTokensProps> = ({ chain, he
               decimals: token.decimals ?? 0,
               liquidity: token.liquidity ?? 0,
               rank: token.rank ?? 0,
-              mentions: token.mentions ?? 0,
+              // mentions: token.mentions ?? 0, // Remove mentions
             }))
           );
         }
