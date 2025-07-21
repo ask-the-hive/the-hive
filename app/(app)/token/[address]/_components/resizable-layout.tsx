@@ -19,7 +19,7 @@ const ResizableLayout = ({
     if (isMobile) {
         return (
             <div className="flex flex-col gap-2 w-full">
-                <Card className="w-full">{chartComponent}</Card>
+                <Card className="w-full min-h-[200px]">{chartComponent}</Card>
                 <Card className="w-full">{tabsComponent}</Card>
                 <Card className="w-full">{sidePanelComponent}</Card>
             </div>
