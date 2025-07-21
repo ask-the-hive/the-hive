@@ -57,6 +57,7 @@ const TopTraders = ({ body }: { body: GetTopTradersResultBodyType }) => {
                                 <WalletAddress 
                                     address={trader.address} 
                                     className="font-medium"
+                                    chain="solana"
                                 />
                             </TableCell>
                             <TableCell className="text-green-500">

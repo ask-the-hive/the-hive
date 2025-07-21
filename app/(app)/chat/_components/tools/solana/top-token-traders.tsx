@@ -75,6 +75,7 @@ const TopTokenTraders = ({ body }: { body: TopTokenTradersResultBodyType }) => {
                                         <WalletAddress 
                                             address={trader.owner} 
                                             className="font-medium"
+                                            chain="solana"
                                         />
                                     </div>
                                 )}
