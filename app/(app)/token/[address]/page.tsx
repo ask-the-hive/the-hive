@@ -13,6 +13,7 @@ import SidePanel from "./_components/side-panel";
 import ResizableLayout from "./_components/resizable-layout";
 import { ChainType } from "@/app/_contexts/chain-context";
 import { useChain } from "@/app/_contexts/chain-context";
+import { useIsMobile } from '@/hooks/utils/use-mobile';
 
 const TokenPage = () => {
     const params = useParams();
@@ -20,6 +21,7 @@ const TokenPage = () => {
     const searchParams = useSearchParams();
     const router = useRouter();
     const { currentChain } = useChain();
+    const isMobile = useIsMobile();
     
     // Use URL param if available, otherwise use context
     const chainParam = searchParams.get('chain') as ChainType | null;
@@ -61,7 +63,7 @@ const TokenPage = () => {
     }, [address, chain]);
 
     return (
-        <div className="flex flex-col gap-2 h-full max-h-full overflow-hidden">
+        <div className={isMobile ? 'flex flex-col gap-2 min-h-screen overflow-y-auto' : 'flex flex-col gap-2 h-full max-h-full overflow-hidden'}>
             <Header address={address} />
             <ResizableLayout 
                 chartComponent={<TokenChart mint={address} />}
