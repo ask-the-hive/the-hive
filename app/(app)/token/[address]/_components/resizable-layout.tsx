@@ -18,8 +18,8 @@ const ResizableLayout = ({
     const isMobile = useIsMobile();
     if (isMobile) {
         return (
-            <div className="flex flex-col w-full min-h-screen overflow-y-auto pt-2">
-                <div className="w-full h-[320px]">{chartComponent}</div>
+            <div className="flex flex-col w-full min-h-[200vh] overflow-y-auto pt-4 pb-8">
+                <div className="w-full h-[320px] mb-6">{chartComponent}</div>
                 <Card className="w-full">{tabsComponent}</Card>
                 <Card className="w-full">{sidePanelComponent}</Card>
             </div>
