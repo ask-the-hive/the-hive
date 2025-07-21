@@ -108,7 +108,7 @@ const TrendingTokens: React.FC = () => {
                     ))}
                 </div>
             )}
-            {/* Add Twitter trending tokens below */}
+            {/* Always render Twitter trending tokens after trending tokens section */}
             <TwitterTrendingTokens chain={chain} headerIcon={<FaXTwitter className="w-5 h-5 text-blue-500" />} />
         </div>
     )
