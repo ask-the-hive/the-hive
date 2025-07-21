@@ -15,6 +15,7 @@ import { WETH_METADATA } from '@/lib/config/base';
 
 import type { TokenChatData } from '@/types';
 import type { Token } from '@/db/types';
+import { useIsMobile } from '@/hooks/utils/use-mobile';
 
 // SOL token metadata
 const SOL_METADATA: Token = {
@@ -48,6 +49,8 @@ const SidePanel: React.FC<Props> = ({ address }) => {
     const [tokenChatData, setTokenChatData] = useState<TokenChatData | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+
+    const isMobile = useIsMobile();
 
     // Get the initial sell token based on chain
     const initialSellToken = chain === 'bsc' 
@@ -127,7 +130,7 @@ const SidePanel: React.FC<Props> = ({ address }) => {
     }
 
     return (
-        <Tabs className="h-full flex flex-col items-start w-full max-w-full" defaultValue="chat">
+        <Tabs className={isMobile ? 'flex flex-col items-start w-full max-w-full' : 'h-full flex flex-col items-start w-full max-w-full'} defaultValue="chat">
             <TabsList className="p-0 h-[44px] justify-start bg-neutral-100 dark:bg-neutral-700 w-full max-w-full overflow-x-auto rounded-none no-scrollbar">
                 <TabsTrigger 
                     value="chat"
@@ -144,13 +147,13 @@ const SidePanel: React.FC<Props> = ({ address }) => {
                     Trade
                 </TabsTrigger>
             </TabsList>
-            <div className="flex-1 h-0 overflow-y-auto w-full no-scrollbar">
-                <TabsContent value="chat" className="h-full m-0 p-2">
+            <div className={isMobile ? 'w-full no-scrollbar' : 'flex-1 h-0 overflow-y-auto w-full no-scrollbar'}>
+                <TabsContent value="chat" className={isMobile ? 'm-0 p-2' : 'h-full m-0 p-2'}>
                     <ChatProvider token={tokenChatData}>
                         <Chat token={tokenChatData} />
                     </ChatProvider>
                 </TabsContent>
-                <TabsContent value="trade" className="h-full m-0 p-2">
+                <TabsContent value="trade" className={isMobile ? 'm-0 p-2' : 'h-full m-0 p-2'}>
                     <Swap 
                         initialInputToken={initialSellToken}
                         initialOutputToken={tokenData}
