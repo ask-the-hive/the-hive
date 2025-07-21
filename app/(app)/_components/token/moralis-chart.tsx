@@ -3,6 +3,7 @@ import { useColorMode, ColorMode } from '@/app/_contexts';
 import { useSearchParams } from 'next/navigation';
 import { useChain } from '@/app/_contexts/chain-context';
 import { ChainType } from '@/app/_contexts/chain-context';
+import { useIsMobile } from '@/hooks/utils/use-mobile';
 
 declare global {
     interface Window {
@@ -30,7 +31,7 @@ interface Props {
 }
 
 const MoralisChart: React.FC<Props> = ({ tokenAddress, price, priceChange }) => {
-    const containerRef = useRef(null);
+    const containerRef = useRef<HTMLDivElement>(null);
     const { mode } = useColorMode();
     const scriptLoadedRef = useRef(false);
     const { currentChain } = useChain();
@@ -46,7 +47,7 @@ const MoralisChart: React.FC<Props> = ({ tokenAddress, price, priceChange }) => 
         if (typeof window.createMyWidget === 'function') {
             window.createMyWidget(PRICE_CHART_ID, {
                 autoSize: true,
-                chainId: chain === 'bsc' ? '0x38' : chain === 'base' ? '0x2105' : 'solana', // BSC: 0x38, Base: 0x2105, Solana: solana
+                chainId: chain === 'bsc' ? '0x38' : chain === 'base' ? '0x2105' : 'solana',
                 tokenAddress: tokenAddress,
                 defaultInterval: '1D',
                 timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone ?? 'Etc/UTC',
@@ -100,8 +101,10 @@ const MoralisChart: React.FC<Props> = ({ tokenAddress, price, priceChange }) => 
         };
     }, [tokenAddress, mode, chain]);
 
+    const isMobile = useIsMobile();
+
     return (
-        <div className='flex flex-col h-full w-full'>
+        <div className={isMobile ? 'flex flex-col w-full min-h-[300px]' : 'flex flex-col h-full w-full'}>
             <div className='flex flex-col md:flex-row md:justify-between md:items-center gap-1 bg-neutral-100 dark:bg-neutral-700 p-2'>
                 <p className='text-md md:text-lg font-bold'>
                     ${(price || 0).toLocaleString(undefined, { maximumFractionDigits: 5 })} 
@@ -110,11 +113,11 @@ const MoralisChart: React.FC<Props> = ({ tokenAddress, price, priceChange }) => 
                     </span>
                 </p>
             </div>
-            <div className='flex-1 h-0'>
+            <div className={isMobile ? '' : 'flex-1 h-0'}>
                 <div
                     id={PRICE_CHART_ID}
                     ref={containerRef}
-                    style={{ width: "100%", height: "100%" }}
+                    style={{ width: "100%", height: isMobile ? '300px' : '100%' }}
                 />
             </div>
         </div>

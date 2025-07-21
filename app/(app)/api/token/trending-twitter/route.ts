@@ -48,9 +48,26 @@ export const GET = async (req: NextRequest) => {
       }
     }
 
-    // Just return the top 9 tokens by volume (no mentions sorting)
+    // Filter out stablecoins, native token, and wrapped native tokens
+    const STABLECOINS = ['USDT', 'USDC'];
+    const NATIVE_TOKENS: Record<ChainType, string> = {
+      solana: 'SOL',
+      bsc: 'BNB',
+      base: 'ETH',
+    };
+    const WRAPPED_NATIVE: Record<ChainType, string> = {
+      solana: '', // No common wrapped SOL
+      bsc: 'WBNB',
+      base: 'WETH',
+    };
+    const nativeSymbol = NATIVE_TOKENS[chain] || '';
+    const wrappedNativeSymbol = WRAPPED_NATIVE[chain] || '';
     const topTokens = tokensWithMeta
       .filter((t) => t.logoURI && t.logoURI !== '')
+      .filter((t) => {
+        const symbol = (t.symbol || '').toUpperCase();
+        return !STABLECOINS.includes(symbol) && symbol !== nativeSymbol && symbol !== wrappedNativeSymbol;
+      })
       .slice(0, 9);
 
     return NextResponse.json({

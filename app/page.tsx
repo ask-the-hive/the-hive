@@ -146,7 +146,7 @@ function LandingPageContent() {
             <UserProfile />
             {/* Hero Section with Gradient */}
             <div className="px-4 md:px-12">
-                <div className="relative overflow-hidden pb-16 bg-neutral-100 dark:bg-neutral-800 rounded-xl border border-neutral-200 dark:border-neutral-700 mt-8 min-h-[900px]">
+                <div className="relative overflow-hidden pb-16 bg-neutral-100 dark:bg-neutral-800 rounded-xl border border-neutral-200 dark:border-neutral-700 mt-8 min-h-[800px]">
                     {/* Graph Component as Background */}
                     <div className="absolute inset-0 w-full h-full">
                         <GraphComponent />

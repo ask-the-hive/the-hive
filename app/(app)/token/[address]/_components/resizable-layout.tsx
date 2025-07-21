@@ -2,6 +2,7 @@
 
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 import { Card } from '@/components/ui';
+import { useIsMobile } from '@/hooks/utils/use-mobile';
 
 interface ResizableLayoutProps {
     chartComponent: React.ReactNode;
@@ -14,6 +15,16 @@ const ResizableLayout = ({
     tabsComponent,
     sidePanelComponent
 }: ResizableLayoutProps) => {
+    const isMobile = useIsMobile();
+    if (isMobile) {
+        return (
+            <div className="flex flex-col w-full min-h-[200vh] overflow-y-auto pt-4 pb-8">
+                <div className="w-full h-[320px] mb-6">{chartComponent}</div>
+                <Card className="w-full">{tabsComponent}</Card>
+                <Card className="w-full">{sidePanelComponent}</Card>
+            </div>
+        );
+    }
     return (
         <div className="md:flex-1 md:h-0 overflow-y-auto md:overflow-hidden flex flex-col md:flex-row gap-2">
             <PanelGroup direction="horizontal" className="flex-1">

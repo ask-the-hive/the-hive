@@ -19,7 +19,7 @@ import { Button } from '@/components/ui/button'
 import { ChevronDown } from 'lucide-react'
 
 const TokenPage: React.FC = () => {
-    const { currentChain } = useChain();
+    const { currentChain, setCurrentChain } = useChain();
     const router = useRouter();
     const searchParams = useSearchParams();
     
@@ -29,8 +29,18 @@ const TokenPage: React.FC = () => {
         ? chainParam 
         : currentChain;
 
+    // On mount, if no chain param, update URL to include currentChain
+    React.useEffect(() => {
+        if (!chainParam) {
+            const params = new URLSearchParams(searchParams.toString());
+            params.set('chain', currentChain);
+            router.replace(`/token?${params.toString()}`);
+        }
+    }, [chainParam, currentChain, router, searchParams]);
+
     // Handle chain switching - updates both URL and context
     const handleChainSwitch = (newChain: ChainType) => {
+        setCurrentChain(newChain);
         const params = new URLSearchParams(searchParams.toString());
         params.set('chain', newChain);
         router.replace(`/token?${params.toString()}`);
