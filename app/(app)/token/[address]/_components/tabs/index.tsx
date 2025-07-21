@@ -20,6 +20,7 @@ import TokenMarkets from './markets'
 import MarketStats from './market-stats'
 
 import { getTokenOverview } from '@/services/birdeye';
+import { useIsMobile } from '@/hooks/utils/use-mobile';
 
 interface Props {
     address: string;
@@ -51,6 +52,7 @@ const getValidTwitterUsername = (twitterUrl: string): string | null => {
 };
 
 const TokenDashboardTabs: React.FC<Props> = ({ address, tokenOverview }) => {
+    const isMobile = useIsMobile();
     const [activeTab, setActiveTab] = React.useState('market-stats')
     const tabsRef = useRef<{ [key: string]: HTMLButtonElement }>({})
 
@@ -72,7 +74,7 @@ const TokenDashboardTabs: React.FC<Props> = ({ address, tokenOverview }) => {
 
     return (
         <Tabs 
-            className="h-full flex flex-col items-start w-full max-w-full" 
+            className={isMobile ? 'flex flex-col items-start w-full max-w-full' : 'h-full flex flex-col items-start w-full max-w-full'}
             defaultValue="market-stats"
             value={activeTab}
             onValueChange={setActiveTab}
@@ -149,23 +151,23 @@ const TokenDashboardTabs: React.FC<Props> = ({ address, tokenOverview }) => {
                     Mentions
                 </TabsTrigger>
             </DraggableTabsList>
-            <div className="flex-1 h-0 overflow-y-auto w-full no-scrollbar">
-                <TabsContent value="market-stats" className="h-full m-0 p-2">
+            <div className={isMobile ? 'w-full no-scrollbar' : 'flex-1 h-0 overflow-y-auto w-full no-scrollbar'}>
+                <TabsContent value="market-stats" className={isMobile ? 'm-0 p-2' : 'h-full m-0 p-2'}>
                     <MarketStats address={address} />
                 </TabsContent>
-                <TabsContent value="holders" className="h-full m-0">
+                <TabsContent value="holders" className={isMobile ? 'm-0' : 'h-full m-0'}>
                     <TopHolders mint={address} />
                 </TabsContent>
-                <TabsContent value="traders" className="h-full m-0">
+                <TabsContent value="traders" className={isMobile ? 'm-0' : 'h-full m-0'}>
                     <TopTraders address={address} />
                 </TabsContent>
-                <TabsContent value="bubble" className="h-full m-0 p-2">
+                <TabsContent value="bubble" className={isMobile ? 'm-0 p-2' : 'h-full m-0 p-2'}>
                     <BubbleMap address={address} />
                 </TabsContent>
-                <TabsContent value="markets" className="h-full m-0">
+                <TabsContent value="markets" className={isMobile ? 'm-0' : 'h-full m-0'}>
                     <TokenMarkets address={address} />
                 </TabsContent>
-                <TabsContent value="tweets" className="h-full m-0 p-2">
+                <TabsContent value="tweets" className={isMobile ? 'm-0 p-2' : 'h-full m-0 p-2'}>
                     {validTwitterUsername ? (
                         <AccountTweets username={validTwitterUsername} />
                     ) : (
@@ -181,7 +183,7 @@ const TokenDashboardTabs: React.FC<Props> = ({ address, tokenOverview }) => {
                         </div>
                     )}
                 </TabsContent>
-                <TabsContent value="mentions" className="h-full m-0 p-2">
+                <TabsContent value="mentions" className={isMobile ? 'm-0 p-2' : 'h-full m-0 p-2'}>
                     {validTwitterUsername ? (
                         <AccountMentions username={validTwitterUsername} />
                     ) : (
