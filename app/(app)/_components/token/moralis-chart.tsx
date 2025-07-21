@@ -44,20 +44,6 @@ const MoralisChart: React.FC<Props> = ({ tokenAddress, price, priceChange }) => 
         : currentChain;
 
     const createWidget = () => {
-        // Remove old widget container if it exists
-        const oldWidget = document.getElementById(PRICE_CHART_ID);
-        if (oldWidget && oldWidget.parentNode) {
-            oldWidget.parentNode.removeChild(oldWidget);
-        }
-        // Create a new container div
-        const newDiv = document.createElement('div');
-        newDiv.id = PRICE_CHART_ID;
-        newDiv.style.width = '100%';
-        newDiv.style.height = isMobile ? '300px' : '100%';
-        if (containerRef.current instanceof HTMLDivElement) {
-            containerRef.current.appendChild(newDiv);
-        }
-        // Now create the widget
         if (typeof window.createMyWidget === 'function') {
             window.createMyWidget(PRICE_CHART_ID, {
                 autoSize: true,
@@ -118,7 +104,7 @@ const MoralisChart: React.FC<Props> = ({ tokenAddress, price, priceChange }) => 
     const isMobile = useIsMobile();
 
     return (
-        <div className={isMobile ? 'flex flex-col w-full min-h-[300px]' : 'flex flex-col h-full w-full'} ref={containerRef}>
+        <div className={isMobile ? 'flex flex-col w-full min-h-[300px]' : 'flex flex-col h-full w-full'}>
             <div className='flex flex-col md:flex-row md:justify-between md:items-center gap-1 bg-neutral-100 dark:bg-neutral-700 p-2'>
                 <p className='text-md md:text-lg font-bold'>
                     ${(price || 0).toLocaleString(undefined, { maximumFractionDigits: 5 })} 
@@ -127,7 +113,13 @@ const MoralisChart: React.FC<Props> = ({ tokenAddress, price, priceChange }) => 
                     </span>
                 </p>
             </div>
-            {/* Widget container will be created dynamically */}
+            <div className={isMobile ? '' : 'flex-1 h-0'}>
+                <div
+                    id={PRICE_CHART_ID}
+                    ref={containerRef}
+                    style={{ width: "100%", height: isMobile ? '300px' : '100%' }}
+                />
+            </div>
         </div>
     );
 };
