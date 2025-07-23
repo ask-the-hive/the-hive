@@ -17,8 +17,6 @@ const solanaConnectors = toSolanaWalletConnectors({
 });
 
 export const PrivyProvider: React.FC<Props> = ({ children }) => {
-    console.log("Initializing PrivyProvider with BSC support");
-    
     return (
         <PrivyProviderBase
             appId={process.env.NEXT_PUBLIC_PRIVY_APP_ID!}
@@ -29,6 +27,7 @@ export const PrivyProvider: React.FC<Props> = ({ children }) => {
                     logo: '/logo.png',
                     walletChainType: 'ethereum-and-solana',
                     showWalletLoginFirst: true,
+                    walletList: ['metamask', 'phantom', 'coinbase_wallet', 'wallet_connect'],
                 },
                 loginMethods: ['email', 'wallet', 'google', 'twitter', 'discord', 'github'],
                 externalWallets: {
