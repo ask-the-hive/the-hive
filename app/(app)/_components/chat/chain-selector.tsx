@@ -21,9 +21,9 @@ const ChainSelector: React.FC<Props> = ({ chain, onChainChange, disabled }) => {
                     <div className="flex items-center gap-2">
                         <ChainIcon chain={chain} className="h-4 w-4" />
                         <span>
-                            {chain === 'solana' ? 'Solana Agent' : 
-                             chain === 'bsc' ? 'BSC Agent' : 
-                             'Base Agent'}
+                            {chain === 'solana' ? 'Solana' : 
+                             chain === 'bsc' ? 'BSC' : 
+                             'Base'}
                         </span>
                     </div>
                 </SelectValue>
@@ -32,19 +32,19 @@ const ChainSelector: React.FC<Props> = ({ chain, onChainChange, disabled }) => {
                 <SelectItem value="solana" className="flex items-center gap-2">
                     <div className="flex items-center gap-2">
                         <ChainIcon chain="solana" className="h-4 w-4" />
-                        <span>Solana Agent</span>
+                        <span>Solana</span>
                     </div>
                 </SelectItem>
                 <SelectItem value="bsc" className="flex items-center gap-2">
                     <div className="flex items-center gap-2">
                         <ChainIcon chain="bsc" className="h-4 w-4" />
-                        <span>BSC Agent</span>
+                        <span>BSC</span>
                     </div>
                 </SelectItem>
                 <SelectItem value="base" className="flex items-center gap-2">
                     <div className="flex items-center gap-2">
                         <ChainIcon chain="base" className="h-4 w-4" />
-                        <span>Base Agent</span>
+                        <span>Base</span>
                     </div>
                 </SelectItem>
             </SelectContent>
