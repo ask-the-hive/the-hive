@@ -92,7 +92,7 @@ export function GetTrades({ tokensTraded = {}, tool }: GetTradesProps) {
                 </div>
               </TableCell>
               <TableCell className={trade.balanceChange >= 0 ? "text-green-500" : "text-red-500"}>
-                {trade.balanceChange > 0 ? "+" : ""}{trade.balanceChange.toLocaleString()}
+                {trade.balanceChange > 0 ? "+" : ""}{trade.balanceChange?.toLocaleString() ?? '0'}
               </TableCell>
               <TableCell className={trade.usdChange >= 0 ? "text-green-500" : "text-red-500"}>
                 {trade.usdChange > 0 ? "+" : "-"}${Math.abs(trade.usdChange).toLocaleString(undefined, { maximumFractionDigits: 2 })}
