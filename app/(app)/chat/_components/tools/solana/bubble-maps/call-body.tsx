@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 
 import { BubbleMapsArgumentsType } from '@/ai'
 import { useChat } from '@/app/(app)/chat/_contexts/chat'
@@ -12,55 +12,46 @@ interface Props {
 }
 
 const BubbleMapsCallBody: React.FC<Props> = ({ toolCallId, args }) => {
-
     const { addToolResult } = useChat()
+    const [bubbleMapUrl, setBubbleMapUrl] = useState('')
 
     useEffect(() => {
-        const checkBubbleMaps = async () => {
-            await fetch(`https://api-legacy.bubblemaps.io/map-availability?chain=sol&token=${args.contractAddress}`)
-                .then(res => res.json())
-                .then(data => {
-                    if(data.status === "OK") {
-                        if(data.availability == true) {
-                            addToolResult(toolCallId, {
-                                message: "Bubble Maps are available and shown to the user",
-                                body: {
-                                    success: true,
-                                    message: "Bubble Maps are available and shown to the user",
-                                },
-                            })
-                        } else {
-                            addToolResult(toolCallId, {
-                                message: "Bubble Maps are not available for this token",
-                            })
-                        }
-                    } else {
-                        addToolResult(toolCallId, {
-                            message: data.message,
-                            body: {
-                                success: false,
-                            },
-                        })
-                    }
-                })
-                .catch(err => {
-                    console.error(err)
-                    addToolResult(toolCallId, {
-                        message: "Error fetching Bubble Maps",
-                        body: {
-                            success: false,
-                            message: "Error fetching Bubble Maps",
-                        },
-                    })
-                })
-        }
+        const partnerId = process.env.NEXT_PUBLIC_BUBBLE_MAPS_PARTNER_ID;
+    if (!partnerId) {
+        console.error('NEXT_PUBLIC_BUBBLE_MAPS_PARTNER_ID is not set in environment variables');
+        addToolResult(toolCallId, {
+            message: 'Bubble Maps integration is not properly configured',
+            body: {
+                success: false,
+                message: 'Bubble Maps integration is not properly configured'
+            },
+        });
+        return;
+    }
+    
+    const url = `https://iframe.bubblemaps.io/map?address=${args.contractAddress}&chain=solana&partnerId=${partnerId}`;
+    setBubbleMapUrl(url);
+    
+    // Notify parent component that the bubble map is ready
+    addToolResult(toolCallId, {
+        message: "Bubble map is ready",
+        body: {
+            success: true,
+            url: url
+        },
+    });
+    }, [args.contractAddress, toolCallId, addToolResult])
 
-        checkBubbleMaps()
-    }, [args])
-
+    if (!bubbleMapUrl) {
+        return <Skeleton className="h-10 w-full" />
+    }
 
     return (
-        <Skeleton className="h-10 w-full" />
+        <iframe 
+            src={bubbleMapUrl}
+            className="w-full h-[500px] border rounded-lg"
+            title="Bubble Map"
+        />
     )
 }
 

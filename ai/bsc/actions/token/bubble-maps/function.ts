@@ -31,56 +31,39 @@ export async function getBubbleMaps(
 
     console.log(`Found token: ${token.name} (${token.symbol}) with address: ${token.address}`);
 
-    // For BSC, we need to use the correct chain identifier
-    const chainIdentifier = 'bsc';
+    // Use the full chain name for the URL
+    const chainName = 'bsc';
     
-    // Check if bubble map is available
-    try {
-      const availabilityUrl = `https://api-legacy.bubblemaps.io/map-availability?chain=${chainIdentifier}&token=${token.address}`;
-      console.log(`Checking bubble map availability at: ${availabilityUrl}`);
-      
-      // Use the same URL format as the BubbleMap component
-      const response = await fetch(availabilityUrl);
-      const data = await response.json();
-      
-      console.log(`Bubble map availability response:`, data);
-      
-      if (data.status === "OK" && data.availability) {
-        // Use the same URL format as the BubbleMap component
-        const bubbleMapUrl = `https://app.bubblemaps.io/${chainIdentifier}/token/${token.address}`;
-        console.log(`Bubble map available at: ${bubbleMapUrl}`);
-        
-        return {
-          message: `Found bubble map for ${token.name} (${token.symbol}) on BSC.`,
-          body: {
-            success: true,
-            url: bubbleMapUrl
-          }
-        };
-      } else {
-        console.log(`Bubble map not available for: ${token.name} (${token.symbol})`);
-        return {
-          message: `Bubble map is not available for ${token.name} (${token.symbol}) on BSC. This could be because the token is too new or has limited on-chain activity.`,
-          body: {
-            success: false,
-            url: ""
-          }
-        };
-      }
-    } catch (error) {
-      console.error("Error checking bubble map availability:", error);
+    // Directly construct the embed URL
+    const partnerId = process.env.BUBBLE_MAPS_PARTNER_ID;
+    if (!partnerId) {
+      console.error('BUBBLE_MAPS_PARTNER_ID is not set in environment variables');
       return {
-        message: `Error checking bubble map availability: ${error}`,
+        message: 'Bubble Maps integration is not properly configured',
         body: {
           success: false,
-          url: ""
+          url: ''
         }
       };
     }
+    const bubbleMapUrl = `https://iframe.bubblemaps.io/map?address=${token.address}&chain=${chainName}&partnerId=${partnerId}`;
+    console.log(`Generated bubble map URL: ${bubbleMapUrl}`);
+    
+    return {
+      message: `Bubble map for ${token.name} (${token.symbol}) on BSC.`,
+      body: {
+        success: true,
+        url: bubbleMapUrl
+      }
+    };
   } catch (error) {
-    console.error("Error searching for token:", error);
+    console.error("Error:", error);
     return {
       message: `Error getting bubble map on BSC: ${error}`,
+      body: {
+        success: false,
+        url: ""
+      }
     };
   }
 } 
