@@ -27,7 +27,7 @@ export const PrivyProvider: React.FC<Props> = ({ children }) => {
                     logo: '/logo.png',
                     walletChainType: 'ethereum-and-solana',
                     showWalletLoginFirst: true,
-                    walletList: ['metamask', 'phantom', 'coinbase_wallet', 'wallet_connect'],
+                    walletList: ['phantom', 'metamask', 'coinbase_wallet', 'wallet_connect'],
                 },
                 loginMethods: ['email', 'wallet', 'google', 'twitter', 'discord', 'github'],
                 externalWallets: {
@@ -35,6 +35,7 @@ export const PrivyProvider: React.FC<Props> = ({ children }) => {
                         connectors: solanaConnectors
                     }
                 },
+
                 solanaClusters: [
                     {
                         name: 'mainnet-beta',
@@ -42,7 +43,7 @@ export const PrivyProvider: React.FC<Props> = ({ children }) => {
                     }
                 ],
                 supportedChains: [bsc],
-                defaultChain: bsc,
+                // Remove defaultChain to let Privy use the chain context
             }}
         >
             {children}

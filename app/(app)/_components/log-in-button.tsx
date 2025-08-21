@@ -90,7 +90,7 @@ const LogInButton: React.FC<Props> = ({ onComplete }) => {
             onClick={() => { if(user) { linkWallet() } else { login() } }}
             className="w-full"
         >
-            Swap
+            Connect Wallet
         </Button>
     )
 }

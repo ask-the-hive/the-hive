@@ -4,16 +4,22 @@ import { usePrivy } from "@privy-io/react-auth";
 
 import { useSolanaWallets } from "@privy-io/react-auth/solana";
 
+import { useChain } from "@/app/_contexts/chain-context";
+
 export const useSendTransaction = () => {
 
     const { user } = usePrivy();
 
     const { wallets } = useSolanaWallets();
 
-    const wallet = wallets.find(wallet => wallet.address === user?.wallet?.address);
+    const { currentChain } = useChain();
+
+    // For Solana chain, use the first available Solana wallet
+    // For other chains, this hook shouldn't be used (they have their own hooks)
+    const wallet = currentChain === 'solana' ? wallets[0] : null;
 
     const sendTransaction = async (transaction: VersionedTransaction) => {
-        if(!wallet) throw new Error("No wallets found");
+        if(!wallet) throw new Error("No Solana wallet found");
 
         const connection = new Connection(process.env.NEXT_PUBLIC_SOLANA_RPC_URL!);
 
