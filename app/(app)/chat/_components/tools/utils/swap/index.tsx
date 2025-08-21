@@ -18,7 +18,8 @@ import { useSendTransaction, useTokenBalance } from '@/hooks';
 
 import { getSwapObj, getQuote } from '@/services/jupiter';
 
-import type { QuoteResponse } from '@jup-ag/api';
+// QuoteResponse type for Jupiter lite API
+type QuoteResponse = any;
 import type { Token } from '@/db/types';
 
 interface Props {
@@ -75,9 +76,12 @@ const Swap: React.FC<Props> = ({
         if(!wallet || !quoteResponse) return;
         setIsSwapping(true);
         try {
-            const { swapTransaction} = await getSwapObj(wallet.address, quoteResponse);
-            const swapTransactionBuf = Buffer.from(swapTransaction, "base64");
-            const transaction = VersionedTransaction.deserialize(swapTransactionBuf);
+            const swapResponse = await getSwapObj(wallet.address, quoteResponse);
+            const transactionBase64 = swapResponse.swapTransaction;
+            const transaction = VersionedTransaction.deserialize(Buffer.from(transactionBase64, 'base64'));
+            console.log('Deserialized transaction:', transaction);
+            
+            // Don't sign here - let the wallet handle signing when sending
             const txHash = await sendTransaction(transaction);
             onSuccess?.(txHash);
         } catch (error) {

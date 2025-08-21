@@ -45,6 +45,8 @@ export const useLogin = ({
                         console.log("Setting Solana wallet from useLogin hook:", wallet.address);
                         processedWallets.current.add(key);
                         setWalletAddress('solana', wallet.address);
+                        // Ensure chain is set to Solana when Solana wallet is detected
+                        setCurrentChain('solana');
                     }
                 }
             });
@@ -63,13 +65,30 @@ export const useLogin = ({
                 }
             });
         }
-    }, [solanaWallets, evmWallets, setWalletAddress]);
+    }, [solanaWallets, evmWallets, setWalletAddress, setCurrentChain]);
 
     const { login } = usePrivyLogin({
         onComplete: async (user, _, __) => {
             if (user.wallet) {
+                console.log("Wallet connection completed:", {
+                    address: user.wallet.address,
+                    walletClientType: user.wallet.walletClientType,
+                    addressStartsWith0x: user.wallet.address.startsWith('0x')
+                });
+                
                 // Determine wallet type and store address
-                const isSolanaWallet = !user.wallet.address.startsWith('0x');
+                // Force Phantom to always be treated as Solana
+                const isSolanaWallet = !user.wallet.address.startsWith('0x') || 
+                                     user.wallet.walletClientType === 'phantom' ||
+                                     user.wallet.walletClientType === 'solana' ||
+                                     user.wallet.walletClientType === 'phantom-solana';
+                
+                console.log("Wallet type determination:", {
+                    isSolanaWallet,
+                    addressStartsWith0x: user.wallet.address.startsWith('0x'),
+                    walletClientType: user.wallet.walletClientType
+                });
+                
                 if (isSolanaWallet) {
                     console.log("Login completed with Solana wallet:", user.wallet.address);
                     setWalletAddress('solana', user.wallet.address);
@@ -85,17 +104,36 @@ export const useLogin = ({
         }
     });
 
+    // Enhanced login that handles chain-specific wallet connections
+    const enhancedLogin = () => {
+        // If current chain is Solana, explicitly request Solana wallet connection
+        if (currentChain === 'solana') {
+            console.log("Requesting Solana wallet connection");
+            // For Solana, ensure chain is set to solana before connecting
+            setCurrentChain('solana');
+            console.log("Chain context set to Solana, now connecting wallet...");
+            // Use the standard login method but ensure chain context is Solana
+            login();
+        } else {
+            console.log("Requesting EVM wallet connection");
+            // For EVM chains, use the standard login
+            login();
+        }
+    };
+
     // Enhanced linkWallet that handles wallet type
     const enhancedLinkWallet = () => {
         // Use the appropriate wallet type based on current chain
         if (currentChain === 'solana') {
             console.log("Linking Solana wallet");
-            // @ts-ignore - Privy types are not up to date
-            privyLinkWallet({ chain: 'solana' });
+            // For Solana, ensure chain is set to solana before linking
+            setCurrentChain('solana');
+            // Use the standard linkWallet method but ensure chain context is Solana
+            privyLinkWallet();
         } else {
             console.log("Linking EVM wallet");
-            // @ts-ignore - Privy types are not up to date
-            privyLinkWallet({ chain: 'evm' });
+            // For EVM chains, use the standard linkWallet
+            privyLinkWallet();
         }
     };
 
@@ -118,7 +156,7 @@ export const useLogin = ({
     return {
         user,
         ready,
-        login,
+        login: enhancedLogin,
         connectWallet,
         logout,
         wallets,
