@@ -80,9 +80,12 @@ const Swap: React.FC<Props> = ({
         setIsSwapping(true);
         try {
             if (currentChain === 'solana') {
-                const { swapTransaction } = await getSwapObj(wallet.address, quoteResponse);
-                const swapTransactionBuf = Buffer.from(swapTransaction, "base64");
-                const transaction = VersionedTransaction.deserialize(swapTransactionBuf);
+                const swapResponse = await getSwapObj(wallet.address, quoteResponse);
+                const transactionBase64 = swapResponse.swapTransaction;
+                const transaction = VersionedTransaction.deserialize(Buffer.from(transactionBase64, 'base64'));
+                console.log('Deserialized transaction:', transaction);
+                
+                // Don't sign here - let the wallet handle signing when sending
                 const txHash = await sendTransaction(transaction);
                 onSuccess?.(txHash);
             } else {

@@ -1,6 +1,6 @@
 'use client'
 
-import React from 'react'
+import React, { useEffect } from 'react'
 
 import { Card, Skeleton } from '@/components/ui';
 
@@ -9,6 +9,8 @@ import Swap from '../../../utils/swap';
 import { useTokenDataByAddress } from '@/hooks';
 
 import { useChat } from '@/app/(app)/chat/_contexts/chat';
+
+import { useChain } from '@/app/_contexts/chain-context';
 
 import { UnstakeResultBodyType, type UnstakeArgumentsType } from '@/ai';
 
@@ -20,6 +22,12 @@ interface Props {
 const UnstakeCallBody: React.FC<Props> = ({ toolCallId, args }) => {
 
     const { addToolResult } = useChat();
+    const { setCurrentChain } = useChain();
+
+    // Set the current chain to Solana for unstaking
+    useEffect(() => {
+        setCurrentChain('solana');
+    }, [setCurrentChain]);
 
     const { data: inputTokenData, isLoading: inputTokenLoading } = useTokenDataByAddress(args.contractAddress);
     const { data: outputTokenData, isLoading: outputTokenLoading } = useTokenDataByAddress("So11111111111111111111111111111111111111112");
@@ -65,4 +73,4 @@ const UnstakeCallBody: React.FC<Props> = ({ toolCallId, args }) => {
     )
 }
 
-export default UnstakeCallBody;
+export default UnstakeCallBody
