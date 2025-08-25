@@ -94,9 +94,11 @@ export const useLogin = ({
                     setWalletAddress('solana', user.wallet.address);
                     setCurrentChain('solana');
                 } else {
-                    console.log("Login completed with BSC wallet:", user.wallet.address);
+                    console.log("Login completed with EVM wallet:", user.wallet.address);
                     setWalletAddress('bsc', user.wallet.address);
-                    setCurrentChain('bsc');
+                    setWalletAddress('base', user.wallet.address);
+                    // Keep the current chain as 'solana' by default, don't auto-switch to BSC
+                    // setCurrentChain('bsc');
                 }
                 
                 onComplete?.(user.wallet);

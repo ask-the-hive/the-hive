@@ -31,7 +31,9 @@ export const GET = async (req: NextRequest) => {
         const searchResponse = await searchTokens({
             keyword: searchQuery,
             target: "token",
-            sort_by: "volume_24h_usd",
+            search_mode: "fuzzy",
+            search_by: "combination",
+            sort_by: "liquidity",
             sort_type: "desc",
             offset: 0,
             limit: 10,
@@ -85,7 +87,9 @@ export const POST = async (req: NextRequest) => {
     const searchResponse = await searchTokens({
         keyword: searchQuery,
         target: "token",
-        sort_by: "volume_24h_usd",
+        search_mode: "fuzzy",
+        search_by: "combination",
+        sort_by: "liquidity",
         sort_type: "desc",
         offset: 0,
         limit: 10,

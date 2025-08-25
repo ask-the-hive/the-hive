@@ -22,10 +22,10 @@ export const GET = async (request: NextRequest, { params }: { params: Promise<{ 
     const { address } = await params;
     const normalizedAddress = address.toLowerCase();
     
-    // Get chain from query parameters, default to 'bsc'
+    // Get chain from query parameters, default to 'solana'
     const searchParams = request.nextUrl.searchParams;
-    const chainParam = searchParams.get('chain') || 'bsc';
-    const chain = (chainParam === 'solana' || chainParam === 'bsc' || chainParam === 'base') ? chainParam as ChainType : 'bsc';
+    const chainParam = searchParams.get('chain') || 'solana';
+    const chain = (chainParam === 'solana' || chainParam === 'bsc' || chainParam === 'base') ? chainParam as ChainType : 'solana';
     
     console.log(`API route: Fetching metadata for token ${address} on chain ${chain}`);
     

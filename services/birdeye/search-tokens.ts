@@ -6,6 +6,8 @@ import type { SearchResponse } from "./types/search";
 interface SearchTokensParams {
     keyword: string;
     target: string;
+    search_mode?: string;
+    search_by?: string;
     sort_by: string;
     sort_type: string;
     offset: number;
@@ -16,7 +18,9 @@ interface SearchTokensParams {
 export const searchTokens = async ({
     keyword,
     target = "token",
-    sort_by = "volume_24h_usd",
+    search_mode = "fuzzy",
+    search_by = "combination",
+    sort_by = "liquidity",
     sort_type = "desc",
     offset = 0,
     limit = 10,
@@ -25,6 +29,8 @@ export const searchTokens = async ({
     const params: Record<string, string | number> = {
         keyword,
         target,
+        search_mode,
+        search_by,
         sort_by,
         sort_type,
         offset,
