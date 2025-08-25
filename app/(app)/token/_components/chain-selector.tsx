@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect } from 'react'
+import React from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useChain } from '@/app/_contexts/chain-context'
 import { 
@@ -15,21 +15,18 @@ import ChainIcon from '@/app/(app)/_components/chain-icon'
 const ChainSelector: React.FC = () => {
     const router = useRouter()
     const searchParams = useSearchParams()
-    const { currentChain, setCurrentChain } = useChain()
+    const { currentChain } = useChain()
 
-    // Sync URL params with context
-    useEffect(() => {
-        const chainParam = searchParams.get('chain')
-        if (chainParam && (chainParam === 'solana' || chainParam === 'bsc' || chainParam === 'base')) {
-            setCurrentChain(chainParam)
-        }
-    }, [searchParams, setCurrentChain])
+    // Get current chain from URL or context
+    const chainParam = searchParams.get('chain')
+    const currentChainFromUrl = chainParam && (chainParam === 'solana' || chainParam === 'bsc' || chainParam === 'base') 
+        ? chainParam 
+        : currentChain
 
     const handleChainChange = (value: string) => {
         const newChain = value as 'solana' | 'bsc' | 'base'
-        setCurrentChain(newChain)
         
-        // Update URL
+        // Update URL only, not global context
         const params = new URLSearchParams(searchParams.toString())
         params.set('chain', newChain)
         router.push(`?${params.toString()}`)
@@ -39,7 +36,7 @@ const ChainSelector: React.FC = () => {
         <div className="flex items-center gap-2">
             <span className="text-sm font-medium">Chain:</span>
             <Select
-                value={currentChain}
+                value={currentChainFromUrl}
                 onValueChange={handleChainChange}
             >
                 <SelectTrigger className="w-[120px] h-8">

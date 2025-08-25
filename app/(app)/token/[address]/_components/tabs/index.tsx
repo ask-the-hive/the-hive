@@ -6,7 +6,7 @@ import { GiSwapBag } from 'react-icons/gi'
 import { IoSwapHorizontal } from 'react-icons/io5'
 import { MdBubbleChart } from 'react-icons/md'
 import { FaXTwitter, FaAt, FaWater } from 'react-icons/fa6'
-import { ChartCandlestick } from 'lucide-react'
+import { ChartCandlestick, Receipt } from 'lucide-react'
 
 import { Tabs, TabsTrigger, TabsContent } from '@/components/ui'
 import DraggableTabsList from './draggable-tabs-list'
@@ -18,6 +18,7 @@ import AccountTweets from './account-tweets';
 import AccountMentions from './account-mentions';
 import TokenMarkets from './markets'
 import MarketStats from './market-stats'
+import TransactionsTab from './transactions'
 
 import { getTokenOverview } from '@/services/birdeye';
 import { useIsMobile } from '@/hooks/utils/use-mobile';
@@ -111,6 +112,16 @@ const TokenDashboardTabs: React.FC<Props> = ({ address, tokenOverview }) => {
                     Traders
                 </TabsTrigger>
                 <TabsTrigger 
+                    value="transactions"
+                    ref={(el) => {
+                        if (el) tabsRef.current['transactions'] = el
+                    }}
+                    className="min-w-fit whitespace-nowrap data-[state=active]:bg-white dark:data-[state=active]:bg-neutral-800"
+                >
+                    <Receipt className="w-4 h-4" />
+                    Transactions
+                </TabsTrigger>
+                <TabsTrigger 
                     value="bubble"
                     ref={(el) => {
                         if (el) tabsRef.current['bubble'] = el
@@ -160,6 +171,9 @@ const TokenDashboardTabs: React.FC<Props> = ({ address, tokenOverview }) => {
                 </TabsContent>
                 <TabsContent value="traders" className={isMobile ? 'm-0' : 'h-full m-0'}>
                     <TopTraders address={address} />
+                </TabsContent>
+                <TabsContent value="transactions" className={isMobile ? 'm-0' : 'h-full m-0'}>
+                    <TransactionsTab address={address} />
                 </TabsContent>
                 <TabsContent value="bubble" className={isMobile ? 'm-0 p-2' : 'h-full m-0 p-2'}>
                     <BubbleMap address={address} />

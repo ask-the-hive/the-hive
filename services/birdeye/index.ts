@@ -12,3 +12,5 @@ export * from './get-token-metadata';
 export * from './get-token-holders';
 export * from './get-markets-list';
 export * from './get-token-price-history';
+export * from './get-token-transactions';
+export * from './types';

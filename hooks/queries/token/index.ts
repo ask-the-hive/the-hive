@@ -7,3 +7,4 @@ export * from "./use-top-traders";
 export * from "./use-token-markets";
 export * from "./use-token-users-over-time";
 export * from "./use-search-tokens";
+export * from "./use-token-transactions";
