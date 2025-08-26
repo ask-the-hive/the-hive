@@ -161,7 +161,7 @@ const DraggableTabsList = React.forwardRef<
             tabsListRef.current = el as HTMLDivElement
           }}
           className={cn(
-            "p-0 h-fit justify-start bg-neutral-100 dark:bg-neutral-700 inline-flex rounded-none flex-nowrap gap-0 select-none",
+            "p-0 h-fit w-full justify-between bg-neutral-100 dark:bg-neutral-700 rounded-none flex-nowrap gap-0 select-none",
             className
           )}
           {...props}

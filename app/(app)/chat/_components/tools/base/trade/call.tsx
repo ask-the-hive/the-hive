@@ -83,51 +83,103 @@ const SwapCallBody: React.FC<Props> = ({ toolCallId, args }) => {
             try {
                 // Handle input token
                 if (args.inputTokenAddress && args.inputTokenAddress !== "ETH") {
-                    // Always use uppercase symbol for search
-                    const searchQuery = args.inputTokenAddress.toUpperCase();
-                    // Search for token using the API endpoint
-                    const response = await fetch(`/api/token/search?query=${encodeURIComponent(searchQuery)}&chain=base&search_mode=fuzzy`);
-                    const data = await response.json();
+                    // Check if it's an address or symbol
+                    const isAddress = args.inputTokenAddress.startsWith('0x') && args.inputTokenAddress.length === 42;
                     
-                    const token = data.tokens?.[0];
-                    if (token) {
-                        setInputToken({
-                            id: token.address,
-                            name: token.name || "Unknown Token",
-                            symbol: token.symbol || "UNKNOWN",
-                            logoURI: token.logo_uri || "",
-                            decimals: 18, // Default to 18 decimals for Base tokens
-                            tags: [],
-                            freezeAuthority: null,
-                            mintAuthority: null,
-                            permanentDelegate: null,
-                            extensions: {}
-                        });
+                    if (isAddress) {
+                        // It's an address, fetch metadata directly
+                        try {
+                            const response = await fetch(`/api/token/${args.inputTokenAddress}/metadata?chain=base`);
+                            if (response.ok) {
+                                const metadata = await response.json();
+                                setInputToken({
+                                    id: args.inputTokenAddress,
+                                    name: metadata.name || "Unknown Token",
+                                    symbol: metadata.symbol || "UNKNOWN",
+                                    logoURI: metadata.logo_uri || "",
+                                    decimals: metadata.decimals || 18,
+                                    tags: [],
+                                    freezeAuthority: null,
+                                    mintAuthority: null,
+                                    permanentDelegate: null,
+                                    extensions: {}
+                                });
+                            }
+                        } catch (error) {
+                            console.error('Error fetching token metadata by address:', error);
+                        }
+                    } else {
+                        // It's a symbol, search for it
+                        const searchQuery = args.inputTokenAddress.toUpperCase();
+                        const response = await fetch(`/api/token/search?query=${encodeURIComponent(searchQuery)}&chain=base&search_mode=fuzzy`);
+                        const data = await response.json();
+                        
+                        const token = data.tokens?.[0];
+                        if (token) {
+                            setInputToken({
+                                id: token.address,
+                                name: token.name || "Unknown Token",
+                                symbol: token.symbol || "UNKNOWN",
+                                logoURI: token.logo_uri || "",
+                                decimals: 18, // Default to 18 decimals for Base tokens
+                                tags: [],
+                                freezeAuthority: null,
+                                mintAuthority: null,
+                                permanentDelegate: null,
+                                extensions: {}
+                            });
+                        }
                     }
                 }
 
                 // Handle output token
                 if (args.outputTokenAddress && args.outputTokenAddress !== "ETH") {
-                    // Always use uppercase symbol for search
-                    const searchQuery = args.outputTokenAddress.toUpperCase();
-                    // Search for token using the API endpoint
-                    const response = await fetch(`/api/token/search?query=${encodeURIComponent(searchQuery)}&chain=base&search_mode=fuzzy`);
-                    const data = await response.json();
+                    // Check if it's an address or symbol
+                    const isAddress = args.outputTokenAddress.startsWith('0x') && args.outputTokenAddress.length === 42;
                     
-                    const token = data.tokens?.[0];
-                    if (token) {
-                        setOutputToken({
-                            id: token.address,
-                            name: token.name || "Unknown Token",
-                            symbol: token.symbol || "UNKNOWN",
-                            logoURI: token.logo_uri || "",
-                            decimals: 18, // Default to 18 decimals for Base tokens
-                            tags: [],
-                            freezeAuthority: null,
-                            mintAuthority: null,
-                            permanentDelegate: null,
-                            extensions: {}
-                        });
+                    if (isAddress) {
+                        // It's an address, fetch metadata directly
+                        try {
+                            const response = await fetch(`/api/token/${args.outputTokenAddress}/metadata?chain=base`);
+                            if (response.ok) {
+                                const metadata = await response.json();
+                                setOutputToken({
+                                    id: args.outputTokenAddress,
+                                    name: metadata.name || "Unknown Token",
+                                    symbol: metadata.symbol || "UNKNOWN",
+                                    logoURI: metadata.logo_uri || "",
+                                    decimals: metadata.decimals || 18,
+                                    tags: [],
+                                    freezeAuthority: null,
+                                    mintAuthority: null,
+                                    permanentDelegate: null,
+                                    extensions: {}
+                                });
+                            }
+                        } catch (error) {
+                            console.error('Error fetching token metadata by address:', error);
+                        }
+                    } else {
+                        // It's a symbol, search for it
+                        const searchQuery = args.outputTokenAddress.toUpperCase();
+                        const response = await fetch(`/api/token/search?query=${encodeURIComponent(searchQuery)}&chain=base&search_mode=fuzzy`);
+                        const data = await response.json();
+                        
+                        const token = data.tokens?.[0];
+                        if (token) {
+                            setOutputToken({
+                                id: token.address,
+                                name: token.name || "Unknown Token",
+                                symbol: token.symbol || "UNKNOWN",
+                                logoURI: token.logo_uri || "",
+                                decimals: 18, // Default to 18 decimals for Base tokens
+                                tags: [],
+                                freezeAuthority: null,
+                                mintAuthority: null,
+                                permanentDelegate: null,
+                                extensions: {}
+                            });
+                        }
                     }
                 }
             } catch (error) {

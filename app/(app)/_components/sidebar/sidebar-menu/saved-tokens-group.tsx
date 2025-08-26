@@ -132,7 +132,7 @@ const SavedTokensGroup: React.FC = () => {
                     </CollapsibleTrigger>
                 </Link>
                 <CollapsibleContent>
-                    <SidebarMenuSub className="flex-1 overflow-y-auto max-h-60 relative flex flex-col">
+                    <SidebarMenuSub className="flex-1 overflow-y-auto max-h-60 relative flex flex-col black-scrollbar">
                         {
                             isLoading ? (
                                 <Skeleton className="h-10 w-full" />

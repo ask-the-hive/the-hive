@@ -86,7 +86,7 @@ const TokenDashboardTabs: React.FC<Props> = ({ address, tokenOverview }) => {
                     ref={(el) => {
                         if (el) tabsRef.current['market-stats'] = el
                     }}
-                    className="min-w-fit whitespace-nowrap data-[state=active]:bg-white dark:data-[state=active]:bg-neutral-800"
+                    className="flex-1 min-w-fit whitespace-nowrap data-[state=active]:bg-white dark:data-[state=active]:bg-neutral-800"
                 >
                     <ChartCandlestick className="w-4 h-4" />
                     Market Stats
@@ -96,7 +96,7 @@ const TokenDashboardTabs: React.FC<Props> = ({ address, tokenOverview }) => {
                     ref={(el) => {
                         if (el) tabsRef.current['holders'] = el
                     }}
-                    className="min-w-fit whitespace-nowrap data-[state=active]:bg-white dark:data-[state=active]:bg-neutral-800"
+                    className="flex-1 min-w-fit whitespace-nowrap data-[state=active]:bg-white dark:data-[state=active]:bg-neutral-800"
                 >
                     <GiSwapBag className="w-4 h-4" />
                     Holders
@@ -106,7 +106,7 @@ const TokenDashboardTabs: React.FC<Props> = ({ address, tokenOverview }) => {
                     ref={(el) => {
                         if (el) tabsRef.current['traders'] = el
                     }}
-                    className="min-w-fit whitespace-nowrap data-[state=active]:bg-white dark:data-[state=active]:bg-neutral-800"
+                    className="flex-1 min-w-fit whitespace-nowrap data-[state=active]:bg-white dark:data-[state=active]:bg-neutral-800"
                 >
                     <IoSwapHorizontal className="w-4 h-4" />
                     Traders
@@ -116,7 +116,7 @@ const TokenDashboardTabs: React.FC<Props> = ({ address, tokenOverview }) => {
                     ref={(el) => {
                         if (el) tabsRef.current['transactions'] = el
                     }}
-                    className="min-w-fit whitespace-nowrap data-[state=active]:bg-white dark:data-[state=active]:bg-neutral-800"
+                    className="flex-1 min-w-fit whitespace-nowrap data-[state=active]:bg-white dark:data-[state=active]:bg-neutral-800"
                 >
                     <Receipt className="w-4 h-4" />
                     Transactions
@@ -126,7 +126,7 @@ const TokenDashboardTabs: React.FC<Props> = ({ address, tokenOverview }) => {
                     ref={(el) => {
                         if (el) tabsRef.current['bubble'] = el
                     }}
-                    className="min-w-fit whitespace-nowrap data-[state=active]:bg-white dark:data-[state=active]:bg-neutral-800"
+                    className="flex-1 min-w-fit whitespace-nowrap data-[state=active]:bg-white dark:data-[state=active]:bg-neutral-800"
                 >
                     <MdBubbleChart className="w-4 h-4" />
                     Bubble Map
@@ -136,7 +136,7 @@ const TokenDashboardTabs: React.FC<Props> = ({ address, tokenOverview }) => {
                     ref={(el) => {
                         if (el) tabsRef.current['markets'] = el
                     }}
-                    className="min-w-fit whitespace-nowrap data-[state=active]:bg-white dark:data-[state=active]:bg-neutral-800"
+                    className="flex-1 min-w-fit whitespace-nowrap data-[state=active]:bg-white dark:data-[state=active]:bg-neutral-800"
                 >
                     <FaWater className="w-4 h-4" />
                     Markets
@@ -146,7 +146,7 @@ const TokenDashboardTabs: React.FC<Props> = ({ address, tokenOverview }) => {
                     ref={(el) => {
                         if (el) tabsRef.current['tweets'] = el
                     }}
-                    className="min-w-fit whitespace-nowrap data-[state=active]:bg-white dark:data-[state=active]:bg-neutral-800"
+                    className="flex-1 min-w-fit whitespace-nowrap data-[state=active]:bg-white dark:data-[state=active]:bg-neutral-800"
                 >
                     <FaXTwitter className="w-4 h-4" />
                     Tweets
@@ -156,7 +156,7 @@ const TokenDashboardTabs: React.FC<Props> = ({ address, tokenOverview }) => {
                     ref={(el) => {
                         if (el) tabsRef.current['mentions'] = el
                     }}
-                    className="min-w-fit whitespace-nowrap data-[state=active]:bg-white dark:data-[state=active]:bg-neutral-800"
+                    className="flex-1 min-w-fit whitespace-nowrap data-[state=active]:bg-white dark:data-[state=active]:bg-neutral-800"
                 >
                     <FaAt className="w-4 h-4" />
                     Mentions
