@@ -17,7 +17,8 @@ export function GetTrades({ tokensTraded }: Props) {
     
     return (
         <Card className="flex flex-col gap-2 w-full p-2">
-            <Table className="text-center">
+            <div className={`overflow-y-auto ${showAll ? 'max-h-96' : ''}`}>
+                <Table className="text-center">
                 <TableHeader>
                     <TableRow>
                         <TableHead className="text-center">Asset</TableHead>
@@ -88,6 +89,7 @@ export function GetTrades({ tokensTraded }: Props) {
                     ))}
                 </TableBody>
             </Table>
+            </div>
             {tokens.length > 5 && (
                 <Button
                     variant="ghost"
