@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { ChevronDown, Loader2, MessageSquare, Trash2, Plus } from 'lucide-react';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 import { usePathname } from 'next/navigation';
 
@@ -26,6 +27,7 @@ import { useUserChats } from '@/hooks';
 
 import { useChat } from '../../../chat/_contexts/chat';
 import { useSidebarContext } from '@/app/(app)/_contexts/sidebar-context';
+import { useGlobalChatManager } from '../../../chat/_contexts/global-chat-manager';
 
 import { cn } from '@/lib/utils';
 import { ChainType } from '@/app/_contexts/chain-context';
@@ -40,6 +42,7 @@ const ChatChainIcon = ({ chain }: { chain?: ChainType }) => {
 const ChatsGroup: React.FC = () => {
 
     const pathname = usePathname();
+    const router = useRouter();
 
     const { isMobile, setOpenMobile } = useSidebar();
 
@@ -47,7 +50,10 @@ const ChatsGroup: React.FC = () => {
 
     const { chats, isLoading, mutate } = useUserChats();
 
-    const { setChat, chatId, resetChat } = useChat();
+    const { setChat, chatId } = useChat();
+    
+    // Get global chat manager to track loading states
+    const { chatThreads } = useGlobalChatManager();
 
     // Use the sidebar context to control the dropdown state
     const { isChatsOpen, setIsChatsOpen } = useSidebarContext();
@@ -90,7 +96,8 @@ const ChatsGroup: React.FC = () => {
                 mutate(chats.filter((chat) => chat.id !== deletedChatId));
                 
                 if (deletedChatId === chatId) {
-                    resetChat();
+                    // Navigate to a new chat if the current one was deleted
+                    router.push('/chat');
                     if (isMobile) {
                         setOpenMobile(false);
                     }
@@ -110,7 +117,7 @@ const ChatsGroup: React.FC = () => {
             onOpenChange={setIsChatsOpen}
         >
             <SidebarMenuItem>
-                <Link href='/chat'>
+                <div className="flex items-center justify-between w-full">
                     <CollapsibleTrigger 
                         asChild
                     >
@@ -118,31 +125,32 @@ const ChatsGroup: React.FC = () => {
                             className="justify-between w-full"
                             isActive={pathname.includes('/chat')}
                         >
-                            <div className="flex items-center justify-between w-full">
-                                <div className="flex items-center gap-2">
-                                    <MessageSquare className="h-4 w-4" />
-                                    <h1 className="text-sm font-semibold">Chats</h1>
+                            <div className="flex items-center gap-2">
+                                <MessageSquare className="h-4 w-4" />
+                                <h1 className="text-sm font-semibold">Chats</h1>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <div 
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        router.push('/chat');
+                                        if (isMobile) {
+                                            setOpenMobile(false);
+                                        }
+                                    }}
+                                    className="h-fit w-fit p-1 hover:bg-neutral-200 dark:hover:bg-neutral-600 rounded-md cursor-pointer"
+                                    title="Start new chat"
+                                >
+                                    <Plus className="w-4 h-4" />
                                 </div>
-                                <div className="flex items-center gap-2">
-                                    <div 
-                                        onClick={() => {
-                                            resetChat();
-                                            if (isMobile) {
-                                                setOpenMobile(false);
-                                            }
-                                        }}
-                                        className="h-fit w-fit p-1 hover:bg-neutral-200 dark:hover:bg-neutral-600 rounded-md"
-                                    >
-                                        <Plus className="w-4 h-4" />
-                                    </div>
-                                    <ChevronDown 
-                                        className="h-[14px] w-[14px] transition-transform group-data-[state=open]/collapsible:rotate-180 text-neutral-500 dark:text-neutral-500" 
-                                    />
-                                </div>
+                                <ChevronDown 
+                                    className="h-[14px] w-[14px] transition-transform group-data-[state=open]/collapsible:rotate-180 text-neutral-500 dark:text-neutral-500" 
+                                />
                             </div>
                         </SidebarMenuButton>
                     </CollapsibleTrigger>
-                </Link>
+                </div>
                 <CollapsibleContent>
                     <SidebarMenuSub className="flex-1 overflow-hidden relative flex flex-col">
                         {
@@ -150,41 +158,56 @@ const ChatsGroup: React.FC = () => {
                                 <Skeleton className="h-10 w-full" />
                             ) : (
                                 chats.length > 0 ? (
-                                    chats.map((chat) => (
-                                        <SidebarMenuSubItem
-                                            key={chat.id}
-                                            className="group/chat"
-                                        >
-                                            <SidebarMenuSubButton 
-                                                asChild 
-                                                isActive={chat.id === chatId}
-                                                onClick={() => setChat(chat.id)}
+                                    chats.map((chat) => {
+                                        // Get the loading state for this specific chat
+                                        const chatThreadState = chatThreads.get(chat.id);
+                                        const isChatLoading = chatThreadState?.isLoading || chatThreadState?.isResponseLoading;
+                                        
+                                        return (
+                                            <SidebarMenuSubItem
+                                                key={chat.id}
+                                                className="group/chat"
                                             >
-                                                <Link 
-                                                    href={`/chat`} 
+                                                <SidebarMenuSubButton 
+                                                    asChild 
+                                                    isActive={chat.id === chatId}
+                                                    onClick={() => setChat(chat.id)}
+                                                >
+                                                                                                    <Link 
+                                                    href={`/chat/${chat.id}`} 
                                                     className="flex items-center justify-between w-full"
                                                 >
-                                                    <div className="flex items-center gap-2 truncate">
-                                                        <ChatChainIcon chain={chat.chain} />
-                                                        <span className='truncate'>{chat.tagline}</span>
-                                                    </div>
-                                                    <div
-                                                        onClick={(e) => handleDelete(chat.id, e)}
-                                                        className={cn(
-                                                            "size-6 shrink-0 dark:hover:bg-neutral-700 hover:bg-neutral-200 rounded-md transition-all duration-300 flex items-center justify-center opacity-0 group-hover/chat:opacity-100",
-                                                            deletingChatId === chat.id && "opacity-50 pointer-events-none"
-                                                        )}
-                                                    >
-                                                        {deletingChatId === chat.id ? (
-                                                            <Loader2 className="size-4 animate-spin" />
-                                                        ) : (
-                                                            <Trash2 className="size-4 text-red-600" />
-                                                        )}
-                                                    </div>
-                                                </Link>
-                                            </SidebarMenuSubButton>
-                                        </SidebarMenuSubItem>
-                                    ))
+                                                        <div className="flex items-center gap-2 truncate">
+                                                            <ChatChainIcon chain={chat.chain} />
+                                                            <span className='truncate'>{chat.tagline}</span>
+                                                            {/* Show loading indicator for this specific chat */}
+                                                            {isChatLoading && (
+                                                                <div className="flex items-center gap-1.5">
+                                                                    <Loader2 className="h-4 w-4 animate-spin text-brand-600" />
+                                                                    <span className="text-xs text-brand-600 font-medium">
+                                                                        Generating...
+                                                                    </span>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                        <div
+                                                            onClick={(e) => handleDelete(chat.id, e)}
+                                                            className={cn(
+                                                                "size-6 shrink-0 dark:hover:bg-neutral-700 hover:bg-neutral-200 rounded-md transition-all duration-300 flex items-center justify-center opacity-0 group-hover/chat:opacity-100",
+                                                                deletingChatId === chat.id && "opacity-50 pointer-events-none"
+                                                            )}
+                                                        >
+                                                            {deletingChatId === chat.id ? (
+                                                                <Loader2 className="size-4 animate-spin" />
+                                                            ) : (
+                                                                <Trash2 className="size-4 text-red-600" />
+                                                            )}
+                                                        </div>
+                                                    </Link>
+                                                </SidebarMenuSubButton>
+                                            </SidebarMenuSubItem>
+                                        );
+                                    })
                                 ) : (
                                     user ? (
                                         <p className='text-sm text-neutral-500 dark:text-neutral-400 pl-2'>
