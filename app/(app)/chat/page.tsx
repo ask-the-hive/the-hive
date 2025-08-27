@@ -1,13 +1,12 @@
 export const dynamic = 'force-dynamic';
 
-import Chat from "./_components/chat";
+import { redirect } from 'next/navigation';
+import { generateId } from 'ai';
 
 const ChatPage = () => {
-  return (
-    <div className="flex-1 h-0 overflow-y-hidden w-full">
-      <Chat />
-    </div>
-  );
+    // Generate a new chat ID and redirect to the specific chat route
+    const newChatId = generateId();
+    redirect(`/chat/${newChatId}`);
 }
 
 export default ChatPage;

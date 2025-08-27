@@ -38,7 +38,8 @@ const TradesTable = ({ body }: { body: GetTraderTradesResultBodyType }) => {
 
     return (
         <Card className="flex flex-col gap-2 w-full p-2">
-            <Table className="text-center">
+            <div className={`overflow-y-auto ${showAll ? 'max-h-96' : ''}`}>
+                <Table className="text-center">
                 <TableHeader>
                     <TableRow>
                         <TableHead className="text-center">Asset</TableHead>
@@ -107,6 +108,7 @@ const TradesTable = ({ body }: { body: GetTraderTradesResultBodyType }) => {
                     ))}
                 </TableBody>
             </Table>
+            </div>
             {tokens.length > 5 && (
                 <Button
                     variant="ghost"

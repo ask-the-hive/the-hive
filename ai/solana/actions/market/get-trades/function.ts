@@ -16,18 +16,11 @@ export async function getTraderTrades(
   args: GetTraderTradesArgumentsType
 ): Promise<SolanaActionResult<GetTraderTradesResultBodyType>> {
   try {
-    const responses = await Promise.all(
-      Array.from({ length: 10 }, (_, i) => 
-        seekTradesByTime({
-          address: args.address,
-          offset: i * 100,
-          limit: 100
-        })
-      )
-    );
-    const response = {
-      items: responses.flatMap(r => r.items)
-    };
+    const response = await seekTradesByTime({
+      address: args.address,
+      offset: 0,
+      limit: 100
+    });
 
     const tokensTradedData: Record<string, Omit<TokenTraded, "token">> = {};
 
@@ -65,9 +58,41 @@ export async function getTraderTrades(
     });
 
     const tokensTraded = (await Promise.all(Object.entries(tokensTradedData).map(async ([address, data]) => {
-      const token = await getToken(address) as Token;
-      // Skip tokens that weren't found in the database
-      if (!token) return null;
+      try {
+        // Try to get token from database first
+        const token = await getToken(address) as Token;
+        if (token) {
+          return {
+            token,
+            ...data,
+          };
+        }
+      } catch (error) {
+        console.error(`Error fetching metadata for token ${address}:`, error);
+      }
+      
+      // If database lookup fails, create token from trade data
+      // Find token info from trades
+      const tradeInfo = response.items.find(
+        item => item.base.address === address || item.quote.address === address
+      );
+      
+      if (!tradeInfo) return null;
+      
+      const tokenInfo = tradeInfo.base.address === address ? tradeInfo.base : tradeInfo.quote;
+      const token: Token = {
+        id: address,
+        name: tokenInfo.symbol,
+        symbol: tokenInfo.symbol.toUpperCase(),
+        decimals: tokenInfo.decimals,
+        logoURI: 'https://public-api.birdeye.so/unknown.png',
+        tags: [],
+        freezeAuthority: null,
+        mintAuthority: null,
+        permanentDelegate: null,
+        extensions: {}
+      };
+
       return {
         token,
         ...data,
