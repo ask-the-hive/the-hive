@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef, useEffect } from 'react';
+import React, { useRef } from 'react';
 
 import { CornerDownRight } from 'lucide-react';
 
@@ -23,17 +23,18 @@ const ChatInput: React.FC = () => {
 
     const { user } = usePrivy();
 
-    const { input, setInput, onSubmit, isLoading, model, setModel, chain, setChain, messages, inputDisabledMessage } = useChat();
+    const { input, setInput, onSubmit, model, setModel, chain, setChain, inputDisabledMessage } = useChat();
 
     const { onKeyDown } = useEnterSubmit({ onSubmit: onSubmit })
 
     const inputRef = useRef<HTMLTextAreaElement>(null)
 
-    useEffect(() => {
-        if (!isLoading && inputRef.current) {
-            inputRef.current.focus();
-        }
-    }, [isLoading]);
+    // Remove auto-focus behavior that prevents new chat creation
+    // useEffect(() => {
+    //     if (!isLoading && inputRef.current) {
+    //         inputRef.current.focus();
+    //     }
+    // }, [isLoading]);
 
     return (
         <div className="flex flex-col gap-1 w-full">
@@ -50,7 +51,7 @@ const ChatInput: React.FC = () => {
                     "bg-neutral-100 focus-within:border-brand-600",
                     // Dark mode styles
                     "dark:bg-neutral-800/50 dark:focus-within:border-brand-600",
-                    isLoading && "opacity-50 cursor-not-allowed"
+                    // Remove loading state styling that prevents new chat creation
                 )}
             >
                 <OptionalTooltip text={inputDisabledMessage}>
@@ -68,7 +69,8 @@ const ChatInput: React.FC = () => {
                         onChange={e => {
                             setInput(e.target.value);
                         }}
-                        disabled={isLoading || inputDisabledMessage !== ''}
+                        // Only disable input for tool invocations, not for loading state
+                        disabled={inputDisabledMessage !== ''}
                         autoFocus
                     />
                 </OptionalTooltip>
@@ -77,12 +79,14 @@ const ChatInput: React.FC = () => {
                         <ModelSelector
                             model={model}
                             onModelChange={setModel}
-                            disabled={isLoading || messages.length > 0}
+                            // Always allow model changes
+                            disabled={false}
                         />
                         <ChainSelector
                             chain={chain}
                             onChainChange={setChain}
-                            disabled={isLoading || messages.length > 0}
+                            // Always allow chain changes
+                            disabled={false}
                         />
                     </div>
                     <TooltipProvider>
@@ -91,7 +95,8 @@ const ChatInput: React.FC = () => {
                                 <Button 
                                     type="submit" 
                                     size="icon" 
-                                    disabled={input.trim() === '' || isLoading || !user}
+                                    // Only disable submit button for empty input or tool invocations
+                                    disabled={input.trim() === '' || inputDisabledMessage !== '' || !user}
                                     variant="ghost"
                                     className="h-8 w-8"
                                 >
