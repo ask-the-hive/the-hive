@@ -45,6 +45,20 @@ export const SwapModalProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         extensions: {}
     };
 
+    // Define ETH token at component level for reuse
+    const ethToken = {
+        id: '0x4200000000000000000000000000000000000006',
+        name: 'Ethereum',
+        symbol: 'ETH',
+        decimals: 18,
+        logoURI: 'https://assets.coingecko.com/coins/images/279/small/ethereum.png',
+        tags: [],
+        freezeAuthority: null,
+        mintAuthority: null,
+        permanentDelegate: null,
+        extensions: {}
+    };
+
     const onOpen = async (newMode: 'buy' | 'sell', newTokenAddress: string) => {
         // First clear existing states
         setToken(null);
@@ -64,6 +78,20 @@ export const SwapModalProvider: React.FC<{ children: React.ReactNode }> = ({ chi
                 setMode(newMode);
                 setTokenAddress(solToken.id);
                 setToken(solToken);
+                setIsOpen(true);
+                return;
+            }
+
+            // Special handling for ETH token (by address or symbol)
+            if (currentChain === 'base' && (
+                newTokenAddress === '0x4200000000000000000000000000000000000006' ||
+                newTokenAddress.toLowerCase() === 'eth' ||
+                newTokenAddress.toLowerCase() === 'weth' ||
+                metadata.symbol?.toUpperCase() === 'ETH'
+            )) {
+                setMode(newMode);
+                setTokenAddress(ethToken.id);
+                setToken(ethToken);
                 setIsOpen(true);
                 return;
             }
@@ -96,6 +124,19 @@ export const SwapModalProvider: React.FC<{ children: React.ReactNode }> = ({ chi
                 setMode(newMode);
                 setTokenAddress(solToken.id);
                 setToken(solToken);
+                setIsOpen(true);
+                return;
+            }
+
+            // Special handling for ETH token by address even if metadata fetch fails
+            if (currentChain === 'base' && (
+                newTokenAddress === '0x4200000000000000000000000000000000000006' ||
+                newTokenAddress.toLowerCase() === 'eth' ||
+                newTokenAddress.toLowerCase() === 'weth'
+            )) {
+                setMode(newMode);
+                setTokenAddress(ethToken.id);
+                setToken(ethToken);
                 setIsOpen(true);
                 return;
             }

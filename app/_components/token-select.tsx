@@ -42,7 +42,50 @@ const TokenSelect: React.FC<Props> = ({ value, onChange, priorityTokens = [] }) 
     const sortedResults = React.useMemo(() => {
         if (!tokens) return [];
         
-        return tokens.sort((a: TokenSearchResult, b: TokenSearchResult) => {
+        let results = [...tokens];
+        
+        // Inject ETH token for Base chain when searching for "ETH" or "WETH"
+        if (chain === 'base' && (input.toLowerCase() === 'eth' || input.toLowerCase() === 'weth')) {
+            const ethToken: TokenSearchResult = {
+                address: '0x4200000000000000000000000000000000000006',
+                name: 'Ethereum',
+                symbol: 'ETH',
+                logo_uri: 'https://assets.coingecko.com/coins/images/279/small/ethereum.png',
+                price: 0,
+                price_change_24h_percent: 0,
+                market_cap: 0,
+                fdv: 0,
+                decimals: 18,
+                liquidity: 0,
+                volume_24h_change_percent: null,
+                network: 'base',
+                buy_24h: 0,
+                buy_24h_change_percent: null,
+                sell_24h: 0,
+                sell_24h_change_percent: null,
+                trade_24h: 0,
+                trade_24h_change_percent: null,
+                unique_wallet_24h: 0,
+                unique_view_24h_change_percent: null,
+                last_trade_human_time: '',
+                last_trade_unix_time: 0,
+                creation_time: '',
+                volume_24h_usd: 0,
+                verified: true
+            };
+            
+            // Check if ETH token is already in results
+            const ethExists = results.some(token => 
+                token.address === '0x4200000000000000000000000000000000000006' ||
+                token.symbol?.toUpperCase() === 'ETH'
+            );
+            
+            if (!ethExists) {
+                results = [ethToken, ...results];
+            }
+        }
+        
+        return results.sort((a: TokenSearchResult, b: TokenSearchResult) => {
             const aIndex = priorityTokens.indexOf(a.address);
             const bIndex = priorityTokens.indexOf(b.address);
             
@@ -56,7 +99,7 @@ const TokenSelect: React.FC<Props> = ({ value, onChange, priorityTokens = [] }) 
             id: token.address,
             logoURI: token.logo_uri
         }));
-    }, [tokens, priorityTokens]);
+    }, [tokens, priorityTokens, chain, input]);
 
     return (
         <Popover open={open} onOpenChange={setOpen}>
@@ -105,25 +148,36 @@ const TokenSelect: React.FC<Props> = ({ value, onChange, priorityTokens = [] }) 
                                         }
                                     </p>
                                 ) : (
-                                    sortedResults.map((token: Token) => (
+                                    sortedResults.map((token: TokenSearchResult) => (
                                         <Button 
-                                            key={token.id}
+                                            key={token.address}
                                             variant="ghost"
                                             className="w-full justify-start px-1"
                                             onClick={() => {
                                                 setOpen(false);
-                                                onChange(token);
+                                                onChange({
+                                                    id: token.address,
+                                                    name: token.name,
+                                                    symbol: token.symbol,
+                                                    decimals: token.decimals,
+                                                    logoURI: token.logo_uri,
+                                                    tags: [],
+                                                    freezeAuthority: null,
+                                                    mintAuthority: null,
+                                                    permanentDelegate: null,
+                                                    extensions: {}
+                                                });
                                             }}
                                         >
                                             <img
-                                                src={token.logoURI || "https://www.birdeye.so/images/unknown-token-icon.svg"} 
+                                                src={token.logo_uri || "https://www.birdeye.so/images/unknown-token-icon.svg"} 
                                                 alt={token.name}
                                                 className="w-6 h-6 rounded-full" 
                                             />
                                             <p className="text-sm font-bold">
                                                 {token.symbol}
                                             </p>
-                                            <SaveToken address={token.id} />
+                                            <SaveToken address={token.address} />
                                         </Button>
                                     ))
                                 )
