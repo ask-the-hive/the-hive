@@ -6,30 +6,15 @@ export async function trade(
 ): Promise<BaseActionResult<TradeResultBodyType>> {
     try {
         // Get token symbols from input
-        let inputTokenSymbol = args.inputTokenAddress || "";
+        let inputTokenSymbol = args.inputTokenAddress || "ETH";
         let outputTokenSymbol = args.outputTokenAddress || "";
-        let inputAmount = args.inputAmount;
 
-        // Generic trade request
-        if (!inputTokenSymbol && !outputTokenSymbol) {
-            return {
-                message: `Let's set up your token trade. Please select the tokens you want to trade.`,
-                body: {
-                    transaction: "",
-                    inputAmount: 0,
-                    inputToken: "",
-                    outputToken: "",
-                    walletAddress: args.walletAddress
-                }
-            };
-        }
-
-        // Specific trade request
+        // Return a message that will trigger the UI component
         return {
-            message: `Please confirm the swap${inputAmount ? ` of ${inputAmount}` : ''} ${inputTokenSymbol ? inputTokenSymbol : ''} ${outputTokenSymbol ? `for ${outputTokenSymbol}` : ''}`,
+            message: `Please confirm the swap of ${args.inputAmount || ""} ${inputTokenSymbol} for ${outputTokenSymbol}`,
             body: {
                 transaction: "", // Will be filled by the UI component
-                inputAmount: inputAmount || 0,
+                inputAmount: args.inputAmount || 0,
                 inputToken: inputTokenSymbol,
                 outputToken: outputTokenSymbol,
                 walletAddress: args.walletAddress

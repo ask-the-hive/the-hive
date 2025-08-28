@@ -1,6 +1,6 @@
 import { createClientV2 } from '@0x/swap-ts-sdk';
 
-const ZEROX_API_URL = 'https://bsc.api.0x.org';
+const ZEROX_API_URL = 'https://base.api.0x.org';
 
 export interface SwapQuoteParams {
     sellToken: string;
