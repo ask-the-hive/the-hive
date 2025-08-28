@@ -4,9 +4,9 @@ import React, { useState, useEffect } from 'react'
 
 import { Avatar, AvatarFallback, AvatarImage, Separator, Button, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger, Input } from '@/components/ui';
 import { Card } from '@/components/ui/card';
-import { LogOut, Upload, User, Edit2 } from 'lucide-react';
+import { LogOut, Upload, User, Edit2, Trash2, Plus } from 'lucide-react';
 
-import { type User as PrivyUser } from '@privy-io/react-auth';
+import { type User as PrivyUser, usePrivy } from '@privy-io/react-auth';
 import { useLogin } from '@/hooks';
 import { Loader2 } from 'lucide-react';
 import { pfpURL } from '@/lib/pfp';
@@ -23,7 +23,8 @@ const AccountHeading: React.FC<Props> = ({ user }) => {
     const [isEditingUsername, setIsEditingUsername] = useState(false);
     const [username, setUsername] = useState('');
     const [isLoading, setIsLoading] = useState(true);
-    const { logout } = useLogin();
+    const { connectWallet, logout } = useLogin();
+    const { unlinkWallet } = usePrivy();
 
     useEffect(() => {
         const fetchUser = async () => {
@@ -185,41 +186,84 @@ const AccountHeading: React.FC<Props> = ({ user }) => {
                     </TooltipProvider>
                 </div>
                 <Separator />
-                <div className="flex flex-col">
-                    <p className="text-xs font-bold text-neutral-600 dark:text-neutral-400">Connected Wallets</p>
+                <div className="flex flex-col gap-3">
+                    <div className="flex justify-between items-center">
+                        <p className="text-xs font-bold text-neutral-600 dark:text-neutral-400">Connected Wallets</p>
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 px-2 text-xs"
+                            onClick={() => connectWallet()}
+                        >
+                            <Plus className="h-3 w-3 mr-1" />
+                            Connect New Wallet
+                        </Button>
+                    </div>
+                    <div className="flex flex-col gap-2">
                     {
                         user.linkedAccounts.filter((account) => account.type === 'wallet').map((account) => {
                             if (account.address.startsWith('0x')) {
                                 // For EVM addresses, show both BSC and Base
                                 return (
                                     <React.Fragment key={account.address}>
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-[10px] leading-none px-1.5 py-0.5 bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded">
-                                                BSC
-                                            </span>
-                                            <p className="text-sm">{account.address}</p>
+                                        <div className="flex items-center justify-between group">
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-[10px] leading-none px-1.5 py-0.5 bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded">
+                                                    BSC
+                                                </span>
+                                                <p className="text-sm font-mono">{account.address}</p>
+                                            </div>
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                className="opacity-0 group-hover:opacity-100 h-6 w-6 p-0"
+                                                onClick={() => unlinkWallet(account.address)}
+                                            >
+                                                <Trash2 className="h-3 w-3 text-red-500" />
+                                            </Button>
                                         </div>
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-[10px] leading-none px-1.5 py-0.5 bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded">
-                                                BASE
-                                            </span>
-                                            <p className="text-sm">{account.address}</p>
+                                        <div className="flex items-center justify-between group">
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-[10px] leading-none px-1.5 py-0.5 bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded">
+                                                    BASE
+                                                </span>
+                                                <p className="text-sm font-mono">{account.address}</p>
+                                            </div>
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                className="opacity-0 group-hover:opacity-100 h-6 w-6 p-0"
+                                                onClick={() => unlinkWallet(account.address)}
+                                            >
+                                                <Trash2 className="h-3 w-3 text-red-500" />
+                                            </Button>
                                         </div>
                                     </React.Fragment>
                                 );
                             } else {
                                 // For Solana addresses
                                 return (
-                                    <div className="flex items-center gap-2" key={account.address}>
-                                        <span className="text-[10px] leading-none px-1.5 py-0.5 bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded">
-                                            SOL
-                                        </span>
-                                        <p className="text-sm">{account.address}</p>
+                                    <div className="flex items-center justify-between group" key={account.address}>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-[10px] leading-none px-1.5 py-0.5 bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded">
+                                                SOL
+                                            </span>
+                                            <p className="text-sm font-mono">{account.address}</p>
+                                        </div>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="opacity-0 group-hover:opacity-100 h-6 w-6 p-0"
+                                            onClick={() => unlinkWallet(account.address)}
+                                        >
+                                            <Trash2 className="h-3 w-3 text-red-500" />
+                                        </Button>
                                     </div>
                                 );
                             }
                         })
                     }
+                    </div>
                 </div>
             </Card>
         </div>
