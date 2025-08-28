@@ -5,7 +5,7 @@ import { Card } from '@/components/ui';
 import { useChat } from '@/app/(app)/chat/_contexts/chat';
 import { Skeleton } from '@/components/ui/skeleton';
 import { usePrivy } from '@privy-io/react-auth';
-import { useWallets } from '@privy-io/react-auth';
+import { useWallets, type ConnectedWallet } from '@privy-io/react-auth';
 import { useChain } from '@/app/_contexts/chain-context';
 import { BNB_METADATA, WBNB_ADDRESS } from '@/lib/config/bsc';
 import type { TradeArgumentsType, TradeResultBodyType } from '@/ai/bsc/actions/trade/actions/types';
@@ -13,7 +13,7 @@ import TokenInput from '../../bsc/transfer/token-input';
 import { ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import LogInButton from '@/app/(app)/_components/log-in-button';
+
 import type { Token } from '@/db/types/token';
 import { 
     createWalletClient, 
@@ -23,6 +23,19 @@ import {
     formatUnits,
     type Address,
 } from 'viem';
+// Use BSC RPC URL from env
+const bscChain = {
+    ...bsc,
+    rpcUrls: {
+        default: {
+            http: [`${process.env.NEXT_PUBLIC_BSC_RPC_URL}?apiKey=${process.env.NEXT_PUBLIC_ANKR_API_KEY}` || 'https://bsc-dataseed.binance.org']
+        },
+        public: {
+            http: [`${process.env.NEXT_PUBLIC_BSC_RPC_URL}?apiKey=${process.env.NEXT_PUBLIC_ANKR_API_KEY}` || 'https://bsc-dataseed.binance.org']
+        }
+    }
+} as const;
+
 import { bsc } from 'viem/chains';
 
 interface Props {
@@ -32,12 +45,16 @@ interface Props {
 
 const SwapCallBody: React.FC<Props> = ({ toolCallId, args }) => {
     const { addToolResult } = useChat();
-    const { user } = usePrivy();
+    const { user, connectWallet: privyConnect } = usePrivy();
     const { wallets } = useWallets();
     const { setCurrentChain } = useChain();
     const [isSwapping, setIsSwapping] = useState(false);
+    const [hasConnectedWallet, setHasConnectedWallet] = useState(false);
     const [inputAmount, setInputAmount] = useState<string>(args.inputAmount?.toString() || "");
     const [isLoading, setIsLoading] = useState(true);
+    const [expectedOutput, setExpectedOutput] = useState<string>("");
+    const [balance, setBalance] = useState<string>("");
+    const [isGettingQuote, setIsGettingQuote] = useState(false);
     
     // Set the current chain to BSC
     useEffect(() => {
@@ -45,8 +62,8 @@ const SwapCallBody: React.FC<Props> = ({ toolCallId, args }) => {
     }, [setCurrentChain]);
     
     // Get the BSC wallet from args.walletAddress
-    const bscWallet = wallets.find(w => w.address === args.walletAddress) || 
-                     (user?.wallet?.address === args.walletAddress ? user.wallet : null);
+    const bscWallet = (wallets.find(w => w.address === args.walletAddress) || 
+                     (user?.wallet?.address === args.walletAddress ? user.wallet : null)) as ConnectedWallet | null;
 
     // Default to BNB or WBNB based on address for input token
     const [inputToken, setInputToken] = useState<Token | null>(() => {
@@ -64,6 +81,84 @@ const SwapCallBody: React.FC<Props> = ({ toolCallId, args }) => {
         return null;
     });
     
+    // Get balance when input token changes
+    useEffect(() => {
+        const getBalance = async () => {
+            if (!bscWallet || !inputToken) return;
+
+            try {
+                const client = createWalletClient({
+                    account: bscWallet.address as Address,
+                    chain: bscChain,
+                    transport: custom(await bscWallet.getEthereumProvider())
+                }).extend(publicActions);
+
+                let tokenBalance: bigint;
+                if (inputToken.symbol === "BNB") {
+                    tokenBalance = await client.getBalance({ address: bscWallet.address as Address });
+                } else {
+                    tokenBalance = await client.readContract({
+                        address: inputToken.id as Address,
+                        abi: [{
+                            name: 'balanceOf',
+                            type: 'function',
+                            stateMutability: 'view',
+                            inputs: [{ name: 'account', type: 'address' }],
+                            outputs: [{ name: '', type: 'uint256' }]
+                        }],
+                        functionName: 'balanceOf',
+                        args: [bscWallet.address as Address]
+                    });
+                }
+
+                setBalance(formatUnits(tokenBalance, inputToken.decimals));
+            } catch (error) {
+                console.error('Error getting balance:', error);
+            }
+        };
+
+        getBalance();
+    }, [bscWallet, inputToken]);
+
+    // Get quote when amount changes
+    useEffect(() => {
+        const getQuote = async () => {
+            if (!bscWallet || !inputToken || !outputToken || !inputAmount || Number(inputAmount) <= 0) {
+                setExpectedOutput("");
+                return;
+            }
+
+            setIsGettingQuote(true);
+            try {
+                const sellAmountRaw = parseUnits(inputAmount, inputToken.decimals);
+                const sellToken = inputToken.symbol === "BNB" ? "BNB" : inputToken.id;
+                const buyToken = outputToken.symbol === "BNB" ? "BNB" : outputToken.id;
+
+                const quoteResponse = await fetch(
+                    `/api/swap/bsc/quote?` + new URLSearchParams({
+                        chainId: '56', // BSC chain ID
+                        sellToken: sellToken === "BNB" ? WBNB_ADDRESS : sellToken,
+                        buyToken: buyToken === "BNB" ? WBNB_ADDRESS : buyToken,
+                        sellAmount: sellAmountRaw.toString(),
+                        taker: bscWallet.address
+                    }).toString()
+                );
+
+                if (quoteResponse.ok) {
+                    const quote = await quoteResponse.json();
+                    setExpectedOutput(formatUnits(BigInt(quote.buyAmount), outputToken.decimals));
+                }
+            } catch (error) {
+                console.error('Error getting quote:', error);
+                setExpectedOutput("");
+            } finally {
+                setIsGettingQuote(false);
+            }
+        };
+
+        getQuote();
+    }, [bscWallet, inputToken, outputToken, inputAmount]);
+
     // Search and fetch token metadata
     useEffect(() => {
         const fetchTokens = async () => {
@@ -166,11 +261,11 @@ const SwapCallBody: React.FC<Props> = ({ toolCallId, args }) => {
             const provider = await (bscWallet as any).getEthereumProvider();
             
             // Create Viem wallet client
-            const client = createWalletClient({
-                account: bscWallet.address as Address,
-                chain: bsc,
-                transport: custom(provider)
-            }).extend(publicActions);
+                            const client = createWalletClient({
+                    account: bscWallet.address as Address,
+                    chain: bscChain,
+                    transport: custom(provider)
+                }).extend(publicActions);
 
             // Calculate sell amount in token decimals
             const sellAmountRaw = parseUnits(
@@ -278,70 +373,116 @@ const SwapCallBody: React.FC<Props> = ({ toolCallId, args }) => {
     }
 
     return (
-        <Card className="p-2 w-[384px]">
-            <div className="flex flex-col items-center gap-2">
-                <TokenInput
-                    token={inputToken}
-                    label="Sell"
-                    amount={inputAmount}
-                    onChange={(newAmount) => {
-                        setInputAmount(newAmount);
-                    }}
-                    onChangeToken={(newToken) => {
-                        setInputToken(newToken);
-                    }}
-                    priorityTokens={priorityTokens}
-                />
-                <ChevronDown className="w-4 h-4" />
-                <TokenInput
-                    token={outputToken}
-                    label="Buy"
-                    amount={""}
-                    onChangeToken={(newToken) => {
-                        setOutputToken(newToken);
-                    }}
-                    priorityTokens={priorityTokens}
-                />
-            </div>
-            <Separator className="my-2" />
-            <div className="flex flex-col gap-2">
-                {
-                    bscWallet ? (
-                        <Button
-                            variant="brand"
-                            onClick={onSwap}
-                            disabled={isSwapping || !inputToken || !outputToken || !inputAmount || Number(inputAmount) <= 0}
-                            className="w-full"
-                        >
-                            {isSwapping ? "Swapping..." : "Swap"}
-                        </Button>
-                    ) : (
-                        <div className="w-full">
-                            <LogInButton />
-                        </div>
-                    )
-                }
-                <Button
-                    variant="outline"
-                    onClick={() => {
-                        addToolResult<TradeResultBodyType>(toolCallId, {
-                            message: "Swap cancelled by user",
-                            body: {
-                                transaction: "",
-                                inputAmount: Number(inputAmount || "0"),
-                                inputToken: inputToken?.symbol || "",
-                                outputToken: outputToken?.symbol || "",
-                                walletAddress: args.walletAddress,
-                                success: false,
-                                error: "Swap cancelled by user"
-                            }
-                        });
-                    }}
-                    disabled={isSwapping}
-                    className="w-full"
-                >
-                    Cancel
-                </Button>
+        <Card className="p-2">
+            <div className="flex flex-col gap-4 w-96 max-w-full">
+                <div className="flex flex-col gap-2 items-center w-full">
+                    <div className="w-full">
+                        <TokenInput
+                            token={inputToken}
+                            label="Sell"
+                            amount={inputAmount}
+                            onChange={(newAmount) => {
+                                setInputAmount(newAmount);
+                            }}
+                            onChangeToken={(newToken) => {
+                                setInputToken(newToken);
+                            }}
+                            priorityTokens={priorityTokens}
+                        />
+                        {balance && (
+                            <div className="text-xs text-right mt-1 text-neutral-500">
+                                Balance: {Number(balance).toFixed(6)} {inputToken?.symbol}
+                            </div>
+                        )}
+                    </div>
+                    <Button 
+                        variant="ghost" 
+                        size="icon"
+                        className="group h-fit w-fit p-1"
+                        onClick={() => {
+                            // Swap input and output tokens
+                            const tempToken = inputToken;
+                            const tempAmount = inputAmount;
+                            setInputToken(outputToken);
+                            setInputAmount(expectedOutput);
+                            setOutputToken(tempToken);
+                            setExpectedOutput(tempAmount);
+                        }}
+                    >
+                        <ChevronDown className="h-4 w-4 transition-transform group-hover:rotate-180" />
+                    </Button>
+                    <div className="w-full">
+                        <TokenInput
+                            token={outputToken}
+                            label="Buy"
+                            amount={expectedOutput}
+                            onChange={undefined}
+                            onChangeToken={(newToken) => {
+                                setOutputToken(newToken);
+                            }}
+                            priorityTokens={priorityTokens}
+                        />
+                        {isGettingQuote && (
+                            <div className="text-xs text-right mt-1 text-neutral-500">
+                                Getting quote...
+                            </div>
+                        )}
+                    </div>
+                </div>
+                <Separator />
+                <div className="flex flex-col gap-2">
+                    <Button 
+                        variant="brand" 
+                        className="w-full"
+                        onClick={hasConnectedWallet ? onSwap : () => {
+                            privyConnect();
+                            setHasConnectedWallet(true);
+                        }}
+                        disabled={hasConnectedWallet ? (
+                            isSwapping || 
+                            isGettingQuote || 
+                            !inputToken || 
+                            !outputToken || 
+                            !inputAmount || 
+                            Number(inputAmount) <= 0 ||
+                            !balance ||
+                            Number(inputAmount) > Number(balance)
+                        ) : false}
+                    >
+                        {
+                            !hasConnectedWallet
+                                ? "Connect Wallet"
+                                : isGettingQuote 
+                                    ? "Loading..." 
+                                    : Number(inputAmount) > Number(balance)
+                                        ? "Insufficient balance"
+                                        : isSwapping
+                                            ? "Swapping..."
+                                            : "Swap"
+                        }
+                    </Button>
+                    <Button
+                        variant="ghost"
+                        onClick={() => {
+                            addToolResult<TradeResultBodyType>(toolCallId, {
+                                message: "Swap cancelled by user",
+                                body: {
+                                    transaction: "",
+                                    inputAmount: Number(inputAmount || "0"),
+                                    inputToken: inputToken?.symbol || "",
+                                    outputToken: outputToken?.symbol || "",
+                                    walletAddress: args.walletAddress,
+                                    success: false,
+                                    error: "Swap cancelled by user"
+                                }
+                            });
+                        }}
+                        disabled={isSwapping}
+                        className="w-full"
+                    >
+                        Cancel
+                    </Button>
+                </div>
             </div>
         </Card>
     );
