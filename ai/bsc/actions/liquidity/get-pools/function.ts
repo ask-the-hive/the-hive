@@ -12,19 +12,13 @@ import type { BscActionResult } from "../../bsc-action";
  * @returns A message containing the token pools data
  */
 export async function getPools(args: GetPoolsArgumentsType): Promise<BscActionResult<GetPoolsResultBodyType>> {
-  console.log(`[BSC Liquidity] Getting pools with args:`, args);
-  
   try {
     if (args.address) {
-      console.log(`[BSC Liquidity] Getting token by address: ${args.address}`);
       const token = await getToken(args.address);
-      console.log(`[BSC Liquidity] Token found:`, token);
       
       if (!token) throw new Error('No token data found');
       
-      console.log(`[BSC Liquidity] Getting token pairs for address: ${args.address}`);
       const pairs = await getTokenPairs(args.address);
-      console.log(`[BSC Liquidity] Pairs found: ${pairs.length}`);
       
       return {
         body: {
@@ -33,10 +27,7 @@ export async function getPools(args: GetPoolsArgumentsType): Promise<BscActionRe
         message: `Found pools for ${args.address}. The user is shown pools in the UI, DO NOT REITERATE THE POOLS. Ask the user what they want to do next. DO NOT LIST THE POOLS IN TEXT.`,
       };
     } else if (args.ticker) {
-      console.log(`[BSC Liquidity] Getting token by ticker: ${args.ticker}`);
-      
       // Search for the token using Birdeye
-      console.log(`[BSC Liquidity] Searching for token with Birdeye: ${args.ticker}`);
       try {
         const searchResult = await searchTokens({
           keyword: args.ticker,
@@ -51,11 +42,19 @@ export async function getPools(args: GetPoolsArgumentsType): Promise<BscActionRe
         const token = searchResult?.items?.[0]?.result?.[0];
         
         if (token) {
-          console.log(`[BSC Liquidity] Found token via Birdeye search: ${token.name} (${token.symbol}) with address: ${token.address}`);
+          // Validate that the token address is a valid Ethereum hex address
+          if (!/^0x[a-fA-F0-9]{40}$/.test(token.address)) {
+            console.error(`[BSC Liquidity] Invalid token address format: ${token.address} (expected Ethereum hex address)`);
+            throw new Error(`Invalid token address format: ${token.address}`);
+          }
           
-          console.log(`[BSC Liquidity] Getting token pairs for address: ${token.address}`);
+          // Validate that the token is actually from BSC chain
+          if (token.network !== 'bsc') {
+            console.error(`[BSC Liquidity] Token is from wrong network: ${token.network} (expected 'bsc')`);
+            throw new Error(`Token is from wrong network: ${token.network} (expected 'bsc')`);
+          }
+          
           const pairs = await getTokenPairs(token.address);
-          console.log(`[BSC Liquidity] Pairs found: ${pairs.length}`);
           
           return {
             body: {
@@ -63,8 +62,6 @@ export async function getPools(args: GetPoolsArgumentsType): Promise<BscActionRe
             },
             message: `Found pools for ${token.name} (${token.symbol}). The user is shown pools in the UI, DO NOT REITERATE THE POOLS. Ask the user what they want to do next. DO NOT LIST THE POOLS IN TEXT.`,
           };
-        } else {
-          console.log(`[BSC Liquidity] No token found via Birdeye search for: ${args.ticker}`);
         }
       } catch (searchError) {
         console.error(`[BSC Liquidity] Error searching for token with Birdeye:`, searchError);
@@ -73,12 +70,9 @@ export async function getPools(args: GetPoolsArgumentsType): Promise<BscActionRe
       // Try to get from database as fallback
       try {
         const token = await getTokenBySymbol(args.ticker);
-        console.log(`[BSC Liquidity] Token found in database:`, token);
         
         if (token) {
-          console.log(`[BSC Liquidity] Getting token pairs for address: ${token.id}`);
           const pairs = await getTokenPairs(token.id);
-          console.log(`[BSC Liquidity] Pairs found: ${pairs.length}`);
           
           return {
             body: {

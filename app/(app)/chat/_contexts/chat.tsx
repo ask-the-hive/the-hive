@@ -274,6 +274,10 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
     const onSubmit = async () => {
         if (!input.trim()) return;
         
+        // Clear input immediately after validation
+        const userInput = input;
+        setInput('');
+        
         // If this is the first message in a new chat, create the chat entry immediately
         if (messages.length === 0) {
             try {
@@ -285,7 +289,7 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
                     body: JSON.stringify({
                         messages: [{
                             role: 'user',
-                            content: input,
+                            content: userInput,
                         }],
                         chain,
                     }),
@@ -308,9 +312,8 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
         });
         await append({
             role: 'user',
-            content: input,
+            content: userInput,
         });
-        setInput('');
     }
 
     const sendMessage = async (message: string) => {

@@ -23,11 +23,14 @@ const ChatInput: React.FC = () => {
 
     const { user } = usePrivy();
 
-    const { input, setInput, onSubmit, model, setModel, chain, setChain, inputDisabledMessage } = useChat();
+    const { input, setInput, onSubmit, model, setModel, chain, setChain, inputDisabledMessage, messages, isLoading } = useChat();
 
     const { onKeyDown } = useEnterSubmit({ onSubmit: onSubmit })
 
     const inputRef = useRef<HTMLTextAreaElement>(null)
+
+    // Check if chat has started (has messages)
+    const hasMessages = messages.length > 0;
 
     // Remove auto-focus behavior that prevents new chat creation
     // useEffect(() => {
@@ -70,7 +73,7 @@ const ChatInput: React.FC = () => {
                             setInput(e.target.value);
                         }}
                         // Only disable input for tool invocations, not for loading state
-                        disabled={inputDisabledMessage !== ''}
+                        disabled={inputDisabledMessage !== '' || isLoading}
                         autoFocus
                     />
                 </OptionalTooltip>
@@ -79,14 +82,14 @@ const ChatInput: React.FC = () => {
                         <ModelSelector
                             model={model}
                             onModelChange={setModel}
-                            // Always allow model changes
-                            disabled={false}
+                            // Disable model changes after chat starts
+                            disabled={hasMessages}
                         />
                         <ChainSelector
                             chain={chain}
                             onChainChange={setChain}
-                            // Always allow chain changes
-                            disabled={false}
+                            // Disable chain changes after chat starts
+                            disabled={hasMessages}
                         />
                     </div>
                     <TooltipProvider>
@@ -96,7 +99,7 @@ const ChatInput: React.FC = () => {
                                     type="submit" 
                                     size="icon" 
                                     // Only disable submit button for empty input or tool invocations
-                                    disabled={input.trim() === '' || inputDisabledMessage !== '' || !user}
+                                    disabled={input.trim() === '' || inputDisabledMessage !== '' || !user || isLoading}
                                     variant="ghost"
                                     className="h-8 w-8"
                                 >
