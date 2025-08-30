@@ -12,19 +12,14 @@ import type { BaseActionResult } from "../../base-action";
  * @returns A message containing the token pools data
  */
 export async function getPools(args: GetPoolsArgumentsType): Promise<BaseActionResult<GetPoolsResultBodyType>> {
-  console.log(`[Base Liquidity] Getting pools with args:`, args);
   
   try {
     if (args.address) {
-      console.log(`[Base Liquidity] Getting token by address: ${args.address}`);
       const token = await getToken(args.address);
-      console.log(`[Base Liquidity] Token found:`, token);
       
       if (!token) throw new Error('No token data found');
       
-      console.log(`[Base Liquidity] Getting token pairs for address: ${args.address}`);
       const pairs = await getTokenPairs(args.address, 'base');
-      console.log(`[Base Liquidity] Pairs found: ${pairs.length}`);
       
       return {
         body: {
@@ -33,11 +28,10 @@ export async function getPools(args: GetPoolsArgumentsType): Promise<BaseActionR
         message: `Found pools for ${args.address}. The user is shown pools in the UI, DO NOT REITERATE THE POOLS. Ask the user what they want to do next. DO NOT LIST THE POOLS IN TEXT.`,
       };
     } else if (args.ticker) {
-      console.log(`[Base Liquidity] Getting token by ticker: ${args.ticker}`);
       
       // Search for the token using Birdeye
-      console.log(`[Base Liquidity] Searching for token with Birdeye: ${args.ticker}`);
       try {
+        console.log(`[Base Liquidity] Searching for token with Birdeye: ${args.ticker} on Base chain`);
         const searchResult = await searchTokens({
           keyword: args.ticker,
           target: "token",
@@ -48,14 +42,28 @@ export async function getPools(args: GetPoolsArgumentsType): Promise<BaseActionR
           chain: 'base'
         });
         
+        console.log(`[Base Liquidity] Birdeye search result:`, JSON.stringify(searchResult, null, 2));
+        
         const token = searchResult?.items?.[0]?.result?.[0];
+        console.log(`[Base Liquidity] Extracted token:`, token);
         
         if (token) {
-          console.log(`[Base Liquidity] Found token via Birdeye search: ${token.name} (${token.symbol}) with address: ${token.address}`);
+          console.log(`[Base Liquidity] Found token via Birdeye: ${token.name} (${token.symbol}) with address: ${token.address} on network: ${token.network}`);
           
-          console.log(`[Base Liquidity] Getting token pairs for address: ${token.address}`);
+          // Validate that the token address is a valid Ethereum hex address
+          if (!/^0x[a-fA-F0-9]{40}$/.test(token.address)) {
+            console.error(`[Base Liquidity] Invalid token address format: ${token.address} (expected Ethereum hex address)`);
+            throw new Error(`Invalid token address format: ${token.address}`);
+          }
+          
+          // Validate that the token is actually from Base chain
+          if (token.network !== 'base') {
+            console.error(`[Base Liquidity] Token is from wrong network: ${token.network} (expected 'base')`);
+            throw new Error(`Token is from wrong network: ${token.network} (expected 'base')`);
+          }
+          
+          console.log(`[Base Liquidity] Getting token pairs for Base address: ${token.address}`);
           const pairs = await getTokenPairs(token.address, 'base');
-          console.log(`[Base Liquidity] Pairs found: ${pairs.length}`);
           
           return {
             body: {
@@ -70,22 +78,28 @@ export async function getPools(args: GetPoolsArgumentsType): Promise<BaseActionR
         console.error(`[Base Liquidity] Error searching for token with Birdeye:`, searchError);
       }
       
-      // Try to get from database as fallback
+      // Try to get from database as fallback (but only if it's a Base token)
       try {
+        console.log(`[Base Liquidity] Trying database fallback for: ${args.ticker}`);
         const token = await getTokenBySymbol(args.ticker);
-        console.log(`[Base Liquidity] Token found in database:`, token);
         
         if (token) {
-          console.log(`[Base Liquidity] Getting token pairs for address: ${token.id}`);
-          const pairs = await getTokenPairs(token.id, 'base');
-          console.log(`[Base Liquidity] Pairs found: ${pairs.length}`);
+          console.log(`[Base Liquidity] Found token in database:`, token);
           
-          return {
-            body: {
-              pools: pairs
-            },
-            message: `Found pools for ${args.ticker}. The user is shown pools in the UI, DO NOT REITERATE THE POOLS. Ask the user what they want to do next. DO NOT LIST THE POOLS IN TEXT.`,
-          };
+          // Only use database token if it's a valid Ethereum address
+          if (token.id && /^0x[a-fA-F0-9]{40}$/.test(token.id)) {
+            console.log(`[Base Liquidity] Using database token with Base address: ${token.id}`);
+            const pairs = await getTokenPairs(token.id, 'base');
+            
+            return {
+              body: {
+                pools: pairs
+              },
+              message: `Found pools for ${args.ticker}. The user is shown pools in the UI, DO NOT REITERATE THE POOLS. Ask the user what they want to do next. DO NOT LIST THE POOLS IN TEXT.`,
+            };
+          } else {
+            console.log(`[Base Liquidity] Database token has invalid address format: ${token.id}`);
+          }
         }
       } catch (dbError) {
         console.error(`[Base Liquidity] Error getting token from database:`, dbError);
@@ -102,4 +116,4 @@ export async function getPools(args: GetPoolsArgumentsType): Promise<BaseActionR
       message: `Error getting pools: ${error}`,
     };
   }
-} 
+}
