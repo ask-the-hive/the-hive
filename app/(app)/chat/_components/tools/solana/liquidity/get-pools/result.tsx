@@ -1,24 +1,21 @@
 'use client'
 
-import React, { useState } from 'react'
+import React from 'react'
 
 import type { GetPoolsResultBodyType } from '@/ai'
 import { RaydiumPool } from '../../../utils'
-import { Button } from '@/components/ui'
 
 interface Props {
     body: GetPoolsResultBodyType
 }
 
 const GetPoolsResult: React.FC<Props> = ({ body }) => {
-
-    const [showAll, setShowAll] = useState(false);
     
     return (
         <div className="flex flex-col gap-2">
-            <div className='flex flex-col gap-2'>
+            <div className='flex flex-col gap-2 max-h-96 overflow-y-auto pr-2'>
                 {
-                    body.pools.slice(0, showAll ? body.pools.length : 1).map((pool) => (
+                    body.pools.map((pool) => (
                         <RaydiumPool 
                             key={pool.pool.id}
                             pool={pool.pool} 
@@ -27,16 +24,6 @@ const GetPoolsResult: React.FC<Props> = ({ body }) => {
                     ))
                 }
             </div>
-            {
-                body.pools.length > 1 && (
-                    <Button 
-                        variant="outline"
-                        onClick={() => setShowAll(!showAll)}
-                    >
-                        {showAll ? "Show Less" : `Show ${body.pools.length - 1} More Pools`}
-                    </Button>
-                )
-            }
         </div>
     )
 }

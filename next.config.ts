@@ -14,6 +14,7 @@ const nextConfig: NextConfig = {
   images: {
     domains: [
       "logo.moralis.io",
+      "cdn.moralis.io",
       "avatars.githubusercontent.com",
       "raw.githubusercontent.com",
       "assets.coingecko.com"
