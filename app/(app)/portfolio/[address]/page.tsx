@@ -21,6 +21,17 @@ const Portfolio = ({ params }: { params: Promise<{ address: string }> }) => {
     const router = useRouter();
     const { currentChain, setCurrentChain, walletAddresses } = useChain();
 
+    // Auto-switch to BSC if no Solana wallet is connected
+    React.useEffect(() => {
+        const hasSolana = !!walletAddresses.solana;
+        const hasBsc = !!walletAddresses.bsc;
+        
+        // If currently on Solana but no Solana wallet is connected, switch to BSC
+        if (currentChain === 'solana' && !hasSolana && hasBsc) {
+            setCurrentChain('bsc');
+        }
+    }, [currentChain, walletAddresses, setCurrentChain]);
+
     // Update URL when chain changes to show correct wallet address
     React.useEffect(() => {
         const newAddress = currentChain === 'solana' 
