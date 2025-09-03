@@ -7,7 +7,6 @@ import Header from './_components/header';
 import Tokens from './_components/tokens';
 import LiquidityPools from './_components/liquidity-pools';
 import Transactions from './_components/transactions';
-import PortfolioProjection from './_components/portfolio-projection';
 
 import { SwapModalProvider } from './_contexts/use-swap-modal';
 import { useChain } from '@/app/_contexts/chain-context';
@@ -99,7 +98,6 @@ const Portfolio = ({ params }: { params: Promise<{ address: string }> }) => {
                         </DropdownMenuContent>
                     </DropdownMenu>
                 </div>
-                <PortfolioProjection address={address} />
                 <Tokens address={address} />
                 <LiquidityPools address={address} />
                 <Transactions address={address} />
