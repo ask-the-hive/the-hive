@@ -9,10 +9,10 @@ export type LiquidStakingYieldsSchemaType = typeof LiquidStakingYieldsInputSchem
 
 export type LiquidStakingYieldsArgumentsType = z.infer<LiquidStakingYieldsSchemaType>;
 
-export type LiquidStakingYieldsResultBodyType = {
-    name: string;
-    yield: number;
-    tokenData: Token;
-}[]
+  export type LiquidStakingYieldsResultBodyType = {
+      name: string;
+      yield: number;
+      tokenData: Token;
+  }[] | null;
 
 export type LiquidStakingYieldsResultType = SolanaActionResult<LiquidStakingYieldsResultBodyType>;

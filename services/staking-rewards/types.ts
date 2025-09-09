@@ -22,7 +22,8 @@ export interface RewardOption {
 }
 
 export interface StakingRewardsResponse {
+    errors?: string[];
     data: {
         rewardOptions: RewardOption[];
     };
-} 
+}
