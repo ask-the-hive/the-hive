@@ -211,7 +211,7 @@ const MessageMarkdown = React.memo(
                 },
                 p({ children, node }) {
                   const hasBlockElements = node?.children?.some(
-                    child =>
+                    (child: { type: string, tagName: string }) =>
                       child.type === 'element' &&
                       'tagName' in child &&
                       ['div', 'p', 'blockquote', 'form'].includes(child.tagName)
