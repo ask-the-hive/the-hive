@@ -40,7 +40,7 @@ const LiquidStakingYields: React.FC<{ body: LiquidStakingYieldsResultBodyType }>
     return (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
             {
-                body.map((item) => (
+                body?.map((item) => (
                     <Card 
                         key={item.name}
                         className="flex flex-row gap-2 items-center p-2 cursor-pointer hover:border-brand-600 dark:hover:border-brand-600 transition-all duration-300"
