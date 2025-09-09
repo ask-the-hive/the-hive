@@ -15,7 +15,6 @@ export async function getLiquidStakingYields(): Promise<
 > {
   try {
     const bestLiquidStaking = await getBestLiquidStaking(6);
-    console.log('bestLiquidStaking', bestLiquidStaking);
 
     if ((bestLiquidStaking?.errors?.length ?? 0) > 0) {
       return {
