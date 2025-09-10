@@ -45,10 +45,15 @@ export const Markdown: React.FC<Props> = ({ children, asSpan = false, components
                     return <h6 className={cn("text-xs font-bold", headingClassName)}>{children}</h6>
                 },
                 p({ children, node }) {
-                    const hasBlockElements = node?.children?.some((child: { type: string, tagName: string }) => 
-                        child.type === 'element' && 
-                        ['div', 'p', 'blockquote', 'form'].includes(child.tagName)
-                    );
+                    const hasBlockElements = node?.children?.some((child: any) => {
+                        // child can be Text | Element | other ElementContent variants; guard for elements
+                        const tag = child?.tagName as string | undefined;
+                        return (
+                            child?.type === 'element' &&
+                            typeof tag === 'string' &&
+                            ['div', 'p', 'blockquote', 'form'].includes(tag)
+                        );
+                    });
 
                     if (hasBlockElements) {
                         return (
