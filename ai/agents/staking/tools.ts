@@ -6,6 +6,8 @@ import {
   SolanaLiquidStakingYieldsAction,
   SolanaGetTokenAddressAction,
   SolanaGetWalletAddressAction,
+  SolanaBalanceAction,
+  SolanaTradeAction,
 } from '@/ai/solana/actions';
 
 import {
@@ -14,6 +16,8 @@ import {
   SOLANA_LIQUID_STAKING_YIELDS_NAME,
   SOLANA_GET_TOKEN_ADDRESS_NAME,
   SOLANA_GET_WALLET_ADDRESS_NAME,
+  SOLANA_BALANCE_NAME,
+  SOLANA_TRADE_NAME,
 } from '@/ai/action-names';
 import { solanaTool } from '@/ai/solana';
 
@@ -36,6 +40,14 @@ export const STAKING_TOOLS = {
   ),
   [`staking-${SOLANA_GET_WALLET_ADDRESS_NAME}`]: solanaTool(
     new SolanaGetWalletAddressAction(),
+    new Connection(process.env.NEXT_PUBLIC_SOLANA_RPC_URL!),
+  ),
+  [`staking-${SOLANA_BALANCE_NAME}`]: solanaTool(
+    new SolanaBalanceAction(),
+    new Connection(process.env.NEXT_PUBLIC_SOLANA_RPC_URL!),
+  ),
+  [`staking-${SOLANA_TRADE_NAME}`]: solanaTool(
+    new SolanaTradeAction(),
     new Connection(process.env.NEXT_PUBLIC_SOLANA_RPC_URL!),
   ),
 };

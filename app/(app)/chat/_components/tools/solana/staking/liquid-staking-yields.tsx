@@ -35,7 +35,6 @@ const LiquidStakingYields: React.FC<{
   const { sendMessage } = useChat();
 
   const handleStakeClick = async (symbol: string) => {
-    // Let the Staking Agent handle wallet connection check and invoke Wallet Agent if needed
     sendMessage(`I want to stake SOL using ${symbol}`);
   };
 
