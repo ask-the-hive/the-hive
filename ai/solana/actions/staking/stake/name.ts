@@ -1,1 +1,1 @@
-export const SOLANA_STAKE_NAME = "solana_stake"; 
+export const SOLANA_STAKE_ACTION = 'solana_stake';

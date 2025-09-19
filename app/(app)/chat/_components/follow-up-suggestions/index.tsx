@@ -110,7 +110,7 @@ const FollowUpSuggestions: React.FC = () => {
           <Skeleton className="w-full h-[22px] md:hidden" />
           {/* Desktop: Show all 3 skeletons */}
           {Array.from({ length: 3 }).map((_, index) => (
-            <Skeleton key={index} className="w-full h-[40px] hidden md:block" />
+            <Skeleton key={index} className="w-full h-[32px] hidden md:block" />
           ))}
         </>
       ) : (
@@ -119,7 +119,7 @@ const FollowUpSuggestions: React.FC = () => {
             key={`${chatId}-${suggestion.title}`}
             variant="brandOutline"
             className={cn(
-              'w-full text-sm py-0.5 h-[40px]',
+              'w-full text-sm py-0.5 h-[32px]',
               'flex items-center justify-center',
               index > 0 && 'hidden md:flex',
             )}

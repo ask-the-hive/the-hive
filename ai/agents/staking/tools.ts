@@ -11,42 +11,42 @@ import {
 } from '@/ai/solana/actions';
 
 import {
-  SOLANA_STAKE_NAME,
-  SOLANA_UNSTAKE_NAME,
-  SOLANA_LIQUID_STAKING_YIELDS_NAME,
-  SOLANA_GET_TOKEN_ADDRESS_NAME,
-  SOLANA_GET_WALLET_ADDRESS_NAME,
-  SOLANA_BALANCE_NAME,
-  SOLANA_TRADE_NAME,
+  SOLANA_STAKE_ACTION,
+  SOLANA_UNSTAKE_ACTION,
+  SOLANA_LIQUID_STAKING_YIELDS_ACTION,
+  SOLANA_GET_TOKEN_ADDRESS_ACTION,
+  SOLANA_GET_WALLET_ADDRESS_ACTION,
+  SOLANA_BALANCE_ACTION,
+  SOLANA_TRADE_ACTION,
 } from '@/ai/action-names';
 import { solanaTool } from '@/ai/solana';
 
 export const STAKING_TOOLS = {
-  [`staking-${SOLANA_STAKE_NAME}`]: solanaTool(
+  [`staking-${SOLANA_STAKE_ACTION}`]: solanaTool(
     new SolanaStakeAction(),
     new Connection(process.env.NEXT_PUBLIC_SOLANA_RPC_URL!),
   ),
-  [`staking-${SOLANA_UNSTAKE_NAME}`]: solanaTool(
+  [`staking-${SOLANA_UNSTAKE_ACTION}`]: solanaTool(
     new SolanaUnstakeAction(),
     new Connection(process.env.NEXT_PUBLIC_SOLANA_RPC_URL!),
   ),
-  [`staking-${SOLANA_LIQUID_STAKING_YIELDS_NAME}`]: solanaTool(
+  [`staking-${SOLANA_LIQUID_STAKING_YIELDS_ACTION}`]: solanaTool(
     new SolanaLiquidStakingYieldsAction(),
     new Connection(process.env.NEXT_PUBLIC_SOLANA_RPC_URL!),
   ),
-  [`staking-${SOLANA_GET_TOKEN_ADDRESS_NAME}`]: solanaTool(
+  [`staking-${SOLANA_GET_TOKEN_ADDRESS_ACTION}`]: solanaTool(
     new SolanaGetTokenAddressAction(),
     new Connection(process.env.NEXT_PUBLIC_SOLANA_RPC_URL!),
   ),
-  [`staking-${SOLANA_GET_WALLET_ADDRESS_NAME}`]: solanaTool(
+  [`staking-${SOLANA_GET_WALLET_ADDRESS_ACTION}`]: solanaTool(
     new SolanaGetWalletAddressAction(),
     new Connection(process.env.NEXT_PUBLIC_SOLANA_RPC_URL!),
   ),
-  [`staking-${SOLANA_BALANCE_NAME}`]: solanaTool(
+  [`staking-${SOLANA_BALANCE_ACTION}`]: solanaTool(
     new SolanaBalanceAction(),
     new Connection(process.env.NEXT_PUBLIC_SOLANA_RPC_URL!),
   ),
-  [`staking-${SOLANA_TRADE_NAME}`]: solanaTool(
+  [`staking-${SOLANA_TRADE_ACTION}`]: solanaTool(
     new SolanaTradeAction(),
     new Connection(process.env.NEXT_PUBLIC_SOLANA_RPC_URL!),
   ),
