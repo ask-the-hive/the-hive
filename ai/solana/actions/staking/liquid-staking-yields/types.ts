@@ -1,18 +1,34 @@
-import { z } from "zod";
+import { z } from 'zod';
 
-import { LiquidStakingYieldsInputSchema } from "./input-schema";
+import { LiquidStakingYieldsInputSchema } from './input-schema';
 
-import type { SolanaActionResult } from "../../solana-action";
-import type { Token } from "@/db/types";
+import type { SolanaActionResult } from '../../solana-action';
+import type { Token } from '@/db/types';
 
 export type LiquidStakingYieldsSchemaType = typeof LiquidStakingYieldsInputSchema;
 
 export type LiquidStakingYieldsArgumentsType = z.infer<LiquidStakingYieldsSchemaType>;
 
-  export type LiquidStakingYieldsResultBodyType = {
+export type LiquidStakingYieldsResultBodyType =
+  | {
       name: string;
+      symbol: string;
       yield: number;
-      tokenData: Token;
-  }[] | null;
+      apyBase: number;
+      apyReward: number;
+      tvlUsd: number;
+      project: string;
+      poolMeta: string;
+      url: string;
+      rewardTokens: string[];
+      underlyingTokens: string[];
+      predictions?: {
+        predictedClass: string;
+        predictedProbability: number;
+        binnedConfidence: number;
+      };
+      tokenData: Token | null;
+    }[]
+  | null;
 
 export type LiquidStakingYieldsResultType = SolanaActionResult<LiquidStakingYieldsResultBodyType>;

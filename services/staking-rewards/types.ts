@@ -1,29 +1,26 @@
-export interface StakingMetric {
-    label: string;
-    metricKey: string;
-    defaultValue: number;
+export interface PoolPredictions {
+  predictedClass: string;
+  predictedProbability: number;
+  binnedConfidence: number;
 }
 
-export interface StakingProvider {
-    slug: string;
-    isVerified: boolean;
-}
-
-export interface OutputAsset {
-    symbol: string;
-    name: string;
-    logoUrl: string;
-}
-
-export interface RewardOption {
-    outputAssets: OutputAsset[];
-    providers: StakingProvider[];
-    metrics: StakingMetric[];
+export interface Pool {
+  pool: string;
+  chain: string;
+  project: string;
+  symbol: string;
+  tvlUsd: number;
+  apy: number;
+  apyBase: number;
+  apyReward: number;
+  rewardTokens: string[];
+  underlyingTokens: string[];
+  poolMeta: string;
+  url: string;
+  predictions: PoolPredictions;
 }
 
 export interface StakingRewardsResponse {
-    errors?: string[];
-    data: {
-        rewardOptions: RewardOption[];
-    };
+  status: string;
+  data: Pool[];
 }

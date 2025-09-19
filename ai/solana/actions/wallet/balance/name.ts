@@ -1,1 +1,1 @@
-export const SOLANA_BALANCE_NAME = "solana_balance"; 
+export const SOLANA_BALANCE_ACTION = 'solana_balance';
