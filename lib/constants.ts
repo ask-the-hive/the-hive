@@ -1,0 +1,2 @@
+// Client-safe constants
+export const SOLANA_STAKING_POOL_DATA_STORAGE_KEY = 'SOLANA_STAKING_POOL_DATA_STORAGE_KEY';

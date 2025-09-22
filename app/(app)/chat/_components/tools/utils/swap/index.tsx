@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 
 import { ChevronDown } from 'lucide-react';
 
@@ -33,6 +33,8 @@ interface Props {
   onSuccess?: (txHash: string) => void;
   onError?: (error: string) => void;
   onCancel?: () => void;
+  onInputChange?: (amount: number) => void;
+  onOutputChange?: (amount: number) => void;
 }
 
 const Swap: React.FC<Props> = ({
@@ -46,9 +48,26 @@ const Swap: React.FC<Props> = ({
   onSuccess,
   onError,
   onCancel,
+  onInputChange,
+  onOutputChange,
 }) => {
   const [inputAmount, setInputAmount] = useState<string>(initialInputAmount || '');
   const [inputToken, setInputToken] = useState<Token | null>(initialInputToken);
+
+  const handleInputAmountChange = (amount: string) => {
+    setInputAmount(amount);
+    const numericAmount = parseFloat(amount) || 0;
+    onInputChange?.(numericAmount);
+  };
+
+  const onOutputChangeRef = useRef(onOutputChange);
+  onOutputChangeRef.current = onOutputChange;
+
+  const handleOutputAmountChange = useCallback((amount: string) => {
+    setOutputAmount(amount);
+    const numericAmount = parseFloat(amount) || 0;
+    onOutputChangeRef.current?.(numericAmount);
+  }, []);
 
   const [outputAmount, setOutputAmount] = useState<string>('');
   const [outputToken, setOutputToken] = useState<Token | null>(initialOutputToken);
@@ -69,9 +88,9 @@ const Swap: React.FC<Props> = ({
     const tempInputToken = inputToken;
     const tempInputAmount = inputAmount;
     setInputToken(outputToken);
-    setInputAmount(outputAmount);
+    handleInputAmountChange(outputAmount);
     setOutputToken(tempInputToken);
-    setOutputAmount(tempInputAmount);
+    handleOutputAmountChange(tempInputAmount);
   };
 
   const onSwap = async () => {
@@ -98,28 +117,48 @@ const Swap: React.FC<Props> = ({
   useEffect(() => {
     if (inputToken && outputToken) {
       const fetchQuoteAndUpdate = async () => {
+        console.log('Fetching quote and updating output amount');
         setIsQuoteLoading(true);
         setOutputAmount('');
-        const quote = await getQuote(
-          inputToken.id,
-          outputToken.id,
-          parseFloat(inputAmount) * 10 ** inputToken.decimals,
-        );
-        setQuoteResponse(quote);
-        setOutputAmount(
-          new Decimal(quote.outAmount).div(new Decimal(10).pow(outputToken.decimals)).toString(),
-        );
-        setIsQuoteLoading(false);
+        try {
+          const inputAmountWei = parseFloat(inputAmount) * 10 ** inputToken.decimals;
+          console.log('Jupiter API call parameters:', {
+            inputMint: inputToken.id,
+            outputMint: outputToken.id,
+            amount: inputAmountWei,
+            inputAmount: inputAmount,
+            inputTokenDecimals: inputToken.decimals,
+            inputTokenSymbol: inputToken.symbol,
+            outputTokenSymbol: outputToken.symbol,
+          });
+
+          // Check if the output token address looks valid (should be 32-44 characters)
+          if (!outputToken.id || outputToken.id.length < 32) {
+            throw new Error(`Invalid output token address: ${outputToken.id}`);
+          }
+
+          const quote = await getQuote(inputToken.id, outputToken.id, inputAmountWei);
+          setQuoteResponse(quote);
+          const outputAmountStr = new Decimal(quote.outAmount)
+            .div(new Decimal(10).pow(outputToken.decimals))
+            .toString();
+          handleOutputAmountChange(outputAmountStr);
+        } catch (error) {
+          debugger;
+          console.error('Error fetching quote:', error);
+        } finally {
+          setIsQuoteLoading(false);
+        }
       };
 
       if (inputAmount && Number(inputAmount) > 0) {
         fetchQuoteAndUpdate();
       } else {
         setQuoteResponse(null);
-        setOutputAmount('');
+        handleOutputAmountChange('');
       }
     }
-  }, [inputToken, outputToken, inputAmount]);
+  }, [inputToken, outputToken, inputAmount, handleOutputAmountChange]);
 
   return (
     <div className="flex flex-col gap-4 max-w-full">
@@ -127,7 +166,7 @@ const Swap: React.FC<Props> = ({
         <TokenInput
           label={inputLabel}
           amount={inputAmount}
-          onChange={setInputAmount}
+          onChange={handleInputAmountChange}
           token={inputToken}
           onChangeToken={setInputToken}
           address={wallet?.address}

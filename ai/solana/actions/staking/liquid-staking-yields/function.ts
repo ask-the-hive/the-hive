@@ -21,8 +21,6 @@ export async function getLiquidStakingYields(): Promise<
     // Filter for Solana chains first
     const solanaPools = response.data.filter((pool) => pool.chain === 'Solana');
 
-    console.log('Total Solana pools found:', solanaPools.length);
-
     // Filter for the specific Solana liquid staking protocols based on actual data
     const directLiquidStakingProtocols = [
       'jito-liquid-staking', // Jito (JITOSOL)
@@ -69,12 +67,6 @@ export async function getLiquidStakingYields(): Promise<
       return isDirectProtocol || (isLiquidStakingToken && !isLPPair);
     });
 
-    console.log('Target Solana liquid staking pools found:', solLiquidStakingPools.length);
-    console.log(
-      'Target pools:',
-      solLiquidStakingPools.map((p) => ({ project: p.project, symbol: p.symbol, apy: p.apy })),
-    );
-
     if (solLiquidStakingPools.length === 0) {
       return {
         message: `No Solana liquid staking pools found for the target protocols (Jito, Marinade, Drift, Binance, Bybit, Helius, Jupiter, BlazeStake, Sanctum, Lido). Please try again.`,
@@ -98,7 +90,7 @@ export async function getLiquidStakingYields(): Promise<
     // Transform to the expected format
     const body = await Promise.all(
       topSolanaPools.map(async (pool) => {
-        const tokenData = await getTokenBySymbol(pool.symbol);
+        const tokenData = await getTokenBySymbol(pool.symbol, 'solana');
         return {
           name: pool.symbol,
           symbol: pool.symbol,

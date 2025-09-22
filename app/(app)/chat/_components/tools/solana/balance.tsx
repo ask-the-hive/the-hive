@@ -20,8 +20,8 @@ const GetBalance: React.FC<Props> = ({ tool, prevToolAgent }) => {
       result={{
         heading: (result: BalanceResultType) =>
           result.body?.token ? `Fetched ${result.body.token} Balance` : `Failed to fetch balance`,
-        body: (result: BalanceResultType) =>
-          result.body ? (
+        body: (result: BalanceResultType) => {
+          return result.body ? (
             <div className="flex flex-col gap-4">
               <TokenBalance
                 token={result.body.token}
@@ -50,7 +50,8 @@ const GetBalance: React.FC<Props> = ({ tool, prevToolAgent }) => {
             </div>
           ) : (
             'No balance found'
-          ),
+          );
+        },
       }}
       prevToolAgent={prevToolAgent}
     />

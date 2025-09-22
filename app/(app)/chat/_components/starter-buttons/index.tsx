@@ -11,8 +11,8 @@ const solanaButtons = [
     prompt: 'Show me the trending tokens',
   },
   {
-    title: 'Stake',
-    description: 'Stake Solana and earn yield',
+    title: 'Stake SOL, Keep Liquidity',
+    description: 'Earn 7%+ APY with liquid staking',
     icon: 'Droplet' as const,
     prompt: 'Find me the best staking yields',
   },
@@ -89,7 +89,7 @@ const StarterButtons = () => {
   const buttons = chain === 'solana' ? solanaButtons : chain === 'bsc' ? bscButtons : baseButtons;
 
   return (
-    <div className="grid grid-cols-2 gap-2">
+    <div className="grid grid-cols-2 gap-4 w-full">
       {buttons.map((button) => (
         <StarterButton key={button.title} {...button} />
       ))}

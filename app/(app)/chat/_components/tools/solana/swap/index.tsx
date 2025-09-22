@@ -14,7 +14,6 @@ interface SwapProps {
 }
 
 const Swap: React.FC<SwapProps> = ({ tool, prevToolAgent }) => {
-  console.log('Solana Swap Tool', tool);
   return (
     <ToolCard
       tool={tool}

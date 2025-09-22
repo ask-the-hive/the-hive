@@ -21,14 +21,14 @@ export async function tradeTokens(
 
     const inputMint = args.inputMint || SOL_MINT;
     const outputMint = args.outputMint || SOL_MINT;
-    const inputAmount = args.inputAmount || 1;
+    const inputAmount = args.inputAmount; // Don't default to 1 - let user specify amount
 
     // Return the data needed for the Swap component to execute the trade
     return {
       message: `Ready to trade tokens. The Swap component will handle getting quotes and executing the transaction.`,
       body: {
         transaction: '', // Will be filled by the UI component after transaction execution
-        inputAmount: inputAmount,
+        inputAmount: inputAmount || 0,
         inputToken: inputMint,
         outputToken: outputMint,
       },
