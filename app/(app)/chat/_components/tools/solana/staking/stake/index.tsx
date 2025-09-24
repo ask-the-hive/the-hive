@@ -15,23 +15,37 @@ interface Props {
 
 const Stake: React.FC<Props> = ({ tool, prevToolAgent }) => {
   return (
-    <ToolCard
-      tool={tool}
-      loadingText="Staking..."
-      result={{
-        heading: (result: StakeResultType) => (result.body ? 'Stake Complete' : 'Failed to Stake'),
-        body: (result: StakeResultType) => (result.body ? <StakeResult /> : result.message),
-      }}
-      call={{
-        heading: 'Stake',
-        body: (toolCallId: string, args: StakeArgumentsType) => (
-          <StakeCallBody toolCallId={toolCallId} args={args} />
-        ),
-      }}
-      defaultOpen={true}
-      prevToolAgent={prevToolAgent}
-      className="max-w-full"
-    />
+    <div className="flex justify-center w-full">
+      <div className="w-[70%]">
+        <ToolCard
+          tool={tool}
+          loadingText="Staking..."
+          result={{
+            heading: (result: StakeResultType) =>
+              result.body ? 'Stake Complete' : 'Failed to Stake',
+            body: (result: StakeResultType) =>
+              result.body ? (
+                <StakeResult
+                  outputTokenData={(result.body as any).outputTokenData}
+                  poolData={(result.body as any).poolData}
+                  outputAmount={(result.body as any).outputAmount}
+                />
+              ) : (
+                result.message
+              ),
+          }}
+          call={{
+            heading: 'Stake',
+            body: (toolCallId: string, args: StakeArgumentsType) => (
+              <StakeCallBody toolCallId={toolCallId} args={args} />
+            ),
+          }}
+          defaultOpen={true}
+          prevToolAgent={prevToolAgent}
+          className="w-full"
+        />
+      </div>
+    </div>
   );
 };
 

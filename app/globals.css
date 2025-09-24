@@ -2,12 +2,22 @@
 @tailwind components;
 @tailwind utilities;
 
-h1, h2, h3, h4, h5, h6 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
   font-family: var(--font-dm-sans), sans-serif;
 }
 
-p, a, input, textarea, button, body {
-  font-family: var(--font-dm-mono), monospace;
+p,
+a,
+input,
+textarea,
+button,
+body {
+  font-family: var(--font-dm-sans), monospace;
 }
 
 @layer base {
@@ -43,28 +53,28 @@ p, a, input, textarea, button, body {
 @layer utilities {
   /* Hide scrollbar for Chrome, Safari and Opera */
   .no-scrollbar::-webkit-scrollbar {
-        display: none;
-    }
-   /* Hide scrollbar for IE, Edge and Firefox */
+    display: none;
+  }
+  /* Hide scrollbar for IE, Edge and Firefox */
   .no-scrollbar {
-      -ms-overflow-style: none;  /* IE and Edge */
-      scrollbar-width: none;  /* Firefox */
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
   }
 
   /* Black scrollbar for Chrome, Safari and Opera */
   .black-scrollbar::-webkit-scrollbar {
     width: 8px;
   }
-  
+
   .black-scrollbar::-webkit-scrollbar-track {
     background: transparent;
   }
-  
+
   .black-scrollbar::-webkit-scrollbar-thumb {
     background: #000000;
     border-radius: 4px;
   }
-  
+
   .black-scrollbar::-webkit-scrollbar-thumb:hover {
     background: #333333;
   }

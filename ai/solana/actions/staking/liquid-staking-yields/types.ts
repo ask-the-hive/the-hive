@@ -9,26 +9,26 @@ export type LiquidStakingYieldsSchemaType = typeof LiquidStakingYieldsInputSchem
 
 export type LiquidStakingYieldsArgumentsType = z.infer<LiquidStakingYieldsSchemaType>;
 
-export type LiquidStakingYieldsResultBodyType =
-  | {
-      name: string;
-      symbol: string;
-      yield: number;
-      apyBase: number;
-      apyReward: number;
-      tvlUsd: number;
-      project: string;
-      poolMeta: string;
-      url: string;
-      rewardTokens: string[];
-      underlyingTokens: string[];
-      predictions?: {
-        predictedClass: string;
-        predictedProbability: number;
-        binnedConfidence: number;
-      };
-      tokenData: Token | null;
-    }[]
-  | null;
+export type LiquidStakingYieldsPoolData = {
+  name: string;
+  symbol: string;
+  yield: number;
+  apyBase: number;
+  apyReward: number;
+  tvlUsd: number;
+  project: string;
+  poolMeta: string;
+  url: string;
+  rewardTokens: string[];
+  underlyingTokens: string[];
+  predictions?: {
+    predictedClass: string;
+    predictedProbability: number;
+    binnedConfidence: number;
+  };
+  tokenData: Token | null;
+};
+
+export type LiquidStakingYieldsResultBodyType = LiquidStakingYieldsPoolData[] | null;
 
 export type LiquidStakingYieldsResultType = SolanaActionResult<LiquidStakingYieldsResultBodyType>;

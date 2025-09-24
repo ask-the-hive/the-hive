@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic';
 
 import type { Metadata, Viewport } from 'next';
 
-import { DM_Sans, DM_Mono } from 'next/font/google';
+import { DM_Sans } from 'next/font/google';
 
 import './globals.css';
 import Providers from './_contexts';
@@ -10,12 +10,7 @@ import '@/components/utils/suppress-console';
 
 const dmSans = DM_Sans({
   variable: '--font-dm-sans',
-  subsets: ['latin'],
-});
-
-const dmMono = DM_Mono({
-  variable: '--font-dm-mono',
-  weight: ['300', '400', '500'],
+  weight: ['300', '400', '500', '600', '700', '800', '900'],
   subsets: ['latin'],
 });
 
@@ -40,9 +35,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-        className={`${dmSans.variable} ${dmMono.variable} antialiased bg-white dark:bg-neutral-900`}
-      >
+      <body className={`${dmSans.variable} antialiased bg-white dark:bg-neutral-900`}>
         <Providers>{children}</Providers>
       </body>
     </html>
