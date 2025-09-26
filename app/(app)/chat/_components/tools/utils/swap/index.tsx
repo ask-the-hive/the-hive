@@ -191,7 +191,7 @@ const Swap: React.FC<Props> = ({
         />
       </div>
       <Separator />
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-2 items-center">
         {wallet ? (
           <Button
             variant="brand"

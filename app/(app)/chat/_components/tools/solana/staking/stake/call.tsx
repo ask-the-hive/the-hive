@@ -1,20 +1,14 @@
 import React, { useEffect, useMemo, useRef } from 'react';
 import Image from 'next/image';
-
 import { Card, Skeleton } from '@/components/ui';
 import { cn } from '@/lib/utils';
-
 import Swap from '../../../utils/swap';
-
 import { useTokenDataByAddress, usePrice } from '@/hooks';
 import { usePrivy } from '@privy-io/react-auth';
-
 import { useChat } from '@/app/(app)/chat/_contexts/chat';
-
 import { useChain } from '@/app/_contexts/chain-context';
 import { SOLANA_STAKING_POOL_DATA_STORAGE_KEY } from '@/lib/constants';
 import { upsertLiquidStakingPosition } from '@/db/services/liquid-staking-positions';
-
 import type { StakeArgumentsType, StakeResultBodyType } from '@/ai';
 import StakeResult from './stake-result';
 
@@ -129,68 +123,71 @@ const StakeCallBody: React.FC<Props> = ({ toolCallId, args }) => {
               });
             }}
           />
-          <StakeResult
-            outputTokenData={outputTokenData || undefined}
-            poolData={poolData}
-            outputAmount={outputAmount}
-          />
           {/* Display pool information and yield calculator if available */}
           {poolData && (
-            <div className="mb-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border">
-              <div className="flex items-center gap-2 mb-4">
-                <Image
-                  src={poolData.tokenData?.logoURI || ''}
-                  alt={poolData.name}
-                  width={24}
-                  height={24}
-                  className="w-6 h-6 rounded-full"
-                />
-                <h3 className="font-semibold text-lg">{poolData.name}</h3>
-                <span className="text-sm text-gray-600 dark:text-gray-400">
-                  ({poolData.yield.toFixed(2)}% APY)
-                </span>
-              </div>
-
-              {/* Timespan cards and yield calculator */}
-              <div className="flex items-center gap-4">
-                <div className="flex gap-2">
-                  {[3, 6, 12, 24].map((months) => (
-                    <div
-                      key={months}
-                      className={cn(
-                        'box-border px-3 py-2 rounded-full text-sm font-medium cursor-pointer transition-all duration-200 border',
-                        selectedTimespan === months
-                          ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-600 hover:bg-blue-200 dark:hover:bg-blue-900/50'
-                          : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-blue-500 hover:text-white border-transparent',
-                      )}
-                      onMouseEnter={() => {
-                        if (preHoverTimespanRef.current === null) {
-                          preHoverTimespanRef.current = selectedTimespan;
-                        }
-                        setSelectedTimespan(months);
-                      }}
-                      onMouseLeave={() => {
-                        if (preHoverTimespanRef.current !== null) {
-                          setSelectedTimespan(preHoverTimespanRef.current);
-                          preHoverTimespanRef.current = null;
-                        }
-                      }}
-                      onClick={() => {
-                        preHoverTimespanRef.current = null;
-                        setSelectedTimespan(months);
-                      }}
-                    >
-                      {months}M
-                    </div>
-                  ))}
+            <div className="mt-4">
+              <p className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
+                Earning Potential
+              </p>
+              <div className="mb-4 p-4 bg-neutral-50 dark:bg-neutral-900/20 rounded-lg border">
+                <div className="flex items-center gap-2 mb-4">
+                  <Image
+                    src={poolData.tokenData?.logoURI || ''}
+                    alt={poolData.name}
+                    width={24}
+                    height={24}
+                    className="w-6 h-6 rounded-full"
+                  />
+                  <h3 className="font-semibold text-lg">{poolData.name}</h3>
+                  <span className="text-sm text-gray-600 dark:text-gray-400">
+                    ({poolData.yield.toFixed(2)}% APY)
+                  </span>
                 </div>
 
-                <div className="flex-1 max-w-xs">
-                  <div className="px-3 py-2 text-sm bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md">
-                    <p className="text-gray-600 dark:text-gray-400">
-                      {outputAmount > 0 && outputTokenPrice
-                        ? `$${yieldEarnings.toFixed(2)} yield`
-                        : 'Projected yield'}
+                {/* Timespan cards and yield calculator */}
+                <div className="flex justify-between items-center gap-4">
+                  <div className="flex gap-2">
+                    {[3, 6, 12, 24].map((months) => (
+                      <div
+                        key={months}
+                        className={cn(
+                          'box-border px-3 py-2 rounded-full text-sm font-medium cursor-pointer transition-all duration-200 border',
+                          selectedTimespan === months
+                            ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-600 hover:bg-blue-200 dark:hover:bg-blue-900/50'
+                            : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-blue-500 hover:text-white border-transparent',
+                        )}
+                        onMouseEnter={() => {
+                          if (preHoverTimespanRef.current === null) {
+                            preHoverTimespanRef.current = selectedTimespan;
+                          }
+                          setSelectedTimespan(months);
+                        }}
+                        onMouseLeave={() => {
+                          if (preHoverTimespanRef.current !== null) {
+                            setSelectedTimespan(preHoverTimespanRef.current);
+                            preHoverTimespanRef.current = null;
+                          }
+                        }}
+                        onClick={() => {
+                          preHoverTimespanRef.current = null;
+                          setSelectedTimespan(months);
+                        }}
+                      >
+                        {months}M
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="max-w-xs">
+                    <p
+                      className={cn(
+                        'font-medium',
+                        yieldEarnings > 0
+                          ? 'text-green-600 dark:text-green-400 text-lg '
+                          : 'text-gray-900 dark:text-gray-100 text-sm',
+                      )}
+                    >
+                      {yieldEarnings > 0 ? `+$${yieldEarnings.toFixed(2)}` : 'Projected yield'}
                     </p>
                   </div>
                 </div>
