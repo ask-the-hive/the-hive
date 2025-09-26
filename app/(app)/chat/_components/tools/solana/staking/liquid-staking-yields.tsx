@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import Image from 'next/image';
 import { useChat } from '@/app/(app)/chat/_contexts/chat';
 import ToolCard from '../../tool-card';
@@ -66,10 +66,15 @@ const LiquidStakingYields: React.FC<{
 }> = ({ body }) => {
   const { sendMessage } = useChat();
 
-  const handleStakeClick = async (poolData: LiquidStakingYieldsPoolData) => {
-    // Store pool data in sessionStorage for the agent to access
-    sessionStorage.setItem(SOLANA_STAKING_POOL_DATA_STORAGE_KEY, JSON.stringify(poolData));
+  useEffect(() => {
+    if (!body) return;
+    const allPools = body || [];
+    if (allPools.length > 0) {
+      sessionStorage.setItem(SOLANA_STAKING_POOL_DATA_STORAGE_KEY, JSON.stringify(allPools));
+    }
+  }, [body]);
 
+  const handleStakeClick = async (poolData: LiquidStakingYieldsPoolData) => {
     const symbol = poolData?.tokenData?.symbol || poolData?.symbol;
     sendMessage(`I want to stake SOL for ${symbol}`);
   };
@@ -77,7 +82,7 @@ const LiquidStakingYields: React.FC<{
   return (
     <TooltipProvider>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-10 mt-10">
-        {body?.slice(0, 3)?.map((pool, index) => (
+        {body?.map((pool, index) => (
           <Card
             key={`${pool.name}-${pool.project}-${index}`}
             className={cn(

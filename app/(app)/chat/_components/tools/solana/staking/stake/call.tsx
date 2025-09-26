@@ -31,23 +31,6 @@ const StakeCallBody: React.FC<Props> = ({ toolCallId, args }) => {
     setCurrentChain('solana');
   }, [setCurrentChain]);
 
-  // Fetch pool data from sessionStorage
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const storedPoolData = sessionStorage.getItem(SOLANA_STAKING_POOL_DATA_STORAGE_KEY);
-      if (storedPoolData) {
-        try {
-          const parsedData = JSON.parse(storedPoolData);
-          setPoolData(parsedData);
-          // Clear the stored data after retrieving it
-          sessionStorage.removeItem(SOLANA_STAKING_POOL_DATA_STORAGE_KEY);
-        } catch (error) {
-          console.error('Error parsing stored pool data:', error);
-        }
-      }
-    }
-  }, []);
-
   const { data: inputTokenData, isLoading: inputTokenLoading } = useTokenDataByAddress(
     'So11111111111111111111111111111111111111112',
   );
@@ -55,6 +38,24 @@ const StakeCallBody: React.FC<Props> = ({ toolCallId, args }) => {
     args.contractAddress,
   );
   const { data: outputTokenPrice } = usePrice(outputTokenData?.id || '');
+
+  // Fetch pool data from sessionStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const storedPoolData = sessionStorage.getItem(SOLANA_STAKING_POOL_DATA_STORAGE_KEY);
+      if (storedPoolData && outputTokenData?.symbol) {
+        try {
+          const allPools = JSON.parse(storedPoolData);
+          const selectedPool = allPools.find(
+            (pool: any) => pool.symbol.toLowerCase() === outputTokenData?.symbol.toLowerCase(),
+          );
+          setPoolData(selectedPool);
+        } catch (error) {
+          console.error('Error parsing stored pool data:', error);
+        }
+      }
+    }
+  }, [outputTokenData?.symbol]);
 
   // Calculate yield earnings based on current timespan
   const yieldEarnings = useMemo(() => {

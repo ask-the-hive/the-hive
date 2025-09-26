@@ -61,9 +61,9 @@ const ToolCard = <ActionResultBodyType, ActionArgsType>({
         ) : tool.state === 'call' ? (
           call?.body ? (
             <div className="flex flex-col gap-2">
-              <p className="text-sm text-neutral-600 dark:text-neutral-400 font-medium">
+              {/* <p className="text-lg text-neutral-600 dark:text-neutral-400 font-bold">
                 {call.heading}
-              </p>
+              </p> */}
               {call.body(tool.toolCallId, tool.args)}
             </div>
           ) : (

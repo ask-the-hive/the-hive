@@ -25,9 +25,6 @@ const TokenBalance: React.FC<Props> = ({ balance, logoURI, symbol, token, name }
   const { data: tokenAddress } = useResolveAssetSymbolToAddress(displaySymbol);
   const { data: tokenData, isLoading: isTokenLoading } = useTokenDataByAddress(tokenAddress || '');
   const { data: price, isLoading: isPriceLoading } = usePrice(tokenData?.id || '');
-  console.log('tokenAddress', tokenAddress);
-  console.log('tokenData', tokenData);
-  console.log('price', price);
   // The balance is already in the correct format, no need to divide by 10^decimals
 
   return (
@@ -41,24 +38,24 @@ const TokenBalance: React.FC<Props> = ({ balance, logoURI, symbol, token, name }
           className="rounded-full"
         />
 
-        <span className="text-2xl font-medium text-muted-foreground">{displaySymbol}</span>
+        <span className="text-lg font-medium text-muted-foreground">{displaySymbol}</span>
       </div>
       <div className="flex flex-col items-end">
         <div className="flex flex-row items-end gap-2">
-          <p className="text-lg font-medium">
+          <p className="text-md font-medium">
             {balance.toLocaleString(undefined, {
               maximumFractionDigits: 4,
               minimumFractionDigits: 4,
             })}
           </p>
-          <p className="text-lg text-muted-foreground">{displaySymbol}</p>
+          <p className="text-md text-muted-foreground">{displaySymbol}</p>
         </div>
         {isTokenLoading || isPriceLoading ? (
           <Skeleton className="w-16 h-4" />
         ) : (
           tokenData &&
           price && (
-            <p className="text-lg text-muted-foreground">
+            <p className="text-md text-muted-foreground">
               $
               {(price.value * Number(balance)).toLocaleString(undefined, {
                 minimumFractionDigits: 2,
