@@ -90,7 +90,7 @@ export async function getLiquidStakingYields(): Promise<
     // Transform to the expected format
     const body = await Promise.all(
       topSolanaPools.map(async (pool) => {
-        const tokenData = await getTokenBySymbol(pool.symbol, 'solana');
+        const tokenData = await getTokenBySymbol(pool.symbol);
         return {
           name: pool.symbol,
           symbol: pool.symbol,

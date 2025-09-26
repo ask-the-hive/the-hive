@@ -1,7 +1,6 @@
 import { StakingRewardsResponse } from './types';
 
 export const getBestLiquidStaking = async (): Promise<StakingRewardsResponse> => {
-  debugger;
   try {
     const response = await fetch('https://yields.llama.fi/pools', {
       method: 'GET',

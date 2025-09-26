@@ -77,7 +77,7 @@ const LiquidStakingYields: React.FC<{
   return (
     <TooltipProvider>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-10 mt-10">
-        {body?.map((pool, index) => (
+        {body?.slice(0, 3)?.map((pool, index) => (
           <Card
             key={`${pool.name}-${pool.project}-${index}`}
             className={cn(

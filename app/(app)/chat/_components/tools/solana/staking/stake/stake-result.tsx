@@ -88,14 +88,19 @@ const StakeResult: React.FC<Props> = ({ outputTokenData, poolData, outputAmount 
 
               <div className="grid grid-cols-2 md:grid-cols-2 gap-2 pb-4 mt-4 items-center">
                 <div className="flex flex-col items-center">
-                  <p className="text-2xl font-semibold text-neutral-600 dark:text-neutral-400">
-                    {outputAmount} {outputTokenData?.symbol}{' '}
-                    {amountUSD && `($${amountUSD.toFixed(2)})`}
+                  <p className="text-xl font-semibold text-neutral-600 dark:text-neutral-400">
+                    {String(outputAmount)?.length > 8 ? outputAmount?.toFixed(8) : outputAmount}{' '}
+                    {outputTokenData?.symbol}{' '}
                   </p>
+                  {amountUSD && (
+                    <p className="text-xl font-semibold text-neutral-600 dark:text-neutral-400">
+                      {`$${amountUSD.toFixed(2)}`}
+                    </p>
+                  )}
                   <p className="text-gray-600 text-sm dark:text-gray-400">Amount</p>
                 </div>
                 <div className="flex flex-col items-center">
-                  <p className="text-2xl font-semibold text-green-600">
+                  <p className="text-xl font-semibold text-green-600">
                     +{poolData.yield.toFixed(2)}% APY
                   </p>
                   <p className="text-gray-600 dark:text-gray-400 text-sm">Earning</p>
@@ -104,8 +109,8 @@ const StakeResult: React.FC<Props> = ({ outputTokenData, poolData, outputAmount 
             </div>
           )}
           {chartData.length > 0 && (
-            <div className="mt-4 w-full">
-              <p className="text-sm font-medium mb-2">Projected Yield Over Time</p>
+            <div className="mt-4 w-full p-4">
+              <p className="text-lg font-medium mb-2">Projected Yield Over Time</p>
               <ChartContainer className="h-[200px] w-full" config={chartConfig}>
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={chartData} margin={{ top: 5, right: 5, bottom: 5, left: 5 }}>

@@ -31,7 +31,7 @@ const CollapsibleContent = React.forwardRef<
   <CollapsiblePrimitive.Content
     ref={ref}
     className={cn(
-      'overflow-hidden transition-all duration-300 max-h-0 data-[state=open]:max-h-[540px] mb-6',
+      'overflow-hidden transition-all duration-300 max-h-0 data-[state=open]:max-h-max mb-6',
       className,
     )}
     {...props}
