@@ -21,11 +21,9 @@ const LogInButton: React.FC<Props> = ({ onComplete, className }) => {
   const { currentChain, walletAddresses } = useChain();
   const { wallets } = useWallets();
   const { wallets: solanaWallets } = useSolanaWallets();
-
+  console.log('solanaWallets - LogInButton', solanaWallets);
   // Find the appropriate wallet address based on the current chain
   const getWalletAddress = () => {
-    console.log('Getting wallet address for chain:', currentChain);
-
     // First check wallets from the appropriate hook based on chain
     if (currentChain === 'bsc' || currentChain === 'base') {
       // Find EVM wallets

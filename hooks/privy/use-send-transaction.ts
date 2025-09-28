@@ -1,3 +1,5 @@
+'use client';
+
 import { Connection, VersionedTransaction } from '@solana/web3.js';
 
 import { useSolanaWallets } from '@privy-io/react-auth/solana';
@@ -11,7 +13,7 @@ export const useSendTransaction = () => {
 
   // For Solana chain, use the first available Solana wallet
   // For other chains, this hook shouldn't be used (they have their own hooks)
-  const wallet = currentChain === 'solana' ? wallets[0] : null;
+  const wallet = currentChain === 'solana' && wallets.length > 0 ? wallets[0] : null;
 
   const sendTransaction = async (transaction: VersionedTransaction) => {
     if (!wallet) throw new Error('No Solana wallet found');

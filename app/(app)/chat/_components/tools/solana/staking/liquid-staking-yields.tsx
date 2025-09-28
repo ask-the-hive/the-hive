@@ -7,6 +7,7 @@ import { SOLANA_STAKING_POOL_DATA_STORAGE_KEY } from '@/lib/constants';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { capitalizeWords, getConfidenceLabel } from '@/lib/string-utils';
 
 import type { ToolInvocation } from 'ai';
 import type {
@@ -14,30 +15,6 @@ import type {
   LiquidStakingYieldsResultType,
   LiquidStakingYieldsPoolData,
 } from '@/ai';
-
-function capitalizeWords(str: string): string {
-  return str
-    .replace(/-/g, ' ')
-    .split(' ')
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ');
-}
-
-// Convert binnedConfidence (0-3) to confidence level label
-function getConfidenceLabel(binValue: number): string {
-  switch (binValue) {
-    case 3:
-      return 'High';
-    case 2:
-      return 'Medium';
-    case 1:
-      return 'Low';
-    case 0:
-      return 'Very Low';
-    default:
-      return 'Unknown';
-  }
-}
 
 interface Props {
   tool: ToolInvocation;

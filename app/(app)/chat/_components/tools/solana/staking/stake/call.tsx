@@ -8,9 +8,8 @@ import { usePrivy } from '@privy-io/react-auth';
 import { useChat } from '@/app/(app)/chat/_contexts/chat';
 import { useChain } from '@/app/_contexts/chain-context';
 import { SOLANA_STAKING_POOL_DATA_STORAGE_KEY } from '@/lib/constants';
-import { upsertLiquidStakingPosition } from '@/db/services/liquid-staking-positions';
 import type { StakeArgumentsType, StakeResultBodyType } from '@/ai';
-import StakeResult from './stake-result';
+import { saveLiquidStakingPosition } from '@/services/liquid-staking/save';
 
 interface Props {
   toolCallId: string;
@@ -72,8 +71,7 @@ const StakeCallBody: React.FC<Props> = ({ toolCallId, args }) => {
     }
 
     try {
-      // Create or update liquid staking position record
-      await upsertLiquidStakingPosition({
+      await saveLiquidStakingPosition({
         walletAddress: user.wallet.address,
         chainId: 'solana',
         amount: outputAmount,

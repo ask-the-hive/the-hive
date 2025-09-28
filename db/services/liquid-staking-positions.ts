@@ -11,7 +11,7 @@ let container: Container | null = null;
 async function getPositionsContainer(): Promise<Container> {
   try {
     if (!container) {
-      container = await getContainer(CONTAINER_ID, '/walletAddress');
+      container = await getContainer(CONTAINER_ID, 'walletAddress');
     }
     return container;
   } catch (error) {

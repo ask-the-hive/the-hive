@@ -24,7 +24,7 @@ const StarterButton: React.FC<Props> = ({ icon, title, description, prompt, clas
   return (
     <Button
       className={cn(
-        'flex items-center p-4 gap-2 text-sm text-neutral-600 dark:text-neutral-400 h-fit justify-start',
+        'flex items-center p-4 gap-2 text-sm text-neutral-600 dark:text-neutral-400 h-fit justify-start rounded-lg',
         className,
       )}
       variant="outline"
