@@ -77,3 +77,35 @@ export const formatCompactNumber = (value: number): string => {
     return `$${value.toFixed(0)}`;
   }
 };
+
+/**
+ * Formats a USD value with proper currency formatting
+ * @param value The USD value to format
+ * @returns Formatted USD string (e.g., "$1,234.56")
+ */
+export const formatUSD = (value: number): string => {
+  if (value === 0) return '$0.00';
+
+  return `$${value.toLocaleString(undefined, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
+};
+
+/**
+ * Formats a crypto balance from already converted balance (not raw)
+ * @param balance Already converted balance (e.g., 1.2345 for SOL)
+ * @param symbol Token symbol (e.g., "SOL", "USDC")
+ * @returns Formatted crypto string (e.g., "1.2345 SOL")
+ */
+export const formatCryptoBalance = (balance: number, symbol: string): string => {
+  if (balance === 0) return `0 ${symbol}`;
+
+  // For very small amounts, show more decimals
+  const maxDecimals = balance < 0.01 ? 8 : 4;
+
+  return `${balance.toLocaleString(undefined, {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: maxDecimals,
+  })} ${symbol}`;
+};

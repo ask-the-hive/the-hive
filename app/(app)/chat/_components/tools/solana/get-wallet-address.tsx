@@ -47,8 +47,6 @@ const GetWalletAddress: React.FC<Props> = ({ tool, prevToolAgent }) => {
 };
 
 const GetWalletAddressAction = ({ toolCallId }: { toolCallId: string }) => {
-  console.log('Solana GetWalletAddressAction component mounted', { toolCallId });
-
   const { setCurrentChain } = useChain();
   const { user } = usePrivy();
   const { wallets: solanaWallets } = useSolanaWallets();
@@ -56,22 +54,15 @@ const GetWalletAddressAction = ({ toolCallId }: { toolCallId: string }) => {
 
   // Set the current chain to Solana
   useEffect(() => {
-    console.log('Setting current chain to Solana');
     setCurrentChain('solana');
   }, [setCurrentChain]);
 
   // Check for Solana wallets
   useEffect(() => {
     if (!isLoading) {
-      console.log('Checking for Solana wallet', {
-        userWallet: user?.wallet?.address,
-        solanaWallets: solanaWallets.map((w) => ({ address: w.address })),
-      });
-
       // First try to find a Solana wallet from the useSolanaWallets hook
       if (solanaWallets.length > 0) {
         const solanaWallet = solanaWallets[0]; // Use the first Solana wallet
-        console.log('Found Solana wallet from useSolanaWallets:', solanaWallet.address);
         addToolResult(toolCallId, {
           message: 'Solana Wallet connected',
           body: {
@@ -83,7 +74,6 @@ const GetWalletAddressAction = ({ toolCallId }: { toolCallId: string }) => {
 
       // Fallback to user's main wallet if it's a Solana wallet (not starting with 0x)
       if (user?.wallet?.address && !user.wallet.address.startsWith('0x')) {
-        console.log('Using main Solana wallet address:', user.wallet.address);
         addToolResult(toolCallId, {
           message: 'Solana Wallet connected',
           body: {
@@ -96,7 +86,6 @@ const GetWalletAddressAction = ({ toolCallId }: { toolCallId: string }) => {
   }, [user, solanaWallets, isLoading, addToolResult, toolCallId]);
 
   const onComplete = (wallet: Wallet) => {
-    console.log('Wallet connection completed:', wallet);
     // Only use the wallet if it's a Solana wallet (not starting with 0x)
     if (!wallet.address.startsWith('0x')) {
       addToolResult(toolCallId, {

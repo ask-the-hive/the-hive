@@ -19,8 +19,6 @@ interface Props {
 }
 
 const GetWalletAddress: React.FC<Props> = ({ tool, prevToolAgent }) => {
-  console.log('BSC GetWalletAddress component rendered', { tool, prevToolAgent });
-
   return (
     <ToolCard
       tool={tool}
@@ -45,8 +43,6 @@ const GetWalletAddress: React.FC<Props> = ({ tool, prevToolAgent }) => {
 };
 
 const GetWalletAddressAction = ({ toolCallId }: { toolCallId: string }) => {
-  console.log('BSC GetWalletAddressAction component mounted', { toolCallId });
-
   const { setCurrentChain } = useChain();
   const { user } = usePrivy();
   const { ready: walletsReady, wallets } = useWallets();
@@ -54,23 +50,16 @@ const GetWalletAddressAction = ({ toolCallId }: { toolCallId: string }) => {
 
   // Set the current chain to BSC
   useEffect(() => {
-    console.log('Setting current chain to BSC');
     setCurrentChain('bsc');
   }, [setCurrentChain]);
 
   // Check for BSC wallets
   useEffect(() => {
     if (!isLoading && walletsReady) {
-      console.log('Checking for BSC wallet', {
-        userWallet: user?.wallet?.address,
-        wallets: wallets.map((w) => ({ address: w.address, type: w.walletClientType })),
-      });
-
       // First try to find a BSC wallet from useWallets
       const evmWallets = wallets.filter((wallet) => wallet.address.startsWith('0x'));
       if (evmWallets.length > 0) {
         const bscWallet = evmWallets[0]; // Use the first EVM wallet
-        console.log('Found BSC wallet from useWallets:', bscWallet.address);
         addToolResult(toolCallId, {
           message: 'BSC Wallet connected',
           body: {
@@ -82,7 +71,6 @@ const GetWalletAddressAction = ({ toolCallId }: { toolCallId: string }) => {
 
       // Fallback to user's main wallet if it's an EVM wallet
       if (user?.wallet?.address && user.wallet.address.startsWith('0x')) {
-        console.log('Using main wallet address for BSC:', user.wallet.address);
         addToolResult(toolCallId, {
           message: 'BSC Wallet connected',
           body: {
@@ -95,7 +83,6 @@ const GetWalletAddressAction = ({ toolCallId }: { toolCallId: string }) => {
   }, [user, wallets, walletsReady, isLoading, addToolResult, toolCallId]);
 
   const onComplete = (wallet: Wallet) => {
-    console.log('Wallet connection completed:', wallet);
     // Only use the wallet if it's an EVM wallet (BSC)
     if (wallet.address.startsWith('0x')) {
       addToolResult(toolCallId, {

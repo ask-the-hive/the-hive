@@ -25,9 +25,9 @@ const Stake: React.FC<Props> = ({ tool, prevToolAgent }) => {
             <div className="flex justify-center w-full">
               <div className="w-[70%]">
                 <StakeResult
-                  outputTokenData={(result.body as any).outputTokenData}
-                  poolData={(result.body as any).poolData}
-                  outputAmount={(result.body as any).outputAmount}
+                  outputTokenData={result.body.outputTokenData}
+                  poolData={result.body.poolData}
+                  outputAmount={result.body.outputAmount}
                 />
               </div>
             </div>

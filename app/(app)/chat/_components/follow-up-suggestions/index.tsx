@@ -110,7 +110,7 @@ const FollowUpSuggestions: React.FC = () => {
           <Skeleton className="w-full h-[22px] md:hidden" />
           {/* Desktop: Show all 3 skeletons */}
           {Array.from({ length: 3 }).map((_, index) => (
-            <Skeleton key={index} className="w-full h-[32px] hidden md:block" />
+            <Skeleton key={index} className="w-full h-[32px] hidden md:block rounded-full" />
           ))}
         </>
       ) : (

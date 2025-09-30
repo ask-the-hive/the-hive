@@ -8,8 +8,12 @@ import { Models } from '@/types/models';
 import { generateObject } from 'ai';
 import { z } from 'zod';
 
+const defaultPrompt = `Generate 3 follow-up suggestions for what I can do next. They can be declarative or questions. The prompts should be specific to the previous messages. Reference specific tokens, projects, etc.`;
+
 export async function POST(req: NextRequest) {
-  const { messages, modelName, prompt } = await req.json();
+  const { messages, modelName, prompt: userPrompt } = await req.json();
+
+  const prompt = userPrompt || defaultPrompt;
 
   let model;
   switch (modelName) {

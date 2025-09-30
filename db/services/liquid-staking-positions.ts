@@ -130,6 +130,19 @@ export async function getLiquidStakingPosition(
   }
 }
 
+export async function deleteLiquidStakingPosition(
+  id: string,
+  walletAddress: string,
+): Promise<void> {
+  try {
+    const container = await getPositionsContainer();
+    await container.item(id, walletAddress).delete();
+  } catch (error) {
+    console.error('Error deleting liquid staking position:', error);
+    throw new Error('Failed to delete liquid staking position');
+  }
+}
+
 export async function getAllLiquidStakingPositions(
   walletAddress: string,
 ): Promise<LiquidStakingPosition[]> {

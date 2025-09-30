@@ -20,9 +20,9 @@ const Swap: React.FC<SwapProps> = ({ tool, prevToolAgent }) => {
       loadingText="Completing Trade..."
       result={{
         heading: (result: SolanaTradeResultType) =>
-          result.body ? 'Ready to Trade' : 'Failed to complete trade',
+          result.body?.transaction ? 'Swap Complete' : 'Failed to complete trade',
         body: (result: SolanaTradeResultType) =>
-          result.body ? <SwapResultCard result={result.body} /> : result.message,
+          result.body?.transaction ? <SwapResultCard result={result.body} /> : result.message,
       }}
       call={{
         heading: 'Swap',

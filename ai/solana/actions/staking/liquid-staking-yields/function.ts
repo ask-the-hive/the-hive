@@ -30,6 +30,10 @@ export async function getLiquidStakingYields(): Promise<
       'bybit-staked-sol', // Bybit (BBSOL)
       'helius-staked-sol', // Helius (HSOL)
       'jupiter-staked-sol', // Jupiter (JUPSOL)
+      'sanctum', // Sanctum (INF, LSTs)
+      'lido', // Lido (STSOL)
+      'blazestake', // BlazeStake (BSOL)
+      'kamino', // Kamino (VSOL)
     ];
 
     // Liquid staking tokens that appear in other protocols
@@ -45,14 +49,7 @@ export async function getLiquidStakingYields(): Promise<
       'INF', // Sanctum
       'STSOL', // Lido
       'JSOL', // Jupiter
-      'SAVESOL', // Save
-      'HASOL', // Save
-      'SSOL', // Save
-      'HUBSOL', // Save
-      'CBBTC', // Save
-      'WSTETH', // Save
       'VSOL', // Kamino
-      'RSTSOL', // Various
     ];
 
     const solLiquidStakingPools = solanaPools.filter((pool) => {

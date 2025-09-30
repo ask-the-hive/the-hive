@@ -40,9 +40,7 @@ const AuthButton: React.FC = () => {
   const [showBaseBridgeOptions, setShowBaseBridgeOptions] = useState(false);
 
   const { currentChain, setCurrentChain, walletAddresses, currentWalletAddress } = useChain();
-  console.log('walletAddresses - AuthButton', walletAddresses);
-  console.log('currentWalletAddress - AuthButton', currentWalletAddress);
-  console.log('currentChain - AuthButton', currentChain);
+
   const { isMobile } = useSidebar();
 
   // Handle chain switching

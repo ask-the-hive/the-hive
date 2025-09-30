@@ -37,7 +37,7 @@ const SwapResultCard: React.FC<SwapResultCardProps> = ({ result }) => {
           </p>
           {transaction && (
             <p className="text-xs text-green-600 dark:text-green-400 mt-1">
-              Transaction: {transaction.slice(0, 8)}...{transaction.slice(-8)}
+              Transaction: {transaction}
             </p>
           )}
         </div>

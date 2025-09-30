@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef } from 'react';
+import React, { useRef, useEffect } from 'react';
 
 import { CornerDownRight } from 'lucide-react';
 
@@ -42,12 +42,11 @@ const ChatInput: React.FC = () => {
   // Check if chat has started (has messages)
   const hasMessages = messages.length > 0;
 
-  // Remove auto-focus behavior that prevents new chat creation
-  // useEffect(() => {
-  //     if (!isLoading && inputRef.current) {
-  //         inputRef.current.focus();
-  //     }
-  // }, [isLoading]);
+  useEffect(() => {
+    if (!isLoading && inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [isLoading]);
 
   return (
     <div className="flex flex-col gap-1 w-full">

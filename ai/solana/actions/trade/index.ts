@@ -2,7 +2,6 @@ import { SOLANA_TRADE_ACTION } from './name';
 import { SOLANA_TRADE_PROMPT } from './prompt';
 import { TradeInputSchema } from './input-schema';
 import { SolanaTradeResultBodyType } from './types';
-import { tradeTokens } from './function';
 
 import type { SolanaAction } from '../solana-action';
 
@@ -12,5 +11,4 @@ export class SolanaTradeAction
   public name = SOLANA_TRADE_ACTION;
   public description = SOLANA_TRADE_PROMPT;
   public argsSchema = TradeInputSchema;
-  public func = tradeTokens;
 }

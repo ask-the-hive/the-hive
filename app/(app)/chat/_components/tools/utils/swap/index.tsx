@@ -102,7 +102,6 @@ const Swap: React.FC<Props> = ({
       const transaction = VersionedTransaction.deserialize(
         Buffer.from(transactionBase64, 'base64'),
       );
-      console.log('Deserialized transaction:', transaction);
 
       // Don't sign here - let the wallet handle signing when sending
       const txHash = await sendTransaction(transaction);
@@ -117,23 +116,13 @@ const Swap: React.FC<Props> = ({
   useEffect(() => {
     if (inputToken && outputToken) {
       const fetchQuoteAndUpdate = async () => {
-        console.log('Fetching quote and updating output amount');
         setIsQuoteLoading(true);
         setOutputAmount('');
         try {
+          debugger;
           const inputAmountWei = new Decimal(inputAmount || '0')
             .mul(new Decimal(10).pow(inputToken.decimals))
             .toFixed(0, Decimal.ROUND_DOWN);
-
-          console.log('Jupiter API call parameters:', {
-            inputMint: inputToken.id,
-            outputMint: outputToken.id,
-            amount: inputAmountWei,
-            inputAmount: inputAmount,
-            inputTokenDecimals: inputToken.decimals,
-            inputTokenSymbol: inputToken.symbol,
-            outputTokenSymbol: outputToken.symbol,
-          });
 
           // Check if the output token address looks valid (should be 32-44 characters)
           if (!outputToken.id || outputToken.id.length < 32) {
@@ -142,12 +131,13 @@ const Swap: React.FC<Props> = ({
 
           const quote = await getQuote(inputToken.id, outputToken.id, inputAmountWei);
           setQuoteResponse(quote);
+
           const outputAmountStr = new Decimal(quote.outAmount)
             .div(new Decimal(10).pow(outputToken.decimals))
             .toString();
+
           handleOutputAmountChange(outputAmountStr);
         } catch (error) {
-          debugger;
           console.error('Error fetching quote:', error);
         } finally {
           setIsQuoteLoading(false);

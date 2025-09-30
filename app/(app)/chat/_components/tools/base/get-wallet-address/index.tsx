@@ -18,8 +18,6 @@ interface Props {
 }
 
 const GetWalletAddress: React.FC<Props> = ({ tool, prevToolAgent }) => {
-  console.log('BASE GetWalletAddress component rendered', { tool, prevToolAgent });
-
   return (
     <ToolCard
       tool={tool}
@@ -46,8 +44,6 @@ const GetWalletAddress: React.FC<Props> = ({ tool, prevToolAgent }) => {
 };
 
 const GetWalletAddressAction = ({ toolCallId }: { toolCallId: string }) => {
-  console.log('BASE GetWalletAddressAction component mounted', { toolCallId });
-
   const { setCurrentChain } = useChain();
   const { user } = usePrivy();
   const { ready: walletsReady, wallets } = useWallets();
@@ -55,23 +51,16 @@ const GetWalletAddressAction = ({ toolCallId }: { toolCallId: string }) => {
 
   // Set the current chain to BASE
   useEffect(() => {
-    console.log('Setting current chain to BASE');
     setCurrentChain('base');
   }, [setCurrentChain]);
 
   // Check for BASE wallets
   useEffect(() => {
     if (!isLoading && walletsReady) {
-      console.log('Checking for BASE wallet', {
-        userWallet: user?.wallet?.address,
-        wallets: wallets.map((w) => ({ address: w.address, type: w.walletClientType })),
-      });
-
       // First try to find a BASE wallet from useWallets
       const evmWallets = wallets.filter((wallet) => wallet.address.startsWith('0x'));
       if (evmWallets.length > 0) {
         const baseWallet = evmWallets[0]; // Use the first EVM wallet
-        console.log('Found BASE wallet from useWallets:', baseWallet.address);
         addToolResult(toolCallId, {
           message: 'BASE Wallet connected',
           body: {
@@ -83,7 +72,6 @@ const GetWalletAddressAction = ({ toolCallId }: { toolCallId: string }) => {
 
       // Fallback to user's main wallet if it's an EVM wallet
       if (user?.wallet?.address && user.wallet.address.startsWith('0x')) {
-        console.log('Using main wallet address for BASE:', user.wallet.address);
         addToolResult(toolCallId, {
           message: 'BASE Wallet connected',
           body: {
@@ -96,7 +84,6 @@ const GetWalletAddressAction = ({ toolCallId }: { toolCallId: string }) => {
   }, [user, wallets, walletsReady, addToolResult, toolCallId, isLoading]);
 
   const onComplete = (wallet: Wallet) => {
-    console.log('Wallet connection completed:', wallet);
     // Only use the wallet if it's an EVM wallet (BASE)
     if (wallet.address.startsWith('0x')) {
       addToolResult(toolCallId, {

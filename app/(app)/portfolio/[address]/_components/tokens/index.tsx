@@ -1,11 +1,8 @@
 'use client';
 
 import React from 'react';
-
+import Image from 'next/image';
 import { Coins } from 'lucide-react';
-
-import Decimal from 'decimal.js';
-
 import {
   Table,
   TableHeader,
@@ -16,11 +13,11 @@ import {
   Button,
   Skeleton,
 } from '@/components/ui';
-
 import { useSwapModal } from '../../_contexts/use-swap-modal';
 import { usePortfolio } from '@/hooks';
 import { useChain } from '@/app/_contexts/chain-context';
 import { cn } from '@/lib/utils';
+import { formatCrypto, formatUSD } from '@/lib/format';
 
 interface Props {
   address: string;
@@ -33,13 +30,22 @@ const Tokens: React.FC<Props> = ({ address }) => {
   const chainAddress =
     currentChain === 'solana' ? walletAddresses.solana || address : walletAddresses.bsc || address;
 
-  const { data: portfolio, isLoading } = usePortfolio(chainAddress, currentChain);
+  const {
+    data: portfolio,
+    isLoading,
+    mutate: refreshPortfolio,
+  } = usePortfolio(chainAddress, currentChain);
 
   const { onOpen } = useSwapModal();
 
+  // Helper function to handle successful swaps
+  const handleSwapSuccess = () => {
+    refreshPortfolio();
+  };
+
   // Helper functions to open buy/sell modals
-  const openBuy = (tokenAddress: string) => onOpen('buy', tokenAddress);
-  const openSell = (tokenAddress: string) => onOpen('sell', tokenAddress);
+  const openBuy = (tokenAddress: string) => onOpen('buy', tokenAddress, handleSwapSuccess);
+  const openSell = (tokenAddress: string) => onOpen('sell', tokenAddress, handleSwapSuccess);
 
   return (
     <div className="flex flex-col gap-4">
@@ -49,13 +55,7 @@ const Tokens: React.FC<Props> = ({ address }) => {
           <h2 className="text-xl font-bold">Tokens</h2>
         </div>
         {portfolio?.totalUsd !== undefined && (
-          <p>
-            $
-            {portfolio.totalUsd.toLocaleString(undefined, {
-              maximumFractionDigits: 2,
-              minimumFractionDigits: 2,
-            })}
-          </p>
+          <p className="text-lg font-bold">{formatUSD(portfolio.totalUsd)}</p>
         )}
       </div>
       {isLoading ? (
@@ -67,8 +67,7 @@ const Tokens: React.FC<Props> = ({ address }) => {
               <TableRow>
                 <TableHead>Token</TableHead>
                 <TableHead>Balance</TableHead>
-                <TableHead>Price</TableHead>
-                <TableHead>Value</TableHead>
+                <TableHead>Token Price</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -83,10 +82,12 @@ const Tokens: React.FC<Props> = ({ address }) => {
                     <TableCell>
                       <div className="font-medium flex gap-2 items-center">
                         {token.logoURI ? (
-                          <img
+                          <Image
                             src={token.logoURI}
                             alt={token.name}
-                            className="w-4 h-4 rounded-full"
+                            width={16}
+                            height={16}
+                            className="rounded-full"
                           />
                         ) : (
                           <div className="w-4 h-4 rounded-full bg-gray-200" />
@@ -95,28 +96,10 @@ const Tokens: React.FC<Props> = ({ address }) => {
                       </div>
                     </TableCell>
                     <TableCell>
-                      {new Decimal(token.balance)
-                        .div(10 ** token.decimals)
-                        .toNumber()
-                        .toLocaleString(undefined, {
-                          maximumFractionDigits: 4,
-                          minimumFractionDigits: 4,
-                        })}
+                      {formatCrypto(token.balance, token.symbol, token.decimals)} /{' '}
+                      {formatUSD(token.valueUsd)}
                     </TableCell>
-                    <TableCell>
-                      $
-                      {token.priceUsd.toLocaleString(undefined, {
-                        maximumFractionDigits: 2,
-                        minimumFractionDigits: 2,
-                      })}
-                    </TableCell>
-                    <TableCell>
-                      $
-                      {token.valueUsd.toLocaleString(undefined, {
-                        maximumFractionDigits: 2,
-                        minimumFractionDigits: 2,
-                      })}
-                    </TableCell>
+                    <TableCell>{formatUSD(token.priceUsd)}</TableCell>
                     <TableCell>
                       <div className="flex gap-2">
                         <Button

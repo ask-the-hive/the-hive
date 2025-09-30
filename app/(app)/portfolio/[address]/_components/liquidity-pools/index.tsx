@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Droplet, Info } from 'lucide-react';
 import Image from 'next/image';
 
@@ -11,14 +11,12 @@ import {
   TableCell,
   Skeleton,
 } from '@/components/ui';
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Area, AreaChart, ResponsiveContainer, XAxis, YAxis } from 'recharts';
-
 import { useChain } from '@/app/_contexts/chain-context';
 import { usePortfolio } from '@/hooks';
 import { getAllLiquidStakingPositions } from '@/services/liquid-staking/get-all';
 import { getLiquidStakingPool } from '@/services/liquid-staking/get-pool';
+import { deleteLiquidStakingPosition } from '@/services/liquid-staking/delete';
 import { LiquidStakingPosition } from '@/db/types';
 import { formatFiat, formatCrypto, formatCompactNumber } from '@/lib/format';
 import { capitalizeWords, getConfidenceLabel } from '@/lib/string-utils';
@@ -102,42 +100,73 @@ const LiquidityPools: React.FC<Props> = ({ address }) => {
   const { data: portfolio, isLoading: portfolioLoading } = usePortfolio(chainAddress, currentChain);
 
   // Fetch fresh pool data for all positions and update positions state
-  const fetchFreshPoolData = async (positions: LiquidStakingPosition[]) => {
-    setPoolDataLoading(true);
+  const fetchFreshPoolData = useCallback(
+    async (positions: LiquidStakingPosition[]) => {
+      setPoolDataLoading(true);
 
-    const promises = positions.map(async (position) => {
-      try {
-        const freshData = await getLiquidStakingPool(
-          position.poolData.project,
-          position.lstToken.symbol,
-        );
-        console.log('freshData', freshData);
-        // Return position with updated pool data (merge with existing to preserve missing fields)
-        return {
-          ...position,
-          poolData: {
-            ...position.poolData,
-            ...freshData,
-          },
-        };
-      } catch (err) {
-        console.error(
-          `Failed to fetch fresh pool data for ${position.poolData.project}-${position.lstToken.symbol}:`,
-          err,
-        );
-        // Return original position if fetch fails
-        return position;
-      }
-    });
+      const promises = positions.map(async (position) => {
+        try {
+          // Check if user still has balance in this LST
+          const portfolioToken = portfolio?.items?.find(
+            (item) =>
+              item.address === position.lstToken.id || item.symbol === position.lstToken.symbol,
+          );
 
-    const results = await Promise.allSettled(promises);
-    const updatedPositions = results.map((result, index) =>
-      result.status === 'fulfilled' ? result.value : positions[index],
-    );
+          const rawBalance = portfolioToken?.balance || '0';
+          const decimals = portfolioToken?.decimals || position.lstToken.decimals || 9;
+          const currentBalance = parseFloat(rawBalance.toString()) / Math.pow(10, decimals);
 
-    setPositions(updatedPositions);
-    setPoolDataLoading(false);
-  };
+          // If current balance is 0 (user sold all their LST), delete the position
+          if (currentBalance === 0) {
+            try {
+              await deleteLiquidStakingPosition(position.id, position.walletAddress);
+              console.log(
+                `Deleted liquid staking position for ${position.lstToken.symbol} (zero balance)`,
+              );
+              return null; // Return null to filter out this position
+            } catch (deleteError) {
+              console.error(
+                `Failed to delete position for ${position.lstToken.symbol}:`,
+                deleteError,
+              );
+              // If deletion fails, return the original position
+              return null;
+            }
+          }
+
+          const freshData = await getLiquidStakingPool(
+            position.poolData.project,
+            position.lstToken.symbol,
+          );
+
+          // Return position with updated pool data (merge with existing to preserve missing fields)
+          return {
+            ...position,
+            poolData: {
+              ...position.poolData,
+              ...freshData,
+            },
+          };
+        } catch (err) {
+          console.error(
+            `Failed to fetch fresh pool data for ${position.poolData.project}-${position.lstToken.symbol}:`,
+            err,
+          );
+          // Return original position if fetch fails
+          return position;
+        }
+      });
+
+      const results = await Promise.allSettled(promises);
+      const updatedPositions = results
+        .map((result, index) => (result.status === 'fulfilled' ? result.value : positions[index]))
+        .filter((position): position is LiquidStakingPosition => position !== null); // Filter out null positions
+
+      setPositions(updatedPositions);
+      setPoolDataLoading(false);
+    },
+    [portfolio],
+  );
 
   useEffect(() => {
     if (currentChain !== 'solana') return;
@@ -164,7 +193,7 @@ const LiquidityPools: React.FC<Props> = ({ address }) => {
     return () => {
       canceled = true;
     };
-  }, [address, currentChain]);
+  }, [address, currentChain, fetchFreshPoolData]);
 
   if (currentChain !== 'solana') return null;
 
@@ -216,7 +245,6 @@ const LiquidityPools: React.FC<Props> = ({ address }) => {
               <TableHead>APY</TableHead>
               <TableHead>Protocol</TableHead>
               <TableHead>Protocol TVL</TableHead>
-              <TableHead>Yield Chart</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody className="max-h-96 overflow-y-auto">
@@ -238,57 +266,6 @@ const LiquidityPools: React.FC<Props> = ({ address }) => {
 
               // Convert yield earned back to raw balance format for utilities
               const yieldEarnedRaw = yieldEarned * Math.pow(10, decimals);
-
-              // Generate chart data from position creation to now
-              const generateChartData = () => {
-                const startDate = new Date(position.createdAt);
-                const endDate = new Date();
-                const daysDiff = Math.ceil(
-                  (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24),
-                );
-
-                // Generate data points (max 12 points for clean chart)
-                const dataPoints = Math.min(12, Math.max(2, daysDiff));
-                const data = [];
-
-                for (let i = 0; i <= dataPoints; i++) {
-                  const date = new Date(
-                    startDate.getTime() +
-                      (i / dataPoints) * (endDate.getTime() - startDate.getTime()),
-                  );
-
-                  // Simulate yield growth over time (compound growth)
-                  const dailyRate = position.poolData.yield / 100 / 365;
-                  const daysElapsed =
-                    (date.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24);
-                  const projectedBalance = initialAmount * Math.pow(1 + dailyRate, daysElapsed);
-                  const projectedYield = (projectedBalance - initialAmount) * price;
-
-                  data.push({
-                    date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-                    yield: Math.max(0, projectedYield),
-                    balance: projectedBalance,
-                  });
-                }
-
-                // Set the last point to actual current yield
-                if (data.length > 0) {
-                  const actualYieldFiat = yieldEarned * price;
-                  data[data.length - 1].yield = Math.max(0, actualYieldFiat);
-                  data[data.length - 1].balance = currentBalance;
-                }
-
-                return data;
-              };
-
-              const chartData = generateChartData();
-
-              const chartConfig = {
-                yield: {
-                  label: 'Yield',
-                  color: 'hsl(var(--chart-1))',
-                },
-              };
 
               return (
                 <TableRow key={position.id}>
@@ -360,56 +337,6 @@ const LiquidityPools: React.FC<Props> = ({ address }) => {
                         formatCompactNumber(position.poolData.tvlUsd || 0)
                       )}
                     </span>
-                  </TableCell>
-                  <TableCell>
-                    {chartData.length > 1 && chartData.some((point) => point.yield > 0) ? (
-                      <div className="w-[200px] h-[100px]">
-                        <ChartContainer config={chartConfig} className="h-full w-full">
-                          <ResponsiveContainer width="100%" height="100%">
-                            <AreaChart
-                              data={chartData}
-                              margin={{ top: 5, right: 5, bottom: 5, left: 5 }}
-                            >
-                              <XAxis
-                                dataKey="date"
-                                fontSize={10}
-                                tickLine={false}
-                                axisLine={false}
-                                hide
-                              />
-                              <YAxis fontSize={10} tickLine={false} axisLine={false} hide />
-                              <ChartTooltip
-                                cursor={{ stroke: 'var(--color-yield)', strokeWidth: 1 }}
-                                content={({ active, payload, label }) =>
-                                  active && payload?.[0] ? (
-                                    <ChartTooltipContent
-                                      payload={payload}
-                                      label={label}
-                                      formatter={(value) => [
-                                        `$${Number(value).toFixed(2)}`,
-                                        'Yield Earned',
-                                      ]}
-                                    />
-                                  ) : null
-                                }
-                              />
-                              <Area
-                                type="monotone"
-                                dataKey="yield"
-                                name="yield"
-                                strokeWidth={1.5}
-                                dot={false}
-                                fill="var(--color-yield)"
-                                fillOpacity={0.2}
-                                stroke="var(--color-yield)"
-                              />
-                            </AreaChart>
-                          </ResponsiveContainer>
-                        </ChartContainer>
-                      </div>
-                    ) : (
-                      <p>--</p>
-                    )}
                   </TableCell>
                 </TableRow>
               );
