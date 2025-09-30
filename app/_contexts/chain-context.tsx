@@ -1,14 +1,6 @@
 'use client';
 
-import React, {
-  createContext,
-  useContext,
-  useState,
-  ReactNode,
-  useEffect,
-  useCallback,
-  useRef,
-} from 'react';
+import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback, useRef } from 'react';
 import { usePrivy, useWallets } from '@privy-io/react-auth';
 import { useSolanaWallets } from '@privy-io/react-auth/solana';
 
@@ -40,19 +32,17 @@ export const ChainProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const { user } = usePrivy();
   const { wallets: solanaWallets } = useSolanaWallets();
   const { wallets, ready: walletsReady } = useWallets();
-
+  
   // Use refs to prevent infinite loops
   const processedWallets = useRef<Set<string>>(new Set());
 
   // Debug logging
   useEffect(() => {
-    console.log('Chain context state:', {
+    console.log("Chain context state:", {
       currentChain,
       walletAddresses,
-      solanaWallets: solanaWallets.map((w) => ({ address: w.address })),
-      evmWallets: wallets
-        .filter((w) => w.address.startsWith('0x'))
-        .map((w) => ({ address: w.address })),
+      solanaWallets: solanaWallets.map(w => ({ address: w.address })),
+      evmWallets: wallets.filter(w => w.address.startsWith('0x')).map(w => ({ address: w.address }))
     });
   }, [currentChain, walletAddresses, solanaWallets, wallets]);
 
@@ -63,16 +53,16 @@ export const ChainProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     if (processedWallets.current.has(key)) {
       return;
     }
-
+    
     processedWallets.current.add(key);
-
-    setWalletAddresses((prev) => {
+    
+    setWalletAddresses(prev => {
       // Only update if the address is different
       if (prev[chain] !== address) {
         console.log(`Setting ${chain} address:`, address);
         return {
           ...prev,
-          [chain]: address,
+          [chain]: address
         };
       }
       return prev;
@@ -83,7 +73,7 @@ export const ChainProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const setCurrentChain = useCallback((chain: ChainType) => {
     // Update the module-level variable to persist across renders
     persistedChain = chain;
-    console.log('Setting current chain to:', chain);
+    console.log("Setting current chain to:", chain);
     setCurrentChainState(chain);
   }, []);
 
@@ -93,12 +83,12 @@ export const ChainProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   // Check for Solana wallets from the hook - only run once per wallet
   useEffect(() => {
     if (solanaWallets.length > 0) {
-      console.log('Processing Solana wallets:', solanaWallets.length);
-      solanaWallets.forEach((wallet) => {
+      console.log("Processing Solana wallets:", solanaWallets.length);
+      solanaWallets.forEach(wallet => {
         if (wallet.address) {
           const key = `solana:${wallet.address}`;
           if (!processedWallets.current.has(key)) {
-            console.log('Setting Solana address from useSolanaWallets:', wallet.address);
+            console.log("Setting Solana address from useSolanaWallets:", wallet.address);
             setWalletAddress('solana', wallet.address);
           }
         }
@@ -109,24 +99,26 @@ export const ChainProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   // Check for EVM wallets from the useWallets hook
   useEffect(() => {
     if (walletsReady && wallets.length > 0) {
-      console.log('Processing wallets from useWallets:', wallets.length);
-
+      console.log("Processing wallets from useWallets:", wallets.length);
+      
       // Filter for EVM wallets (BSC and Base)
-      const evmWallets = wallets.filter((wallet) => wallet.address.startsWith('0x'));
-
-      console.log('EVM wallets found:', evmWallets.length);
-
-      evmWallets.forEach((wallet) => {
+      const evmWallets = wallets.filter(wallet => 
+        wallet.address.startsWith('0x')
+      );
+      
+      console.log("EVM wallets found:", evmWallets.length);
+      
+      evmWallets.forEach(wallet => {
         if (wallet.address) {
           // Set both BSC and Base addresses for EVM wallets
           const bscKey = `bsc:${wallet.address}`;
           const baseKey = `base:${wallet.address}`;
           if (!processedWallets.current.has(bscKey)) {
-            console.log('Setting BSC address from useWallets:', wallet.address);
+            console.log("Setting BSC address from useWallets:", wallet.address);
             setWalletAddress('bsc', wallet.address);
           }
           if (!processedWallets.current.has(baseKey)) {
-            console.log('Setting Base address from useWallets:', wallet.address);
+            console.log("Setting Base address from useWallets:", wallet.address);
             setWalletAddress('base', wallet.address);
           }
         }
@@ -137,49 +129,45 @@ export const ChainProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   // Initialize wallet addresses when user connects or links new wallets
   useEffect(() => {
     if (!user) return;
-
-    console.log('Chain context: Processing user wallet info', {
+    
+    console.log("Chain context: Processing user wallet info", {
       mainWallet: user.wallet?.address,
       walletType: user.wallet?.walletClientType,
-      linkedAccounts: user.linkedAccounts?.length,
+      linkedAccounts: user.linkedAccounts?.length
     });
-
+    
     // Process main wallet
     if (user.wallet?.address) {
       // Determine if the address is a Solana address (base58) or EVM address (0x...)
-      const isSolanaAddress =
-        user.wallet.walletClientType === 'solana' || !user.wallet.address.startsWith('0x');
-
+      const isSolanaAddress = user.wallet.walletClientType === 'solana' || 
+                             !user.wallet.address.startsWith('0x');
+      
       if (isSolanaAddress) {
-        console.log('Setting Solana address from main wallet:', user.wallet.address);
+        console.log("Setting Solana address from main wallet:", user.wallet.address);
         setWalletAddress('solana', user.wallet.address);
       } else {
         // For EVM addresses, set both BSC and Base
-        console.log('Setting BSC and Base addresses from main wallet:', user.wallet.address);
+        console.log("Setting BSC and Base addresses from main wallet:", user.wallet.address);
         setWalletAddress('bsc', user.wallet.address);
         setWalletAddress('base', user.wallet.address);
       }
     }
-
+    
     // Check for linked accounts
     if (user.linkedAccounts && user.linkedAccounts.length > 0) {
-      user.linkedAccounts.forEach((account) => {
+      user.linkedAccounts.forEach(account => {
         if (account.type === 'wallet') {
           const walletAccount = account as any; // Type assertion to access address
           if (walletAccount.address) {
-            const isSolanaWallet =
-              walletAccount.walletClientType === 'solana' ||
-              !walletAccount.address.startsWith('0x');
-
+            const isSolanaWallet = walletAccount.walletClientType === 'solana' || 
+                                  !walletAccount.address.startsWith('0x');
+            
             if (isSolanaWallet) {
-              console.log('Setting Solana address from linked account:', walletAccount.address);
+              console.log("Setting Solana address from linked account:", walletAccount.address);
               setWalletAddress('solana', walletAccount.address);
             } else {
               // For EVM addresses, set both BSC and Base
-              console.log(
-                'Setting BSC and Base addresses from linked account:',
-                walletAccount.address,
-              );
+              console.log("Setting BSC and Base addresses from linked account:", walletAccount.address);
               setWalletAddress('bsc', walletAccount.address);
               setWalletAddress('base', walletAccount.address);
             }
@@ -190,15 +178,13 @@ export const ChainProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   }, [user, setWalletAddress]);
 
   return (
-    <ChainContext.Provider
-      value={{
-        currentChain,
-        setCurrentChain,
-        walletAddresses,
-        setWalletAddress,
-        currentWalletAddress,
-      }}
-    >
+    <ChainContext.Provider value={{ 
+      currentChain, 
+      setCurrentChain, 
+      walletAddresses, 
+      setWalletAddress,
+      currentWalletAddress
+    }}>
       {children}
     </ChainContext.Provider>
   );
@@ -210,4 +196,4 @@ export const useChain = (): ChainContextType => {
     throw new Error('useChain must be used within a ChainProvider');
   }
   return context;
-};
+}; 

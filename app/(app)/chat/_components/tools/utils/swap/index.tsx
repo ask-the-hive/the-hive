@@ -119,7 +119,6 @@ const Swap: React.FC<Props> = ({
         setIsQuoteLoading(true);
         setOutputAmount('');
         try {
-          debugger;
           const inputAmountWei = new Decimal(inputAmount || '0')
             .mul(new Decimal(10).pow(inputToken.decimals))
             .toFixed(0, Decimal.ROUND_DOWN);

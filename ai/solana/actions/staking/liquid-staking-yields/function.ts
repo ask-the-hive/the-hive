@@ -13,8 +13,6 @@ import type { SolanaActionResult } from '../../solana-action';
 export async function getLiquidStakingYields(): Promise<
   SolanaActionResult<LiquidStakingYieldsResultBodyType>
 > {
-  console.log('getLiquidStakingYields');
-  debugger;
   try {
     const response = await getBestLiquidStaking();
 

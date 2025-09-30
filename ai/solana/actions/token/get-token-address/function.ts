@@ -8,7 +8,6 @@ export async function getTokenAddress(
 ): Promise<SolanaActionResult<GetTokenAddressResultBodyType>> {
   try {
     const address = await resolveAssetSymbolToAddress(args.keyword, 'solana');
-    console.log('Resolved getTokenAddress:', address);
     if (!address) {
       throw new Error('Failed to resolve token address');
     }
