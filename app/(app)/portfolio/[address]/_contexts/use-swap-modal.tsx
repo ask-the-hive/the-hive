@@ -6,14 +6,37 @@ import Swap from '@/app/_components/swap';
 import { Token } from '@/db/types';
 import { useChain } from '@/app/_contexts/chain-context';
 import SwapSuccessModal from '../_components/swap-success-modal';
+import SwapFailedModal from '../_components/swap-failed-modal';
+
+// Type definitions for swap modal states
+type SwapMode = 'buy' | 'sell';
+
+type SwapSuccessData = {
+  mode: SwapMode;
+  inputToken: string;
+  outputToken: string;
+  outputAmount: string;
+};
+
+type SwapFailedData = {
+  mode: SwapMode;
+  inputToken: string;
+  outputToken: string;
+  error?: string;
+};
+
+type SwapResult = {
+  outputAmount: string;
+  outputToken: string;
+};
 
 interface SwapModalContextType {
   isOpen: boolean;
-  mode: 'buy' | 'sell';
+  mode: SwapMode;
   tokenAddress: string;
-  onOpen: (mode: 'buy' | 'sell', tokenAddress: string, handleSuccess?: () => void) => void;
+  onOpen: (mode: SwapMode, tokenAddress: string, handleSuccess?: () => void) => void;
   onClose: () => void;
-  setSwapResult?: (result: { outputAmount: string; outputToken: string }) => void;
+  setSwapResult?: (result: SwapResult) => void;
 }
 
 const SwapModalContext = createContext<SwapModalContextType>({
@@ -28,21 +51,15 @@ export const useSwapModal = () => useContext(SwapModalContext);
 
 export const SwapModalProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [mode, setMode] = useState<'buy' | 'sell'>('buy');
+  const [mode, setMode] = useState<SwapMode>('buy');
   const [tokenAddress, setTokenAddress] = useState('');
   const [token, setToken] = useState<Token | null>(null);
   const [handleSuccess, setHandleSuccess] = useState<(() => void) | undefined>(undefined);
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
-  const [swapSuccessData, setSwapSuccessData] = useState<{
-    mode: 'buy' | 'sell';
-    inputToken: string;
-    outputToken: string;
-    outputAmount: string;
-  } | null>(null);
-  const [swapResult, setSwapResult] = useState<{
-    outputAmount: string;
-    outputToken: string;
-  } | null>(null);
+  const [swapSuccessData, setSwapSuccessData] = useState<SwapSuccessData | null>(null);
+  const [isFailedModalOpen, setIsFailedModalOpen] = useState(false);
+  const [swapFailedData, setSwapFailedData] = useState<SwapFailedData | null>(null);
+  const [swapResult, setSwapResult] = useState<SwapResult | null>(null);
   const { currentChain } = useChain();
 
   // Define SOL token at component level for reuse
@@ -190,7 +207,7 @@ export const SwapModalProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     setHandleSuccess(undefined);
   };
 
-  const onSuccess = (txHash: string) => {
+  const onSuccess = () => {
     // Create swap success data
     const inputToken =
       mode === 'buy'
@@ -229,7 +246,41 @@ export const SwapModalProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     setSwapSuccessData(null);
   };
 
+  const closeFailedModal = () => {
+    setIsFailedModalOpen(false);
+    setSwapFailedData(null);
+  };
+
   const onError = (error: string) => {
+    // Create swap failed data
+    const inputToken =
+      mode === 'buy'
+        ? currentChain === 'solana'
+          ? 'SOL'
+          : currentChain === 'base'
+            ? 'ETH'
+            : 'BNB'
+        : token?.symbol || '';
+    const outputToken =
+      mode === 'buy'
+        ? token?.symbol || ''
+        : currentChain === 'solana'
+          ? 'SOL'
+          : currentChain === 'base'
+            ? 'ETH'
+            : 'BNB';
+
+    setSwapFailedData({
+      mode,
+      inputToken,
+      outputToken,
+      error,
+    });
+
+    // Close swap modal and show failed modal
+    onClose();
+    setIsFailedModalOpen(true);
+
     console.error('Swap error:', error);
   };
 
@@ -288,6 +339,13 @@ export const SwapModalProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         isOpen={isSuccessModalOpen}
         onClose={closeSuccessModal}
         swapData={swapSuccessData}
+      />
+
+      {/* Failed Modal */}
+      <SwapFailedModal
+        isOpen={isFailedModalOpen}
+        onClose={closeFailedModal}
+        swapData={swapFailedData}
       />
     </SwapModalContext.Provider>
   );
