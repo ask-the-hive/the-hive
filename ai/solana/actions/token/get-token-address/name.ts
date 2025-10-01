@@ -1,1 +1,1 @@
-export const SOLANA_GET_TOKEN_ADDRESS_NAME = "get-token-address";
+export const SOLANA_GET_TOKEN_ADDRESS_ACTION = 'get-token-address';

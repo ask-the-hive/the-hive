@@ -14,39 +14,98 @@ export async function getLiquidStakingYields(): Promise<
   SolanaActionResult<LiquidStakingYieldsResultBodyType>
 > {
   try {
-    const bestLiquidStaking = await getBestLiquidStaking(6);
+    const response = await getBestLiquidStaking();
 
-    if ((bestLiquidStaking?.errors?.length ?? 0) > 0) {
+    // Filter for Solana chains first
+    const solanaPools = response.data.filter((pool) => pool.chain === 'Solana');
+
+    // Filter for the specific Solana liquid staking protocols based on actual data
+    const directLiquidStakingProtocols = [
+      'jito-liquid-staking', // Jito (JITOSOL)
+      'marinade-liquid-staking', // Marinade (MSOL)
+      'drift-staked-sol', // Drift (DSOL)
+      'binance-staked-sol', // Binance (BNSOL)
+      'bybit-staked-sol', // Bybit (BBSOL)
+      'helius-staked-sol', // Helius (HSOL)
+      'jupiter-staked-sol', // Jupiter (JUPSOL)
+      'sanctum', // Sanctum (INF, LSTs)
+      'lido', // Lido (STSOL)
+      'blazestake', // BlazeStake (BSOL)
+      'kamino', // Kamino (VSOL)
+    ];
+
+    // Liquid staking tokens that appear in other protocols
+    const liquidStakingTokens = [
+      'MSOL', // Marinade
+      'JITOSOL', // Jito
+      'BSOL', // BlazeStake
+      'DSOL', // Drift
+      'BNSOL', // Binance
+      'BBSOL', // Bybit
+      'HSOL', // Helius
+      'JUPSOL', // Jupiter
+      'INF', // Sanctum
+      'STSOL', // Lido
+      'JSOL', // Jupiter
+      'VSOL', // Kamino
+    ];
+
+    const solLiquidStakingPools = solanaPools.filter((pool) => {
+      // Check if it's a direct liquid staking protocol
+      const isDirectProtocol = directLiquidStakingProtocols.includes(pool.project);
+
+      // Check if it's a liquid staking token (but exclude LP pairs)
+      const isLiquidStakingToken = liquidStakingTokens.includes(pool.symbol);
+      const isLPPair = pool.symbol.includes('-') || pool.symbol.includes('/');
+
+      // Include direct protocols OR liquid staking tokens that aren't LP pairs
+      return isDirectProtocol || (isLiquidStakingToken && !isLPPair);
+    });
+
+    if (solLiquidStakingPools.length === 0) {
       return {
-        message: `Error getting best liquid staking yields: ${bestLiquidStaking?.errors?.join(', ')}`,
+        message: `No Solana liquid staking pools found for the target protocols (Jito, Marinade, Drift, Binance, Bybit, Helius, Jupiter, BlazeStake, Sanctum, Lido). Please try again.`,
         body: null,
       };
     }
 
-    const rewardOptions = bestLiquidStaking?.data?.rewardOptions;
-    if (!rewardOptions || (rewardOptions?.length ?? 0) === 0) {
-      return {
-        message: `No liquid staking yields found. Please try again.`,
-        body: null,
-      };
+    // Sort by APY (highest first) and take top 3
+    const topSolanaPools = solLiquidStakingPools
+      .sort((a, b) => (b.apy || 0) - (a.apy || 0))
+      .slice(0, 3);
+
+    // Reorder so highest APY is in the center (index 1)
+    if (topSolanaPools.length === 3) {
+      const [highest, second, third] = topSolanaPools;
+      topSolanaPools[0] = second; // Second highest on left
+      topSolanaPools[1] = highest; // Highest APY in center
+      topSolanaPools[2] = third; // Third highest on right
     }
 
-    const body = (
-      await Promise.all(
-        rewardOptions.map(async option => ({
-          name: option.outputAssets[0].name,
-          yield:
-            option.metrics.find(metric => metric.metricKey === 'reward_rate')
-              ?.defaultValue ?? 0,
-          tokenData: await getTokenBySymbol(option.outputAssets[0].symbol),
-        }))
-      )
-    ).filter(
-      item => item.tokenData !== undefined
-    ) as LiquidStakingYieldsResultBodyType;
+    // Transform to the expected format
+    const body = await Promise.all(
+      topSolanaPools.map(async (pool) => {
+        const tokenData = await getTokenBySymbol(pool.symbol);
+        return {
+          name: pool.symbol,
+          symbol: pool.symbol,
+          yield: pool.apy || 0,
+          apyBase: pool.apyBase || 0,
+          apyReward: pool.apyReward || 0,
+          tvlUsd: pool.tvlUsd || 0,
+          project: pool.project,
+          poolMeta: pool.poolMeta,
+          url: pool.url,
+          rewardTokens: pool.rewardTokens || [],
+          underlyingTokens: pool.underlyingTokens || [],
+          predictions: pool.predictions,
+          tokenData: tokenData || null,
+        };
+      }),
+    );
 
     return {
-      message: `Found ${rewardOptions.length} best liquid staking yields. The user has been shown the options in the UI, ask them which they want to use. DO NOT REITERATE THE OPTIONS IN TEXT.`,
+      message: `Found the ${body.length} top Solana liquid staking pools. The user has been shown the options in the UI, ask them which they want to use. DO NOT REITERATE THE OPTIONS IN TEXT.`,
       body,
     };
   } catch (error) {

@@ -1,35 +1,32 @@
-import { Connection, VersionedTransaction, AddressLookupTableAccount, TransactionMessage } from "@solana/web3.js";
+'use client';
 
-import { usePrivy } from "@privy-io/react-auth";
+import { Connection, VersionedTransaction } from '@solana/web3.js';
 
-import { useSolanaWallets } from "@privy-io/react-auth/solana";
+import { useSolanaWallets } from '@privy-io/react-auth/solana';
 
-import { useChain } from "@/app/_contexts/chain-context";
+import { useChain } from '@/app/_contexts/chain-context';
 
 export const useSendTransaction = () => {
+  const { wallets } = useSolanaWallets();
 
-    const { user } = usePrivy();
+  const { currentChain } = useChain();
 
-    const { wallets } = useSolanaWallets();
+  // For Solana chain, use the first available Solana wallet
+  // For other chains, this hook shouldn't be used (they have their own hooks)
+  const wallet = currentChain === 'solana' && wallets.length > 0 ? wallets[0] : null;
 
-    const { currentChain } = useChain();
+  const sendTransaction = async (transaction: VersionedTransaction) => {
+    if (!wallet) throw new Error('No Solana wallet found');
 
-    // For Solana chain, use the first available Solana wallet
-    // For other chains, this hook shouldn't be used (they have their own hooks)
-    const wallet = currentChain === 'solana' ? wallets[0] : null;
+    const connection = new Connection(process.env.NEXT_PUBLIC_SOLANA_RPC_URL!);
 
-    const sendTransaction = async (transaction: VersionedTransaction) => {
-        if(!wallet) throw new Error("No Solana wallet found");
+    return wallet.sendTransaction(transaction, connection, {
+      skipPreflight: true,
+    });
+  };
 
-        const connection = new Connection(process.env.NEXT_PUBLIC_SOLANA_RPC_URL!);
-
-        return wallet.sendTransaction(transaction, connection, {
-            skipPreflight: true,
-        });
-    }
-
-    return {
-        sendTransaction,
-        wallet
-    }
-}
+  return {
+    sendTransaction,
+    wallet,
+  };
+};

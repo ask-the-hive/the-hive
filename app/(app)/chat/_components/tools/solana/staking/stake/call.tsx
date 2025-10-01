@@ -1,75 +1,206 @@
-'use client'
-
-import React, { useEffect } from 'react'
-
+import React, { useEffect, useMemo, useRef } from 'react';
+import Image from 'next/image';
 import { Card, Skeleton } from '@/components/ui';
-
+import { cn } from '@/lib/utils';
 import Swap from '../../../utils/swap';
-
-import { useTokenDataByAddress } from '@/hooks';
-
+import { useTokenDataByAddress, usePrice } from '@/hooks';
+import { usePrivy } from '@privy-io/react-auth';
 import { useChat } from '@/app/(app)/chat/_contexts/chat';
-
 import { useChain } from '@/app/_contexts/chain-context';
-
+import { SOLANA_STAKING_POOL_DATA_STORAGE_KEY } from '@/lib/constants';
 import type { StakeArgumentsType, StakeResultBodyType } from '@/ai';
+import { saveLiquidStakingPosition } from '@/services/liquid-staking/save';
 
 interface Props {
-    toolCallId: string,
-    args: StakeArgumentsType,
+  toolCallId: string;
+  args: StakeArgumentsType;
 }
 
-const SwapCallBody: React.FC<Props> = ({ toolCallId, args }) => {
+const StakeCallBody: React.FC<Props> = ({ toolCallId, args }) => {
+  const { addToolResult } = useChat();
+  const { setCurrentChain } = useChain();
+  const { user } = usePrivy();
+  const [poolData, setPoolData] = React.useState<any>(null);
+  const [selectedTimespan, setSelectedTimespan] = React.useState<number>(3);
+  const [outputAmount, setOutputAmount] = React.useState<number>(0);
+  const preHoverTimespanRef = useRef<number | null>(null);
 
-    const { addToolResult } = useChat();
-    const { setCurrentChain } = useChain();
+  // Set the current chain to Solana for staking
+  useEffect(() => {
+    setCurrentChain('solana');
+  }, [setCurrentChain]);
 
-    // Set the current chain to Solana for staking
-    useEffect(() => {
-        setCurrentChain('solana');
-    }, [setCurrentChain]);
+  const { data: inputTokenData, isLoading: inputTokenLoading } = useTokenDataByAddress(
+    'So11111111111111111111111111111111111111112',
+  );
+  const { data: outputTokenData, isLoading: outputTokenLoading } = useTokenDataByAddress(
+    args.contractAddress,
+  );
+  const { data: outputTokenPrice } = usePrice(outputTokenData?.id || '');
 
-    const { data: inputTokenData, isLoading: inputTokenLoading } = useTokenDataByAddress("So11111111111111111111111111111111111111112");
-    const { data: outputTokenData, isLoading: outputTokenLoading } = useTokenDataByAddress(args.contractAddress);
-    
+  // Fetch pool data from sessionStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const storedPoolData = sessionStorage.getItem(SOLANA_STAKING_POOL_DATA_STORAGE_KEY);
+      if (storedPoolData && outputTokenData?.symbol) {
+        try {
+          const allPools = JSON.parse(storedPoolData);
+          const selectedPool = allPools.find(
+            (pool: any) => pool.symbol.toLowerCase() === outputTokenData?.symbol.toLowerCase(),
+          );
+          setPoolData(selectedPool);
+        } catch (error) {
+          console.error('Error parsing stored pool data:', error);
+        }
+      }
+    }
+  }, [outputTokenData?.symbol]);
+
+  // Calculate yield earnings based on current timespan
+  const yieldEarnings = useMemo(() => {
+    if (!outputAmount || !outputTokenPrice || !poolData) return 0;
     return (
-        <Card className="p-4 max-w-full">
-            {
-                inputTokenLoading || outputTokenLoading ? (
-                    <Skeleton className="h-48 w-96 max-w-full" />
-                ) : (
-                    <Swap
-                        initialInputToken={inputTokenData}
-                        initialOutputToken={outputTokenData}
-                        inputLabel="Stake"
-                        outputLabel="Receive"
-                        initialInputAmount={args.amount?.toString()}
-                        swapText="Stake"
-                        swappingText="Staking..."
-                        onSuccess={(tx) => {
-                            addToolResult<StakeResultBodyType>(toolCallId, {
-                                message: `Stake successful!`,
-                                body: {
-                                    tx,
-                                    symbol: outputTokenData?.symbol || "",
-                                }
-                            });
-                        }}
-                        onError={(error) => {
-                            addToolResult(toolCallId, {
-                                message: `Stake failed: ${error}`,
-                            });
-                        }}
-                        onCancel={() => {
-                            addToolResult(toolCallId, {
-                                message: `Stake cancelled`,
-                            });
-                        }}
-                    />
-                )
-            }
-        </Card>
-    )
-}
+      ((outputAmount * outputTokenPrice.value * poolData.yield) / 100) * (selectedTimespan / 12)
+    );
+  }, [outputAmount, outputTokenPrice, poolData, selectedTimespan]);
 
-export default SwapCallBody
+  const handleStakeSuccess = async (tx: string) => {
+    if (!user?.wallet?.address || !outputTokenData || !poolData) {
+      console.error('Missing required data for creating liquid staking position');
+      return;
+    }
+
+    try {
+      await saveLiquidStakingPosition({
+        walletAddress: user.wallet.address,
+        chainId: 'solana',
+        amount: outputAmount,
+        lstToken: outputTokenData,
+        poolData: poolData,
+      });
+    } catch (error) {
+      console.error('Error saving liquid staking position:', error);
+    } finally {
+      addToolResult<StakeResultBodyType>(toolCallId, {
+        message: `Stake successful!`,
+        body: {
+          tx,
+          symbol: outputTokenData?.symbol || '',
+          outputAmount,
+          outputTokenData: outputTokenData || undefined,
+          poolData: poolData,
+        },
+      });
+    }
+  };
+
+  return (
+    <div className="flex justify-center w-full">
+      <div className="w-[70%]">
+        <Card className="p-4 max-w-full">
+          {inputTokenLoading || outputTokenLoading ? (
+            <Skeleton className="h-48 w-full" />
+          ) : (
+            <div className="w-full">
+              <Swap
+                initialInputToken={inputTokenData}
+                initialOutputToken={outputTokenData}
+                inputLabel="Stake"
+                outputLabel="Receive"
+                initialInputAmount={args.amount?.toString()}
+                swapText="Stake"
+                swappingText="Staking..."
+                onOutputChange={setOutputAmount}
+                onSuccess={handleStakeSuccess}
+                onError={(error) => {
+                  console.error('Error staking:', error);
+                  addToolResult(toolCallId, {
+                    message: `Stake failed: ${error}`,
+                  });
+                }}
+                onCancel={() => {
+                  addToolResult(toolCallId, {
+                    message: `Stake cancelled`,
+                  });
+                }}
+              />
+              {/* Display pool information and yield calculator if available */}
+              {poolData && (
+                <div className="mt-4">
+                  <p className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
+                    Earning Potential
+                  </p>
+                  <div className="mb-4 p-4 bg-neutral-50 dark:bg-neutral-900/20 rounded-lg border">
+                    <div className="flex items-center gap-2 mb-4">
+                      <Image
+                        src={poolData.tokenData?.logoURI || ''}
+                        alt={poolData.name}
+                        width={24}
+                        height={24}
+                        className="w-6 h-6 rounded-full"
+                      />
+                      <h3 className="font-semibold text-lg">{poolData.name}</h3>
+                      <span className="text-sm text-gray-600 dark:text-gray-400">
+                        ({poolData.yield.toFixed(2)}% APY)
+                      </span>
+                    </div>
+
+                    {/* Timespan cards and yield calculator */}
+                    <div className="flex justify-between items-center gap-4">
+                      <div className="flex gap-2">
+                        {[3, 6, 12, 24].map((months) => (
+                          <div
+                            key={months}
+                            className={cn(
+                              'box-border px-3 py-2 rounded-full text-sm font-medium cursor-pointer transition-all duration-200 border',
+                              selectedTimespan === months
+                                ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-600 hover:bg-blue-200 dark:hover:bg-blue-900/50'
+                                : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-blue-500 hover:text-white border-transparent',
+                            )}
+                            onMouseEnter={() => {
+                              if (preHoverTimespanRef.current === null) {
+                                preHoverTimespanRef.current = selectedTimespan;
+                              }
+                              setSelectedTimespan(months);
+                            }}
+                            onMouseLeave={() => {
+                              if (preHoverTimespanRef.current !== null) {
+                                setSelectedTimespan(preHoverTimespanRef.current);
+                                preHoverTimespanRef.current = null;
+                              }
+                            }}
+                            onClick={() => {
+                              preHoverTimespanRef.current = null;
+                              setSelectedTimespan(months);
+                            }}
+                          >
+                            {months}M
+                          </div>
+                        ))}
+                      </div>
+
+                      <div className="max-w-xs">
+                        <p
+                          className={cn(
+                            'font-medium',
+                            yieldEarnings > 0
+                              ? 'text-green-600 dark:text-green-400 text-lg '
+                              : 'text-gray-900 dark:text-gray-100 text-sm',
+                          )}
+                        >
+                          {yieldEarnings > 0 ? `+$${yieldEarnings.toFixed(2)}` : 'Projected yield'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </Card>
+      </div>
+    </div>
+  );
+};
+
+export default StakeCallBody;

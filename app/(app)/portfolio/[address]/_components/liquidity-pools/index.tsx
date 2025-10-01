@@ -1,25 +1,351 @@
-"use client";
+import React, { useState, useEffect, useCallback } from 'react';
+import { Droplet, Info } from 'lucide-react';
+import Image from 'next/image';
 
-import React from 'react'
-
-import RaydiumStandardPortfolio from './raydium-standard';
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+  Skeleton,
+} from '@/components/ui';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useChain } from '@/app/_contexts/chain-context';
+import { usePortfolio } from '@/hooks';
+import { getAllLiquidStakingPositions } from '@/services/liquid-staking/get-all';
+import { getLiquidStakingPool } from '@/services/liquid-staking/get-pool';
+import { deleteLiquidStakingPosition } from '@/services/liquid-staking/delete';
+import { LiquidStakingPosition } from '@/db/types';
+import { formatFiat, formatCrypto, formatCompactNumber } from '@/lib/format';
+import { capitalizeWords, getConfidenceLabel } from '@/lib/string-utils';
 
 interface Props {
-    address: string
+  address: string;
 }
+
+interface PoolTooltipProps {
+  poolData: any;
+  loading: boolean;
+}
+
+const PoolTooltip: React.FC<PoolTooltipProps> = ({ poolData, loading }) => {
+  return (
+    <TooltipContent className="max-w-xs">
+      <div className="grid grid-cols-2 gap-2 text-xs">
+        <div className="font-medium">Protocol:</div>
+        <div>{poolData.project || 'Unknown'}</div>
+
+        <div className="font-medium">APY:</div>
+        <div className="text-green-600">
+          {loading ? <Skeleton className="w-12 h-3" /> : `${poolData.yield?.toFixed(2) || '0.00'}%`}
+        </div>
+        <div className="font-medium">TVL:</div>
+        <div>
+          {loading ? <Skeleton className="w-16 h-3" /> : formatCompactNumber(poolData.tvlUsd || 0)}
+        </div>
+
+        {poolData.predictions && (
+          <>
+            <div className="font-medium">APY Confidence:</div>
+            <div className="text-green-600">
+              {loading ? (
+                <Skeleton className="w-12 h-3" />
+              ) : (
+                getConfidenceLabel(poolData.predictions.binnedConfidence)
+              )}
+            </div>
+
+            <div className="font-medium">Prediction:</div>
+            <div>
+              {loading ? (
+                <Skeleton className="w-20 h-3" />
+              ) : (
+                `${poolData.predictions.predictedClass} (${poolData.predictions.predictedProbability}%)`
+              )}
+            </div>
+          </>
+        )}
+
+        {poolData.url && (
+          <>
+            <div className="font-medium">URL:</div>
+            <div className="truncate">
+              <a
+                href={poolData.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-500 hover:text-blue-700"
+              >
+                {poolData.url.replace(/^https?:\/\//, '')}
+              </a>
+            </div>
+          </>
+        )}
+      </div>
+    </TooltipContent>
+  );
+};
 
 const LiquidityPools: React.FC<Props> = ({ address }) => {
-    const { currentChain } = useChain();
+  const { currentChain } = useChain();
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [positions, setPositions] = useState<LiquidStakingPosition[]>([]);
+  const [poolDataLoading, setPoolDataLoading] = useState(false);
 
-    // Only show liquidity pools for Solana
-    if (currentChain !== 'solana') {
-        return null;
+  // Get portfolio data to fetch current token balances
+  const chainAddress = currentChain === 'solana' ? address : undefined;
+  const { data: portfolio, isLoading: portfolioLoading } = usePortfolio(chainAddress, currentChain);
+
+  // Fetch fresh pool data for all positions and update positions state
+  const fetchFreshPoolData = useCallback(
+    async (positions: LiquidStakingPosition[]) => {
+      setPoolDataLoading(true);
+
+      const promises = positions.map(async (position) => {
+        try {
+          // Check if user still has balance in this LST
+          const portfolioToken = portfolio?.items?.find(
+            (item) =>
+              item.address === position.lstToken.id || item.symbol === position.lstToken.symbol,
+          );
+
+          const rawBalance = portfolioToken?.balance || '0';
+          const decimals = portfolioToken?.decimals || position.lstToken.decimals || 9;
+          const currentBalance = parseFloat(rawBalance.toString()) / Math.pow(10, decimals);
+
+          // If current balance is 0 (user sold all their LST), delete the position
+          if (currentBalance === 0) {
+            try {
+              await deleteLiquidStakingPosition(position.id, position.walletAddress);
+              console.log(
+                `Deleted liquid staking position for ${position.lstToken.symbol} (zero balance)`,
+              );
+              return null; // Return null to filter out this position
+            } catch (deleteError) {
+              console.error(
+                `Failed to delete position for ${position.lstToken.symbol}:`,
+                deleteError,
+              );
+              // If deletion fails, return the original position
+              return null;
+            }
+          }
+
+          const freshData = await getLiquidStakingPool(
+            position.poolData.project,
+            position.lstToken.symbol,
+          );
+
+          // Return position with updated pool data (merge with existing to preserve missing fields)
+          return {
+            ...position,
+            poolData: {
+              ...position.poolData,
+              ...freshData,
+            },
+          };
+        } catch (err) {
+          console.error(
+            `Failed to fetch fresh pool data for ${position.poolData.project}-${position.lstToken.symbol}:`,
+            err,
+          );
+          // Return original position if fetch fails
+          return position;
+        }
+      });
+
+      const results = await Promise.allSettled(promises);
+      const updatedPositions = results
+        .map((result, index) => (result.status === 'fulfilled' ? result.value : positions[index]))
+        .filter((position): position is LiquidStakingPosition => position !== null); // Filter out null positions
+
+      setPositions(updatedPositions);
+      setPoolDataLoading(false);
+    },
+    [portfolio],
+  );
+
+  useEffect(() => {
+    if (currentChain !== 'solana') return;
+    let canceled = false;
+    const run = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const data = await getAllLiquidStakingPositions(address);
+        if (!canceled) {
+          setPositions(data || []);
+          // Fetch fresh pool data for all positions
+          if (data && data.length > 0) {
+            fetchFreshPoolData(data);
+          }
+        }
+      } catch (e) {
+        if (!canceled) setError(e instanceof Error ? e.message : 'Failed to load positions');
+      } finally {
+        if (!canceled) setLoading(false);
+      }
+    };
+    run();
+    return () => {
+      canceled = true;
+    };
+  }, [address, currentChain, fetchFreshPoolData]);
+
+  if (currentChain !== 'solana') return null;
+
+  if (loading || portfolioLoading) {
+    return <Skeleton className="h-64 w-full" />;
+  }
+
+  if (error) return <p className="text-sm text-red-600">{error}</p>;
+
+  if (!positions.length) {
+    return null; // Don't show anything if no positions
+  }
+
+  // Calculate total value of liquid staking positions
+  const totalValue = positions.reduce((sum, pos) => {
+    const portfolioToken = portfolio?.items?.find(
+      (item) => item.address === pos.lstToken.id || item.symbol === pos.lstToken.symbol,
+    );
+    if (portfolioToken && portfolioToken.valueUsd) {
+      return sum + portfolioToken.valueUsd;
     }
+    return sum;
+  }, 0);
 
-    return (
-        <RaydiumStandardPortfolio address={address} />
-    )
-}
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Droplet className="w-6 h-6" />
+          <h2 className="text-xl font-bold">Liquid Staking Positions</h2>
+        </div>
+        {totalValue > 0 && (
+          <p>
+            $
+            {totalValue.toLocaleString(undefined, {
+              maximumFractionDigits: 2,
+              minimumFractionDigits: 2,
+            })}
+          </p>
+        )}
+      </div>
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Token</TableHead>
+              <TableHead>Balance</TableHead>
+              <TableHead>Yield Earned</TableHead>
+              <TableHead>APY</TableHead>
+              <TableHead>Protocol</TableHead>
+              <TableHead>Protocol TVL</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody className="max-h-96 overflow-y-auto">
+            {positions.map((position) => {
+              // Find current balance from portfolio
+              const portfolioToken = portfolio?.items?.find(
+                (item) =>
+                  item.address === position.lstToken.id || item.symbol === position.lstToken.symbol,
+              );
 
-export default LiquidityPools
+              const rawBalance = portfolioToken?.balance || '0';
+              const price = portfolioToken?.priceUsd || 0;
+              const decimals = portfolioToken?.decimals || position.lstToken.decimals || 9;
+
+              // Calculate yield earned (current balance - initial staked amount)
+              const currentBalance = parseFloat(rawBalance.toString()) / Math.pow(10, decimals);
+              const initialAmount = position.amount;
+              const yieldEarned = currentBalance - initialAmount;
+
+              // Convert yield earned back to raw balance format for utilities
+              const yieldEarnedRaw = yieldEarned * Math.pow(10, decimals);
+
+              return (
+                <TableRow key={position.id}>
+                  <TableCell>
+                    <div className="font-medium flex gap-2 items-center">
+                      {position.lstToken.logoURI ? (
+                        <Image
+                          src={position.lstToken.logoURI}
+                          alt={position.lstToken.name}
+                          width={16}
+                          height={16}
+                          className="w-4 h-4 rounded-full"
+                        />
+                      ) : (
+                        <div className="w-4 h-4 rounded-full bg-gray-200" />
+                      )}
+                      <p>{position.lstToken.symbol}</p>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    {`${formatCrypto(rawBalance, position.lstToken.symbol, decimals)} / ${formatFiat(rawBalance, price, decimals)}`}
+                  </TableCell>
+                  <TableCell>
+                    <p
+                      className={
+                        yieldEarned > 0
+                          ? 'text-green-600 font-medium'
+                          : yieldEarned < 0
+                            ? 'text-red-600 font-medium'
+                            : 'text-gray-900 font-medium'
+                      }
+                    >
+                      {yieldEarned > 0 ? '+' : ''}
+                      {formatCrypto(yieldEarnedRaw.toString(), position.lstToken.symbol, decimals)}
+                      {' / '}
+                      {yieldEarned > 0 ? '+' : ''}
+                      {formatFiat(yieldEarnedRaw.toString(), price, decimals)}
+                    </p>
+                  </TableCell>
+                  <TableCell>
+                    <span className="text-green-600 font-medium">
+                      {poolDataLoading ? (
+                        <Skeleton className="w-12 h-4" />
+                      ) : (
+                        `${position.poolData.yield.toFixed(2)}%`
+                      )}
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-muted-foreground">
+                        {capitalizeWords(position.poolData.project || 'Unknown')}
+                      </span>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Info className="w-3 h-3 text-muted-foreground cursor-help" />
+                          </TooltipTrigger>
+                          <PoolTooltip poolData={position.poolData} loading={poolDataLoading} />
+                        </Tooltip>
+                      </TooltipProvider>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <span className="text-sm text-muted-foreground">
+                      {poolDataLoading ? (
+                        <Skeleton className="w-16 h-4" />
+                      ) : (
+                        formatCompactNumber(position.poolData.tvlUsd || 0)
+                      )}
+                    </span>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </div>
+    </div>
+  );
+};
+
+export default LiquidityPools;

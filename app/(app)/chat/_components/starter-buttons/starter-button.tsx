@@ -1,6 +1,6 @@
-'use client'
+'use client';
 
-import React from 'react'
+import React from 'react';
 
 import { Button, Icon } from '@/components/ui';
 
@@ -11,39 +11,36 @@ import { cn } from '@/lib/utils';
 import { IconName } from '@/types';
 
 interface Props {
-    icon: IconName
-    title: string
-    description: string
-    prompt: string,
-    className?: string
+  icon: IconName;
+  title: string;
+  description: string;
+  prompt: string;
+  className?: string;
 }
 
 const StarterButton: React.FC<Props> = ({ icon, title, description, prompt, className }) => {
+  const { sendMessage } = useChat();
 
-    const { sendMessage } = useChat();
+  return (
+    <Button
+      className={cn(
+        'flex items-center p-4 gap-2 text-sm text-neutral-600 dark:text-neutral-400 h-fit justify-start rounded-lg',
+        className,
+      )}
+      variant="outline"
+      onClick={() => sendMessage(prompt)}
+    >
+      <div className="flex flex-col gap-1">
+        <div className="flex items-center gap-2">
+          <Icon name={icon} className="w-5 h-5" />
+          <p className="text-md2 font-bold">{title}</p>
+        </div>
+        <p className="text-sm text-neutral-600 dark:text-neutral-400 hidden md:block">
+          {description}
+        </p>
+      </div>
+    </Button>
+  );
+};
 
-    return (
-        <Button 
-            className={cn(
-                'flex items-center gap-2 text-sm text-neutral-600 dark:text-neutral-400 h-fit justify-start',
-                className
-            )}
-            variant="outline"
-            onClick={() => sendMessage(prompt)}
-        >
-            <div className="flex flex-col">
-                <div className="flex items-center gap-2">
-                    <Icon name={icon} className="w-4 h-4" />
-                    <p className="text-md font-bold">
-                        {title}
-                    </p>
-                </div>
-                <p className="text-xs text-neutral-600 dark:text-neutral-400 hidden md:block">
-                    {description}
-                </p>
-            </div>
-        </Button>
-    )
-}
-
-export default StarterButton
+export default StarterButton;
