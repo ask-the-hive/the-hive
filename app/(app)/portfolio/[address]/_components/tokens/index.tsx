@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Image from 'next/image';
 import { Coins } from 'lucide-react';
 import {
@@ -12,6 +12,7 @@ import {
   TableCell,
   Button,
   Skeleton,
+  Card,
 } from '@/components/ui';
 import { useSwapModal } from '../../_contexts/use-swap-modal';
 import { usePortfolio } from '@/hooks';
@@ -101,6 +102,29 @@ const Tokens: React.FC<Props> = ({ address }) => {
       return !hasLiquidStakingPosition;
     }) || [];
 
+  // Calculate adjusted portfolio total by subtracting liquid staking token values
+  const adjustedPortfolioTotal = useMemo(() => {
+    if (!portfolio?.totalUsd || liquidStakingPositions.length === 0) {
+      return portfolio?.totalUsd || 0;
+    }
+
+    // Calculate total value of liquid staking tokens to subtract
+    const liquidStakingTokensValue =
+      portfolio.items?.reduce((total, token) => {
+        const hasLiquidStakingPosition = liquidStakingPositions.some(
+          (position) => position.lstToken.symbol.toLowerCase() === token.symbol.toLowerCase(),
+        );
+
+        if (hasLiquidStakingPosition && token.valueUsd) {
+          return total + token.valueUsd;
+        }
+
+        return total;
+      }, 0) || 0;
+
+    return portfolio.totalUsd - liquidStakingTokensValue;
+  }, [portfolio?.totalUsd, portfolio?.items, liquidStakingPositions]);
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
@@ -108,14 +132,14 @@ const Tokens: React.FC<Props> = ({ address }) => {
           <Coins className="w-6 h-6" />
           <h2 className="text-xl font-bold">Tokens</h2>
         </div>
-        {portfolio?.totalUsd !== undefined && (
-          <p className="text-lg font-bold">{formatUSD(portfolio.totalUsd)}</p>
+        {adjustedPortfolioTotal !== undefined && (
+          <p className="text-lg font-bold">{formatUSD(adjustedPortfolioTotal)}</p>
         )}
       </div>
       {isLoading || isLoadingPositions ? (
         <Skeleton className="h-64 w-full" />
       ) : portfolio && portfolio.items && filteredTokens.length > 0 ? (
-        <div className="rounded-md border">
+        <Card>
           <Table>
             <TableHeader>
               <TableRow>
@@ -177,11 +201,13 @@ const Tokens: React.FC<Props> = ({ address }) => {
               ))}
             </TableBody>
           </Table>
-        </div>
+        </Card>
       ) : (
-        <div className="flex flex-col items-center justify-center h-64 border rounded-md">
-          <p className="text-muted-foreground">No tokens found</p>
-        </div>
+        <Card>
+          <div className="flex flex-col items-center justify-center h-64 border rounded-md">
+            <p className="text-muted-foreground">No tokens found</p>
+          </div>
+        </Card>
       )}
     </div>
   );

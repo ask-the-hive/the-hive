@@ -12,6 +12,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
+  Card,
 } from '@/components/ui';
 
 import TransactionHash from '@/app/_components/transaction-hash';
@@ -54,10 +55,10 @@ const Transactions: React.FC<Props> = ({ address }) => {
         <ArrowLeftRight className="w-6 h-6" />
         <h2 className="text-xl font-bold">Transactions</h2>
       </div>
-      <div className="border rounded-md p-2">
-        {isLoading ? (
-          <Skeleton className="h-96 w-full" />
-        ) : transactions && transactions.length > 0 ? (
+      {isLoading ? (
+        <Skeleton className="h-96 w-full" />
+      ) : transactions && transactions.length > 0 ? (
+        <Card>
           <Table>
             <TableHeader>
               <TableRow>
@@ -97,12 +98,14 @@ const Transactions: React.FC<Props> = ({ address }) => {
               ))}
             </TableBody>
           </Table>
-        ) : (
+        </Card>
+      ) : (
+        <Card>
           <div className="flex flex-col items-center justify-center h-64">
             <p className="text-muted-foreground">No transactions found</p>
           </div>
-        )}
-      </div>
+        </Card>
+      )}
     </div>
   );
 };
