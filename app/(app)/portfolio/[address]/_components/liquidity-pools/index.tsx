@@ -18,8 +18,9 @@ import { getAllLiquidStakingPositions } from '@/services/liquid-staking/get-all'
 import { getLiquidStakingPool } from '@/services/liquid-staking/get-pool';
 import { deleteLiquidStakingPosition } from '@/services/liquid-staking/delete';
 import { LiquidStakingPosition } from '@/db/types';
-import { formatFiat, formatCrypto, formatCompactNumber } from '@/lib/format';
+import { formatFiat, formatCrypto, formatCompactNumber, formatUSD } from '@/lib/format';
 import { capitalizeWords, getConfidenceLabel } from '@/lib/string-utils';
+import { Card } from '@/components/ui/card';
 
 interface Props {
   address: string;
@@ -112,12 +113,9 @@ const LiquidityPools: React.FC<Props> = ({ address }) => {
               item.address === position.lstToken.id || item.symbol === position.lstToken.symbol,
           );
 
-          const rawBalance = portfolioToken?.balance || '0';
-          const decimals = portfolioToken?.decimals || position.lstToken.decimals || 9;
-          const currentBalance = parseFloat(rawBalance.toString()) / Math.pow(10, decimals);
-
+          const rawBalance = portfolioToken?.balance;
           // If current balance is 0 (user sold all their LST), delete the position
-          if (currentBalance === 0) {
+          if (rawBalance !== null && rawBalance !== undefined && rawBalance === 0) {
             try {
               await deleteLiquidStakingPosition(position.id, position.walletAddress);
               console.log(
@@ -225,17 +223,9 @@ const LiquidityPools: React.FC<Props> = ({ address }) => {
           <Droplet className="w-6 h-6" />
           <h2 className="text-xl font-bold">Liquid Staking Positions</h2>
         </div>
-        {totalValue > 0 && (
-          <p>
-            $
-            {totalValue.toLocaleString(undefined, {
-              maximumFractionDigits: 2,
-              minimumFractionDigits: 2,
-            })}
-          </p>
-        )}
+        {totalValue > 0 && <p className="text-lg font-bold">{formatUSD(totalValue)}</p>}
       </div>
-      <div className="rounded-md border">
+      <Card>
         <Table>
           <TableHeader>
             <TableRow>
@@ -291,11 +281,7 @@ const LiquidityPools: React.FC<Props> = ({ address }) => {
                   <TableCell>
                     <p
                       className={
-                        yieldEarned > 0
-                          ? 'text-green-600 font-medium'
-                          : yieldEarned < 0
-                            ? 'text-red-600 font-medium'
-                            : 'text-gray-900 font-medium'
+                        yieldEarned > 0 ? 'text-green-600 font-medium' : 'text-gray-900 font-medium'
                       }
                     >
                       {yieldEarned > 0 ? '+' : ''}
@@ -343,7 +329,7 @@ const LiquidityPools: React.FC<Props> = ({ address }) => {
             })}
           </TableBody>
         </Table>
-      </div>
+      </Card>
     </div>
   );
 };
