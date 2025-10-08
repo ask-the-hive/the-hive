@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react'
 import Image from 'next/image'
-import { BorderBeam } from '@/components/ui'
+import { BorderBeam, CountdownTimer } from '@/components/ui'
 import LlmCarousel from '@/components/ui/llm-carousel'
 import ApiCarousel from '@/components/ui/api-carousel'
 import TopBar from '@/components/ui/top-bar'
@@ -144,7 +144,7 @@ function LandingPageContent() {
         <div className="min-h-screen bg-white dark:bg-neutral-900">
             <TopBar />
             <UserProfile />
-            {/* Hero Section with Gradient */}
+            {/* Hero Section with Gradient + Countdown */}
             <div className="px-4 md:px-12">
                 <div className="relative overflow-hidden pb-16 bg-neutral-100 dark:bg-neutral-800 rounded-xl border border-neutral-200 dark:border-neutral-700 mt-8 min-h-[800px]">
                     {/* Graph Component as Background */}
@@ -152,6 +152,9 @@ function LandingPageContent() {
                         <GraphComponent />
                     </div>
                     <BorderBeam size={100} duration={10} colorFrom="#ffe00d" colorTo="#d19900" />
+                    <div className="relative z-10 pt-10 px-4">
+                        <CountdownTimer />
+                    </div>
                 </div>
             </div>
             <div className="max-w-4xl mx-auto px-4 mt-16 mb-16">
