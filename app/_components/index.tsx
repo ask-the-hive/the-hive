@@ -1,6 +1,7 @@
 'use client'
 
 import Image from 'next/image';
+import CountdownTimer from '@/components/ui/countdown-timer'
 import { motion } from 'framer-motion';
 
 // Original graph imports - commented out for easy restoration
@@ -89,6 +90,10 @@ function LogoComponent() {
           priority
         />
       </motion.div>
+      {/* Countdown under the logo */}
+      <div className="mt-6">
+        <CountdownTimer />
+      </div>
     </div>
   );
 }
