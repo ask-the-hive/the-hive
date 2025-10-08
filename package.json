@@ -106,10 +106,10 @@
     "tailwind-merge": "^2.5.5",
     "tailwindcss-animate": "^1.0.7",
     "twitter-api-v2": "^1.19.0",
+    "uuid": "^10.0.0",
     "viem": "^2.21.56",
     "wagmi": "^2.14.13",
-    "zod": "^3.24.1",
-    "uuid": "^10.0.0"
+    "zod": "^3.24.1"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

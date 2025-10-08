@@ -2,7 +2,8 @@
 
 import React, { useState } from 'react'
 import Image from 'next/image'
-import { BorderBeam, CountdownTimer } from '@/components/ui'
+import { BorderBeam } from '@/components/ui'
+import CountdownTimer from '@/components/ui/countdown-timer'
 import LlmCarousel from '@/components/ui/llm-carousel'
 import ApiCarousel from '@/components/ui/api-carousel'
 import TopBar from '@/components/ui/top-bar'

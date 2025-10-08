@@ -30,3 +30,4 @@ export * from "./optional-link";
 export * from "./tabs";
 export * from "./scroll-area";
 export * from "./badge";
+export { default as CountdownTimer } from "./countdown-timer";
