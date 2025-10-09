@@ -43,9 +43,7 @@ const StarterButton: React.FC<Props> = ({ icon, title, description, prompt, clas
             <Icon name={icon} className="w-5 h-5" />
             <p className="text-md2 font-bold">{title}</p>
           </div>
-          <p className="text-sm text-neutral-600 dark:text-neutral-400 hidden md:block">
-            {description}
-          </p>
+          <p className="text-sm text-neutral-600 dark:text-neutral-400">{description}</p>
         </div>
         {(isResponseLoading || isLoading) && (
           <Loader2 className="w-4 h-4 animate-spin text-neutral-500" />

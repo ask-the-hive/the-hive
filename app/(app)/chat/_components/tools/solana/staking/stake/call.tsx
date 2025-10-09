@@ -1,6 +1,6 @@
-import React, { useEffect, useMemo, useRef } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import Image from 'next/image';
-import { Card, Skeleton } from '@/components/ui';
+import { Button, Card, Skeleton } from '@/components/ui';
 import { cn } from '@/lib/utils';
 import Swap from '../../../utils/swap';
 import { useTokenDataByAddress, usePrice } from '@/hooks';
@@ -8,9 +8,24 @@ import { usePrivy } from '@privy-io/react-auth';
 import { useChat } from '@/app/(app)/chat/_contexts/chat';
 import { useChain } from '@/app/_contexts/chain-context';
 import { SOLANA_STAKING_POOL_DATA_STORAGE_KEY } from '@/lib/constants';
-import type { StakeArgumentsType, StakeResultBodyType } from '@/ai';
+import type { StakeArgumentsType, StakeResultBodyType, LiquidStakingYieldsPoolData } from '@/ai';
 import { saveLiquidStakingPosition } from '@/services/liquid-staking/save';
+import PoolDetailsModal from '../pool-details-modal';
 
+const ReceiveTooltip = () => {
+  return (
+    <div className="max-w-xs space-y-2">
+      <p className="text-sm">
+        When you stake SOL, you receive liquid staking tokens (LSTs). LSTs represent your claim on
+        the staked SOL and increase in value as rewards accumulate.
+      </p>
+      <p className="text-sm">
+        You may receive fewer LST tokens than SOL staked because each LST is worth more than 1 SOL.
+        Over time, each LST becomes backed by more SOL as staking rewards compound.
+      </p>
+    </div>
+  );
+};
 interface Props {
   toolCallId: string;
   args: StakeArgumentsType;
@@ -23,6 +38,8 @@ const StakeCallBody: React.FC<Props> = ({ toolCallId, args }) => {
   const [poolData, setPoolData] = React.useState<any>(null);
   const [selectedTimespan, setSelectedTimespan] = React.useState<number>(3);
   const [outputAmount, setOutputAmount] = React.useState<number>(0);
+  const [selectedPool, setSelectedPool] = useState<LiquidStakingYieldsPoolData | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const preHoverTimespanRef = useRef<number | null>(null);
 
   // Set the current chain to Solana for staking
@@ -63,6 +80,13 @@ const StakeCallBody: React.FC<Props> = ({ toolCallId, args }) => {
       ((outputAmount * outputTokenPrice.value * poolData.yield) / 100) * (selectedTimespan / 12)
     );
   }, [outputAmount, outputTokenPrice, poolData, selectedTimespan]);
+
+  const handleProtocolDetailsClick = (poolData: any, event: React.MouseEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setSelectedPool(poolData);
+    setIsModalOpen(true);
+  };
 
   const handleStakeSuccess = async (tx: string) => {
     if (!user?.wallet?.address || !outputTokenData || !poolData) {
@@ -110,6 +134,7 @@ const StakeCallBody: React.FC<Props> = ({ toolCallId, args }) => {
                 initialInputAmount={args.amount?.toString()}
                 swapText="Stake"
                 swappingText="Staking..."
+                receiveTooltip={<ReceiveTooltip />}
                 onOutputChange={setOutputAmount}
                 onSuccess={handleStakeSuccess}
                 onError={(error) => {
@@ -127,9 +152,18 @@ const StakeCallBody: React.FC<Props> = ({ toolCallId, args }) => {
               {/* Display pool information and yield calculator if available */}
               {poolData && (
                 <div className="mt-4">
-                  <p className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
-                    Earning Potential
-                  </p>
+                  <div className="flex items-center justify-between gap-2 mb-2 w-full">
+                    <p className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
+                      Earning Potential
+                    </p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={(e) => handleProtocolDetailsClick(poolData, e)}
+                    >
+                      Protocol Details
+                    </Button>
+                  </div>
                   <div className="mb-4 p-4 bg-neutral-50 dark:bg-neutral-900/20 rounded-lg border">
                     <div className="flex items-center gap-2 mb-4">
                       <Image
@@ -199,6 +233,15 @@ const StakeCallBody: React.FC<Props> = ({ toolCallId, args }) => {
           )}
         </Card>
       </div>
+
+      <PoolDetailsModal
+        pool={selectedPool}
+        isOpen={isModalOpen}
+        onClose={() => {
+          setIsModalOpen(false);
+          setSelectedPool(null);
+        }}
+      />
     </div>
   );
 };

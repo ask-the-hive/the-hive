@@ -6,7 +6,7 @@ import { useChat } from '../../_contexts/chat';
 const solanaButtons = [
   {
     title: 'Stake SOL, Keep Liquidity',
-    description: 'Earn 7%+ APY with liquid staking',
+    description: 'Earn the highest yields with liquid staking',
     icon: 'Droplet' as const,
     prompt: 'Find me the best staking yields',
   },
@@ -89,7 +89,7 @@ const StarterButtons = () => {
   const buttons = chain === 'solana' ? solanaButtons : chain === 'bsc' ? bscButtons : baseButtons;
 
   return (
-    <div className="grid grid-cols-2 gap-4 w-full">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-4 w-full">
       {buttons.map((button) => (
         <StarterButton key={button.title} {...button} />
       ))}

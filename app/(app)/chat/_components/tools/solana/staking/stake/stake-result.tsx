@@ -89,14 +89,9 @@ const StakeResult: React.FC<Props> = ({ outputTokenData, poolData, outputAmount 
               <div className="grid grid-cols-2 md:grid-cols-2 gap-2 pb-4 mt-4 items-center">
                 <div className="flex flex-col items-center">
                   <p className="text-xl font-semibold text-neutral-600 dark:text-neutral-400">
-                    {String(outputAmount)?.length > 8 ? outputAmount?.toFixed(8) : outputAmount}{' '}
-                    {outputTokenData?.symbol}{' '}
+                    {String(outputAmount)?.length > 8 ? outputAmount?.toFixed(6) : outputAmount}{' '}
+                    {outputTokenData?.symbol} {amountUSD && ` / $${amountUSD.toFixed(2)}`}
                   </p>
-                  {amountUSD && (
-                    <p className="text-xl font-semibold text-neutral-600 dark:text-neutral-400">
-                      {`$${amountUSD.toFixed(2)}`}
-                    </p>
-                  )}
                   <p className="text-gray-600 text-sm dark:text-gray-400">Amount</p>
                 </div>
                 <div className="flex flex-col items-center">
@@ -113,7 +108,7 @@ const StakeResult: React.FC<Props> = ({ outputTokenData, poolData, outputAmount 
               <p className="text-lg font-medium mb-2">Projected Yield Over Time</p>
               <ChartContainer className="h-[200px] w-full" config={chartConfig}>
                 <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={chartData} margin={{ top: 5, right: 5, bottom: 5, left: 5 }}>
+                  <AreaChart data={chartData} margin={{ top: 5, right: 20, bottom: 5, left: 5 }}>
                     <XAxis
                       dataKey="month"
                       fontSize={12}
@@ -130,17 +125,16 @@ const StakeResult: React.FC<Props> = ({ outputTokenData, poolData, outputAmount 
                     />
                     <ChartTooltip
                       cursor={{ stroke: 'var(--color-yield)', strokeWidth: 1 }}
-                      content={({ active, payload }) =>
-                        active && payload?.[0] ? (
+                      content={({ active, payload }) => {
+                        if (!active || !payload?.length) return null;
+                        return (
                           <ChartTooltipContent
+                            active={active}
                             payload={payload}
-                            formatter={(value) => [
-                              `$${Number(value).toFixed(2)}`,
-                              'Projected Yield',
-                            ]}
+                            formatter={(value) => `$${Number(value).toFixed(2)}`}
                           />
-                        ) : null
-                      }
+                        );
+                      }}
                     />
                     <Area
                       type="monotone"
