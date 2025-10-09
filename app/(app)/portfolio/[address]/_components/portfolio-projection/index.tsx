@@ -22,6 +22,8 @@ import {
 } from '@/components/ui/select';
 import { useChain } from '@/app/_contexts/chain-context';
 import { Skeleton } from '@/components/ui/skeleton';
+import { getAllLiquidStakingPositions } from '@/services/liquid-staking/get-all';
+import type { LiquidStakingPosition } from '@/db/types';
 
 interface ProjectionData {
   baseNetWorth: number;
@@ -32,7 +34,13 @@ interface ProjectionData {
   projection: Array<{
     date: string;
     netWorth: number;
+    netWorthWithStaking?: number;
   }>;
+  netStakingAPY?: number;
+  liquidStakingPositions?: (LiquidStakingPosition & {
+    currentUsdValue?: number;
+    currentPriceUsd?: number;
+  })[];
 }
 
 interface Props {
@@ -53,6 +61,23 @@ const Wrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   );
 };
 
+// Helper function to calculate net APY from liquid staking positions
+const calculateNetStakingAPY = (positions: LiquidStakingPosition[]): number => {
+  if (!positions.length) return 0;
+
+  // Calculate weighted APY based on position values
+  let totalValue = 0;
+  let weightedAPY = 0;
+
+  positions.forEach((position) => {
+    const positionValue = position.amount; // Use amount as proxy for value
+    totalValue += positionValue;
+    weightedAPY += (position.poolData.yield || 0) * positionValue;
+  });
+
+  return totalValue > 0 ? weightedAPY / totalValue : 0;
+};
+
 const PortfolioProjection: React.FC<Props> = ({ address }) => {
   const { currentChain } = useChain();
   const [data, setData] = useState<ProjectionData | null>(null);
@@ -60,41 +85,89 @@ const PortfolioProjection: React.FC<Props> = ({ address }) => {
   const [error, setError] = useState<string | null>(null);
   const [days, setDays] = useState(90);
 
-  const fetchProjectionData = async () => {
+  const fetchProjectionData = React.useCallback(async () => {
     setLoading(true);
     setError(null);
 
     try {
-      const response = await fetch(
-        `/api/portfolio/projection?wallet=${address}&days=${days}&chain=${currentChain}`,
-      );
+      // Fetch portfolio projection, liquid staking positions, and current portfolio in parallel
+      const [projectionResponse, liquidStakingPositions, currentPortfolioResponse] =
+        await Promise.all([
+          fetch(`/api/portfolio/projection?wallet=${address}&days=${days}&chain=${currentChain}`),
+          getAllLiquidStakingPositions(address),
+          fetch(`/api/portfolio/${address}?chain=${currentChain}`),
+        ]);
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      console.log('Raw liquid staking positions:', liquidStakingPositions);
+
+      if (!projectionResponse.ok) {
+        throw new Error(`HTTP error! status: ${projectionResponse.status}`);
       }
 
-      const result = await response.json();
-      setData(result);
+      const projectionData = await projectionResponse.json();
+      const currentPortfolio = currentPortfolioResponse.ok
+        ? await currentPortfolioResponse.json()
+        : null;
+
+      console.log('Current portfolio:', currentPortfolio);
+
+      // Enhance liquid staking positions with current USD values
+      const enhancedLiquidStakingPositions =
+        liquidStakingPositions?.map((position) => {
+          // Find the matching token in current portfolio to get current price
+          const portfolioToken = currentPortfolio?.items?.find(
+            (item: any) =>
+              item.symbol === position.lstToken.symbol || item.address === position.lstToken.id,
+          );
+
+          const currentPriceUsd = portfolioToken?.priceUsd || 0;
+          const currentUsdValue = position.amount * currentPriceUsd;
+
+          console.log(
+            `Enhanced position: ${position.lstToken.symbol}, Token Amount: ${position.amount}, Price: $${currentPriceUsd}, USD Value: $${currentUsdValue}`,
+          );
+
+          return {
+            ...position,
+            currentUsdValue,
+            currentPriceUsd,
+          };
+        }) || [];
+
+      // Calculate net APY from liquid staking positions
+      const netStakingAPY = calculateNetStakingAPY(enhancedLiquidStakingPositions || []);
+      console.log('projectionData', projectionData);
+      console.log('netStakingAPY', netStakingAPY);
+      console.log('enhancedLiquidStakingPositions', enhancedLiquidStakingPositions);
+
+      // Add staking APY and positions data to the data
+      const enhancedData = {
+        ...projectionData,
+        netStakingAPY,
+        liquidStakingPositions: enhancedLiquidStakingPositions,
+      };
+
+      setData(enhancedData);
     } catch (err) {
       console.error('Error fetching portfolio projection:', err);
-      setError(err instanceof Error ? err.message : 'Failed to fetch projection data');
+      setError('Failed to fetch projection data');
     } finally {
       setLoading(false);
     }
-  };
+  }, [address, days, currentChain]);
 
   useEffect(() => {
     if (address) {
       fetchProjectionData();
     }
-  }, [address, days, currentChain]);
+  }, [address, fetchProjectionData]);
 
   // Combine historical and projection data for the chart with APY overlay
   const chartData = React.useMemo(() => {
     if (!data) return [];
 
-    // Calculate APY from historical data
-    const calculateAPY = () => {
+    // Calculate historical APY for portfolio growth projection
+    const calculateHistoricalAPY = () => {
       if (data.historical.length < 2) return 0;
 
       const firstValue = data.historical[0].netWorth;
@@ -110,26 +183,72 @@ const PortfolioProjection: React.FC<Props> = ({ address }) => {
       return annualizedReturn * 100; // Convert to percentage
     };
 
-    const apy = calculateAPY();
+    const historicalAPY = calculateHistoricalAPY();
+
     const startDate = data.historical[0]?.date ? new Date(data.historical[0].date) : new Date();
 
     const combined = [
+      // Historical data (actual past performance)
       ...data.historical.map((item) => ({
         ...item,
         type: 'Historical',
         date: new Date(item.date).toLocaleDateString(),
-        apyValue: item.netWorth,
+        netWorth: item.netWorth,
+        // No netWorthWithStaking for historical data - it's the same
       })),
+      // Projection data: two scenarios for future growth
       ...data.projection.map((item) => {
-        const daysFromStart =
-          (new Date(item.date).getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24);
-        const apyValue = data.baseNetWorth * Math.pow(1 + apy / 100, daysFromStart / 365);
+        const currentDate = new Date(item.date);
+        const daysFromStart = (currentDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24);
 
+        // Scenario 1: Portfolio growth based on historical APY only
+        const portfolioGrowthValue =
+          data.baseNetWorth * Math.pow(1 + historicalAPY / 100, daysFromStart / 365);
+
+        // Scenario 2: Calculate compounding staking gains over time
+        let totalStakingValue = 0;
+
+        if (data.liquidStakingPositions && data.liquidStakingPositions.length > 0) {
+          console.log('Processing liquid staking positions:', data.liquidStakingPositions.length);
+          // Calculate the total value of all staking positions with compound growth
+          totalStakingValue = data.liquidStakingPositions.reduce((totalValue, position) => {
+            // Use the current USD value of the position
+            const initialPositionValue = position.currentUsdValue || 0;
+
+            // Calculate compound growth from staking start date to this projection date
+            const positionAPY = position.poolData.yield || 0;
+            const compoundedValue =
+              initialPositionValue * Math.pow(1 + positionAPY / 100, daysFromStart / 365);
+
+            console.log(
+              `Position: ${position.lstToken.symbol}, USD Value: $${initialPositionValue}, APY: ${positionAPY}%, Days: ${daysFromStart}, Compounded: $${compoundedValue}`,
+            );
+
+            return totalValue + compoundedValue;
+          }, 0);
+        }
+
+        // Calculate the original staking position values (without growth)
+        const originalStakingValue =
+          data.liquidStakingPositions?.reduce((total, position) => {
+            return total + (position.currentUsdValue || 0);
+          }, 0) || 0;
+
+        // The staking gains are the difference between compounded value and original value
+        const totalStakingGains = totalStakingValue - originalStakingValue;
+
+        const portfolioWithStakingValue = portfolioGrowthValue + totalStakingGains;
+        console.log('originalStakingValue', originalStakingValue);
+        console.log('totalStakingGains', totalStakingGains);
+        console.log('portfolioGrowthValue', portfolioGrowthValue);
+        console.log('portfolioWithStakingValue', portfolioWithStakingValue);
+        console.log('--------------------------------');
         return {
           ...item,
           type: 'Projection',
           date: new Date(item.date).toLocaleDateString(),
-          apyValue,
+          netWorth: portfolioGrowthValue, // Future growth with historical APY
+          netWorthWithStaking: portfolioWithStakingValue, // Portfolio growth + isolated staking gains
         };
       }),
     ];
@@ -137,6 +256,7 @@ const PortfolioProjection: React.FC<Props> = ({ address }) => {
     return combined;
   }, [data]);
 
+  console.log('chartData', chartData);
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -273,16 +393,16 @@ const PortfolioProjection: React.FC<Props> = ({ address }) => {
                   stroke="#8884d8"
                   strokeWidth={2}
                   dot={false}
-                  name="Net Worth"
+                  name="Portfolio Growth (Historical APY)"
                 />
                 <Line
                   type="monotone"
-                  dataKey="apyValue"
-                  stroke="#ff6b6b"
+                  dataKey="netWorthWithStaking"
+                  stroke="#22c55e"
                   strokeWidth={2}
                   strokeDasharray="5 5"
                   dot={false}
-                  name="APY Overlay"
+                  name={`Portfolio + Staking (+${data?.netStakingAPY?.toFixed(2) || 0}% APY)`}
                 />
               </LineChart>
             </ResponsiveContainer>
