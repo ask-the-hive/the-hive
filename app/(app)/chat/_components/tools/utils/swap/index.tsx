@@ -30,6 +30,7 @@ interface Props {
   initialInputAmount?: string;
   swapText?: string;
   swappingText?: string;
+  receiveTooltip?: string | React.ReactNode;
   onSuccess?: (txHash: string) => void;
   onError?: (error: string) => void;
   onCancel?: () => void;
@@ -50,6 +51,7 @@ const Swap: React.FC<Props> = ({
   onCancel,
   onInputChange,
   onOutputChange,
+  receiveTooltip,
 }) => {
   const [inputAmount, setInputAmount] = useState<string>(initialInputAmount || '');
   const [inputToken, setInputToken] = useState<Token | null>(initialInputToken);
@@ -177,6 +179,7 @@ const Swap: React.FC<Props> = ({
           token={outputToken}
           onChangeToken={setOutputToken}
           address={wallet?.address}
+          tooltip={receiveTooltip}
         />
       </div>
       <Separator />

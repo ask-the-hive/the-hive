@@ -31,7 +31,6 @@ export async function getLiquidStakingYields(): Promise<
       'sanctum', // Sanctum (INF, LSTs)
       'lido', // Lido (STSOL)
       'blazestake', // BlazeStake (BSOL)
-      'kamino', // Kamino (VSOL)
     ];
 
     // Liquid staking tokens that appear in other protocols
@@ -47,19 +46,19 @@ export async function getLiquidStakingYields(): Promise<
       'INF', // Sanctum
       'STSOL', // Lido
       'JSOL', // Jupiter
-      'VSOL', // Kamino
     ];
 
     const solLiquidStakingPools = solanaPools.filter((pool) => {
       // Check if it's a direct liquid staking protocol
       const isDirectProtocol = directLiquidStakingProtocols.includes(pool.project);
-
       // Check if it's a liquid staking token (but exclude LP pairs)
       const isLiquidStakingToken = liquidStakingTokens.includes(pool.symbol);
+
       const isLPPair = pool.symbol.includes('-') || pool.symbol.includes('/');
+      const hasAPY = pool.apy && pool.apy > 0;
 
       // Include direct protocols OR liquid staking tokens that aren't LP pairs
-      return isDirectProtocol || (isLiquidStakingToken && !isLPPair);
+      return (isDirectProtocol || isLiquidStakingToken) && !isLPPair && hasAPY;
     });
 
     if (solLiquidStakingPools.length === 0) {

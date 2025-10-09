@@ -11,7 +11,7 @@ interface Props {
 const WalletDisplay: React.FC<Props> = ({ address }) => {
   return (
     <div className="flex justify-center w-full">
-      <div className="w-[70%]">
+      <div className="w-full md:w-[70%]">
         <div className="flex flex-col gap-4">
           <Card className="flex w-full p-4">
             <div className="flex flex-row gap-2 items-center justify-between w-full">

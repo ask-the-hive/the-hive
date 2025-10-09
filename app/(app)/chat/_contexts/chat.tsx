@@ -334,44 +334,63 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
   };
 
   const sendMessage = async (message: string) => {
-    // If this is the first message in a new chat, create the chat entry immediately
-    if (messages.length === 0) {
-      try {
-        const response = await fetch(`/api/chats/${chatId}`, {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${await getAccessToken()}`,
-          },
-          body: JSON.stringify({
-            messages: [
-              {
-                role: 'user',
-                content: message,
-              },
-            ],
-            chain,
-          }),
-        });
-
-        if (response.ok) {
-          // Refresh the chats list to show the new chat immediately
-          mutate();
-        }
-      } catch (error) {
-        console.error('Error creating new chat:', error);
-      }
-    }
-
     setIsResponseLoading(true);
-    // Update global state when starting a new message
+
+    // Update global state immediately when starting a new message
     updateChatThreadState(chatId, {
       isLoading: true,
       isResponseLoading: true,
     });
-    await append({
+
+    // Optimistically add the user message to trigger UI transition immediately
+    const userMessage: Message = {
+      id: generateId(),
       role: 'user',
       content: message,
-    });
+    };
+
+    // If this is the first message in a new chat, create the chat entry in parallel
+    const chatCreationPromise =
+      messages.length === 0
+        ? (async () => {
+            try {
+              const response = await fetch(`/api/chats/${chatId}`, {
+                method: 'POST',
+                headers: {
+                  Authorization: `Bearer ${await getAccessToken()}`,
+                },
+                body: JSON.stringify({
+                  messages: [userMessage],
+                  chain,
+                }),
+              });
+
+              if (response.ok) {
+                // Refresh the chats list to show the new chat immediately
+                mutate();
+              } else if (response.status === 409) {
+                // Chat already exists, this is fine - just refresh the list
+                console.log('Chat already exists, refreshing list');
+                mutate();
+              } else {
+                console.error('Error creating new chat:', response.status, response.statusText);
+              }
+            } catch (error) {
+              console.error('Error creating new chat:', error);
+            }
+          })()
+        : Promise.resolve();
+
+    // Start the AI response in parallel with chat creation
+    // append() will add the user message, so we need to remove our optimistic one first
+    const aiResponsePromise = (async () =>
+      await append({
+        role: 'user',
+        content: message,
+      }))();
+
+    // Wait for both operations to complete
+    await Promise.all([chatCreationPromise, aiResponsePromise]);
   };
 
   const inputDisabledMessage = useMemo(() => {

@@ -16,7 +16,7 @@ interface Props<ActionResultBodyType, ActionArgsType> {
   tool: ToolInvocation;
   loadingText: string;
   result: {
-    heading: (result: BaseActionResult<ActionResultBodyType>) => string;
+    heading: (result: BaseActionResult<ActionResultBodyType>) => string | null;
     body: (result: BaseActionResult<ActionResultBodyType>) => React.ReactNode;
   };
   call?: {
@@ -26,6 +26,7 @@ interface Props<ActionResultBodyType, ActionArgsType> {
   defaultOpen?: boolean;
   className?: string;
   prevToolAgent?: string;
+  hideCollapsible?: boolean;
 }
 
 const ToolCard = <ActionResultBodyType, ActionArgsType>({
@@ -70,15 +71,17 @@ const ToolCard = <ActionResultBodyType, ActionArgsType>({
             <AnimatedShinyText className="text-sm">{loadingText}</AnimatedShinyText>
           )
         ) : (
-          <Collapsible defaultOpen={defaultOpen}>
-            <CollapsibleTrigger className="flex items-center gap-2 text-neutral-600 dark:text-neutral-400 hover:underline">
-              <p className="text-sm">{result.heading(tool.result)}</p>
-              <ChevronDown className="w-4 h-4 transition-transform duration-300 group-data-[state=open]:rotate-180" />
-            </CollapsibleTrigger>
-            <CollapsibleContent className="text-sm pt-2">
-              {result.body(tool.result)}
-            </CollapsibleContent>
-          </Collapsible>
+          result.heading(tool.result) && (
+            <Collapsible defaultOpen={defaultOpen}>
+              <CollapsibleTrigger className="flex items-center gap-2 text-neutral-600 dark:text-neutral-400 hover:underline">
+                <p className="text-sm">{result.heading(tool.result)}</p>
+                <ChevronDown className="w-4 h-4 transition-transform duration-300 group-data-[state=open]:rotate-180" />
+              </CollapsibleTrigger>
+              <CollapsibleContent className="text-sm pt-2">
+                {result.body(tool.result)}
+              </CollapsibleContent>
+            </Collapsible>
+          )
         )}
       </div>
     </div>

@@ -19,7 +19,7 @@ interface Props {
 const GetBalance: React.FC<Props> = ({ tool, prevToolAgent }) => {
   return (
     <div className="flex justify-center w-full">
-      <div className="w-[70%]">
+      <div className="w-full md:w-[70%]">
         <ToolCard
           tool={tool}
           loadingText={`Getting ${tool.args.tokenSymbol || 'ETH'} Balance...`}
