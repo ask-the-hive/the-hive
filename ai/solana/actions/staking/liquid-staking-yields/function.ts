@@ -20,7 +20,6 @@ export async function getLiquidStakingYields(): Promise<
     const solanaPools = response.data.filter((pool) => pool.chain === 'Solana');
 
     // Filter for the specific Solana liquid staking protocols based on actual data
-    // Only include protocols that are actually liquid staking (not lending/savings)
     const directLiquidStakingProtocols = [
       'jito-liquid-staking', // Jito (JITOSOL)
       'marinade-liquid-staking', // Marinade (MSOL)
@@ -35,7 +34,6 @@ export async function getLiquidStakingYields(): Promise<
     ];
 
     // Liquid staking tokens that appear in other protocols
-    // Only include tokens that are actually liquid staking tokens (not lending tokens)
     const liquidStakingTokens = [
       'MSOL', // Marinade
       'JITOSOL', // Jito

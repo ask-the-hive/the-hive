@@ -334,9 +334,6 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
   };
 
   const sendMessage = async (message: string) => {
-    // Prevent multiple simultaneous calls
-    if (isResponseLoading) return;
-
     setIsResponseLoading(true);
 
     // Update global state immediately when starting a new message

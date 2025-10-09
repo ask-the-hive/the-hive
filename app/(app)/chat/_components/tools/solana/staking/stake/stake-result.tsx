@@ -96,7 +96,7 @@ const StakeResult: React.FC<Props> = ({ outputTokenData, poolData, outputAmount 
                 </div>
                 <div className="flex flex-col items-center">
                   <p className="text-xl font-semibold text-green-600">
-                    +{poolData.yield.toFixed(2)}% APY
+                    {poolData.yield.toFixed(2)}% APY
                   </p>
                   <p className="text-gray-600 dark:text-gray-400 text-sm">Earning</p>
                 </div>

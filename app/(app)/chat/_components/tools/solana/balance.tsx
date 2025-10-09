@@ -42,7 +42,7 @@ const GetBalance: React.FC<Props> = ({ tool, prevToolAgent }) => {
 
             return (
               <div className="flex justify-center w-full">
-                <div className="w-[70%]">
+                <div className="w-full md:w-[70%]">
                   <div className="flex flex-col gap-4">
                     {/* Show trade UI if SOL balance is 0 */}
                     {isStakingSOL && result.body.balance === 0 ? (

@@ -89,7 +89,7 @@ const StarterButtons = () => {
   const buttons = chain === 'solana' ? solanaButtons : chain === 'bsc' ? bscButtons : baseButtons;
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-4 w-full">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-4 w-full mt-4">
       {buttons.map((button) => (
         <StarterButton key={button.title} {...button} />
       ))}

@@ -120,7 +120,7 @@ const StakeCallBody: React.FC<Props> = ({ toolCallId, args }) => {
 
   return (
     <div className="flex justify-center w-full">
-      <div className="w-[70%]">
+      <div className="w-full md:w-[70%]">
         <Card className="p-4 max-w-full">
           {inputTokenLoading || outputTokenLoading ? (
             <Skeleton className="h-48 w-full" />
