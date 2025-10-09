@@ -6,7 +6,6 @@ export const getBestLiquidStaking = async (): Promise<StakingRewardsResponse> =>
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        // 'X-API-KEY': process.env.STAKING_REWARDS_API_KEY!,
       },
     });
 

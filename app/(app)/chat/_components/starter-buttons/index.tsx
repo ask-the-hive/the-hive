@@ -5,29 +5,29 @@ import { useChat } from '../../_contexts/chat';
 
 const solanaButtons = [
   {
-    title: 'Trending',
-    description: 'Search the trending tokens',
-    icon: 'ChartLine' as const,
-    prompt: 'Show me the trending tokens',
-  },
-  {
     title: 'Stake SOL, Keep Liquidity',
     description: 'Earn 7%+ APY with liquid staking',
     icon: 'Droplet' as const,
     prompt: 'Find me the best staking yields',
   },
   {
-    title: 'Trade',
-    description: 'Swap on Jupiter',
-    icon: 'ChartCandlestick' as const,
-    prompt: "Let's trade some tokens",
+    title: 'Lending',
+    description: 'Coming soon',
+    icon: 'ChartLine' as const,
+    prompt: 'Show me the trending tokens',
   },
-  {
-    title: 'Knowledge',
-    description: 'Get developer docs for protocols',
-    icon: 'Brain' as const,
-    prompt: 'Get me developer docs for Solana Protocols',
-  },
+  // {
+  //   title: 'Trade',
+  //   description: 'Swap on Jupiter',
+  //   icon: 'ChartCandlestick' as const,
+  //   prompt: "Let's trade some tokens",
+  // },
+  // {
+  //   title: 'Knowledge',
+  //   description: 'Get developer docs for protocols',
+  //   icon: 'Brain' as const,
+  //   prompt: 'Get me developer docs for Solana Protocols',
+  // },
 ] as const;
 
 const bscButtons = [
