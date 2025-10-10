@@ -47,18 +47,45 @@ interface Props {
   address: string;
 }
 
-const Wrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+const Wrapper: React.FC<{
+  children: React.ReactNode;
+  hasStakingPositions: boolean;
+  loading: boolean;
+  netWorth?: number;
+}> = ({ children, hasStakingPositions, loading, netWorth }) => {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <TrendingUp className="w-6 h-6" />
-          <h2 className="text-xl font-bold">Portfolio Projection</h2>
+        <div className="flex items-center justify-between w-full">
+          <div className="flex items-center gap-2">
+            <TrendingUp className="w-6 h-6" />
+            {loading && <Skeleton className="w-32 h-6" />}
+            {!loading && (
+              <h2 className="text-xl font-bold">
+                {hasStakingPositions ? 'Portfolio Projection' : 'Portfolio History'}
+              </h2>
+            )}
+          </div>
+          {!hasStakingPositions && netWorth && (
+            <div className="text-center bg-muted/50 rounded-lg">
+              <p className=" text-base md:text-xl font-bold">{formatCurrency(netWorth)}</p>
+              <span className="text-xs md:text-sm text-muted-foreground">Net Worth</span>
+            </div>
+          )}
         </div>
       </div>
       <Card>{children}</Card>
     </div>
   );
+};
+
+const formatCurrency = (value: number) => {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(value);
 };
 
 // Helper function to calculate net APY from liquid staking positions
@@ -81,9 +108,12 @@ const calculateNetStakingAPY = (positions: LiquidStakingPosition[]): number => {
 const PortfolioProjection: React.FC<Props> = ({ address }) => {
   const { currentChain } = useChain();
   const [data, setData] = useState<ProjectionData | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [projectionLoading, setProjectionLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [days, setDays] = useState(90);
+  const [hasStakingPositions, setHasStakingPositions] = useState(false);
 
   const fetchProjectionData = React.useCallback(async () => {
     setLoading(true);
@@ -98,8 +128,6 @@ const PortfolioProjection: React.FC<Props> = ({ address }) => {
           fetch(`/api/portfolio/${address}?chain=${currentChain}`),
         ]);
 
-      console.log('Raw liquid staking positions:', liquidStakingPositions);
-
       if (!projectionResponse.ok) {
         throw new Error(`HTTP error! status: ${projectionResponse.status}`);
       }
@@ -108,8 +136,6 @@ const PortfolioProjection: React.FC<Props> = ({ address }) => {
       const currentPortfolio = currentPortfolioResponse.ok
         ? await currentPortfolioResponse.json()
         : null;
-
-      console.log('Current portfolio:', currentPortfolio);
 
       // Enhance liquid staking positions with current USD values
       const enhancedLiquidStakingPositions =
@@ -123,10 +149,6 @@ const PortfolioProjection: React.FC<Props> = ({ address }) => {
           const currentPriceUsd = portfolioToken?.priceUsd || 0;
           const currentUsdValue = position.amount * currentPriceUsd;
 
-          console.log(
-            `Enhanced position: ${position.lstToken.symbol}, Token Amount: ${position.amount}, Price: $${currentPriceUsd}, USD Value: $${currentUsdValue}`,
-          );
-
           return {
             ...position,
             currentUsdValue,
@@ -136,9 +158,6 @@ const PortfolioProjection: React.FC<Props> = ({ address }) => {
 
       // Calculate net APY from liquid staking positions
       const netStakingAPY = calculateNetStakingAPY(enhancedLiquidStakingPositions || []);
-      console.log('projectionData', projectionData);
-      console.log('netStakingAPY', netStakingAPY);
-      console.log('enhancedLiquidStakingPositions', enhancedLiquidStakingPositions);
 
       // Add staking APY and positions data to the data
       const enhancedData = {
@@ -147,14 +166,18 @@ const PortfolioProjection: React.FC<Props> = ({ address }) => {
         liquidStakingPositions: enhancedLiquidStakingPositions,
       };
 
+      setHasStakingPositions(enhancedLiquidStakingPositions.length > 0);
       setData(enhancedData);
     } catch (err) {
       console.error('Error fetching portfolio projection:', err);
       setError('Failed to fetch projection data');
     } finally {
       setLoading(false);
+      if (initialLoading) {
+        setInitialLoading(false);
+      }
     }
-  }, [address, days, currentChain]);
+  }, [address, days, currentChain, initialLoading]);
 
   useEffect(() => {
     if (address) {
@@ -162,138 +185,131 @@ const PortfolioProjection: React.FC<Props> = ({ address }) => {
     }
   }, [address, fetchProjectionData]);
 
-  // Combine historical and projection data for the chart with APY overlay
+  // Handle days change with loading state
+  const handleDaysChange = React.useCallback((value: string) => {
+    setProjectionLoading(true);
+    setDays(parseInt(value));
+    // Brief delay to show loading state
+    setTimeout(() => setProjectionLoading(false), 50);
+  }, []);
+
+  // Memoize historical data separately to prevent unnecessary recalculations
+  const historicalData = React.useMemo(() => {
+    if (!data) return [];
+    return data.historical.map((item) => ({
+      ...item,
+      type: 'Historical',
+      date: new Date(item.date).toLocaleDateString(),
+      netWorth: item.netWorth,
+      projectedNetWorth: null, // No projection for historical data
+    }));
+  }, [data]);
+
+  // Combine historical and projection data for the chart
   const chartData = React.useMemo(() => {
     if (!data) return [];
 
-    // Calculate historical APY for portfolio growth projection
-    const calculateHistoricalAPY = () => {
-      if (data.historical.length < 2) return 0;
+    // Get the most recent historical date to determine where projections start
+    const lastHistoricalDate =
+      data.historical.length > 0
+        ? new Date(data.historical[data.historical.length - 1].date)
+        : new Date();
 
-      const firstValue = data.historical[0].netWorth;
-      const lastValue = data.historical[data.historical.length - 1].netWorth;
-      const days = data.historical.length;
+    // Calculate current net worth (most recent historical value or base net worth)
+    const currentNetWorth =
+      data.historical.length > 0
+        ? data.historical[data.historical.length - 1].netWorth
+        : data.baseNetWorth;
 
-      if (firstValue === 0) return 0;
+    // Calculate net APY from liquid staking positions
+    const netStakingAPY = data.netStakingAPY || 0;
 
-      const totalReturn = (lastValue - firstValue) / firstValue;
-      const dailyReturn = Math.pow(1 + totalReturn, 1 / days) - 1;
-      const annualizedReturn = Math.pow(1 + dailyReturn, 365) - 1;
+    // Generate forward projections if we have staking positions
+    const projectionData = [];
+    if (hasStakingPositions && netStakingAPY > 0 && data.liquidStakingPositions) {
+      // Calculate total current staking position value
+      const totalStakingValue = data.liquidStakingPositions.reduce((total, position) => {
+        return total + (position.currentUsdValue || 0);
+      }, 0);
 
-      return annualizedReturn * 100; // Convert to percentage
-    };
+      // Calculate non-staking portfolio value (base portfolio minus staking positions)
+      const nonStakingValue = currentNetWorth - totalStakingValue;
 
-    const historicalAPY = calculateHistoricalAPY();
+      for (let i = 1; i <= days; i++) {
+        const projectionDate = new Date(lastHistoricalDate);
+        projectionDate.setDate(projectionDate.getDate() + i);
 
-    const startDate = data.historical[0]?.date ? new Date(data.historical[0].date) : new Date();
+        // Calculate staking gains with compound interest
+        const daysFromNow = i;
+        const stakingGains =
+          totalStakingValue * (Math.pow(1 + netStakingAPY / 100, daysFromNow / 365) - 1);
+
+        // Total projected value = non-staking value + original staking value + staking gains
+        const projectedValue = nonStakingValue + totalStakingValue + stakingGains;
+
+        projectionData.push({
+          date: projectionDate.toLocaleDateString(),
+          netWorth: projectedValue,
+          type: 'Projection',
+        });
+      }
+    }
 
     const combined = [
       // Historical data (actual past performance)
-      ...data.historical.map((item) => ({
+      ...historicalData,
+      // Projection data (only if we have staking positions)
+      ...projectionData.map((item) => ({
         ...item,
-        type: 'Historical',
-        date: new Date(item.date).toLocaleDateString(),
-        netWorth: item.netWorth,
-        // No netWorthWithStaking for historical data - it's the same
+        netWorth: null, // No historical value for projection data
+        projectedNetWorth: item.netWorth,
       })),
-      // Projection data: two scenarios for future growth
-      ...data.projection.map((item) => {
-        const currentDate = new Date(item.date);
-        const daysFromStart = (currentDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24);
-
-        // Scenario 1: Portfolio growth based on historical APY only
-        const portfolioGrowthValue =
-          data.baseNetWorth * Math.pow(1 + historicalAPY / 100, daysFromStart / 365);
-
-        // Scenario 2: Calculate compounding staking gains over time
-        let totalStakingValue = 0;
-
-        if (data.liquidStakingPositions && data.liquidStakingPositions.length > 0) {
-          console.log('Processing liquid staking positions:', data.liquidStakingPositions.length);
-          // Calculate the total value of all staking positions with compound growth
-          totalStakingValue = data.liquidStakingPositions.reduce((totalValue, position) => {
-            // Use the current USD value of the position
-            const initialPositionValue = position.currentUsdValue || 0;
-
-            // Calculate compound growth from staking start date to this projection date
-            const positionAPY = position.poolData.yield || 0;
-            const compoundedValue =
-              initialPositionValue * Math.pow(1 + positionAPY / 100, daysFromStart / 365);
-
-            console.log(
-              `Position: ${position.lstToken.symbol}, USD Value: $${initialPositionValue}, APY: ${positionAPY}%, Days: ${daysFromStart}, Compounded: $${compoundedValue}`,
-            );
-
-            return totalValue + compoundedValue;
-          }, 0);
-        }
-
-        // Calculate the original staking position values (without growth)
-        const originalStakingValue =
-          data.liquidStakingPositions?.reduce((total, position) => {
-            return total + (position.currentUsdValue || 0);
-          }, 0) || 0;
-
-        // The staking gains are the difference between compounded value and original value
-        const totalStakingGains = totalStakingValue - originalStakingValue;
-
-        const portfolioWithStakingValue = portfolioGrowthValue + totalStakingGains;
-        console.log('originalStakingValue', originalStakingValue);
-        console.log('totalStakingGains', totalStakingGains);
-        console.log('portfolioGrowthValue', portfolioGrowthValue);
-        console.log('portfolioWithStakingValue', portfolioWithStakingValue);
-        console.log('--------------------------------');
-        return {
-          ...item,
-          type: 'Projection',
-          date: new Date(item.date).toLocaleDateString(),
-          netWorth: portfolioGrowthValue, // Future growth with historical APY
-          netWorthWithStaking: portfolioWithStakingValue, // Portfolio growth + isolated staking gains
-        };
-      }),
     ];
 
     return combined;
-  }, [data]);
-
-  console.log('chartData', chartData);
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(value);
-  };
+  }, [data, days, hasStakingPositions, historicalData]);
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
         <div className="bg-background border border-border rounded-lg p-3 shadow-lg">
           <p className="text-sm font-medium">{label}</p>
-          {payload.map((entry: any, index: number) => (
-            <p key={index} className="text-sm" style={{ color: entry.color }}>
-              {entry.dataKey === 'netWorth'
-                ? 'Net Worth'
-                : entry.dataKey === 'apyValue'
-                  ? 'APY Overlay'
-                  : entry.dataKey}
-              : {formatCurrency(entry.value)}
-            </p>
-          ))}
+          {payload.map((entry: any, index: number) => {
+            if (entry.value === null || entry.value === undefined) return null;
+
+            const isProjection = entry.dataKey === 'projectedNetWorth';
+            return (
+              <p key={index} className="text-sm" style={{ color: entry.color }}>
+                {isProjection ? 'Projected Value' : 'Historical Value'}:{' '}
+                {formatCurrency(entry.value)}
+              </p>
+            );
+          })}
+          {payload.some(
+            (entry: any) => entry.dataKey === 'projectedNetWorth' && entry.value !== null,
+          ) &&
+            hasStakingPositions && (
+              <p className="text-xs text-muted-foreground mt-1">
+                Based on {data?.netStakingAPY?.toFixed(2) || 0}% staking APY
+              </p>
+            )}
         </div>
       );
     }
     return null;
   };
 
-  if (loading) {
-    return <Skeleton className="h-64 w-full" />;
+  if (initialLoading) {
+    return (
+      <Wrapper hasStakingPositions={hasStakingPositions} loading={initialLoading}>
+        <Skeleton className="h-64 w-full" />
+      </Wrapper>
+    );
   }
 
   if (error) {
     return (
-      <Wrapper>
+      <Wrapper hasStakingPositions={hasStakingPositions} loading={initialLoading}>
         <CardContent>
           <div className="text-center py-8">
             <p className="text-destructive mb-4">{error}</p>
@@ -310,120 +326,157 @@ const PortfolioProjection: React.FC<Props> = ({ address }) => {
     return null;
   }
 
-  const currentValue = data.baseNetWorth;
-  const projectedValue = data.projection[data.projection.length - 1]?.netWorth || currentValue;
+  const currentValue =
+    data.historical.length > 0
+      ? data.historical[data.historical.length - 1].netWorth
+      : data.baseNetWorth;
+
+  // Calculate projected value based on staking APY (only applied to staking positions)
+  const netStakingAPY = data.netStakingAPY || 0;
+  let projectedValue = currentValue;
+
+  if (data.liquidStakingPositions && data.liquidStakingPositions.length > 0 && netStakingAPY > 0) {
+    // Calculate total current staking position value
+    const totalStakingValue = data.liquidStakingPositions.reduce((total, position) => {
+      return total + (position.currentUsdValue || 0);
+    }, 0);
+
+    // Calculate non-staking portfolio value
+    const nonStakingValue = currentValue - totalStakingValue;
+
+    // Calculate staking gains with compound interest over the selected period
+    const stakingGains = totalStakingValue * (Math.pow(1 + netStakingAPY / 100, days / 365) - 1);
+
+    // Total projected value = non-staking value + original staking value + staking gains
+    projectedValue = nonStakingValue + totalStakingValue + stakingGains;
+  }
+
   const totalGain = projectedValue - currentValue;
-  const percentageGain = (totalGain / currentValue) * 100;
+  const percentageGain = currentValue > 0 ? (totalGain / currentValue) * 100 : 0;
 
   return (
-    <Wrapper>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          {/* Summary Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="text-center bg-muted/50 rounded-lg">
-              <p className="text-xl font-bold">{formatCurrency(currentValue)}</p>
-              <div className="flex items-center justify-center gap-1 mb-2">
-                <DollarSign className="w-4 h-4 text-muted-foreground" />
-                <span className="text-sm text-muted-foreground">Current Value</span>
+    <Wrapper
+      hasStakingPositions={hasStakingPositions}
+      loading={initialLoading}
+      netWorth={currentValue}
+    >
+      {hasStakingPositions && (
+        <CardHeader>
+          <div className="flex items-center flex-col md:flex-row justify-between">
+            {/* Summary Stats */}
+            <div className="grid grid-cols-3 gap-4">
+              <div className="text-center bg-muted/50 rounded-lg">
+                <p className=" text-base md:text-xl font-bold">{formatCurrency(currentValue)}</p>
+                <div className="flex items-center justify-center gap-1 mb-2">
+                  <DollarSign className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-xs md:text-sm text-muted-foreground">Current Value</span>
+                </div>
+              </div>
+              <div className="text-center bg-muted/50 rounded-lg">
+                <p className="text-base md:text-xl font-bold">{formatCurrency(projectedValue)}</p>
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <Calendar className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-xs md:text-sm text-muted-foreground">Projected Value</span>
+                </div>
+              </div>
+              <div className="text-center bg-muted/50 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <p
+                    className={`text-base md:text-xl font-bold ${totalGain >= 0 ? 'text-green-600' : 'text-red-600'}`}
+                  >
+                    {totalGain >= 0 ? '+' : ''}
+                    {formatCurrency(totalGain)}
+                  </p>
+                  <p className={`text-sm ${totalGain >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    ({totalGain >= 0 ? '+' : ''}
+                    {percentageGain.toFixed(2)}%)
+                  </p>
+                </div>
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <TrendingUp className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-xs md:text-sm text-muted-foreground">Projected Gain</span>
+                </div>
               </div>
             </div>
-            <div className="text-center bg-muted/50 rounded-lg">
-              <p className="text-xl font-bold">{formatCurrency(projectedValue)}</p>
-              <div className="flex items-center justify-center gap-2 mb-2">
-                <Calendar className="w-4 h-4 text-muted-foreground" />
-                <span className="text-sm text-muted-foreground">Projected Value</span>
-              </div>
-            </div>
-            <div className="text-center bg-muted/50 rounded-lg">
-              <div className="flex items-center gap-2">
-                <p
-                  className={`text-xl font-bold ${totalGain >= 0 ? 'text-green-600' : 'text-red-600'}`}
-                >
-                  {totalGain >= 0 ? '+' : ''}
-                  {formatCurrency(totalGain)}
-                </p>
-                <p className={`text-sm ${totalGain >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  ({totalGain >= 0 ? '+' : ''}
-                  {percentageGain.toFixed(2)}%)
-                </p>
-              </div>
-              <div className="flex items-center justify-center gap-2 mb-2">
-                <TrendingUp className="w-4 h-4 text-muted-foreground" />
-                <span className="text-sm text-muted-foreground">Projected Gain</span>
-              </div>
+            <div className="flex items-center flex-col gap-2">
+              <p className="text-sm text-muted-foreground">Projected:</p>
+              <Select value={days.toString()} onValueChange={handleDaysChange}>
+                <SelectTrigger className="w-32">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="30">30 days</SelectItem>
+                  <SelectItem value="60">2 months</SelectItem>
+                  <SelectItem value="90">3 months</SelectItem>
+                  <SelectItem value="180">6 months</SelectItem>
+                  <SelectItem value="365">1 year</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Select value={days.toString()} onValueChange={(value) => setDays(parseInt(value))}>
-              <SelectTrigger className="w-24">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="7">7 days</SelectItem>
-                <SelectItem value="14">14 days</SelectItem>
-                <SelectItem value="30">30 days</SelectItem>
-                <SelectItem value="60">60 days</SelectItem>
-                <SelectItem value="90">90 days</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-      </CardHeader>
+        </CardHeader>
+      )}
       <CardContent>
-        <div className="space-y-6">
+        <div className={`space-y-6 ${!hasStakingPositions ? 'pt-10' : ''}`}>
           {/* Chart */}
-          <div className="h-80">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-                <XAxis
-                  dataKey="date"
-                  tick={{ fontSize: 12 }}
-                  tickFormatter={(value) => {
-                    const date = new Date(value);
-                    return `${date.getMonth() + 1}/${date.getDate()}`;
-                  }}
-                />
-                <YAxis tick={{ fontSize: 12 }} tickFormatter={(value) => formatCurrency(value)} />
-                <Tooltip content={<CustomTooltip />} />
-                <Line
-                  type="monotone"
-                  dataKey="netWorth"
-                  stroke="#8884d8"
-                  strokeWidth={2}
-                  dot={false}
-                  name="Portfolio Growth (Historical APY)"
-                />
-                <Line
-                  type="monotone"
-                  dataKey="netWorthWithStaking"
-                  stroke="#22c55e"
-                  strokeWidth={2}
-                  strokeDasharray="5 5"
-                  dot={false}
-                  name={`Portfolio + Staking (+${data?.netStakingAPY?.toFixed(2) || 0}% APY)`}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
+          {projectionLoading ? (
+            <Skeleton className="h-80 w-full" />
+          ) : (
+            <div className="h-80">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+                  <XAxis
+                    dataKey="date"
+                    tick={{ fontSize: 12 }}
+                    tickFormatter={(value) => {
+                      const date = new Date(value);
+                      return `${date.getMonth() + 1}/${date.getDate()}`;
+                    }}
+                  />
+                  <YAxis tick={{ fontSize: 12 }} tickFormatter={(value) => formatCurrency(value)} />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Line
+                    type="monotone"
+                    dataKey="netWorth"
+                    stroke="#3b82f6"
+                    strokeWidth={2}
+                    dot={false}
+                    name="Historical Portfolio Value"
+                  />
+                  {data.liquidStakingPositions && data.liquidStakingPositions.length > 0 && (
+                    <Line
+                      type="monotone"
+                      dataKey="projectedNetWorth"
+                      stroke="#22c55e"
+                      strokeWidth={2}
+                      dot={false}
+                      name={`Projected w/ Staking (${data?.netStakingAPY?.toFixed(2) || 0}% net APY)`}
+                    />
+                  )}
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          )}
 
           {/* Legend */}
           <div className="flex items-center justify-center gap-6 text-sm">
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-              <span>Historical & Projected</span>
+              <span>Historical Portfolio Value</span>
             </div>
-            <div className="flex items-center gap-2">
-              <div
-                className="w-3 h-3 bg-red-500 rounded-full"
-                style={{
-                  background:
-                    'repeating-linear-gradient(90deg, #ff6b6b 0px, #ff6b6b 3px, transparent 3px, transparent 6px)',
-                }}
-              ></div>
-              <span>APY Overlay</span>
-            </div>
+            {data.liquidStakingPositions && data.liquidStakingPositions.length > 0 && (
+              <div className="flex items-center gap-2">
+                <div
+                  className="w-3 h-3 bg-green-500 rounded-full"
+                  style={{
+                    background:
+                      'repeating-linear-gradient(90deg, #22c55e 0px, #22c55e 3px, transparent 3px, transparent 6px)',
+                  }}
+                ></div>
+                <span>Projected w/ Staking ({data?.netStakingAPY?.toFixed(2) || 0}% net APY)</span>
+              </div>
+            )}
           </div>
         </div>
       </CardContent>
