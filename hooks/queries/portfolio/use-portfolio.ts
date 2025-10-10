@@ -34,10 +34,8 @@ export const usePortfolio = (address: string | undefined, chain: ChainType) => {
   const { data, isLoading, error, mutate } = useSWR<Portfolio>(
     shouldFetch ? `/api/portfolio/${chainAddress}?chain=${effectiveChain}` : null,
     async (url: string) => {
-      console.log('[Portfolio Debug] Fetching from URL:', url);
       const response = await fetch(url);
       const json = await response.json();
-      console.log('[Portfolio Debug] API Response:', json);
       return json;
     },
   );
