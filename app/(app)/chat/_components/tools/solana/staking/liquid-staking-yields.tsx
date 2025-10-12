@@ -4,8 +4,6 @@ import { useChat } from '@/app/(app)/chat/_contexts/chat';
 import ToolCard from '../../tool-card';
 import { Card, Button } from '@/components/ui';
 import { SOLANA_STAKING_POOL_DATA_STORAGE_KEY } from '@/lib/constants';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { capitalizeWords, getConfidenceLabel } from '@/lib/string-utils';
 import PoolDetailsModal from './pool-details-modal';
@@ -69,7 +67,7 @@ const LiquidStakingYields: React.FC<{
   };
 
   return (
-    <TooltipProvider>
+    <>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4 mt-4">
         {body?.map((pool, index) => (
           <Card
@@ -133,30 +131,7 @@ const LiquidStakingYields: React.FC<{
                   <p className="font-semibold text-md">
                     {getConfidenceLabel(pool.predictions.binnedConfidence)}
                   </p>
-                  <div className="flex items-center gap-1">
-                    <p className="text-gray-600 text-xs dark:text-gray-400">APY Confidence</p>
-                    <Tooltip>
-                      <TooltipTrigger>
-                        <Info className="h-4 w-4 text-neutral-400" />
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <div className="max-w-xs">
-                          <p className="font-medium mb-1">
-                            APY Prediction: {pool.predictions.predictedClass} -{' '}
-                            {pool.predictions.predictedProbability}% confidence
-                          </p>
-                          <p className="text-xs">
-                            Model Confidence:{' '}
-                            {getConfidenceLabel(pool.predictions.binnedConfidence)}
-                          </p>
-                          <p className="text-xs mt-1">
-                            DeFiLlama&apos;s confidence level in their 4-week APY prediction, based
-                            on historical data accuracy and market conditions.
-                          </p>
-                        </div>
-                      </TooltipContent>
-                    </Tooltip>
-                  </div>
+                  <p className="text-gray-600 text-xs dark:text-gray-400">APY Confidence</p>
                 </div>
               )}
               <div className="flex flex-col items-center">
@@ -189,7 +164,7 @@ const LiquidStakingYields: React.FC<{
           setSelectedPool(null);
         }}
       />
-    </TooltipProvider>
+    </>
   );
 };
 
