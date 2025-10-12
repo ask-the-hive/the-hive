@@ -235,7 +235,8 @@ const PortfolioProjection: React.FC<Props> = ({ address }) => {
       // Calculate non-staking portfolio value (base portfolio minus staking positions)
       const nonStakingValue = currentNetWorth - totalStakingValue;
 
-      for (let i = 1; i <= days; i++) {
+      // Start with current day (day 1), then generate one data point per week
+      for (let i = 1; i <= days; i = i === 1 ? 7 : i + 7) {
         const projectionDate = new Date(lastHistoricalDate);
         projectionDate.setDate(projectionDate.getDate() + i);
 
@@ -245,6 +246,23 @@ const PortfolioProjection: React.FC<Props> = ({ address }) => {
           totalStakingValue * (Math.pow(1 + netStakingAPY / 100, daysFromNow / 365) - 1);
 
         // Total projected value = non-staking value + original staking value + staking gains
+        const projectedValue = nonStakingValue + totalStakingValue + stakingGains;
+
+        projectionData.push({
+          date: projectionDate.toLocaleDateString(),
+          netWorth: projectedValue,
+          type: 'Projection',
+        });
+      }
+
+      // Add final data point at the exact end date if it wasn't included
+      const lastDataPoint = projectionData[projectionData.length - 1];
+      if (lastDataPoint && days > 1 && days % 7 !== 1) {
+        const projectionDate = new Date(lastHistoricalDate);
+        projectionDate.setDate(projectionDate.getDate() + days);
+
+        const stakingGains =
+          totalStakingValue * (Math.pow(1 + netStakingAPY / 100, days / 365) - 1);
         const projectedValue = nonStakingValue + totalStakingValue + stakingGains;
 
         projectionData.push({
@@ -439,7 +457,7 @@ const PortfolioProjection: React.FC<Props> = ({ address }) => {
                   <Line
                     type="monotone"
                     dataKey="netWorth"
-                    stroke="#3b82f6"
+                    stroke="#D19900"
                     strokeWidth={2}
                     dot={false}
                     name="Historical Portfolio Value"
@@ -448,8 +466,9 @@ const PortfolioProjection: React.FC<Props> = ({ address }) => {
                     <Line
                       type="monotone"
                       dataKey="projectedNetWorth"
-                      stroke="#22c55e"
+                      stroke="#D19900"
                       strokeWidth={2}
+                      strokeDasharray="5 5"
                       dot={false}
                       name={`Projected w/ Staking (${data?.netStakingAPY?.toFixed(2) || 0}% net APY)`}
                     />
@@ -462,21 +481,25 @@ const PortfolioProjection: React.FC<Props> = ({ address }) => {
           {/* Legend */}
           <div className="flex items-center justify-center gap-6 text-sm">
             <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+              <div className="w-3 h-3 bg-brand-600 rounded-full"></div>
               <span>Historical Portfolio Value</span>
             </div>
-            {data.liquidStakingPositions && data.liquidStakingPositions.length > 0 && (
-              <div className="flex items-center gap-2">
-                <div
-                  className="w-3 h-3 bg-green-500 rounded-full"
-                  style={{
-                    background:
-                      'repeating-linear-gradient(90deg, #22c55e 0px, #22c55e 3px, transparent 3px, transparent 6px)',
-                  }}
-                ></div>
-                <span>Projected w/ Staking ({data?.netStakingAPY?.toFixed(2) || 0}% net APY)</span>
-              </div>
-            )}
+            {data.liquidStakingPositions &&
+              data.liquidStakingPositions.length > 0 &&
+              (data?.netStakingAPY || 0) > 0 && (
+                <div className="flex items-center gap-2">
+                  <div
+                    className="w-3 h-3 bg-brand-600 rounded-full"
+                    style={{
+                      background:
+                        'repeating-linear-gradient(90deg, #d19900 0px, #d19900 3px, transparent 3px, transparent 6px)',
+                    }}
+                  ></div>
+                  <span>
+                    Projected w/ Staking ({data?.netStakingAPY?.toFixed(2) || 0}% net APY)
+                  </span>
+                </div>
+              )}
           </div>
         </div>
       </CardContent>
