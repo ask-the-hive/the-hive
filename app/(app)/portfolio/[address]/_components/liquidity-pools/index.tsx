@@ -24,7 +24,7 @@ import { Portfolio } from '@/services/birdeye/types';
 
 interface Props {
   stakingPositions: LiquidStakingPosition[] | null;
-  portfolio: Portfolio;
+  portfolio: Portfolio | undefined;
   portfolioLoading: boolean;
   onRefresh: () => void;
 }
