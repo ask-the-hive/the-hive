@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 
 import Header from './_components/header';
@@ -20,15 +20,59 @@ import {
 import { Button } from '@/components/ui/button';
 import { ChevronDown } from 'lucide-react';
 import PortfolioProjection from './_components/portfolio-projection';
+import { getAllLiquidStakingPositions } from '@/services/liquid-staking/get-all';
+import { LiquidStakingPosition } from '@/db/types';
+import { usePortfolio } from '@/hooks';
 
 const Portfolio = ({ params }: { params: Promise<{ address: string }> }) => {
   // Unwrap params using React.use()
   const { address } = React.use(params);
   const router = useRouter();
   const { currentChain, setCurrentChain, walletAddresses } = useChain();
+  const [stakingPositions, setStakingPositions] = useState<LiquidStakingPosition[] | null>(null);
+
+  // Use the appropriate address for the current chain
+  const chainAddress =
+    currentChain === 'solana'
+      ? walletAddresses.solana || address
+      : currentChain === 'base'
+        ? walletAddresses.base || address
+        : walletAddresses.bsc || address;
+
+  // Fetch portfolio data
+  const {
+    data: portfolio,
+    isLoading: portfolioLoading,
+    mutate: refreshPortfolio,
+  } = usePortfolio(chainAddress, currentChain);
+
+  // Fetch staking positions
+  const fetchStakingPositions = useCallback(async () => {
+    if (currentChain !== 'solana') {
+      setStakingPositions([]);
+      return;
+    }
+
+    try {
+      const positions = await getAllLiquidStakingPositions(address, currentChain);
+      setStakingPositions(positions);
+    } catch (error) {
+      console.error('Error fetching staking positions:', error);
+      setStakingPositions([]);
+    }
+  }, [address, currentChain]);
+
+  const handleRefresh = () => {
+    fetchStakingPositions();
+    refreshPortfolio();
+  };
+
+  useEffect(() => {
+    fetchStakingPositions();
+  }, [fetchStakingPositions]);
 
   // Auto-switch to BSC if no Solana wallet is connected
-  React.useEffect(() => {
+  useEffect(() => {
     const hasSolana = !!walletAddresses.solana;
     const hasBsc = !!walletAddresses.bsc;
 
@@ -39,7 +83,7 @@ const Portfolio = ({ params }: { params: Promise<{ address: string }> }) => {
   }, [currentChain, walletAddresses, setCurrentChain]);
 
   // Update URL when chain changes to show correct wallet address
-  React.useEffect(() => {
+  useEffect(() => {
     const newAddress =
       currentChain === 'solana'
         ? walletAddresses.solana
@@ -118,9 +162,19 @@ const Portfolio = ({ params }: { params: Promise<{ address: string }> }) => {
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
-        <PortfolioProjection address={address} />
-        <Tokens address={address} />
-        <LiquidityPools address={address} />
+        <PortfolioProjection address={address} stakingPositions={stakingPositions} />
+        <Tokens
+          stakingPositions={stakingPositions}
+          portfolio={portfolio}
+          portfolioLoading={portfolioLoading}
+          onRefresh={handleRefresh}
+        />
+        <LiquidityPools
+          stakingPositions={stakingPositions}
+          portfolio={portfolio}
+          portfolioLoading={portfolioLoading}
+          onRefresh={handleRefresh}
+        />
         <Transactions address={address} />
       </div>
     </SwapModalProvider>

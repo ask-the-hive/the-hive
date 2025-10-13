@@ -22,7 +22,6 @@ import {
 } from '@/components/ui/select';
 import { useChain } from '@/app/_contexts/chain-context';
 import { Skeleton } from '@/components/ui/skeleton';
-import { getAllLiquidStakingPositions } from '@/services/liquid-staking/get-all';
 import type { LiquidStakingPosition } from '@/db/types';
 
 interface ProjectionData {
@@ -45,6 +44,7 @@ interface ProjectionData {
 
 interface Props {
   address: string;
+  stakingPositions: LiquidStakingPosition[] | null;
 }
 
 const Wrapper: React.FC<{
@@ -105,7 +105,7 @@ const calculateNetStakingAPY = (positions: LiquidStakingPosition[]): number => {
   return totalValue > 0 ? weightedAPY / totalValue : 0;
 };
 
-const PortfolioProjection: React.FC<Props> = ({ address }) => {
+const PortfolioProjection: React.FC<Props> = ({ address, stakingPositions }) => {
   const { currentChain } = useChain();
   const [data, setData] = useState<ProjectionData | null>(null);
   const [, setLoading] = useState(false);
@@ -120,53 +120,28 @@ const PortfolioProjection: React.FC<Props> = ({ address }) => {
     setError(null);
 
     try {
-      // Fetch portfolio projection, liquid staking positions, and current portfolio in parallel
-      const [projectionResponse, liquidStakingPositions, currentPortfolioResponse] =
-        await Promise.all([
-          fetch(`/api/portfolio/projection?wallet=${address}&days=${days}&chain=${currentChain}`),
-          getAllLiquidStakingPositions(address),
-          fetch(`/api/portfolio/${address}?chain=${currentChain}`),
-        ]);
+      // Fetch portfolio projection
+      const projectionResponse = await fetch(
+        `/api/portfolio/projection?wallet=${address}&days=${days}&chain=${currentChain}`,
+      );
 
       if (!projectionResponse.ok) {
         throw new Error(`HTTP error! status: ${projectionResponse.status}`);
       }
 
       const projectionData = await projectionResponse.json();
-      const currentPortfolio = currentPortfolioResponse.ok
-        ? await currentPortfolioResponse.json()
-        : null;
-
-      // Enhance liquid staking positions with current USD values
-      const enhancedLiquidStakingPositions =
-        liquidStakingPositions?.map((position) => {
-          // Find the matching token in current portfolio to get current price
-          const portfolioToken = currentPortfolio?.items?.find(
-            (item: any) =>
-              item.symbol === position.lstToken.symbol || item.address === position.lstToken.id,
-          );
-
-          const currentPriceUsd = portfolioToken?.priceUsd || 0;
-          const currentUsdValue = position.amount * currentPriceUsd;
-
-          return {
-            ...position,
-            currentUsdValue,
-            currentPriceUsd,
-          };
-        }) || [];
 
       // Calculate net APY from liquid staking positions
-      const netStakingAPY = calculateNetStakingAPY(enhancedLiquidStakingPositions || []);
+      const netStakingAPY = calculateNetStakingAPY(stakingPositions || []);
 
       // Add staking APY and positions data to the data
       const enhancedData = {
         ...projectionData,
         netStakingAPY,
-        liquidStakingPositions: enhancedLiquidStakingPositions,
+        liquidStakingPositions: stakingPositions || [],
       };
 
-      setHasStakingPositions(enhancedLiquidStakingPositions.length > 0);
+      setHasStakingPositions((stakingPositions || []).length > 0);
       setData(enhancedData);
     } catch (err) {
       console.error('Error fetching portfolio projection:', err);
@@ -177,7 +152,7 @@ const PortfolioProjection: React.FC<Props> = ({ address }) => {
         setInitialLoading(false);
       }
     }
-  }, [address, days, currentChain, initialLoading]);
+  }, [address, days, currentChain, initialLoading, stakingPositions]);
 
   useEffect(() => {
     if (address) {
@@ -317,9 +292,9 @@ const PortfolioProjection: React.FC<Props> = ({ address }) => {
     return null;
   };
 
-  if (initialLoading) {
+  if (initialLoading || stakingPositions === null) {
     return (
-      <Wrapper hasStakingPositions={hasStakingPositions} loading={initialLoading}>
+      <Wrapper loading={initialLoading || stakingPositions === null} hasStakingPositions={false}>
         <Skeleton className="h-64 w-full" />
       </Wrapper>
     );

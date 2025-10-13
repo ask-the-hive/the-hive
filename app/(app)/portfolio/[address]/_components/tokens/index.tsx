@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { Coins } from 'lucide-react';
 import {
@@ -15,72 +16,38 @@ import {
   Card,
 } from '@/components/ui';
 import { useSwapModal } from '../../_contexts/use-swap-modal';
-import { usePortfolio } from '@/hooks';
 import { useChain } from '@/app/_contexts/chain-context';
 import { cn } from '@/lib/utils';
 import { formatCrypto, formatUSD } from '@/lib/format';
-import { getAllLiquidStakingPositions } from '@/services/liquid-staking/get-all';
 import type { LiquidStakingPosition } from '@/db/types';
+import { Portfolio } from '@/services/birdeye/types';
 
 interface Props {
-  address: string;
+  stakingPositions: LiquidStakingPosition[] | null;
+  portfolio: Portfolio | undefined;
+  portfolioLoading: boolean;
+  onRefresh: () => void;
 }
 
-const Tokens: React.FC<Props> = ({ address }) => {
-  const { currentChain, walletAddresses } = useChain();
-  const [liquidStakingPositions, setLiquidStakingPositions] = useState<LiquidStakingPosition[]>([]);
-  const [isLoadingPositions, setIsLoadingPositions] = useState(true);
-
-  // Use the appropriate address for the current chain
-  const chainAddress =
-    currentChain === 'solana' ? walletAddresses.solana || address : walletAddresses.bsc || address;
-
-  const {
-    data: portfolio,
-    isLoading,
-    mutate: refreshPortfolio,
-  } = usePortfolio(chainAddress, currentChain);
+const Tokens: React.FC<Props> = ({ stakingPositions, portfolio, portfolioLoading, onRefresh }) => {
+  const router = useRouter();
+  const { currentChain } = useChain();
 
   const { onOpen } = useSwapModal();
 
-  // Fetch liquid staking positions
-  useEffect(() => {
-    let canceled = false;
-
-    const fetchPositions = async () => {
-      try {
-        setIsLoadingPositions(true);
-        const data = await getAllLiquidStakingPositions(address);
-        if (!canceled) {
-          setLiquidStakingPositions(data);
-        }
-      } catch (error) {
-        console.error('Error fetching liquid staking positions:', error);
-        if (!canceled) {
-          setLiquidStakingPositions([]);
-        }
-      } finally {
-        if (!canceled) {
-          setIsLoadingPositions(false);
-        }
-      }
-    };
-
-    fetchPositions();
-
-    return () => {
-      canceled = true;
-    };
-  }, [address]);
-
   // Helper function to handle successful swaps
   const handleSwapSuccess = () => {
-    refreshPortfolio();
+    onRefresh?.();
   };
 
   // Helper functions to open buy/sell modals
   const openBuy = (tokenAddress: string) => onOpen('buy', tokenAddress, handleSwapSuccess);
   const openSell = (tokenAddress: string) => onOpen('sell', tokenAddress, handleSwapSuccess);
+  const startStaking = () => {
+    // Navigate to new chat with initial message as query param
+    const message = encodeURIComponent('Find me the best staking yields');
+    router.push(`/chat?message=${message}`);
+  };
 
   // Filter out tokens that have liquid staking positions
   const filteredTokens =
@@ -91,10 +58,10 @@ const Tokens: React.FC<Props> = ({ address }) => {
 
       if (!hasBalance || !hasRequiredData) return false;
 
-      if (liquidStakingPositions.length === 0) return true;
+      if ((stakingPositions || []).length === 0) return true;
 
       // Check if this token has a liquid staking position
-      const hasLiquidStakingPosition = liquidStakingPositions.some(
+      const hasLiquidStakingPosition = (stakingPositions || []).some(
         (position) => position.lstToken.symbol.toLowerCase() === token.symbol.toLowerCase(),
       );
 
@@ -104,14 +71,14 @@ const Tokens: React.FC<Props> = ({ address }) => {
 
   // Calculate adjusted portfolio total by subtracting liquid staking token values
   const adjustedPortfolioTotal = useMemo(() => {
-    if (!portfolio?.totalUsd || liquidStakingPositions.length === 0) {
+    if (!portfolio?.totalUsd || (stakingPositions || []).length === 0) {
       return portfolio?.totalUsd || 0;
     }
 
     // Calculate total value of liquid staking tokens to subtract
     const liquidStakingTokensValue =
       portfolio.items?.reduce((total, token) => {
-        const hasLiquidStakingPosition = liquidStakingPositions.some(
+        const hasLiquidStakingPosition = (stakingPositions || []).some(
           (position) => position.lstToken.symbol.toLowerCase() === token.symbol.toLowerCase(),
         );
 
@@ -123,7 +90,7 @@ const Tokens: React.FC<Props> = ({ address }) => {
       }, 0) || 0;
 
     return portfolio.totalUsd - liquidStakingTokensValue;
-  }, [portfolio?.totalUsd, portfolio?.items, liquidStakingPositions]);
+  }, [portfolio?.totalUsd, portfolio?.items, stakingPositions]);
 
   return (
     <div className="flex flex-col gap-4">
@@ -136,7 +103,7 @@ const Tokens: React.FC<Props> = ({ address }) => {
           <p className="text-lg font-bold">{formatUSD(adjustedPortfolioTotal)}</p>
         )}
       </div>
-      {isLoading || isLoadingPositions ? (
+      {portfolioLoading || stakingPositions === null ? (
         <Skeleton className="h-64 w-full" />
       ) : portfolio && portfolio.items && filteredTokens.length > 0 ? (
         <Card>
@@ -169,8 +136,12 @@ const Tokens: React.FC<Props> = ({ address }) => {
                     </div>
                   </TableCell>
                   <TableCell>
-                    {formatCrypto(token.balance, token.symbol, token.decimals)} /{' '}
-                    {formatUSD(token.valueUsd)}
+                    <div className="flex flex-col">
+                      <p className="font-medium">
+                        {formatCrypto(token.balance, token.symbol, token.decimals)}
+                      </p>
+                      <p className="text-sm text-muted-foreground">{formatUSD(token.valueUsd)}</p>
+                    </div>
                   </TableCell>
                   <TableCell>{formatUSD(token.priceUsd)}</TableCell>
                   <TableCell>
@@ -195,6 +166,19 @@ const Tokens: React.FC<Props> = ({ address }) => {
                       >
                         Sell
                       </Button>
+                      {currentChain === 'solana' &&
+                        token.address === 'So11111111111111111111111111111111111111111' && (
+                          <Button
+                            size="sm"
+                            onClick={startStaking}
+                            className={cn(
+                              'bg-blue-100 hover:bg-blue-200 text-blue-800 border border-blue-200',
+                              'dark:bg-blue-950/30 dark:hover:bg-blue-900/50 dark:text-blue-300 dark:border-blue-800/50',
+                            )}
+                          >
+                            Stake
+                          </Button>
+                        )}
                     </div>
                   </TableCell>
                 </TableRow>
