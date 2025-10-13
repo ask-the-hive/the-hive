@@ -254,9 +254,6 @@ export const SwapModalProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     onClose();
     setIsSuccessModalOpen(true);
 
-    // Call the original success handler to refresh portfolio
-    console.log('handleSuccess', handleSuccess);
-    debugger;
     handleSuccess?.();
   };
 

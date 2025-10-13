@@ -292,9 +292,9 @@ const PortfolioProjection: React.FC<Props> = ({ address, stakingPositions }) => 
     return null;
   };
 
-  if (initialLoading) {
+  if (initialLoading || stakingPositions === null) {
     return (
-      <Wrapper hasStakingPositions={hasStakingPositions} loading={initialLoading}>
+      <Wrapper loading={initialLoading || stakingPositions === null} hasStakingPositions={false}>
         <Skeleton className="h-64 w-full" />
       </Wrapper>
     );

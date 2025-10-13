@@ -36,7 +36,6 @@ export async function getAllLiquidStakingPositions(
       );
 
       const rawBalance = portfolioToken?.balance;
-      debugger;
       // If current balance is 0 (user sold all their LST), delete the position
       // Only delete if position was created more than 5 minutes ago to avoid race conditions
       const fiveMinutesAgo = Date.now() - 2 * 60 * 1000;
@@ -47,6 +46,9 @@ export async function getAllLiquidStakingPositions(
         (rawBalance === null || rawBalance === undefined || rawBalance === 0) &&
         isOlderThan2Minutes
       ) {
+        console.log('Deleting liquid staking position for ', position.lstToken.symbol);
+        console.log('Raw balance', rawBalance);
+        console.log('Is older than 2 minutes', isOlderThan2Minutes);
         try {
           await deleteLiquidStakingPosition(position.id, position.walletAddress);
           console.log(
