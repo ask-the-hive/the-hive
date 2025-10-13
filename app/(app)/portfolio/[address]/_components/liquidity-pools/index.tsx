@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React from 'react';
 import { Droplet, Info } from 'lucide-react';
 import Image from 'next/image';
 
@@ -14,60 +14,44 @@ import {
 } from '@/components/ui';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useChain } from '@/app/_contexts/chain-context';
-import { usePortfolio } from '@/hooks';
-import { getAllLiquidStakingPositions } from '@/services/liquid-staking/get-all';
-import { getLiquidStakingPool } from '@/services/liquid-staking/get-pool';
-import { deleteLiquidStakingPosition } from '@/services/liquid-staking/delete';
 import { LiquidStakingPosition } from '@/db/types';
 import { formatFiat, formatCrypto, formatCompactNumber, formatUSD } from '@/lib/format';
 import { capitalizeWords, getConfidenceLabel } from '@/lib/string-utils';
 import { Card } from '@/components/ui/card';
 import { useSwapModal } from '../../_contexts/use-swap-modal';
 import { cn } from '@/lib/utils';
+import { Portfolio } from '@/services/birdeye/types';
 
 interface Props {
-  address: string;
+  stakingPositions: LiquidStakingPosition[] | null;
+  portfolio: Portfolio;
+  portfolioLoading: boolean;
+  onRefresh: () => void;
 }
 
 interface PoolTooltipProps {
   poolData: any;
-  loading: boolean;
 }
 
-const PoolTooltip: React.FC<PoolTooltipProps> = ({ poolData, loading }) => {
+const PoolTooltip: React.FC<PoolTooltipProps> = ({ poolData }) => {
   return (
     <TooltipContent className="max-w-xs">
       <div className="grid grid-cols-2 gap-2 text-xs">
-        <div className="font-medium">Protocol:</div>
-        <div>{poolData.project || 'Unknown'}</div>
-
         <div className="font-medium">APY:</div>
-        <div className="text-green-600">
-          {loading ? <Skeleton className="w-12 h-3" /> : `${poolData.yield?.toFixed(2) || '0.00'}%`}
-        </div>
+        <div className="text-green-600">{`${poolData.yield?.toFixed(2) || '0.00'}%`}</div>
         <div className="font-medium">TVL:</div>
-        <div>
-          {loading ? <Skeleton className="w-16 h-3" /> : formatCompactNumber(poolData.tvlUsd || 0)}
-        </div>
+        <div>{formatCompactNumber(poolData.tvlUsd || 0)}</div>
 
         {poolData.predictions && (
           <>
             <div className="font-medium">APY Confidence:</div>
             <div className="text-green-600">
-              {loading ? (
-                <Skeleton className="w-12 h-3" />
-              ) : (
-                getConfidenceLabel(poolData.predictions.binnedConfidence)
-              )}
+              {getConfidenceLabel(poolData.predictions.binnedConfidence)}
             </div>
 
             <div className="font-medium">Prediction:</div>
             <div>
-              {loading ? (
-                <Skeleton className="w-20 h-3" />
-              ) : (
-                `${poolData.predictions.predictedClass} (${poolData.predictions.predictedProbability}%)`
-              )}
+              {`${poolData.predictions.predictedClass} (${poolData.predictions.predictedProbability}%)`}
             </div>
           </>
         )}
@@ -92,146 +76,31 @@ const PoolTooltip: React.FC<PoolTooltipProps> = ({ poolData, loading }) => {
   );
 };
 
-const LiquidityPools: React.FC<Props> = ({ address }) => {
+const LiquidityPools: React.FC<Props> = ({
+  stakingPositions,
+  portfolio,
+  portfolioLoading,
+  onRefresh,
+}) => {
   const { currentChain } = useChain();
-  const [initialLoading, setInitialLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [positions, setPositions] = useState<LiquidStakingPosition[] | null>(null);
-  const [poolDataLoading, setPoolDataLoading] = useState(false);
 
   const { onOpen } = useSwapModal();
 
-  // Get portfolio data to fetch current token balances
-  const chainAddress = currentChain === 'solana' ? address : undefined;
-  const { data: portfolio, isLoading: portfolioLoading } = usePortfolio(chainAddress, currentChain);
-
-  // Fetch fresh pool data for all positions and update positions state
-  const fetchFreshPoolData = useCallback(
-    async (positions: LiquidStakingPosition[]) => {
-      setPoolDataLoading(true);
-
-      const promises = positions.map(async (position) => {
-        try {
-          // Check if user still has balance in this LST
-          const portfolioToken = portfolio?.items?.find(
-            (item) =>
-              item.address === position.lstToken.id || item.symbol === position.lstToken.symbol,
-          );
-
-          const rawBalance = portfolioToken?.balance;
-          // If current balance is 0 (user sold all their LST), delete the position
-          // Only delete if position was created more than 5 minutes ago to avoid race conditions
-          const fiveMinutesAgo = Date.now() - 5 * 60 * 1000;
-          const isOlderThan5Minutes =
-            position.createdAt && new Date(position.createdAt).getTime() < fiveMinutesAgo;
-
-          if (
-            (rawBalance === null || rawBalance === undefined || rawBalance === 0) &&
-            // Only delete if position was created more than 5 minutes ago to avoid race conditions
-            isOlderThan5Minutes
-          ) {
-            try {
-              await deleteLiquidStakingPosition(position.id, position.walletAddress);
-              console.log(
-                `Deleted liquid staking position for ${position.lstToken.symbol} (zero balance)`,
-              );
-              return null; // Return null to filter out this position
-            } catch (deleteError) {
-              console.error(
-                `Failed to delete position for ${position.lstToken.symbol}:`,
-                deleteError,
-              );
-              // If deletion fails, return the original position
-              return null;
-            }
-          }
-
-          const freshData = await getLiquidStakingPool(
-            position.poolData.project,
-            position.lstToken.symbol,
-          );
-
-          // Return position with updated pool data (merge with existing to preserve missing fields)
-          return {
-            ...position,
-            poolData: {
-              ...position.poolData,
-              ...freshData,
-            },
-          };
-        } catch (err) {
-          console.error(
-            `Failed to fetch fresh pool data for ${position.poolData.project}-${position.lstToken.symbol}:`,
-            err,
-          );
-          // Return original position if fetch fails
-          return position;
-        }
-      });
-
-      const results = await Promise.allSettled(promises);
-      const updatedPositions = results
-        .map((result, index) => (result.status === 'fulfilled' ? result.value : positions[index]))
-        .filter((position): position is LiquidStakingPosition => position !== null); // Filter out null positions
-
-      setPositions(updatedPositions);
-      setPoolDataLoading(false);
-    },
-    [portfolio],
-  );
-
-  let canceled = false;
-  const run = useCallback(async () => {
-    // Only show loading skeleton on initial load
-    if (positions === null) {
-      setInitialLoading(true);
-    }
-    setError(null);
-    try {
-      debugger;
-      const data = await getAllLiquidStakingPositions(address);
-      if (!canceled) {
-        setPositions(data || []);
-        // Fetch fresh pool data for all positions
-        if (data && data.length > 0) {
-          fetchFreshPoolData(data);
-        }
-      }
-    } catch (e) {
-      if (!canceled) setError(e instanceof Error ? e.message : 'Failed to load positions');
-    } finally {
-      if (!canceled) {
-        setInitialLoading(false);
-      }
-    }
-  }, [address, fetchFreshPoolData, canceled, positions]);
-
-  const openSell = (tokenAddress: string) => onOpen('sell', tokenAddress, run, true);
-
-  useEffect(() => {
-    if (currentChain !== 'solana') return;
-
-    run();
-    return () => {
-      canceled = true;
-    };
-  }, [address, currentChain, fetchFreshPoolData, initialLoading]);
+  const openSell = (tokenAddress: string) => onOpen('sell', tokenAddress, onRefresh, true);
 
   if (currentChain !== 'solana') return null;
 
-  // Only show skeleton on initial load, not when refreshing
-  if (initialLoading || (portfolioLoading && !positions)) {
+  // Show skeleton while loading
+  if (stakingPositions === null || portfolioLoading) {
     return <Skeleton className="h-64 w-full" />;
   }
 
-  if (error) return <p className="text-sm text-red-600">{error}</p>;
-
-  if (!positions?.length) {
+  if (!stakingPositions?.length) {
     return null; // Don't show anything if no positions
   }
 
   // Calculate total value of liquid staking positions
-  const totalValue = positions.reduce((sum, pos) => {
+  const totalValue = stakingPositions.reduce((sum, pos) => {
     const portfolioToken = portfolio?.items?.find(
       (item) => item.address === pos.lstToken.id || item.symbol === pos.lstToken.symbol,
     );
@@ -263,7 +132,7 @@ const LiquidityPools: React.FC<Props> = ({ address }) => {
             </TableRow>
           </TableHeader>
           <TableBody className="max-h-96 overflow-y-auto">
-            {positions.map((position) => {
+            {stakingPositions.map((position) => {
               // Find current balance from portfolio
               const portfolioToken = portfolio?.items?.find(
                 (item) =>
@@ -334,11 +203,7 @@ const LiquidityPools: React.FC<Props> = ({ address }) => {
                   </TableCell>
                   <TableCell>
                     <span className="text-green-600 font-medium">
-                      {poolDataLoading ? (
-                        <Skeleton className="w-12 h-4" />
-                      ) : (
-                        `${position.poolData.yield.toFixed(2)}%`
-                      )}
+                      {`${position.poolData.yield.toFixed(2)}%`}
                     </span>
                   </TableCell>
                   <TableCell className="hidden md:table-cell">
@@ -351,7 +216,7 @@ const LiquidityPools: React.FC<Props> = ({ address }) => {
                           <TooltipTrigger asChild>
                             <Info className="w-3 h-3 text-muted-foreground cursor-help" />
                           </TooltipTrigger>
-                          <PoolTooltip poolData={position.poolData} loading={poolDataLoading} />
+                          <PoolTooltip poolData={position.poolData} />
                         </Tooltip>
                       </TooltipProvider>
                     </div>
