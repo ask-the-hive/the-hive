@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { Coins } from 'lucide-react';
 import {
@@ -27,6 +28,7 @@ interface Props {
 }
 
 const Tokens: React.FC<Props> = ({ address }) => {
+  const router = useRouter();
   const { currentChain, walletAddresses } = useChain();
   const [liquidStakingPositions, setLiquidStakingPositions] = useState<LiquidStakingPosition[]>([]);
   const [isLoadingPositions, setIsLoadingPositions] = useState(true);
@@ -81,6 +83,11 @@ const Tokens: React.FC<Props> = ({ address }) => {
   // Helper functions to open buy/sell modals
   const openBuy = (tokenAddress: string) => onOpen('buy', tokenAddress, handleSwapSuccess);
   const openSell = (tokenAddress: string) => onOpen('sell', tokenAddress, handleSwapSuccess);
+  const startStaking = () => {
+    // Navigate to new chat with initial message as query param
+    const message = encodeURIComponent('Find me the best staking yields');
+    router.push(`/chat?message=${message}`);
+  };
 
   // Filter out tokens that have liquid staking positions
   const filteredTokens =
@@ -124,7 +131,7 @@ const Tokens: React.FC<Props> = ({ address }) => {
 
     return portfolio.totalUsd - liquidStakingTokensValue;
   }, [portfolio?.totalUsd, portfolio?.items, liquidStakingPositions]);
-
+  console.log(filteredTokens);
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
@@ -169,8 +176,12 @@ const Tokens: React.FC<Props> = ({ address }) => {
                     </div>
                   </TableCell>
                   <TableCell>
-                    {formatCrypto(token.balance, token.symbol, token.decimals)} /{' '}
-                    {formatUSD(token.valueUsd)}
+                    <div className="flex flex-col">
+                      <p className="font-medium">
+                        {formatCrypto(token.balance, token.symbol, token.decimals)}
+                      </p>
+                      <p className="text-sm text-muted-foreground">{formatUSD(token.valueUsd)}</p>
+                    </div>
                   </TableCell>
                   <TableCell>{formatUSD(token.priceUsd)}</TableCell>
                   <TableCell>
@@ -195,6 +206,19 @@ const Tokens: React.FC<Props> = ({ address }) => {
                       >
                         Sell
                       </Button>
+                      {currentChain === 'solana' &&
+                        token.address === 'So11111111111111111111111111111111111111111' && (
+                          <Button
+                            size="sm"
+                            onClick={startStaking}
+                            className={cn(
+                              'bg-blue-100 hover:bg-blue-200 text-blue-800 border border-blue-200',
+                              'dark:bg-blue-950/30 dark:hover:bg-blue-900/50 dark:text-blue-300 dark:border-blue-800/50',
+                            )}
+                          >
+                            Stake
+                          </Button>
+                        )}
                     </div>
                   </TableCell>
                 </TableRow>

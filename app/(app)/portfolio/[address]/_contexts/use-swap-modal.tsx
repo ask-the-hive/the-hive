@@ -34,7 +34,12 @@ interface SwapModalContextType {
   isOpen: boolean;
   mode: SwapMode;
   tokenAddress: string;
-  onOpen: (mode: SwapMode, tokenAddress: string, handleSuccess?: () => void) => void;
+  onOpen: (
+    mode: SwapMode,
+    tokenAddress: string,
+    handleSuccess?: () => void,
+    defaultToNativeCurrency?: boolean,
+  ) => void;
   onClose: () => void;
   setSwapResult?: (result: SwapResult) => void;
 }
@@ -54,6 +59,7 @@ export const SwapModalProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [mode, setMode] = useState<SwapMode>('buy');
   const [tokenAddress, setTokenAddress] = useState('');
   const [token, setToken] = useState<Token | null>(null);
+  const [outputToken, setOutputToken] = useState<Token | null>(null);
   const [handleSuccess, setHandleSuccess] = useState<(() => void) | undefined>(undefined);
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
   const [swapSuccessData, setSwapSuccessData] = useState<SwapSuccessData | null>(null);
@@ -95,10 +101,20 @@ export const SwapModalProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     newMode: 'buy' | 'sell',
     newTokenAddress: string,
     newHandleSuccess?: () => void,
+    defaultToNativeCurrency?: boolean,
   ) => {
     // First clear existing states
     setToken(null);
-    setHandleSuccess(newHandleSuccess);
+    setOutputToken(null);
+    // Wrap the function in another function to prevent React from treating it as an updater
+    setHandleSuccess(() => newHandleSuccess);
+
+    // Set output token to native currency if requested
+    if (defaultToNativeCurrency && newMode === 'sell') {
+      const nativeToken =
+        currentChain === 'solana' ? solToken : currentChain === 'base' ? ethToken : null;
+      setOutputToken(nativeToken);
+    }
 
     try {
       const response = await fetch(`/api/token/${newTokenAddress}/metadata?chain=${currentChain}`);
@@ -203,6 +219,7 @@ export const SwapModalProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const onClose = () => {
     setIsOpen(false);
     setToken(null);
+    setOutputToken(null);
     setTokenAddress('');
     setHandleSuccess(undefined);
   };
@@ -238,6 +255,8 @@ export const SwapModalProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     setIsSuccessModalOpen(true);
 
     // Call the original success handler to refresh portfolio
+    console.log('handleSuccess', handleSuccess);
+    debugger;
     handleSuccess?.();
   };
 
@@ -323,7 +342,7 @@ export const SwapModalProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           </DialogHeader>
           <Swap
             initialInputToken={mode === 'buy' ? null : token}
-            initialOutputToken={mode === 'buy' ? token : null}
+            initialOutputToken={mode === 'buy' ? token : outputToken}
             inputLabel={mode === 'buy' ? 'Pay with' : 'Sell'}
             outputLabel={mode === 'buy' ? 'Buy' : 'Receive'}
             onSuccess={onSuccess}

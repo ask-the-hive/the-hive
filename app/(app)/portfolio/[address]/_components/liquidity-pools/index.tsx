@@ -10,6 +10,7 @@ import {
   TableHead,
   TableCell,
   Skeleton,
+  Button,
 } from '@/components/ui';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useChain } from '@/app/_contexts/chain-context';
@@ -21,6 +22,8 @@ import { LiquidStakingPosition } from '@/db/types';
 import { formatFiat, formatCrypto, formatCompactNumber, formatUSD } from '@/lib/format';
 import { capitalizeWords, getConfidenceLabel } from '@/lib/string-utils';
 import { Card } from '@/components/ui/card';
+import { useSwapModal } from '../../_contexts/use-swap-modal';
+import { cn } from '@/lib/utils';
 
 interface Props {
   address: string;
@@ -91,10 +94,12 @@ const PoolTooltip: React.FC<PoolTooltipProps> = ({ poolData, loading }) => {
 
 const LiquidityPools: React.FC<Props> = ({ address }) => {
   const { currentChain } = useChain();
-  const [loading, setLoading] = useState(true);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [positions, setPositions] = useState<LiquidStakingPosition[]>([]);
+  const [positions, setPositions] = useState<LiquidStakingPosition[] | null>(null);
   const [poolDataLoading, setPoolDataLoading] = useState(false);
+
+  const { onOpen } = useSwapModal();
 
   // Get portfolio data to fetch current token balances
   const chainAddress = currentChain === 'solana' ? address : undefined;
@@ -115,7 +120,16 @@ const LiquidityPools: React.FC<Props> = ({ address }) => {
 
           const rawBalance = portfolioToken?.balance;
           // If current balance is 0 (user sold all their LST), delete the position
-          if (rawBalance !== null && rawBalance !== undefined && rawBalance === 0) {
+          // Only delete if position was created more than 5 minutes ago to avoid race conditions
+          const fiveMinutesAgo = Date.now() - 5 * 60 * 1000;
+          const isOlderThan5Minutes =
+            position.createdAt && new Date(position.createdAt).getTime() < fiveMinutesAgo;
+
+          if (
+            (rawBalance === null || rawBalance === undefined || rawBalance === 0) &&
+            // Only delete if position was created more than 5 minutes ago to avoid race conditions
+            isOlderThan5Minutes
+          ) {
             try {
               await deleteLiquidStakingPosition(position.id, position.walletAddress);
               console.log(
@@ -166,42 +180,53 @@ const LiquidityPools: React.FC<Props> = ({ address }) => {
     [portfolio],
   );
 
+  let canceled = false;
+  const run = useCallback(async () => {
+    // Only show loading skeleton on initial load
+    if (positions === null) {
+      setInitialLoading(true);
+    }
+    setError(null);
+    try {
+      debugger;
+      const data = await getAllLiquidStakingPositions(address);
+      if (!canceled) {
+        setPositions(data || []);
+        // Fetch fresh pool data for all positions
+        if (data && data.length > 0) {
+          fetchFreshPoolData(data);
+        }
+      }
+    } catch (e) {
+      if (!canceled) setError(e instanceof Error ? e.message : 'Failed to load positions');
+    } finally {
+      if (!canceled) {
+        setInitialLoading(false);
+      }
+    }
+  }, [address, fetchFreshPoolData, canceled, positions]);
+
+  const openSell = (tokenAddress: string) => onOpen('sell', tokenAddress, run, true);
+
   useEffect(() => {
     if (currentChain !== 'solana') return;
-    let canceled = false;
-    const run = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const data = await getAllLiquidStakingPositions(address);
-        if (!canceled) {
-          setPositions(data || []);
-          // Fetch fresh pool data for all positions
-          if (data && data.length > 0) {
-            fetchFreshPoolData(data);
-          }
-        }
-      } catch (e) {
-        if (!canceled) setError(e instanceof Error ? e.message : 'Failed to load positions');
-      } finally {
-        if (!canceled) setLoading(false);
-      }
-    };
+
     run();
     return () => {
       canceled = true;
     };
-  }, [address, currentChain, fetchFreshPoolData]);
+  }, [address, currentChain, fetchFreshPoolData, initialLoading]);
 
   if (currentChain !== 'solana') return null;
 
-  if (loading || portfolioLoading) {
+  // Only show skeleton on initial load, not when refreshing
+  if (initialLoading || (portfolioLoading && !positions)) {
     return <Skeleton className="h-64 w-full" />;
   }
 
   if (error) return <p className="text-sm text-red-600">{error}</p>;
 
-  if (!positions.length) {
+  if (!positions?.length) {
     return null; // Don't show anything if no positions
   }
 
@@ -233,8 +258,8 @@ const LiquidityPools: React.FC<Props> = ({ address }) => {
               <TableHead>Balance</TableHead>
               <TableHead>Yield Earned</TableHead>
               <TableHead>APY</TableHead>
-              <TableHead>Protocol</TableHead>
-              <TableHead>Protocol TVL</TableHead>
+              <TableHead className="hidden md:table-cell">Protocol</TableHead>
+              <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody className="max-h-96 overflow-y-auto">
@@ -276,20 +301,36 @@ const LiquidityPools: React.FC<Props> = ({ address }) => {
                     </div>
                   </TableCell>
                   <TableCell>
-                    {`${formatCrypto(rawBalance, position.lstToken.symbol, decimals)} / ${formatFiat(rawBalance, price, decimals)}`}
+                    <div className="flex flex-col">
+                      <p className="font-medium">
+                        {formatCrypto(rawBalance, position.lstToken.symbol, decimals)}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {formatFiat(rawBalance, price, decimals)}
+                      </p>
+                    </div>
                   </TableCell>
                   <TableCell>
-                    <p
-                      className={
-                        yieldEarned > 0 ? 'text-green-600 font-medium' : 'text-gray-900 font-medium'
-                      }
-                    >
-                      {yieldEarned > 0 ? '+' : ''}
-                      {formatCrypto(yieldEarnedRaw.toString(), position.lstToken.symbol, decimals)}
-                      {' / '}
-                      {yieldEarned > 0 ? '+' : ''}
-                      {formatFiat(yieldEarnedRaw.toString(), price, decimals)}
-                    </p>
+                    <div className="flex flex-col">
+                      <p className={yieldEarned > 0 ? 'text-green-600 font-medium' : 'font-medium'}>
+                        {yieldEarned > 0 ? '+' : ''}
+                        {formatCrypto(
+                          yieldEarnedRaw.toString(),
+                          position.lstToken.symbol,
+                          decimals,
+                        )}
+                      </p>
+                      <p
+                        className={
+                          yieldEarned > 0
+                            ? 'text-green-600/70 text-sm'
+                            : 'text-sm text-muted-foreground'
+                        }
+                      >
+                        {yieldEarned > 0 ? '+' : ''}
+                        {formatFiat(yieldEarnedRaw.toString(), price, decimals)}
+                      </p>
+                    </div>
                   </TableCell>
                   <TableCell>
                     <span className="text-green-600 font-medium">
@@ -300,7 +341,7 @@ const LiquidityPools: React.FC<Props> = ({ address }) => {
                       )}
                     </span>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="hidden md:table-cell">
                     <div className="flex items-center gap-2">
                       <span className="text-sm text-muted-foreground">
                         {capitalizeWords(position.poolData.project || 'Unknown')}
@@ -316,13 +357,16 @@ const LiquidityPools: React.FC<Props> = ({ address }) => {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <span className="text-sm text-muted-foreground">
-                      {poolDataLoading ? (
-                        <Skeleton className="w-16 h-4" />
-                      ) : (
-                        formatCompactNumber(position.poolData.tvlUsd || 0)
+                    <Button
+                      size="sm"
+                      onClick={() => openSell(position.lstToken.id)}
+                      className={cn(
+                        'bg-emerald-100 hover:bg-emerald-200 text-emerald-800 border border-emerald-200',
+                        'dark:bg-emerald-950/30 dark:hover:bg-emerald-900/50 dark:text-emerald-300 dark:border-emerald-800/50',
                       )}
-                    </span>
+                    >
+                      Claim SOL
+                    </Button>
                   </TableCell>
                 </TableRow>
               );
