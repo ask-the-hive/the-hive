@@ -1,19 +1,17 @@
-import { NextResponse } from "next/server";
+import { NextResponse } from 'next/server';
 
-import { NextRequest } from "next/server";
-import { getToken } from "@/db/services";
+import { NextRequest } from 'next/server';
+import { getToken } from '@/db/services';
+import { withErrorHandling } from '@/lib/api-error-handler';
 
 interface Params {
-    address: string;
+  address: string;
 }
 
-export const GET = async (request: NextRequest, { params }: { params: Promise<Params> }) => {
-    const address = (await params).address;
-    try {
-        const tokenData = await getToken(address);
-        return NextResponse.json(tokenData);
-    } catch (e) {
-        console.error(e);
-        return NextResponse.json(null, { status: 500 });
-    }
-}
+export const GET = withErrorHandling(
+  async (_request: NextRequest, { params }: { params: Promise<Params> }) => {
+    const { address } = await params;
+    const tokenData = await getToken(address);
+    return NextResponse.json(tokenData);
+  },
+);

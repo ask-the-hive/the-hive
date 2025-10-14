@@ -2,12 +2,10 @@ import { NextResponse } from 'next/server';
 
 import { getAllLiquidStakingPositions } from '@/db/services/liquid-staking-positions';
 import { getBestLiquidStaking } from '@/services/staking-rewards/get-best-liquid-staking';
+import { withErrorHandling } from '@/lib/api-error-handler';
 
-export const GET = async (
-  _request: Request,
-  { params }: { params: Promise<{ walletAddress: string }> },
-) => {
-  try {
+export const GET = withErrorHandling(
+  async (_request: Request, { params }: { params: Promise<{ walletAddress: string }> }) => {
     const { walletAddress } = await params;
     if (!walletAddress) {
       return NextResponse.json({ error: 'Missing walletAddress' }, { status: 400 });
@@ -72,11 +70,5 @@ export const GET = async (
       // Return original positions if pool data fetch fails
       return NextResponse.json(positions, { status: 200 });
     }
-  } catch (error) {
-    console.error('[GetAllLiquidStakingPositionsAPI] Error:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch liquid staking positions' },
-      { status: 500 },
-    );
-  }
-};
+  },
+);

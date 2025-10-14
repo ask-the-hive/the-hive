@@ -54,6 +54,7 @@
     "@radix-ui/react-tabs": "^1.1.2",
     "@radix-ui/react-tooltip": "^1.1.6",
     "@raydium-io/raydium-sdk-v2": "0.1.101-alpha",
+    "@sentry/nextjs": "^10",
     "@solana/spl-token": "^0.4.0",
     "@solana/spl-token-0.4": "npm:@solana/spl-token@0.4.0",
     "@solana/web3.js": "^1.98.0",
