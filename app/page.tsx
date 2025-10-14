@@ -450,6 +450,12 @@ function LandingPageContent() {
     );
 }
 
+import ErrorBoundary from '@/components/error-boundary';
+
 export default function LandingPage() {
-    return <LandingPageContent />;
+    return (
+        <ErrorBoundary pageKey="landing">
+            <LandingPageContent />
+        </ErrorBoundary>
+    );
 }
