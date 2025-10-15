@@ -3,6 +3,9 @@
   "packageManager": "pnpm@9.15.1",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": ">=22.0.0"
+  },
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",
@@ -89,7 +92,7 @@
     "lucide-react": "^0.469.0",
     "moralis": "^2.27.2",
     "motion": "^11.15.0",
-    "next": "15.1.2",
+    "next": "^15.5.5",
     "next-auth": "^4.24.11",
     "node-fetch": "^3.3.2",
     "pnpm": "^9.15.1",
@@ -122,7 +125,7 @@
     "@types/react-dom": "^19",
     "@types/react-syntax-highlighter": "^15.5.13",
     "eslint": "^9",
-    "eslint-config-next": "15.1.2",
+    "eslint-config-next": "^15.5.5",
     "postcss": "^8",
     "prettier": "^3.6.2",
     "tailwindcss": "^3.4.1",
