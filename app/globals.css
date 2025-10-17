@@ -22,7 +22,7 @@ body {
 
 @layer base {
   :root {
-    --radius: 0.5rem;
+    --radius: 1.5rem;
     --sidebar-background: 0 0% 96%;
     --sidebar-foreground: 240 5.3% 26.1%;
     --sidebar-primary: 240 5.9% 10%;
@@ -35,16 +35,16 @@ body {
   }
 
   body {
-    @apply text-black dark:text-white bg-white dark:bg-neutral-900;
+    @apply text-black dark:text-white bg-white dark:bg-neutral-950;
   }
   .dark {
-    --sidebar-background: 0 0% 15%;
+    --sidebar-background: 0 0% 12%;
     --sidebar-foreground: 240 4.8% 95.9%;
     --sidebar-primary: 224.3 76.3% 48%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 0, 0%, 25%;
+    --sidebar-accent: 0, 0%, 20%;
     --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 0, 0%, 25%;
+    --sidebar-border: 0, 0%, 20%;
     --sidebar-ring: 217.2 91.2% 59.8%;
     --sidebar-active: 44, 100%, 41%;
   }
