@@ -15,12 +15,14 @@ const AccountButton: React.FC = () => {
   const pathname = usePathname();
   const { user } = usePrivy();
 
-  if (!user?.wallet?.address) return null;
+  const isLoggedIn = user?.wallet?.address;
 
   return (
-    <Link href="/account">
+    <Link href={isLoggedIn ? '/account' : '/login'}>
       <SidebarMenuItem>
-        <SidebarMenuButton isActive={pathname?.includes('/account') ?? false}>
+        <SidebarMenuButton
+          isActive={pathname?.includes('/account') || pathname?.includes('/login')}
+        >
           <h1 className="flex items-center gap-2 font-semibold">
             <User className="h-4 w-4" />
             My Account
