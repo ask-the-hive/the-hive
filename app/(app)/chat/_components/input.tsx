@@ -2,7 +2,7 @@
 
 import React, { useRef, useEffect } from 'react';
 
-import { CornerDownRight } from 'lucide-react';
+import { ArrowUp } from 'lucide-react';
 
 import Textarea from 'react-textarea-autosize';
 
@@ -62,7 +62,7 @@ const ChatInput: React.FC = () => {
           // Light mode styles
           'bg-neutral-100 focus-within:border-brand-600',
           // Dark mode styles
-          'dark:bg-neutral-800/50 dark:focus-within:border-brand-600',
+          'dark:bg-neutral-700/50 dark:focus-within:border-brand-600',
           // Remove loading state styling that prevents new chat creation
         )}
       >
@@ -73,7 +73,7 @@ const ChatInput: React.FC = () => {
             onKeyDown={onKeyDown}
             placeholder="Ask the hive anything..."
             className={cn(
-              'w-full max-h-60 resize-none bg-transparent px-5 py-4 text-md file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-neutral-600 dark:placeholder:text-neutral-400 disabled:cursor-not-allowed disabled:opacity-50',
+              'w-full max-h-60 resize-none bg-transparent px-5 pt-5 pb-5 text-[17px] file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-neutral-600 dark:placeholder:text-neutral-400 disabled:cursor-not-allowed disabled:opacity-50',
               'focus-visible:outline-none',
               'dark:placeholder:text-neutral-400',
             )}
@@ -86,7 +86,7 @@ const ChatInput: React.FC = () => {
             autoFocus
           />
         </OptionalTooltip>
-        <div className="flex items-center justify-between px-2 pb-2">
+        <div className="flex items-center justify-between px-2 pb-1">
           <div className="flex items-center gap-2">
             <ModelSelector
               model={model}
@@ -114,7 +114,16 @@ const ChatInput: React.FC = () => {
                   variant="ghost"
                   className="h-8 w-8"
                 >
-                  <CornerDownRight className="w-4 h-4 text-neutral-600 dark:text-neutral-400" />
+                  <div
+                    className={cn(
+                      'flex items-center justify-center w-6 h-6 rounded-full transition-colors',
+                      input.trim().length > 0
+                        ? 'bg-brand-600 hover:bg-brand-700'
+                        : 'bg-brand-700 dark:bg-brand-700',
+                    )}
+                  >
+                    <ArrowUp className="w-4 h-4 text-neutral-100" />
+                  </div>
                   <span className="sr-only">Send message</span>
                 </Button>
               </TooltipTrigger>

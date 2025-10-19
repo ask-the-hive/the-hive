@@ -23,10 +23,8 @@ const AccountButton: React.FC = () => {
         <SidebarMenuButton
           isActive={pathname?.includes('/account') || pathname?.includes('/login')}
         >
-          <h1 className="flex items-center gap-2 font-semibold">
-            <User className="h-4 w-4" />
-            My Account
-          </h1>
+          <User className="h-4 w-4 shrink-0" />
+          <span className="text-sm font-semibold">My Account</span>
         </SidebarMenuButton>
       </SidebarMenuItem>
     </Link>

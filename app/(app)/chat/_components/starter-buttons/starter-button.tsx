@@ -25,7 +25,7 @@ const StarterButton: React.FC<Props> = ({ icon, title, description, prompt, clas
   return (
     <Button
       className={cn(
-        'flex items-center p-4 gap-2 text-sm text-neutral-600 dark:text-neutral-400 h-fit justify-start rounded-lg',
+        'flex items-center px-4 py-6 gap-2 text-sm text-neutral-600 dark:text-neutral-400 h-fit justify-start rounded-lg',
         className,
       )}
       variant="outline"
@@ -40,8 +40,8 @@ const StarterButton: React.FC<Props> = ({ icon, title, description, prompt, clas
           )}
         >
           <div className="flex items-center gap-2">
-            <Icon name={icon} className="w-5 h-5" />
-            <p className="text-md2 font-bold">{title}</p>
+            <Icon name={icon} className="w-5 h-5 text-neutral-100" />
+            <p className="text-md2 font-bold text-neutral-100">{title}</p>
           </div>
           <p className="text-sm text-neutral-600 dark:text-neutral-400">{description}</p>
         </div>

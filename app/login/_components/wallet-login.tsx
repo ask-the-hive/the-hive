@@ -1,10 +1,10 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useConnectWallet } from '@privy-io/react-auth';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui';
 import { Loader2 } from 'lucide-react';
+import { useLogin } from '@/hooks';
 
 const walletOptions = [
   {
@@ -38,13 +38,9 @@ export function WalletLogin() {
   const [error, setError] = useState('');
   const [connectingWallet, setConnectingWallet] = useState<string | null>(null);
 
-  const { connectWallet } = useConnectWallet({
-    onSuccess: () => {
+  const { login } = useLogin({
+    onComplete: () => {
       router.push('/chat');
-    },
-    onError: (error) => {
-      setError(error || 'Failed to connect wallet. Please try again.');
-      setConnectingWallet(null);
     },
   });
 
@@ -52,7 +48,7 @@ export function WalletLogin() {
     try {
       setError('');
       setConnectingWallet(walletType);
-      await connectWallet();
+      login();
     } catch (err: any) {
       setError(err?.message || String(err) || 'Failed to connect wallet.');
       setConnectingWallet(null);

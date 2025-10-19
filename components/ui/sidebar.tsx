@@ -28,7 +28,7 @@ import { cn } from '@/lib/utils';
 
 const SIDEBAR_COOKIE_NAME = 'sidebar:state';
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7;
-const SIDEBAR_WIDTH = '12.875rem'; // 206px (reduced from 16rem/256px by 50px)
+const SIDEBAR_WIDTH = '14rem'; // 224px (increased to accommodate chevron icon)
 const SIDEBAR_WIDTH_MOBILE = '14.875rem'; // 238px (reduced from 18rem/288px by 50px)
 const SIDEBAR_WIDTH_ICON = '3rem';
 const SIDEBAR_KEYBOARD_SHORTCUT = 'b';
@@ -511,7 +511,7 @@ const sidebarMenuButtonVariants = cva(
     'peer/menu-button',
     'flex w-full items-center gap-2',
     'overflow-hidden rounded-md p-2',
-    'text-left text-sm outline-none',
+    'text-left text-sm text-neutral-300 outline-none',
     'transition-all duration-300 ease-in-out',
 
     // Interactive states

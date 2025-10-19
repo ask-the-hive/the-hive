@@ -51,19 +51,19 @@ export function BrandingSection() {
             </pattern>
           </defs>
           <g transform="rotate(45 50 50)">
-            <rect x="-50%" y="-50%" width="200%" height="200%" fill="url(#honeycomb)" />
-            <rect x="-50%" y="-50%" width="200%" height="200%" fill="url(#honeycomb-offset)" />
+            <rect x="-50%" y="-50%" width="250%" height="250%" fill="url(#honeycomb)" />
+            <rect x="-50%" y="-50%" width="250%" height="250%" fill="url(#honeycomb-offset)" />
           </g>
         </svg>
       </div>
 
       {/* Content */}
-      <div className="max-w-2xl text-center relative z-10">
-        <h1 className="text-5xl md:text-5xl font-bold text-white mb-6">
+      <div className="max-w-3xl text-center relative z-10">
+        <h1 className="text-4xl md:text-5xl font-bold text-white mb-6">
           Discover, instruct and execute with <span className="text-brand-600">The Hive</span>
         </h1>
         <p className="text-xl md:text-2xl text-neutral-400">
-          Find and tap into the top DeFi yields
+          Orchestrate a hive mind of DeFi Agents to act on Solana
         </p>
 
         {/* Decorative glow elements */}
