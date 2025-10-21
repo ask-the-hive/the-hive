@@ -17,7 +17,7 @@ import { Button, Separator } from '@/components/ui';
 
 import LogInButton from '@/app/(app)/_components/log-in-button';
 
-import TokenInput from '../../../../utils/swap/token-input';
+import TokenInput from '@/app/_components/swap/token-input';
 
 import { useSendTransaction, useTokenBalance, useTokenDataByAddress } from '@/hooks';
 

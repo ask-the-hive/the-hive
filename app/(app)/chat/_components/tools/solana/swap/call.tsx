@@ -4,7 +4,7 @@ import React from 'react';
 
 import { Card, Skeleton } from '@/components/ui';
 
-import Swap from '../../utils/swap';
+import Swap from '@/app/_components/swap';
 
 import { useTokenDataByAddress } from '@/hooks';
 

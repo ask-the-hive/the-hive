@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import Image from 'next/image';
 import { Button, Card, Skeleton } from '@/components/ui';
 import { cn } from '@/lib/utils';
-import Swap from '../../../utils/swap';
+import Swap from '@/app/_components/swap';
 import { useTokenDataByAddress, usePrice } from '@/hooks';
 import { usePrivy } from '@privy-io/react-auth';
 import { useChat } from '@/app/(app)/chat/_contexts/chat';
