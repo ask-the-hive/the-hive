@@ -8,7 +8,7 @@ import { Button, Card, Input, Separator, Skeleton } from '@/components/ui';
 
 import LogInButton from '@/app/(app)/_components/log-in-button';
 
-import TokenInput from '../../../utils/swap/token-input';
+import TokenInput from '@/app/_components/swap/token-input';
 
 import { useChat } from '@/app/(app)/chat/_contexts/chat';
 

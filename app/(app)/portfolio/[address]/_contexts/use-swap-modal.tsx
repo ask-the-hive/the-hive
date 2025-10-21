@@ -300,26 +300,6 @@ export const SwapModalProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     console.error('Swap error:', error);
   };
 
-  // Define chain-specific priority tokens
-  const priorityTokens =
-    currentChain === 'base'
-      ? [
-          '0x4200000000000000000000000000000000000006', // WETH
-          '0xd9aAEc86B65D86f6A7B5B1b0c42FFA531710b6CA', // USDC
-          '0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb', // DAI
-        ]
-      : currentChain === 'bsc'
-        ? [
-            '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c', // WBNB
-            '0x55d398326f99059fF775485246999027B3197955', // USDT
-            '0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d', // USDC
-          ]
-        : [
-            'So11111111111111111111111111111111111111112', // SOL
-            'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v', // USDC
-            'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB', // USDT
-          ];
-
   return (
     <SwapModalContext.Provider
       value={{
@@ -344,7 +324,6 @@ export const SwapModalProvider: React.FC<{ children: React.ReactNode }> = ({ chi
             outputLabel={mode === 'buy' ? 'Buy' : 'Receive'}
             onSuccess={onSuccess}
             onError={onError}
-            priorityTokens={priorityTokens}
             setSwapResult={setSwapResult}
           />
         </DialogContent>

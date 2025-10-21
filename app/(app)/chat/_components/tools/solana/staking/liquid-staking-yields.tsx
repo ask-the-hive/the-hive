@@ -75,13 +75,11 @@ const LiquidStakingYields: React.FC<{
             className={cn(
               'group relative flex flex-col gap-2 items-center p-4 cursor-pointer transition-all duration-300 overflow-hidden',
               index === 1
-                ? 'hover:border-brand-600 dark:hover:border-brand-600 shadow-[0_0_10px_rgba(234,179,8,0.5)] dark:shadow-[0_0_10px_rgba(234,179,8,0.5)]'
+                ? 'hover:border-brand-600 dark:hover:border-brand-600 !shadow-[0_0_10px_rgba(234,179,8,0.5)] dark:!shadow-[0_0_10px_rgba(234,179,8,0.5)]'
                 : 'hover:border-brand-600/50 dark:hover:border-brand-600/50',
             )}
             onClick={() => handleStakeClick(pool)}
           >
-            {/* Main Content */}
-
             <div className="items-center flex-col justify-between gap-2 mb-2 hidden md:flex">
               <div className="flex items-center gap-2">
                 <Image
