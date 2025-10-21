@@ -40,6 +40,7 @@ const TokenSelect: React.FC<Props> = ({ value, onChange }) => {
             '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c', // WBNB
             '0x55d398326f99059fF775485246999027B3197955', // USDT
             '0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d', // USDC
+            '0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56', // BUSD
           ]
         : [
             'So11111111111111111111111111111111111111112', // SOL

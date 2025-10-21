@@ -380,14 +380,6 @@ const SwapCallBody: React.FC<Props> = ({ toolCallId, args }) => {
     }
   };
 
-  // Define priority tokens for BSC
-  const priorityTokens = [
-    '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c', // WBNB
-    '0x55d398326f99059fF775485246999027B3197955', // USDT
-    '0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d', // USDC
-    '0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56', // BUSD
-  ];
-
   if (isLoading) {
     return <Skeleton className="h-48 w-96" />;
   }
@@ -407,7 +399,6 @@ const SwapCallBody: React.FC<Props> = ({ toolCallId, args }) => {
               onChangeToken={(newToken) => {
                 setInputToken(newToken);
               }}
-              priorityTokens={priorityTokens}
             />
             {balance && (
               <div className="text-xs text-right mt-1 text-neutral-500">
@@ -440,7 +431,6 @@ const SwapCallBody: React.FC<Props> = ({ toolCallId, args }) => {
               onChangeToken={(newToken) => {
                 setOutputToken(newToken);
               }}
-              priorityTokens={priorityTokens}
             />
             {isGettingQuote && (
               <div className="text-xs text-right mt-1 text-neutral-500">Getting quote...</div>
