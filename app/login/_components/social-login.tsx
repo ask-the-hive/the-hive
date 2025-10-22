@@ -2,10 +2,10 @@
 
 import React, { useState } from 'react';
 import { useLoginWithOAuth } from '@privy-io/react-auth';
-import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui';
 import { Loader2 } from 'lucide-react';
 import { FaGoogle, FaTwitter, FaDiscord, FaGithub } from 'react-icons/fa6';
+import { useRouter } from 'next/navigation';
 
 const socialOptions = [
   {
@@ -39,9 +39,9 @@ const socialOptions = [
 ];
 
 export function SocialLogin() {
-  const router = useRouter();
   const [error, setError] = useState('');
   const [connectingProvider, setConnectingProvider] = useState<string | null>(null);
+  const router = useRouter();
 
   const { initOAuth } = useLoginWithOAuth({
     onComplete: () => {
@@ -49,7 +49,6 @@ export function SocialLogin() {
     },
     onError: (error) => {
       setError(error || 'Authentication failed. Please try again.');
-      setConnectingProvider(null);
     },
   });
 
@@ -74,10 +73,13 @@ export function SocialLogin() {
               key={social.provider}
               onClick={() => handleOAuthLogin(social.provider)}
               disabled={connectingProvider !== null}
-              className={`w-full justify-start h-[56px] ${social.bgColor} ${social.textColor} border-0`}
+              variant="brandGhost"
+              className={`w-full justify-start h-[56px] ${social.bgColor} ${social.textColor} border-0 ${social.provider === 'google' && 'hover:text-white'}`}
             >
               <div className="flex items-center gap-4 w-full">
-                <Icon className="text-xl text-brand-600" />
+                <Icon
+                  className={`text-xl ${social.provider === 'google' ? 'text-brand-600' : social.textColor}`}
+                />
                 <div className="flex-1 text-left">
                   <div className="font-semibold">Continue with {social.name}</div>
                 </div>

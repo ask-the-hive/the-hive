@@ -2,18 +2,17 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useLoginWithEmail } from '@privy-io/react-auth';
-import { useRouter } from 'next/navigation';
 import { Button, Input } from '@/components/ui';
 import { Loader2, Mail, KeyRound } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 export function EmailLogin() {
-  const router = useRouter();
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
   const [error, setError] = useState('');
   const [isCodeSent, setIsCodeSent] = useState(false);
   const emailInputRef = useRef<HTMLInputElement>(null);
-
+  const router = useRouter();
   // Auto-focus email input when component mounts
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -145,18 +144,28 @@ export function EmailLogin() {
               'Verify & Login'
             )}
           </Button>
-          <Button
-            onClick={() => {
-              setIsCodeSent(false);
-              setCode('');
-              setError('');
-            }}
-            variant="ghost"
-            className="w-full h-[52px]"
-            disabled={isLoading}
-          >
-            Use Different Email
-          </Button>
+          <div className="flex justify-between">
+            <Button
+              onClick={handleSendCode}
+              variant="ghost"
+              className="w-full h-[52px] text-brand-600 hover:text-brand-700 hover:bg-brand-50 dark:hover:bg-brand-900/20"
+              disabled={isLoading}
+            >
+              Resend Code
+            </Button>
+            <Button
+              onClick={() => {
+                setIsCodeSent(false);
+                setCode('');
+                setError('');
+              }}
+              variant="ghost"
+              className="w-full h-[52px]"
+              disabled={isLoading}
+            >
+              Use Different Email
+            </Button>
+          </div>
         </div>
       )}
 

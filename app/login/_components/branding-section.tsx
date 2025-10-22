@@ -1,60 +1,14 @@
 'use client';
 
 import React from 'react';
+import { HoneycombBackground } from '@/components/ui/honeycomb-background';
 
 export function BrandingSection() {
   return (
     <div className="flex-1 flex items-center justify-center relative overflow-hidden p-12">
       {/* Honeycomb Pattern Background */}
       <div className="absolute inset-0 bg-gradient-to-br from-neutral-900 via-neutral-950 to-black">
-        <svg className="absolute inset-0 w-full h-full" xmlns="http://www.w3.org/2000/svg">
-          <defs>
-            {/* Gradient that spans the entire viewbox from gold to grey */}
-            <linearGradient id="honeycomb-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#d19900" stopOpacity="0.3" />
-              <stop offset="30%" stopColor="#b8860b" stopOpacity="0.2" />
-              <stop offset="60%" stopColor="#8b7355" stopOpacity="0.12" />
-              <stop offset="100%" stopColor="#505050" stopOpacity="0.08" />
-            </linearGradient>
-
-            {/* Honeycomb pattern using the gradient */}
-            <pattern
-              id="honeycomb"
-              x="0"
-              y="0"
-              width="121"
-              height="105.6"
-              patternUnits="userSpaceOnUse"
-            >
-              <polygon
-                points="30.25,0 90.75,0 121,52.64 90.75,105.27 30.25,105.27 0,52.64"
-                fill="none"
-                stroke="url(#honeycomb-gradient)"
-                strokeWidth="3"
-              />
-            </pattern>
-            <pattern
-              id="honeycomb-offset"
-              x="60.5"
-              y="52.64"
-              width="121"
-              height="105.6"
-              patternUnits="userSpaceOnUse"
-            >
-              <polygon
-                points="30.25,0 90.75,0 121,52.64 90.75,105.27 30.25,105.27 0,52.64"
-                fill="none"
-                stroke="url(#honeycomb-gradient)"
-                strokeWidth="3"
-                opacity="0.6"
-              />
-            </pattern>
-          </defs>
-          <g transform="rotate(45 50 50)">
-            <rect x="-50%" y="-50%" width="250%" height="250%" fill="url(#honeycomb)" />
-            <rect x="-50%" y="-50%" width="250%" height="250%" fill="url(#honeycomb-offset)" />
-          </g>
-        </svg>
+        <HoneycombBackground />
       </div>
 
       {/* Content */}

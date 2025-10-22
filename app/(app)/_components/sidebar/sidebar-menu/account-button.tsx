@@ -13,9 +13,9 @@ import { usePrivy } from '@privy-io/react-auth';
 
 const AccountButton: React.FC = () => {
   const pathname = usePathname();
-  const { user } = usePrivy();
+  const { authenticated } = usePrivy();
 
-  const isLoggedIn = user?.wallet?.address;
+  const isLoggedIn = authenticated;
 
   return (
     <Link href={isLoggedIn ? '/account' : '/login'}>

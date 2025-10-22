@@ -3,79 +3,52 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui';
-import { Loader2 } from 'lucide-react';
-import { useLogin } from '@/hooks';
-
-const walletOptions = [
-  {
-    name: 'Phantom',
-    id: 'phantom' as const,
-    icon: '👻',
-    description: 'Solana wallet',
-  },
-  {
-    name: 'MetaMask',
-    id: 'metamask' as const,
-    icon: '🦊',
-    description: 'Ethereum wallet',
-  },
-  {
-    name: 'Coinbase Wallet',
-    id: 'coinbase_wallet' as const,
-    icon: '🔵',
-    description: 'Multi-chain wallet',
-  },
-  {
-    name: 'WalletConnect',
-    id: 'wallet_connect' as const,
-    icon: '🔗',
-    description: 'Connect any wallet',
-  },
-];
+import { Loader2, Wallet } from 'lucide-react';
+import { useLogin } from '@privy-io/react-auth';
 
 export function WalletLogin() {
   const router = useRouter();
   const [error, setError] = useState('');
-  const [connectingWallet, setConnectingWallet] = useState<string | null>(null);
+  const [connectingWallet, setConnectingWallet] = useState<boolean>(false);
 
   const { login } = useLogin({
     onComplete: () => {
       router.push('/chat');
     },
+    onError: (err: any) => {
+      if (!err?.includes('exited_auth_flow')) {
+        setError(err?.message || String(err) || 'Failed to connect wallet.');
+      }
+      setConnectingWallet(false);
+    },
   });
 
-  const handleConnectWallet = async (walletType: string) => {
-    try {
-      setError('');
-      setConnectingWallet(walletType);
-      login();
-    } catch (err: any) {
-      setError(err?.message || String(err) || 'Failed to connect wallet.');
-      setConnectingWallet(null);
-    }
+  const handleConnectWallet = async () => {
+    setError('');
+    setConnectingWallet(true);
+    // Use login with filtered wallet list - shows only the selected wallet
+    await login({
+      loginMethods: ['wallet'],
+    });
   };
 
   return (
     <div className="space-y-6">
       <div className="space-y-3">
-        {walletOptions.map((wallet) => (
-          <Button
-            key={wallet.id}
-            onClick={() => handleConnectWallet(wallet.id)}
-            disabled={connectingWallet !== null}
-            variant="outline"
-            className="w-full justify-start h-[56px]"
-          >
-            <div className="flex items-center gap-4 w-full">
-              <span className="text-xl">{wallet.icon}</span>
-              <div className="flex-1 text-left">
-                <div className="font-semibold">{wallet.name}</div>
-                <div className="text-xs text-neutral-400">{wallet.description}</div>
-              </div>
-              {connectingWallet === wallet.id && <Loader2 className="h-4 w-4 animate-spin" />}
+        <Button
+          onClick={() => handleConnectWallet()}
+          disabled={connectingWallet}
+          variant="brand"
+          className="w-full justify-start h-[56px]"
+        >
+          <div className="flex items-center gap-4 w-full">
+            <Wallet className="w-4 h-4" />
+            <div className="flex-1 text-left">
+              <div className="font-semibold">Connect Wallet to Continue</div>
             </div>
-          </Button>
-        ))}
+            {connectingWallet && <Loader2 className="h-4 w-4 animate-spin" />}
+          </div>
+        </Button>
       </div>
 
       {error && (
