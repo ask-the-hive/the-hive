@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { HoneycombBackground } from '@/components/ui/honeycomb-background';
+import { HoneycombBackground, HoveringBees } from '@/components/ui';
 
 export function BrandingSection() {
   return (
@@ -9,15 +9,16 @@ export function BrandingSection() {
       {/* Honeycomb Pattern Background */}
       <div className="absolute inset-0 bg-gradient-to-br from-neutral-900 via-neutral-950 to-black">
         <HoneycombBackground />
+        <HoveringBees count={15} />
       </div>
 
       {/* Content */}
       <div className="max-w-3xl text-center relative z-10">
         <h1 className="text-4xl md:text-5xl font-bold text-white mb-6">
-          Discover, instruct and execute with <span className="text-brand-600">The Hive</span>
+          Discover. Instruct. Execute.
         </h1>
         <p className="text-xl md:text-2xl text-neutral-400">
-          Orchestrate a hive mind of DeFi Agents to act on Solana
+          Discover and tap into Decentralized Finance
         </p>
 
         {/* Decorative glow elements */}
