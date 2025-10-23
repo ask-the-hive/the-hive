@@ -1,7 +1,8 @@
 'use client';
 
 import React from 'react';
-import { HoneycombBackground, HoveringBees } from '@/components/ui';
+import { HoneycombBackground } from '@/components/ui/honeycomb-background';
+import { HoveringBees } from '@/components/ui/hovering-bees';
 
 export function BrandingSection() {
   return (

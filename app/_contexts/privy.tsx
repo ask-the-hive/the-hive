@@ -1,52 +1,47 @@
-"use client";
+'use client';
 
 import React from 'react';
 
-import {PrivyProvider as PrivyProviderBase} from '@privy-io/react-auth';
-import {toSolanaWalletConnectors} from '@privy-io/react-auth/solana';
-import { bsc } from 'viem/chains';
+import { PrivyProvider as PrivyProviderBase } from '@privy-io/react-auth';
+import { toSolanaWalletConnectors } from '@privy-io/react-auth/solana';
 
-import '@/components/utils/suppress-console'
+import '@/components/utils/suppress-console';
 
 interface Props {
-    children: React.ReactNode;
+  children: React.ReactNode;
 }
 
 const solanaConnectors = toSolanaWalletConnectors({
-    shouldAutoConnect: false,
+  shouldAutoConnect: false,
 });
 
-export const PrivyProvider: React.FC<Props> = ({ children }) => {
-    return (
-        <PrivyProviderBase
-            appId={process.env.NEXT_PUBLIC_PRIVY_APP_ID!}
-            config={{
-                appearance: {
-                    theme: 'dark',
-                    accentColor: '#d19900',
-                    logo: '/logo.png',
-                    walletChainType: 'ethereum-and-solana',
-                    showWalletLoginFirst: true,
-                    walletList: ['phantom', 'metamask', 'coinbase_wallet', 'wallet_connect'],
-                },
-                loginMethods: ['email', 'wallet', 'google', 'twitter', 'discord', 'github'],
-                externalWallets: {
-                    solana: {
-                        connectors: solanaConnectors
-                    }
-                },
+const config = {
+  appearance: {
+    theme: 'dark',
+    accentColor: 'rgb(209 153 0)',
+    logo: '/logo.png',
+    walletChainType: 'solana-only',
+    showWalletLoginFirst: true,
+    walletList: ['phantom', 'wallet_connect', 'detected_solana_wallets'],
+  },
+  loginMethods: ['email', 'wallet', 'google', 'twitter', 'discord', 'github'],
+  externalWallets: {
+    solana: {
+      connectors: solanaConnectors,
+    },
+  },
+  solanaClusters: [
+    {
+      name: 'mainnet-beta',
+      rpcUrl: process.env.NEXT_PUBLIC_SOLANA_RPC_URL!,
+    },
+  ],
+};
 
-                solanaClusters: [
-                    {
-                        name: 'mainnet-beta',
-                        rpcUrl: process.env.NEXT_PUBLIC_SOLANA_RPC_URL!,
-                    }
-                ],
-                supportedChains: [bsc],
-                // Remove defaultChain to let Privy use the chain context
-            }}
-        >
-            {children}
-        </PrivyProviderBase>
-    )
-}
+export const PrivyProvider: React.FC<Props> = ({ children }) => {
+  return (
+    <PrivyProviderBase appId={process.env.NEXT_PUBLIC_PRIVY_APP_ID!} config={config}>
+      {children}
+    </PrivyProviderBase>
+  );
+};

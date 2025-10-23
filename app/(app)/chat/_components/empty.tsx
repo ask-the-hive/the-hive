@@ -7,8 +7,8 @@ import StarterButtons from './starter-buttons';
 
 import { cn } from '@/lib/utils';
 import Logo from '@/components/ui/logo';
-import { HoveringBees } from '@/components/ui';
 import { useChat } from '../_contexts/chat';
+import { HoveringBees } from '@/components/ui/hovering-bees';
 
 const EmptyChat: React.FC = () => {
   const { chain } = useChat();
