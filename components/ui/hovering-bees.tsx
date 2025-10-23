@@ -109,28 +109,29 @@ export const HoveringBees: React.FC<HoveringBeesProps> = ({ count = 12 }) => {
         const repulsionRadius = 100;
 
         return prevBees.map((bee) => {
-          // Check for cursor repulsion first
-          const dx = bee.x - mousePos.x;
-          const dy = bee.y - mousePos.y;
+          // Natural hovering motion
+          const hoverX = Math.sin(time * bee.hoverSpeed + bee.hoverOffset) * 20;
+          const hoverY = Math.cos(time * bee.hoverSpeed * 0.7 + bee.hoverOffset) * 15;
+
+          let newX = bee.baseX + hoverX;
+          let newY = bee.baseY + hoverY;
+
+          // Cursor repulsion - smooth gradual force
+          const dx = newX - mousePos.x;
+          const dy = newY - mousePos.y;
           const distance = Math.sqrt(dx * dx + dy * dy);
 
-          let newX, newY;
-
           if (distance < repulsionRadius && distance > 0) {
-            // REPULSION MODE: Fly directly away from cursor
-            const dirX = dx / distance; // Unit vector from cursor to bee
+            const repulsionForce = (repulsionRadius - distance) / repulsionRadius;
+
+            // Calculate direction vector from cursor to bee (normalized)
+            const dirX = dx / distance;
             const dirY = dy / distance;
 
-            // Move bee to a position that's further away from cursor
-            const escapeDistance = repulsionRadius + 50; // Fly to edge of repulsion zone + buffer
-            newX = mousePos.x + dirX * escapeDistance;
-            newY = mousePos.y + dirY * escapeDistance;
-          } else {
-            // NORMAL MODE: Natural hovering motion
-            const hoverX = Math.sin(time * bee.hoverSpeed + bee.hoverOffset) * 20;
-            const hoverY = Math.cos(time * bee.hoverSpeed * 0.7 + bee.hoverOffset) * 15;
-            newX = bee.baseX + hoverX;
-            newY = bee.baseY + hoverY;
+            // Apply smooth repulsion force
+            const repulsionStrength = repulsionForce * 30; // Reduced from 80 to 30 for smoother effect
+            newX += dirX * repulsionStrength;
+            newY += dirY * repulsionStrength;
           }
 
           // Boundary constraints (soft boundaries) - top half with larger area
