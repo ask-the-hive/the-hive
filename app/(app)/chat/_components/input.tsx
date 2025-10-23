@@ -14,8 +14,8 @@ import { useChat } from '../_contexts/chat';
 
 import { cn } from '@/lib/utils';
 
-import ModelSelector from '../../_components/chat/model-selector';
-import ChainSelector from '../../_components/chat/chain-selector';
+// import ModelSelector from '../../_components/chat/model-selector';
+// import ChainSelector from '../../_components/chat/chain-selector';
 import { usePrivy } from '@privy-io/react-auth';
 import FollowUpSuggestions from './follow-up-suggestions';
 
@@ -26,12 +26,12 @@ const ChatInput: React.FC = () => {
     input,
     setInput,
     onSubmit,
-    model,
-    setModel,
-    chain,
-    setChain,
+    // model,
+    // setModel,
+    // chain,
+    // setChain,
     inputDisabledMessage,
-    messages,
+    // messages,
     isLoading,
   } = useChat();
 
@@ -40,7 +40,7 @@ const ChatInput: React.FC = () => {
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   // Check if chat has started (has messages)
-  const hasMessages = messages.length > 0;
+  // const hasMessages = messages.length > 0;
 
   useEffect(() => {
     if (!isLoading && inputRef.current) {
@@ -88,7 +88,7 @@ const ChatInput: React.FC = () => {
         </OptionalTooltip>
         <div className="flex items-center justify-between px-2 pb-1">
           <div className="flex items-center gap-2">
-            <ModelSelector
+            {/* <ModelSelector
               model={model}
               onModelChange={setModel}
               // Disable model changes after chat starts
@@ -99,7 +99,7 @@ const ChatInput: React.FC = () => {
               onChainChange={setChain}
               // Disable chain changes after chat starts
               disabled={hasMessages}
-            />
+            /> */}
           </div>
           <TooltipProvider>
             <Tooltip delayDuration={0}>

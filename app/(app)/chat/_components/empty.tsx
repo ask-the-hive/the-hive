@@ -16,12 +16,7 @@ const EmptyChat: React.FC = () => {
   const chainName = chain === 'solana' ? 'Solana' : chain === 'bsc' ? 'BSC' : 'Base';
 
   return (
-    <div
-      className={cn(
-        // Base
-        'flex flex-col items-center justify-center w-full h-full px-4 relative',
-      )}
-    >
+    <div className={cn('flex flex-col items-center justify-center w-full h-full px-4 relative')}>
       <HoveringBees count={15} />
 
       <div className="flex flex-col items-center justify-center w-full max-w-2xl gap-4 md:gap-8 relative z-10">
