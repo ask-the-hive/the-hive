@@ -11,14 +11,14 @@ import Transactions from './_components/transactions';
 import { SwapModalProvider } from './_contexts/use-swap-modal';
 import { useChain } from '@/app/_contexts/chain-context';
 import ChainIcon from '@/app/(app)/_components/chain-icon';
-import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuItem,
-} from '@/components/ui/dropdown-menu';
+// import {
+//   DropdownMenu,
+//   DropdownMenuTrigger,
+//   DropdownMenuContent,
+//   DropdownMenuItem,
+// } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
-import { ChevronDown } from 'lucide-react';
+// import { ChevronDown } from 'lucide-react';
 import PortfolioProjection from './_components/portfolio-projection';
 import { getAllLiquidStakingPositions } from '@/services/liquid-staking/get-all';
 import { LiquidStakingPosition } from '@/db/types';
@@ -96,18 +96,18 @@ const Portfolio = ({ params }: { params: Promise<{ address: string }> }) => {
   }, [currentChain, walletAddresses, address, router]);
 
   // Dropdown handler for chain switching
-  const handleChainSwitch = (newChain: 'solana' | 'bsc' | 'base') => {
-    setCurrentChain(newChain);
-    const newAddress =
-      newChain === 'solana'
-        ? walletAddresses.solana
-        : newChain === 'base'
-          ? walletAddresses.base
-          : walletAddresses.bsc;
-    if (newAddress) {
-      router.replace(`/portfolio/${newAddress}?chain=${newChain}`);
-    }
-  };
+  // const handleChainSwitch = (newChain: 'solana' | 'bsc' | 'base') => {
+  //   setCurrentChain(newChain);
+  //   const newAddress =
+  //     newChain === 'solana'
+  //       ? walletAddresses.solana
+  //       : newChain === 'base'
+  //         ? walletAddresses.base
+  //         : walletAddresses.bsc;
+  //   if (newAddress) {
+  //     router.replace(`/portfolio/${newAddress}?chain=${newChain}`);
+  //   }
+  // };
 
   // Determine if there is a wallet for each chain
   const hasSolana = !!walletAddresses.solana;
@@ -122,18 +122,18 @@ const Portfolio = ({ params }: { params: Promise<{ address: string }> }) => {
         <div className="flex justify-between items-center">
           <Header address={address} />
           {/* Chain selector dropdown */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="outline"
-                className="flex items-center gap-2 focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0"
-                disabled={!hasCurrent}
-              >
-                <ChainIcon chain={currentChain} className="w-4 h-4" />
-                {currentChain === 'solana' ? 'Solana' : currentChain === 'base' ? 'Base' : 'BSC'}
-                <ChevronDown className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
+          {/* <DropdownMenu>
+            <DropdownMenuTrigger asChild> */}
+          <Button
+            variant="outline"
+            className="flex items-center gap-2 focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 cursor-default"
+            disabled={!hasCurrent}
+          >
+            <ChainIcon chain={currentChain} className="w-4 h-4" />
+            {currentChain === 'solana' ? 'Solana' : currentChain === 'base' ? 'Base' : 'BSC'}
+            {/* <ChevronDown className="h-4 w-4" /> */}
+          </Button>
+          {/* </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem
                 onClick={() => handleChainSwitch('solana')}
@@ -160,7 +160,7 @@ const Portfolio = ({ params }: { params: Promise<{ address: string }> }) => {
                 Base
               </DropdownMenuItem>
             </DropdownMenuContent>
-          </DropdownMenu>
+          </DropdownMenu> */}
         </div>
         <PortfolioProjection address={address} stakingPositions={stakingPositions} />
         <Tokens
