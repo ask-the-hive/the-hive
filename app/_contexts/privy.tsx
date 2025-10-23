@@ -15,32 +15,33 @@ const solanaConnectors = toSolanaWalletConnectors({
   shouldAutoConnect: false,
 });
 
-const config = {
-  appearance: {
-    theme: 'dark',
-    accentColor: 'rgb(209 153 0)',
-    logo: '/logo.png',
-    walletChainType: 'solana-only',
-    showWalletLoginFirst: true,
-    walletList: ['phantom', 'wallet_connect', 'detected_solana_wallets'],
-  },
-  loginMethods: ['email', 'wallet', 'google', 'twitter', 'discord', 'github'],
-  externalWallets: {
-    solana: {
-      connectors: solanaConnectors,
-    },
-  },
-  solanaClusters: [
-    {
-      name: 'mainnet-beta',
-      rpcUrl: process.env.NEXT_PUBLIC_SOLANA_RPC_URL!,
-    },
-  ],
-};
-
 export const PrivyProvider: React.FC<Props> = ({ children }) => {
   return (
-    <PrivyProviderBase appId={process.env.NEXT_PUBLIC_PRIVY_APP_ID!} config={config}>
+    <PrivyProviderBase
+      appId={process.env.NEXT_PUBLIC_PRIVY_APP_ID!}
+      config={{
+        appearance: {
+          theme: 'dark',
+          accentColor: '#d19900',
+          logo: '/logo.png',
+          walletChainType: 'solana-only',
+          showWalletLoginFirst: true,
+          walletList: ['phantom', 'wallet_connect', 'detected_solana_wallets'],
+        },
+        loginMethods: ['email', 'wallet', 'google', 'twitter', 'discord', 'github'],
+        externalWallets: {
+          solana: {
+            connectors: solanaConnectors,
+          },
+        },
+        solanaClusters: [
+          {
+            name: 'mainnet-beta',
+            rpcUrl: process.env.NEXT_PUBLIC_SOLANA_RPC_URL!,
+          },
+        ],
+      }}
+    >
       {children}
     </PrivyProviderBase>
   );
