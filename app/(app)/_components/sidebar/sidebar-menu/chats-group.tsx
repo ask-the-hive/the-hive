@@ -142,8 +142,11 @@ const ChatsGroup: React.FC = () => {
             </SidebarMenuButton>
           </CollapsibleTrigger>
         </div>
-        <CollapsibleContent>
-          <SidebarMenuSub className="flex-1 overflow-hidden relative flex flex-col">
+        <CollapsibleContent
+          className="max-h-[min(60vh,400px)] overflow-y-auto transition-all duration-300 ease-in-out"
+          withMaxHeight={false}
+        >
+          <SidebarMenuSub className="flex-1 relative flex flex-col pb-0">
             {isLoading || !ready ? (
               <Skeleton className="h-10 w-full" />
             ) : chats.length > 0 ? (

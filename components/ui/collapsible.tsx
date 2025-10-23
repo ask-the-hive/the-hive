@@ -26,12 +26,16 @@ CollapsibleTrigger.displayName = CollapsiblePrimitive.Trigger.displayName;
 
 const CollapsibleContent = React.forwardRef<
   React.ElementRef<typeof CollapsiblePrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof CollapsiblePrimitive.Content>
->(({ className, children, ...props }, ref) => (
+  React.ComponentPropsWithoutRef<typeof CollapsiblePrimitive.Content> & {
+    withMaxHeight?: boolean;
+  }
+>(({ className, children, withMaxHeight = true, ...props }, ref) => (
   <CollapsiblePrimitive.Content
     ref={ref}
     className={cn(
-      'overflow-hidden transition-all duration-300 max-h-0 data-[state=open]:max-h-max mb-6',
+      'overflow-hidden transition-all duration-300 max-h-0',
+      withMaxHeight && 'data-[state=open]:max-h-max',
+      'mb-6',
       className,
     )}
     {...props}
