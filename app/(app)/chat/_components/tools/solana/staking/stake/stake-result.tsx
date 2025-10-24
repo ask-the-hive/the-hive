@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Area, AreaChart, XAxis, YAxis, ResponsiveContainer } from 'recharts';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { Token } from '@/db/types';
@@ -7,7 +7,8 @@ import { usePrice } from '@/hooks';
 import Image from 'next/image';
 import { usePrivy } from '@privy-io/react-auth';
 import { Button, Card } from '@/components/ui';
-import Link from 'next/link';
+import { Loader2 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 function capitalizeWords(str: string): string {
   return str
@@ -29,11 +30,26 @@ interface Props {
 const StakeResult: React.FC<Props> = ({ outputTokenData, poolData, outputAmount }) => {
   const { user } = usePrivy();
   const { data: outputTokenPrice } = usePrice(outputTokenData?.id || '');
+  const [isNavigating, setIsNavigating] = useState(false);
+  const router = useRouter();
 
   const amountUSD = useMemo(() => {
     if (!outputAmount || !outputTokenPrice) return null;
     return outputAmount * outputTokenPrice.value;
   }, [outputAmount, outputTokenPrice]);
+
+  const handleViewPortfolio = async () => {
+    if (!user?.wallet?.address || isNavigating) return;
+
+    setIsNavigating(true);
+    try {
+      await router.push(`/portfolio/${user.wallet.address}`);
+    } catch (error) {
+      console.error('Navigation error:', error);
+    } finally {
+      setIsNavigating(false);
+    }
+  };
 
   const chartData = useMemo(() => {
     if (!poolData?.yield || !outputAmount || !outputTokenPrice) return [];
@@ -153,11 +169,23 @@ const StakeResult: React.FC<Props> = ({ outputTokenData, poolData, outputAmount 
           )}
           {user?.wallet?.address && (
             <div className="mt-6 mb-6 flex justify-center">
-              <Link href={`/portfolio/${user.wallet.address}`} className="w-full px-4">
-                <Button variant="brand" className="w-full">
-                  View Portfolio
+              <div className="w-full px-4">
+                <Button
+                  variant="brand"
+                  className="w-full"
+                  onClick={handleViewPortfolio}
+                  disabled={isNavigating}
+                >
+                  {isNavigating ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Loading...
+                    </>
+                  ) : (
+                    'View Portfolio'
+                  )}
                 </Button>
-              </Link>
+              </div>
             </div>
           )}
         </Card>

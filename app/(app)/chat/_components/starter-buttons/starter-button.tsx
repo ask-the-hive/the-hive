@@ -26,6 +26,9 @@ const StarterButton: React.FC<Props> = ({ icon, title, description, prompt, clas
     <Button
       className={cn(
         'flex items-center px-4 py-6 gap-2 text-sm text-neutral-600 dark:text-neutral-400 h-fit justify-start rounded-lg shadow-md',
+        'hover:!shadow-lg hover:!shadow-brand-600/20 dark:hover:!shadow-brand-600/30',
+        'hover:!bg-brand-50 dark:hover:!bg-neutral-700',
+        'transition-all duration-200 ease-in-out',
         className,
       )}
       variant="outline"
