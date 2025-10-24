@@ -49,7 +49,7 @@ export default function LoginPage() {
       <Button
         variant="brandGhost"
         size="icon"
-        className="absolute top-4 left-4 z-10 h-10 w-10 rounded-full bg-neutral-100 backdrop-blur-sm hover:bg-neutral-200 dark:bg-neutral-600 dark:hover:bg-neutral-800"
+        className="absolute top-4 left-4 z-10 h-10 w-10 rounded-full bg-neutral-100 backdrop-blur-sm hover:bg-neutral-200 dark:bg-sidebar dark:hover:bg-neutral-600"
         onClick={handleBackClick}
       >
         <ArrowLeft className="h-10   w-10 text-brand-600" />

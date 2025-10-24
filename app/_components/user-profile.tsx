@@ -7,7 +7,7 @@ import { usePrivy } from '@privy-io/react-auth';
 import { getUserData } from '@/app/(app)/account/_components/heading/actions';
 import { pfpURL } from '@/lib/pfp';
 import { useLogin } from '@/hooks';
-import { clearUserDataCache } from '@/lib/swr-cache';
+import { clearUserDataCache, disconnectExternalWallets } from '@/lib/swr-cache';
 
 const UserProfile = () => {
   const { user, ready, authenticated } = usePrivy();
@@ -37,6 +37,8 @@ const UserProfile = () => {
     setIsLoggedIn(false);
     // Clear all user data from SWR cache before logging out
     clearUserDataCache();
+    // Disconnect external wallets (Phantom, Solflare, etc.)
+    disconnectExternalWallets();
     await logout();
   };
 

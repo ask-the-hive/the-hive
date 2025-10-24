@@ -22,7 +22,7 @@ const WalletDisplay: React.FC<Props> = ({ address }) => {
                 </p>
               </div>
               <TooltipProvider>
-                <Tooltip>
+                <Tooltip delayDuration={100}>
                   <TooltipTrigger asChild>
                     <div
                       onClick={() => {

@@ -212,7 +212,7 @@ const LiquidityPools: React.FC<Props> = ({
                         {capitalizeWords(position.poolData.project || 'Unknown')}
                       </span>
                       <TooltipProvider>
-                        <Tooltip>
+                        <Tooltip delayDuration={100}>
                           <TooltipTrigger asChild>
                             <Info className="w-3 h-3 text-muted-foreground cursor-help" />
                           </TooltipTrigger>

@@ -118,7 +118,19 @@ const ChatsGroup: React.FC = () => {
               className="justify-between w-full"
               isActive={pathname.includes('/chat')}
             >
-              <div className="flex items-center gap-2">
+              <div
+                className="flex items-center gap-2 cursor-pointer"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  // Navigate to /chat if not already there
+                  if (!pathname.includes('/chat')) {
+                    router.push('/chat');
+                  }
+                  // Toggle the collapsible dropdown
+                  setIsChatsOpen(!isChatsOpen);
+                }}
+              >
                 <MessageSquare className="h-4 w-4" />
                 <h1 className="text-sm font-semibold">Chats</h1>
               </div>
