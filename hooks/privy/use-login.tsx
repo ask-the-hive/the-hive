@@ -11,6 +11,7 @@ import { useFundWallet, useSolanaWallets } from '@privy-io/react-auth/solana';
 import { useChain } from '@/app/_contexts/chain-context';
 import { useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import { clearUserDataCache } from '@/lib/swr-cache';
 
 export const useLogin = ({
   onComplete,
@@ -169,6 +170,8 @@ export const useLogin = ({
 
   // Enhanced logout with redirect
   const enhancedLogout = async () => {
+    // Clear all user data from SWR cache before logging out
+    clearUserDataCache();
     await logout();
     router.push('/chat');
   };
