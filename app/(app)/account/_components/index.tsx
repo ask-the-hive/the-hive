@@ -20,16 +20,18 @@ const AccountComponents: React.FC = () => {
   }
 
   return (
-    <div className="relative min-h-screen">
-      {/* Honeycomb Background */}
+    <div className="relative h-screen overflow-hidden">
+      {/* Honeycomb Background - Fixed */}
       <div className="absolute inset-0 bg-gradient-to-br from-neutral-900 via-neutral-950 to-black">
         <HoneycombBackground />
       </div>
 
-      {/* Content */}
-      <div className="relative z-10 flex flex-col max-w-3xl mx-auto gap-20 p-6">
-        <AccountHeading user={user} />
-        <ConnectedAccounts user={user} />
+      {/* Content - Scrollable */}
+      <div className="relative z-10 h-full max-w-3xl mx-auto overflow-y-auto">
+        <div className="flex flex-col max-w-3xl mx-auto gap-8 p-6 pb-20">
+          <AccountHeading user={user} />
+          <ConnectedAccounts user={user} />
+        </div>
       </div>
     </div>
   );

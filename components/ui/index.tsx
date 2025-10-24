@@ -31,5 +31,4 @@ export * from './tabs';
 export * from './scroll-area';
 export * from './badge';
 export * from './honeycomb-background';
-export * from './hovering-bees';
 export { default as CountdownTimer } from './countdown-timer';
