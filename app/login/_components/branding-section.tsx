@@ -11,14 +11,14 @@ export function BrandingSection() {
         <HoneycombBackground />
       </div>
 
-      {/* <div className="max-w-3xl text-center relative z-10">
+      <div className="max-w-3xl text-center relative z-10">
         <h1 className="text-4xl md:text-5xl font-bold text-white mb-6">
           Discover. Instruct. Execute.
         </h1>
         <p className="text-xl md:text-2xl text-neutral-400">
           Discover and tap into Decentralized Finance
         </p>
-      </div> */}
+      </div>
     </div>
   );
 }
