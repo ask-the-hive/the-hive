@@ -8,7 +8,6 @@ import StarterButtons from './starter-buttons';
 import { cn } from '@/lib/utils';
 import Logo from '@/components/ui/logo';
 import { useChat } from '../_contexts/chat';
-import { HoveringBees } from '@/components/ui/hovering-bees';
 
 const EmptyChat: React.FC = () => {
   const { chain } = useChat();
@@ -17,8 +16,6 @@ const EmptyChat: React.FC = () => {
 
   return (
     <div className={cn('flex flex-col items-center justify-center w-full h-full px-4 relative')}>
-      <HoveringBees count={15} />
-
       <div className="flex flex-col items-center justify-center w-full max-w-2xl gap-4 md:gap-8 relative z-10">
         <div className="flex flex-col gap-4 items-center justify-center">
           <Logo className="w-20 h-20" />
