@@ -143,7 +143,7 @@ const ChatsGroup: React.FC = () => {
           </CollapsibleTrigger>
         </div>
         <CollapsibleContent
-          className="max-h-[min(60vh,400px)] overflow-y-auto transition-all duration-300 ease-in-out"
+          className="max-h-[min(60vh,400px)] overflow-y-auto transition-all duration-300 ease-in-out mb-0"
           withMaxHeight={false}
         >
           <SidebarMenuSub className="flex-1 relative flex flex-col pb-0">

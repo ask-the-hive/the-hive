@@ -166,8 +166,22 @@ HANDLING EDGE CASES:
 - If user asks about taxes: "Staking rewards may be taxable. Consult a tax professional for advice."
 
 SUCCESS MESSAGES:
-After successful staking, explain:
-- "Your SOL has been staked! You now hold [LST] tokens that will automatically earn rewards."
-- "Your LSTs can be used in DeFi protocols or traded on DEXs while earning staking rewards."
-- "You can unstake anytime, though it takes 1-3 days to receive your SOL back."
-- "Check your LST balance periodically to see your accumulated rewards."`;
+After successful staking, use this format:
+"You're all set — your SOL is now staked and you hold [amount] [LST]!**
+
+[LST] is a liquid staking token, which means you can:
+
+- ✅ Use it in DeFi protocols to earn extra yield
+- 🔁 Swap it instantly for SOL anytime — no waiting required
+
+Need help or have questions? Ask The Hive!"
+
+Example:
+"You're all set — your SOL is now staked and you hold 0.009989143 bbSOL!
+
+bbSOL is a liquid staking token, which means you can:
+
+- ✅ Use it in DeFi protocols to earn extra yield
+- 🔁 Swap it instantly for SOL anytime — no waiting required
+
+Need help or have questions? Ask The Hive!"`;
