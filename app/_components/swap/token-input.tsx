@@ -49,7 +49,7 @@ const TokenInput: React.FC<Props> = ({
           <div className="flex items-center gap-2">
             <p className="text-sm font-semibold text-neutral-600 dark:text-neutral-400">{label}</p>
             {tooltip && (
-              <Tooltip>
+              <Tooltip delayDuration={100}>
                 <TooltipTrigger asChild>
                   <Info className="h-4 w-4 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 cursor-help" />
                 </TooltipTrigger>

@@ -199,7 +199,7 @@ const AccountHeading: React.FC<Props> = ({ user }) => {
           {/* <div className="flex flex-col">
             <p className="text-xs font-bold text-neutral-600 dark:text-neutral-400">User ID</p>
             <TooltipProvider delayDuration={0}>
-              <Tooltip>
+              <Tooltip delayDuration={100}>
                 <TooltipTrigger asChild>
                   <p
                     className="text-sm cursor-pointer hover:bg-neutral-100 dark:hover:bg-neutral-800 px-1 rounded transition-colors"
@@ -246,7 +246,7 @@ const AccountHeading: React.FC<Props> = ({ user }) => {
                                 {truncateAddress(account.address)}
                               </p>
                               <TooltipProvider>
-                                <Tooltip>
+                                <Tooltip delayDuration={100}>
                                   <TooltipTrigger asChild>
                                     <button
                                       onClick={() => copyAddress(account.address)}
@@ -281,7 +281,7 @@ const AccountHeading: React.FC<Props> = ({ user }) => {
                                 {truncateAddress(account.address)}
                               </p>
                               <TooltipProvider>
-                                <Tooltip>
+                                <Tooltip delayDuration={100}>
                                   <TooltipTrigger asChild>
                                     <button
                                       onClick={() => copyAddress(account.address)}
@@ -325,7 +325,7 @@ const AccountHeading: React.FC<Props> = ({ user }) => {
 
                           <div className="flex items-center gap-2">
                             <TooltipProvider>
-                              <Tooltip>
+                              <Tooltip delayDuration={100}>
                                 <TooltipTrigger asChild>
                                   <Button
                                     variant="ghost"
@@ -342,7 +342,7 @@ const AccountHeading: React.FC<Props> = ({ user }) => {
                               </Tooltip>
                             </TooltipProvider>
                             <TooltipProvider>
-                              <Tooltip>
+                              <Tooltip delayDuration={100}>
                                 <TooltipTrigger asChild>
                                   <Button
                                     variant="ghost"

@@ -10,9 +10,19 @@ import { useChain } from '@/app/_contexts/chain-context';
 export const useSendTransaction = () => {
   const { wallets: solanaWallets } = useSolanaWallets();
   const { wallets: allWallets } = useWallets();
-  const { user } = usePrivy();
+  const { user, authenticated } = usePrivy();
 
   const { currentChain } = useChain();
+
+  // Early return if user is not authenticated
+  if (!authenticated || !user) {
+    return {
+      sendTransaction: async () => {
+        throw new Error('User must be authenticated to send transactions');
+      },
+      wallet: null,
+    };
+  }
 
   // For Solana chain, find a Solana wallet from multiple sources
   let wallet: any = null;
