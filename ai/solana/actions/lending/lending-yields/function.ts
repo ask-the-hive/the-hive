@@ -1,4 +1,4 @@
-import { SolanaActionResult } from '@/ai/solana/actions/solana-action';
+import type { SolanaActionResult } from '@/ai/solana/actions/solana-action';
 import { getBestLendingYields } from '@/services/lending/get-best-lending-yields';
 import { getTokenBySymbol } from '@/db/services/tokens';
 import { LendingYieldsResultBodyType } from './schema';
@@ -15,41 +15,45 @@ export async function getLendingYields(): Promise<SolanaActionResult<LendingYiel
       'kamino-lend', // Kamino Finance
       'jupiter-lend', // Jupiter Lend
       'marginfi-lending', // Marginfi
+      'marginfi-lend',
       'maple', // Maple Finance
       'save', // Save Finance
+      'credix', // Credix
+      'francium', // Francium
+      'superstate-uscc', // Superstate
     ];
 
     // Stablecoin tokens for lending
-    const stablecoinTokens = [
-      'USDC', // USD Coin
-      'USDT', // Tether
-    ];
+    // const stablecoinTokens = [
+    //   'USDC', // USD Coin
+    //   'USDT', // Tether
+    // ];
 
     const solLendingPools = solanaPools.filter((pool: any) => {
       // Check if it's a lending protocol
       const isLendingProtocol = lendingProtocols.includes(pool.project);
       // Check if it's a stablecoin token
-      const isStablecoin = stablecoinTokens.includes(pool.symbol);
+      // const isStablecoin = stablecoinTokens.includes(pool.symbol);
 
       const isLPPair = pool.symbol.includes('-') || pool.symbol.includes('/');
       const hasAPY = pool.apy && pool.apy > 0;
 
       // Include lending protocols with stablecoin tokens that aren't LP pairs
-      return isLendingProtocol && isStablecoin && !isLPPair && hasAPY;
+      return isLendingProtocol && !isLPPair && hasAPY;
     });
 
     if (solLendingPools.length === 0) {
       return {
         message: `No Solana lending pools found for the target protocols (Kamino, Jupiter Lend, Marginfi, Maple, Save). Please try again.`,
-        body: null,
       };
     }
 
     // Sort by APY (highest first) and take top 3
-    const topSolanaPools = solLendingPools
-      .sort((a: any, b: any) => (b.apy || 0) - (a.apy || 0))
-      .slice(0, 3);
+    let topSolanaPools = solLendingPools.sort((a: any, b: any) => (b.apy || 0) - (a.apy || 0));
 
+    console.log('topSolanaPools', topSolanaPools.slice(0, 10));
+
+    topSolanaPools = topSolanaPools.slice(0, 3);
     // Reorder so highest APY is in the center (index 1)
     if (topSolanaPools.length === 3) {
       const [highest, second, third] = topSolanaPools;

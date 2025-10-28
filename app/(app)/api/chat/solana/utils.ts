@@ -11,6 +11,7 @@ Given this list of agents and their capabilities, choose the one that is most ap
 
 IMPORTANT: Pay special attention to these key distinctions:
 - For SOL staking, unstaking, liquid staking pools, or staking yields: Choose "Staking Agent"
+- For stablecoin lending, lending pools, lending yields, or lending operations: Choose "Lending Agent"
 - For token transfers, wallet balances, or wallet operations: Choose "Wallet Agent"
 - For trading, swapping, or buying tokens: Choose "Trading Agent"
 

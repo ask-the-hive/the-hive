@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useChat } from '@/app/(app)/chat/_contexts/chat';
-import ToolCard from '../../tool-card';
+import ToolCard from '../../../tool-card';
 import { Card, Button, Skeleton } from '@/components/ui';
 import { SOLANA_LENDING_POOL_DATA_STORAGE_KEY } from '@/lib/constants';
 import { useSendTransaction } from '@/hooks/privy/use-send-transaction';
@@ -8,14 +8,14 @@ import { useTokenBalance } from '@/hooks/queries/token/use-token-balance';
 import { useFundWallet } from '@privy-io/react-auth/solana';
 import TokenInput from '@/app/_components/swap/token-input';
 import { LendingYieldsPoolData } from '@/ai/solana/actions/lending/lending-yields/schema';
+import LendResult from './lend-result';
 
 import type { ToolInvocation } from 'ai';
 import type { LendArgumentsType, LendResultType } from '@/ai/solana/actions/lending/lend/schema';
 
 interface Props {
-  tool: ToolInvocation;
+  toolCallId: string;
   args: LendArgumentsType;
-  prevToolAgent?: string;
 }
 
 const LendCall: React.FC<Props> = ({ toolCallId, args }) => {
@@ -169,15 +169,40 @@ const LendCall: React.FC<Props> = ({ toolCallId, args }) => {
   );
 };
 
-const LendCallBody: React.FC<Props> = ({ tool, args, prevToolAgent }) => {
+const LendCallBody: React.FC<{
+  tool: ToolInvocation;
+  args: LendArgumentsType;
+  prevToolAgent?: string;
+}> = ({ tool, args, prevToolAgent }) => {
   return (
     <ToolCard
       tool={tool}
       loadingText={`Preparing lending interface...`}
-      result={{
-        heading: () => 'Lending Interface',
-        body: () => <LendCall toolCallId={tool.toolCallId} args={args} />,
+      call={{
+        heading: 'Lend',
+        body: (toolCallId: string, args: LendArgumentsType) => (
+          <LendCall toolCallId={toolCallId} args={args} />
+        ),
       }}
+      result={{
+        heading: (result: any) => (result.body ? 'Lend Complete' : 'Failed to Lend'),
+        body: (result: any) =>
+          result.body ? (
+            <div className="flex justify-center w-full">
+              <div className="w-full md:w-[70%]">
+                <LendResult
+                  amount={result.body.amount}
+                  tokenSymbol={result.body.tokenSymbol}
+                  protocolName={result.body.protocolName}
+                  transactionHash={result.body.transactionHash}
+                />
+              </div>
+            </div>
+          ) : (
+            result.message
+          ),
+      }}
+      defaultOpen={true}
       prevToolAgent={prevToolAgent}
       className="w-full"
     />

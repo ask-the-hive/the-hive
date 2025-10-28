@@ -1,4 +1,4 @@
-import { SolanaActionResult } from '@/ai/solana/actions/solana-action';
+import type { SolanaActionResult } from '@/ai/solana/actions/solana-action';
 import { WithdrawArgumentsType, WithdrawResultBodyType } from './schema';
 
 export async function withdraw(

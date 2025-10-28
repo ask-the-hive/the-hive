@@ -28,7 +28,8 @@ const LendingYieldsTool: React.FC<Props> = ({ tool, prevToolAgent }) => {
       result={{
         heading: (result: LendingYieldsResultType) =>
           result.body ? `Fetched best lending yields` : 'No lending yields found',
-        body: (result: any) => (result.body ? <LendingYields body={result.body} /> : ''),
+        body: (result: LendingYieldsResultType) =>
+          result.body ? <LendingYields body={result.body} /> : '',
       }}
       prevToolAgent={prevToolAgent}
       className="w-full"
@@ -123,7 +124,7 @@ const LendingYields: React.FC<{
               {pool.predictions && (
                 <div className="flex flex-col items-center">
                   <p className="font-semibold text-md">
-                    {getConfidenceLabel(pool.predictions.binnedConfidence)}
+                    {getConfidenceLabel(Number(pool.predictions.binnedConfidence))}
                   </p>
                   <p className="text-gray-600 text-xs dark:text-gray-400">APY Confidence</p>
                 </div>

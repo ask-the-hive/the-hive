@@ -1,4 +1,4 @@
-import { SolanaActionResult } from '@/ai/solana/actions/solana-action';
+import type { SolanaActionResult } from '@/ai/solana/actions/solana-action';
 import { LendArgumentsType, LendResultBodyType } from './schema';
 
 export async function lend(
@@ -7,13 +7,14 @@ export async function lend(
   try {
     // TODO: Implement actual lending transaction
     // For now, return a success message as a stub
+    const amount = args.amount || 0;
 
     return {
-      message: `Successfully lent ${args.amount} ${args.tokenAddress} to protocol ${args.protocolAddress}`,
+      message: `Successfully lent ${amount} ${args.tokenAddress} to protocol ${args.protocolAddress}`,
       body: {
         success: true,
         transactionHash: 'stubbed-transaction-hash',
-        amount: args.amount,
+        amount,
         tokenSymbol: args.tokenAddress, // TODO: Get actual symbol from token address
         protocolName: args.protocolAddress, // TODO: Get actual protocol name
       },
@@ -25,7 +26,7 @@ export async function lend(
       body: {
         success: false,
         error: error instanceof Error ? error.message : String(error),
-        amount: args.amount,
+        amount: args.amount || 0,
         tokenSymbol: args.tokenAddress,
         protocolName: args.protocolAddress,
       },

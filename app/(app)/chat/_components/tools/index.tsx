@@ -111,52 +111,8 @@ import {
   BASE_GET_TOP_TRADERS_NAME,
   BASE_GET_TRADER_TRADES_NAME,
   BASE_TRADE_NAME,
-import {
-  SOLANA_BALANCE_ACTION,
-  SOLANA_GET_WALLET_ADDRESS_ACTION,
-  SOLANA_GET_TRENDING_TOKENS_NAME,
-  SOLANA_GET_TOKEN_DATA_NAME,
-  SOLANA_TRADE_ACTION,
-  SOLANA_LIQUID_STAKING_YIELDS_ACTION,
-  SOLANA_LENDING_YIELDS_ACTION,
-  SOLANA_LEND_ACTION,
-  SOLANA_WITHDRAW_ACTION,
-  SOLANA_TRANSFER_NAME,
-  TWITTER_SEARCH_RECENT_NAME,
-  SOLANA_STAKE_ACTION,
-  SOLANA_UNSTAKE_ACTION,
-  SOLANA_ALL_BALANCES_NAME,
-  SEARCH_KNOWLEDGE_NAME,
-  INVOKE_AGENT_NAME,
-  SOLANA_GET_TOKEN_ADDRESS_ACTION,
-  SOLANA_TOP_HOLDERS_NAME,
-  SOLANA_BUBBLE_MAPS_NAME,
-  SOLANA_TOKEN_HOLDERS_NAME,
-  SOLANA_GET_POOLS_NAME,
-  SOLANA_DEPOSIT_LIQUIDITY_NAME,
-  SOLANA_GET_LP_TOKENS_NAME,
-  SOLANA_WITHDRAW_LIQUIDITY_NAME,
-  SOLANA_GET_TOP_TRADERS_NAME,
-  SOLANA_GET_TRADER_TRADES_NAME,
-  SOLANA_TOKEN_TOP_TRADERS_NAME,
-  SOLANA_TOKEN_PRICE_CHART_NAME,
-  BSC_GET_KNOWLEDGE_NAME,
-  BSC_TRADE_NAME,
-  BASE_GET_KNOWLEDGE_NAME,
-  BASE_GET_TOKEN_DATA_NAME,
-  BASE_BALANCE_NAME,
-  BASE_ALL_BALANCES_NAME,
-  BASE_TRANSFER_NAME,
-  BASE_GET_TRENDING_TOKENS_NAME,
-  BASE_GET_TOP_TRADERS_NAME,
-  BASE_GET_TRADER_TRADES_NAME,
-  BASE_TRADE_NAME,
 } from '@/ai/action-names';
-import {
-  SOLANA_LENDING_YIELDS_ACTION,
-  SOLANA_LEND_ACTION,
-  SOLANA_WITHDRAW_ACTION,
-} from '@/ai/solana/actions/lending/names';
+
 import { BSC_BUBBLE_MAPS_NAME } from '@/ai/bsc/actions/token/bubble-maps/name';
 import { BSC_TOP_HOLDERS_NAME } from '@/ai/bsc/actions/token/top-holders/name';
 import { BSC_PRICE_CHART_NAME } from '@/ai/bsc/actions/token/price-chart/name';
@@ -381,6 +337,29 @@ const ToolInvocation: React.FC<Props> = ({ tool, prevToolAgent }) => {
         return <Trade tool={tool} prevToolAgent={prevToolAgent} />;
       default:
         console.log(`Unknown staking tool: ${toolName}`);
+        return <pre className="whitespace-pre-wrap">{JSON.stringify(tool, null, 2)}</pre>;
+    }
+  }
+
+  // Handle Lending tools
+  if (toolAgent === 'lending') {
+    switch (toolName) {
+      case SOLANA_LENDING_YIELDS_ACTION:
+        return <LendingYieldsTool tool={tool} prevToolAgent={prevToolAgent} />;
+      case SOLANA_LEND_ACTION:
+        return <LendCallBody tool={tool} args={tool.args} prevToolAgent={prevToolAgent} />;
+      case SOLANA_WITHDRAW_ACTION:
+        return <WithdrawCallBody tool={tool} args={tool.args} prevToolAgent={prevToolAgent} />;
+      case SOLANA_GET_TOKEN_ADDRESS_ACTION:
+        return <GetTokenAddress tool={tool} prevToolAgent={prevToolAgent} />;
+      case SOLANA_GET_WALLET_ADDRESS_ACTION:
+        return <GetWalletAddress tool={tool} prevToolAgent={prevToolAgent} />;
+      case SOLANA_BALANCE_ACTION:
+        return <Balance tool={tool} prevToolAgent={prevToolAgent} />;
+      case SOLANA_TRADE_ACTION:
+        return <Trade tool={tool} prevToolAgent={prevToolAgent} />;
+      default:
+        console.log(`Unknown lending tool: ${toolName}`);
         return <pre className="whitespace-pre-wrap">{JSON.stringify(tool, null, 2)}</pre>;
     }
   }

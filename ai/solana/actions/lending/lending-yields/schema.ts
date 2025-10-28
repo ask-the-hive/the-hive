@@ -36,7 +36,7 @@ export type LendingYieldsResultBodyType = z.infer<typeof LendingYieldsResultBody
 
 export const LendingYieldsResultType = z.object({
   message: z.string(),
-  body: LendingYieldsResultBodyType.nullable(),
+  body: LendingYieldsResultBodyType.optional(),
 });
 
 export type LendingYieldsResultType = z.infer<typeof LendingYieldsResultType>;

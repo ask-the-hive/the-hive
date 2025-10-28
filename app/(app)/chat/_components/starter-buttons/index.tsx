@@ -11,10 +11,10 @@ const solanaButtons = [
     prompt: 'Find me the best staking yields',
   },
   {
-    title: 'Lending',
-    description: 'Coming soon',
+    title: 'Lend',
+    description: 'Lend stablecoins to earn interest',
     icon: 'ChartLine' as const,
-    prompt: 'Show me the trending tokens',
+    prompt: 'Show me the best lending pools',
   },
   // {
   //   title: 'Trade',

@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { useChat } from '@/app/(app)/chat/_contexts/chat';
-import ToolCard from '../../tool-card';
+import ToolCard from '../../../tool-card';
 import { Card, Button, Skeleton } from '@/components/ui';
 import { useSendTransaction } from '@/hooks/privy/use-send-transaction';
 import { useTokenBalance } from '@/hooks/queries/token/use-token-balance';
 import TokenInput from '@/app/_components/swap/token-input';
+import WithdrawResult from './withdraw-result';
 
 import type { ToolInvocation } from 'ai';
 import type {
@@ -13,9 +14,8 @@ import type {
 } from '@/ai/solana/actions/lending/withdraw/schema';
 
 interface Props {
-  tool: ToolInvocation;
+  toolCallId: string;
   args: WithdrawArgumentsType;
-  prevToolAgent?: string;
 }
 
 const WithdrawCall: React.FC<Props> = ({ toolCallId, args }) => {
@@ -139,15 +139,41 @@ const WithdrawCall: React.FC<Props> = ({ toolCallId, args }) => {
   );
 };
 
-const WithdrawCallBody: React.FC<Props> = ({ tool, args, prevToolAgent }) => {
+const WithdrawCallBody: React.FC<{
+  tool: ToolInvocation;
+  args: WithdrawArgumentsType;
+  prevToolAgent?: string;
+}> = ({ tool, args, prevToolAgent }) => {
   return (
     <ToolCard
       tool={tool}
       loadingText={`Preparing withdrawal interface...`}
-      result={{
-        heading: () => 'Withdrawal Interface',
-        body: () => <WithdrawCall toolCallId={tool.toolCallId} args={args} />,
+      call={{
+        heading: 'Withdraw',
+        body: (toolCallId: string, args: WithdrawArgumentsType) => (
+          <WithdrawCall toolCallId={toolCallId} args={args} />
+        ),
       }}
+      result={{
+        heading: (result: any) => (result.body ? 'Withdraw Complete' : 'Failed to Withdraw'),
+        body: (result: any) =>
+          result.body ? (
+            <div className="flex justify-center w-full">
+              <div className="w-full md:w-[70%]">
+                <WithdrawResult
+                  amount={result.body.amount}
+                  tokenSymbol={result.body.tokenSymbol}
+                  protocolName={result.body.protocolName}
+                  transactionHash={result.body.transactionHash}
+                  yieldEarned={result.body.yieldEarned}
+                />
+              </div>
+            </div>
+          ) : (
+            result.message
+          ),
+      }}
+      defaultOpen={true}
       prevToolAgent={prevToolAgent}
       className="w-full"
     />

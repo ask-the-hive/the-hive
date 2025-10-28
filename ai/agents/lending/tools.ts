@@ -4,21 +4,24 @@ import {
   SolanaLendAction,
   SolanaWithdrawAction,
   SolanaLendingYieldsAction,
+} from '@/ai/solana/actions/lending';
+import {
   SolanaGetTokenAddressAction,
   SolanaGetWalletAddressAction,
   SolanaBalanceAction,
   SolanaTradeAction,
 } from '@/ai/solana/actions';
-
 import {
   SOLANA_LEND_ACTION,
   SOLANA_WITHDRAW_ACTION,
   SOLANA_LENDING_YIELDS_ACTION,
+} from '@/ai/solana/actions/lending/names';
+import {
   SOLANA_GET_TOKEN_ADDRESS_ACTION,
   SOLANA_GET_WALLET_ADDRESS_ACTION,
   SOLANA_BALANCE_ACTION,
   SOLANA_TRADE_ACTION,
-} from '@/ai/solana/actions/lending/names';
+} from '@/ai/solana/actions/names';
 import { solanaTool } from '@/ai/solana';
 
 export const LENDING_TOOLS = {

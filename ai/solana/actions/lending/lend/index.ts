@@ -1,9 +1,14 @@
-import { BaseSolanaAction } from '@/ai/solana/actions/solana-action';
-import { LendArgumentsType, LendResultType } from './schema';
+import { SOLANA_LEND_ACTION } from '../names';
+import { LEND_PROMPT } from './prompt';
+import { LendInputSchema } from './input-schema';
 import { lend } from './function';
 
-export class SolanaLendAction extends BaseSolanaAction {
-  async execute(args: LendArgumentsType): Promise<LendResultType> {
-    return await lend(args);
-  }
+import type { LendResultBodyType } from './types';
+import type { SolanaAction } from '../../solana-action';
+
+export class SolanaLendAction implements SolanaAction<typeof LendInputSchema, LendResultBodyType> {
+  public name = SOLANA_LEND_ACTION;
+  public description = LEND_PROMPT;
+  public argsSchema = LendInputSchema;
+  public func = lend;
 }
