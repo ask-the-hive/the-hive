@@ -1,10 +1,21 @@
-import { SolanaTradeAction } from "./trade";
-import { SolanaGetTrendingTokensAction } from "./market";
-import { SolanaBalanceAction, SolanaTransferAction, SolanaGetWalletAddressAction, SolanaAllBalancesAction } from "./wallet";
-import { SolanaStakeAction, SolanaUnstakeAction, SolanaLiquidStakingYieldsAction } from "./staking";
-import { SolanaGetTokenDataAction, SolanaGetTokenAddressAction, SolanaTopHoldersAction, SolanaTokenHoldersAction } from "./token";
+import { SolanaTradeAction } from './trade';
+import { SolanaGetTrendingTokensAction } from './market';
+import {
+  SolanaBalanceAction,
+  SolanaTransferAction,
+  SolanaGetWalletAddressAction,
+  SolanaAllBalancesAction,
+} from './wallet';
+import { SolanaStakeAction, SolanaUnstakeAction, SolanaLiquidStakingYieldsAction } from './staking';
+import { SolanaLendingYieldsAction, SolanaLendAction, SolanaWithdrawAction } from './lending';
+import {
+  SolanaGetTokenDataAction,
+  SolanaGetTokenAddressAction,
+  SolanaTopHoldersAction,
+  SolanaTokenHoldersAction,
+} from './token';
 
-import type { SolanaAction, SolanaActionSchemaAny } from "./solana-action";
+import type { SolanaAction, SolanaActionSchemaAny } from './solana-action';
 
 export function getAllSolanaActions(): SolanaAction<SolanaActionSchemaAny, any>[] {
   return [
@@ -20,7 +31,11 @@ export function getAllSolanaActions(): SolanaAction<SolanaActionSchemaAny, any>[
     new SolanaLiquidStakingYieldsAction(),
     new SolanaGetTokenAddressAction(),
     new SolanaTopHoldersAction(),
-    new SolanaTokenHoldersAction()
+    new SolanaTokenHoldersAction(),
+    // Lending Actions
+    new SolanaLendingYieldsAction(),
+    new SolanaLendAction(),
+    new SolanaWithdrawAction(),
   ];
 }
 
@@ -35,3 +50,4 @@ export * from './raydium';
 export * from './staking';
 export * from './wallet';
 export * from './token';
+export * from './lending';
