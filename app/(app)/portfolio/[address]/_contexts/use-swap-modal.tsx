@@ -315,7 +315,7 @@ export const SwapModalProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{mode === 'buy' ? 'Buy' : 'Sell'}</DialogTitle>
+            <DialogTitle>Swap</DialogTitle>
           </DialogHeader>
           <Swap
             initialInputToken={mode === 'buy' ? null : token}

@@ -100,10 +100,21 @@ export const TokenInputValue = ({ amount, token }: { amount: string; token: Toke
 
   if (!price) return null;
 
+  const calculatedValue = price.value * Number(amount);
+
+  if (isNaN(calculatedValue)) {
+    console.error('TokenInputValue - NaN calculation:', {
+      priceValue: price.value,
+      amount: amount,
+      amountAsNumber: Number(amount),
+    });
+    return null;
+  }
+
   return (
     <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1 font-medium">
       ≈ $
-      {(price.value * Number(amount)).toLocaleString(undefined, {
+      {calculatedValue.toLocaleString(undefined, {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
       })}

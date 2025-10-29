@@ -59,12 +59,6 @@ export async function getBalance(
       message += ` (Need ${tokenSymbol} to continue)`;
     }
 
-    console.log('getting Balance result', {
-      balance,
-      tokenSymbol,
-      tokenName,
-      tokenLogoURI,
-    });
     return {
       message,
       body: {

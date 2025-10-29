@@ -4,11 +4,19 @@ import Image from 'next/image';
 import ToolCard from '../tool-card';
 import { TokenBalance } from '../utils';
 import { useChat } from '@/app/(app)/chat/_contexts/chat';
-import { Card, Button, CardHeader } from '@/components/ui';
+import {
+  Card,
+  Button,
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui';
 import { useSwapModal } from '@/app/(app)/portfolio/[address]/_contexts/use-swap-modal';
 import { useFundWallet } from '@privy-io/react-auth/solana';
 import { useSendTransaction } from '@/hooks/privy/use-send-transaction';
 import { useResolveAssetSymbolToAddress } from '@/hooks/queries/token/use-resolve-asset-symbol-to-address';
+import { Info } from 'lucide-react';
 
 import type { ToolInvocation } from 'ai';
 import type { BalanceResultType } from '@/ai';
@@ -98,13 +106,23 @@ const TokenOptions: React.FC<TokenOptionsProps> = ({ tokenSymbol, tokenAddress, 
               >
                 {isResolving ? 'Loading...' : `Swap for ${tokenSymbol}`}
               </Button>
-              <Button
-                onClick={handleBuy}
-                className="w-full"
-                variant="brandOutline"
-                disabled={!wallet?.address}
-              >
-                Buy or Receive {tokenSymbol}
+              <Button onClick={handleBuy} className="w-full" variant="brandOutline">
+                <div className="flex items-center gap-2">
+                  Buy or Receive SOL
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Info className="h-2 w-2 text-brand-600 cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p className="text-sm">
+                          We currently only support buying SOL with fiat on-ramps. Buy SOL then swap
+                          for the token needed for your action.
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
               </Button>
             </div>
           </div>
@@ -128,10 +146,6 @@ const GetBalance: React.FC<Props> = ({ tool, prevToolAgent }) => {
     }),
   );
 
-  // Debug logs
-  console.log('isInStakingOrLendingFlow', isInStakingOrLendingFlow);
-  console.log('tool.state', tool.state);
-  console.log('tool.result', 'result' in tool ? tool.result : 'no result property');
   return (
     <ToolCard
       tool={tool}
