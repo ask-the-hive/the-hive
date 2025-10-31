@@ -6,10 +6,9 @@ export async function lend(args: LendArgumentsType): Promise<LendResultType> {
   return {
     message: `Showing lending interface for ${args.tokenAddress}`,
     body: {
-      // Return empty tx to signal this is a "call" state, not a result
+      status: 'pending',
       tx: '',
       amount: args.amount || 0,
-      // tokenData and poolData will be populated by the UI component
     },
   };
 }

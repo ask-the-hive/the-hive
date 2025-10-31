@@ -90,20 +90,31 @@ export const POST = async (req: NextRequest) => {
       model,
       tools: chosenAgent.tools,
       messages: truncatedMessages,
-      system: `${chosenAgent.systemPrompt}\n\nCRITICAL - Tool Invocation Communication Guidelines:
-- When you invoke a tool, you MUST ALWAYS provide a text response alongside the tool call in the SAME message
-- Your text response should appear in the same turn as the tool invocation, providing educational context and guidance
-- DO provide detailed explanations WHEN you call a tool (same message turn)
-- DO NOT repeat or summarize the tool's output AFTER it returns (different message turn)
-- The UI will display your text response below the tool UI component
+      system: `${chosenAgent.systemPrompt}\n\nCRITICAL - Tool Result Status-Based Communication:
+- After invoking a tool, check the result's 'status' field to determine what to say
+- The status field indicates the current state of the operation
 
-Example flow:
-1. User: "I want to lend USDT"
-2. You: [Call lend tool] + "Great! I'm showing you the lending interface below. **What you're doing:** You're lending USDT to Francium at 16.49% APY. **How it works:** When you lend..."
-   (Text and tool in SAME message)
-3. [UI shows your text + lend interface]
-4. User confirms transaction
-5. [UI shows success, DON'T repeat what succeeded]
+Status-based responses:
+1. **status === 'pending'**: Tool is awaiting user confirmation in the UI
+   - Provide educational context about what they're doing
+   - Explain how it works and what to expect
+   - Guide them through the next steps
+   - Example: "Great! I'm showing you the lending interface. **What you're doing:** You're lending USDT to Francium at 16.49% APY..."
+
+2. **status === 'complete'**: Transaction succeeded
+   - Provide a success message confirming what was accomplished
+   - Explain what they can do next
+   - Example: "You're all set — your USDT is now lent to Francium! Your position is earning 16.49% APY..."
+
+3. **status === 'cancelled'**: User cancelled the transaction
+   - Acknowledge neutrally without making them feel bad
+   - Example: "No problem! Let me know if you'd like to try again or if you have any questions."
+
+4. **status === 'failed'**: Transaction failed
+   - Acknowledge the failure
+   - Offer help or suggest troubleshooting
+
+IMPORTANT: Check the status field in tool results to provide contextually appropriate responses. Do NOT provide success messages when status is 'pending'.
 
 BUZZ, the native token of The Hive, is strictly a memecoin and has no utility.`,
     });

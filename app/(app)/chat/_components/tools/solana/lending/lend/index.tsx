@@ -20,22 +20,22 @@ const Lend: React.FC<Props> = ({ tool, prevToolAgent }) => {
       loadingText="Lending..."
       result={{
         heading: (result: LendResultType) => {
-          // If tx is empty, this is the initial call state - don't show a heading
-          if (result.body?.tx === '') {
-            return null;
+          // If status is pending, this is awaiting user confirmation - don't show a heading
+          if (result.body?.status === 'pending') {
+            return 'Lend';
           }
-          // If tx is populated, this is the completion state
-          return result.body ? 'Lend Complete' : 'Failed to Lend';
+          // If status is complete or failed, show appropriate heading
+          return result.body?.status === 'complete' ? 'Lend Complete' : 'Failed to Lend';
         },
         body: (result: LendResultType) => {
-          // If tx is empty, this is the initial call state - show the call body
-          if (result.body?.tx === '') {
+          // If status is pending, this is awaiting user confirmation - show the call body
+          if (result.body?.status === 'pending') {
             const args = tool.args as LendArgumentsType;
             return <LendCallBody toolCallId={tool.toolCallId} args={args} />;
           }
 
-          // If tx is populated, this is the completion state - show the result
-          if (result.body && result.body.tx) {
+          // If status is complete, show the result
+          if (result.body?.status === 'complete') {
             return (
               <div className="flex justify-center w-full">
                 <div className="w-full md:w-[70%]">

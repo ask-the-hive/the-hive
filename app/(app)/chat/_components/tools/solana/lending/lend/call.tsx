@@ -98,6 +98,7 @@ const LendCallBody: React.FC<Props> = ({ toolCallId, args }) => {
       addToolResult<LendResultBodyType>(toolCallId, {
         message: `Lend successful!`,
         body: {
+          status: 'complete',
           tx,
           amount: Number(amount),
           tokenData: tokenData,
@@ -117,6 +118,11 @@ const LendCallBody: React.FC<Props> = ({ toolCallId, args }) => {
   const handleCancel = () => {
     addToolResult(toolCallId, {
       message: `Lend cancelled`,
+      body: {
+        status: 'cancelled',
+        tx: '',
+        amount: 0,
+      },
     });
   };
 

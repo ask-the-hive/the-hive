@@ -87,6 +87,7 @@ const StakeCallBody: React.FC<Props> = ({ toolCallId, args }) => {
       addToolResult<StakeResultBodyType>(toolCallId, {
         message: `Stake successful!`,
         body: {
+          status: 'complete',
           tx,
           symbol: outputTokenData?.symbol || '',
           outputAmount,
@@ -125,6 +126,11 @@ const StakeCallBody: React.FC<Props> = ({ toolCallId, args }) => {
                 onCancel={() => {
                   addToolResult(toolCallId, {
                     message: `Stake cancelled`,
+                    body: {
+                      status: 'cancelled',
+                      tx: '',
+                      symbol: '',
+                    },
                   });
                 }}
               />

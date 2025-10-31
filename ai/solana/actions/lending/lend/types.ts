@@ -9,6 +9,7 @@ export type LendSchemaType = typeof LendInputSchema;
 export type LendArgumentsType = z.infer<LendSchemaType>;
 
 export type LendResultBodyType = {
+  status: 'pending' | 'complete' | 'failed' | 'cancelled';
   tx: string;
   amount: number;
   tokenData?: Token;

@@ -53,6 +53,7 @@ const UnstakeCallBody: React.FC<Props> = ({ toolCallId, args }) => {
               message: `Unstake successful!`,
               body: {
                 tx,
+                status: 'complete',
                 inputAmount: args.amount || 0,
                 symbol: outputTokenData?.symbol || '',
               },
@@ -61,11 +62,21 @@ const UnstakeCallBody: React.FC<Props> = ({ toolCallId, args }) => {
           onError={(error) => {
             addToolResult(toolCallId, {
               message: `Unstake failed: ${error}`,
+              body: {
+                status: 'failed',
+                error,
+              },
             });
           }}
           onCancel={() => {
             addToolResult(toolCallId, {
               message: `Unstake cancelled`,
+              body: {
+                status: 'cancelled',
+                tx: '',
+                inputAmount: 0,
+                symbol: '',
+              },
             });
           }}
         />

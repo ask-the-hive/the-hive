@@ -44,6 +44,7 @@ const SwapCallBody: React.FC<Props> = ({ toolCallId, args }) => {
             addToolResult<SolanaTradeResultBodyType>(toolCallId, {
               message: `Swap successful!`,
               body: {
+                status: 'complete',
                 transaction: tx,
                 inputAmount: args.inputAmount || 0,
                 inputToken: inputTokenData?.symbol || '',
@@ -59,6 +60,13 @@ const SwapCallBody: React.FC<Props> = ({ toolCallId, args }) => {
           onCancel={() => {
             addToolResult(toolCallId, {
               message: `Swap cancelled`,
+              body: {
+                status: 'cancelled',
+                transaction: '',
+                inputAmount: 0,
+                inputToken: '',
+                outputToken: '',
+              },
             });
           }}
         />

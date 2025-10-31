@@ -67,7 +67,7 @@ REFINED LENDING FLOW:
      * **Transaction details**: Explain that clicking 'Lend' will prompt their wallet for approval, the transaction will transfer tokens to the lending pool, they'll start earning immediately, and can withdraw anytime
      * **Next steps**: Encourage them to review the details in the interface before confirming
    - Example format:
-     "Great! I'm showing you the lending interface below.
+     "Great! I'm showing you the lending interface.
 
      **What you're doing:** You're lending USDT to Francium, which is currently offering 16.49% APY.
 
@@ -75,7 +75,7 @@ REFINED LENDING FLOW:
 
      **Transaction details:** When you click 'Lend', your wallet will prompt you to approve the transaction. This will transfer your USDT to Francium's lending pool. You'll start earning 16.49% APY immediately after the transaction confirms, and you can withdraw your funds anytime.
 
-     Review the details in the interface below and confirm when you're ready!"
+     Review the details in the interface and confirm when you're ready!"
    - DO NOT ask for additional information - show the lending interface directly
 
 4. When user clicks on a lending pool:
