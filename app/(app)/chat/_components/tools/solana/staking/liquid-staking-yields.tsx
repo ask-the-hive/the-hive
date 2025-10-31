@@ -14,6 +14,7 @@ import type {
   LiquidStakingYieldsResultType,
   LiquidStakingYieldsPoolData,
 } from '@/ai';
+import VarApyTooltip from '@/components/var-apy-tooltip';
 
 interface Props {
   tool: ToolInvocation;
@@ -97,9 +98,10 @@ const LiquidStakingYields: React.FC<{
 
             <div className="items-center gap-1 relative hidden md:flex flex-col">
               <p className="text-2xl font-semibold text-green-600">{pool.yield.toFixed(2)}%</p>
-              <p className="text-gray-600 dark:text-gray-400 -top-[7px] relative text-xs">
-                variable APY
-              </p>
+              <div className="flex items-center gap-1 -top-[3px] relative">
+                <p className="text-gray-600 dark:text-gray-400 relative text-xs">APY</p>
+                <VarApyTooltip size="xs" />
+              </div>
             </div>
 
             <div className="flex items-center gap-2 justify-between w-full md:hidden">
@@ -121,7 +123,10 @@ const LiquidStakingYields: React.FC<{
 
               <div className="flex items-end gap-1 relative">
                 <p className="text-2xl font-semibold text-green-600">{pool.yield.toFixed(2)}%</p>
-                <p className="text-gray-600 dark:text-gray-400 -top-[3px] relative">variable APY</p>
+                <div className="flex items-center gap-1 -top-[3px] relative">
+                  <p className="text-gray-600 dark:text-gray-400 relative text-xs">APY</p>
+                  <VarApyTooltip size="xs" />
+                </div>
               </div>
             </div>
 

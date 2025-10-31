@@ -163,7 +163,7 @@ const WithdrawCallBody: React.FC<{
                 <WithdrawResult
                   amount={result.body.amount}
                   tokenSymbol={result.body.tokenSymbol}
-                  protocolName={result.body.protocolName}
+                  // protocolName={result.body.protocolName}
                   // transactionHash={result.body.transactionHash}
                   yieldEarned={result.body.yieldEarned}
                 />
