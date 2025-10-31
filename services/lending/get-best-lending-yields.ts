@@ -1,4 +1,4 @@
-import { StakingRewardsResponse } from '@/db/types';
+import { StakingRewardsResponse } from '../staking-rewards/types';
 
 export const getBestLendingYields = async (): Promise<StakingRewardsResponse> => {
   try {
