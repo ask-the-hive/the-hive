@@ -10,7 +10,7 @@ import WithdrawResult from './withdraw-result';
 import type { ToolInvocation } from 'ai';
 import type {
   WithdrawArgumentsType,
-  WithdrawResultType,
+  WithdrawResultBodyType,
 } from '@/ai/solana/actions/lending/withdraw/schema';
 
 interface Props {
@@ -20,7 +20,7 @@ interface Props {
 
 const WithdrawCall: React.FC<Props> = ({ toolCallId, args }) => {
   const { addToolResult } = useChat();
-  const { sendTransaction, wallet } = useSendTransaction();
+  const { wallet } = useSendTransaction();
   const [isWithdrawing, setIsWithdrawing] = useState(false);
   const [amount, setAmount] = useState('');
   const [selectedToken, setSelectedToken] = useState<any>(null);
@@ -39,7 +39,7 @@ const WithdrawCall: React.FC<Props> = ({ toolCallId, args }) => {
     try {
       // Check if user has enough balance
       if (!balance || Number(balance) < Number(amount)) {
-        addToolResult<WithdrawResultType>(toolCallId, {
+        addToolResult<WithdrawResultBodyType>(toolCallId, {
           message: `Insufficient lending position. You have ${balance || 0} ${selectedToken.symbol} but trying to withdraw ${amount}`,
           body: {
             success: false,
@@ -54,7 +54,7 @@ const WithdrawCall: React.FC<Props> = ({ toolCallId, args }) => {
 
       // TODO: Implement actual withdrawal transaction
       // For now, simulate success
-      addToolResult<WithdrawResultType>(toolCallId, {
+      addToolResult<WithdrawResultBodyType>(toolCallId, {
         message: `Successfully withdrew ${amount} ${selectedToken.symbol} from ${args.protocolAddress}`,
         body: {
           success: true,
@@ -67,7 +67,7 @@ const WithdrawCall: React.FC<Props> = ({ toolCallId, args }) => {
       });
     } catch (error) {
       console.error('Error executing withdraw:', error);
-      addToolResult<WithdrawResultType>(toolCallId, {
+      addToolResult<WithdrawResultBodyType>(toolCallId, {
         message: `Failed to execute withdraw: ${error}`,
         body: {
           success: false,
@@ -93,7 +93,7 @@ const WithdrawCall: React.FC<Props> = ({ toolCallId, args }) => {
         <div className="text-center space-y-4">
           <h3 className="text-lg font-semibold">No Lending Position Found</h3>
           <p className="text-gray-600 dark:text-gray-400">
-            You don't have any lending positions to withdraw from.
+            You don&apos;t have any lending positions to withdraw from.
           </p>
         </div>
       </Card>
@@ -143,7 +143,7 @@ const WithdrawCallBody: React.FC<{
   tool: ToolInvocation;
   args: WithdrawArgumentsType;
   prevToolAgent?: string;
-}> = ({ tool, args, prevToolAgent }) => {
+}> = ({ tool, prevToolAgent }) => {
   return (
     <ToolCard
       tool={tool}
@@ -164,7 +164,7 @@ const WithdrawCallBody: React.FC<{
                   amount={result.body.amount}
                   tokenSymbol={result.body.tokenSymbol}
                   protocolName={result.body.protocolName}
-                  transactionHash={result.body.transactionHash}
+                  // transactionHash={result.body.transactionHash}
                   yieldEarned={result.body.yieldEarned}
                 />
               </div>
