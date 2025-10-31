@@ -130,7 +130,7 @@ const LendCallBody: React.FC<Props> = ({ toolCallId, args }) => {
   if (hasFailed) {
     return null;
   }
-  console.log('tokenData', tokenData);
+
   if (tokenDataLoading || balanceLoading || !tokenData || !tokenData.id) {
     return (
       <div className="flex justify-center w-full">
