@@ -22,21 +22,21 @@ function capitalizeWords(str: string): string {
 const MONTHS = Array.from({ length: 8 }, (_, i) => (i + 1) * 3);
 
 interface Props {
-  outputTokenData?: Token;
+  tokenData?: Token;
   poolData?: LendingYieldsPoolData;
-  outputAmount?: number;
+  amount?: number;
 }
 
-const LendResult: React.FC<Props> = ({ outputTokenData, poolData, outputAmount }) => {
+const LendResult: React.FC<Props> = ({ tokenData, poolData, amount }) => {
   const { user } = usePrivy();
-  const { data: outputTokenPrice } = usePrice(outputTokenData?.id || '');
+  const { data: tokenPrice } = usePrice(tokenData?.id || '');
   const [isNavigating, setIsNavigating] = useState(false);
   const router = useRouter();
 
   const amountUSD = useMemo(() => {
-    if (!outputAmount || !outputTokenPrice) return null;
-    return outputAmount * outputTokenPrice.value;
-  }, [outputAmount, outputTokenPrice]);
+    if (!amount || !tokenPrice) return null;
+    return amount * tokenPrice.value;
+  }, [amount, tokenPrice]);
 
   const handleViewPortfolio = async () => {
     if (!user?.wallet?.address || isNavigating) return;
@@ -52,18 +52,17 @@ const LendResult: React.FC<Props> = ({ outputTokenData, poolData, outputAmount }
   };
 
   const chartData = useMemo(() => {
-    if (!poolData?.yield || !outputAmount || !outputTokenPrice) return [];
+    if (!poolData?.yield || !amount || !tokenPrice) return [];
 
     return MONTHS.map((month) => {
       const yearFraction = month / 12;
-      const projectedYield =
-        ((outputAmount * outputTokenPrice.value * poolData.yield) / 100) * yearFraction;
+      const projectedYield = ((amount * tokenPrice.value * poolData.yield) / 100) * yearFraction;
       return {
         month: `${month}M`,
         yield: Number(projectedYield.toFixed(4)),
       };
     });
-  }, [poolData?.yield, outputAmount, outputTokenPrice]);
+  }, [poolData?.yield, amount, tokenPrice]);
 
   const chartConfig = {
     yield: {
@@ -78,7 +77,7 @@ const LendResult: React.FC<Props> = ({ outputTokenData, poolData, outputAmount }
   return (
     <div className="flex flex-col gap-2">
       <p className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
-        You have successfully lent {outputTokenData?.symbol}!
+        You have successfully lent {tokenData?.symbol}!
       </p>
 
       {(poolData || chartData.length > 0) && (
@@ -105,8 +104,8 @@ const LendResult: React.FC<Props> = ({ outputTokenData, poolData, outputAmount }
               <div className="grid grid-cols-2 md:grid-cols-2 gap-2 pb-4 mt-4 items-center">
                 <div className="flex flex-col items-center">
                   <p className="text-xl font-semibold text-neutral-600 dark:text-neutral-400">
-                    {String(outputAmount)?.length > 8 ? outputAmount?.toFixed(6) : outputAmount}{' '}
-                    {outputTokenData?.symbol} {amountUSD && ` / $${amountUSD.toFixed(2)}`}
+                    {String(amount)?.length > 8 ? amount?.toFixed(6) : amount} {tokenData?.symbol}{' '}
+                    {amountUSD && ` / $${amountUSD.toFixed(2)}`}
                   </p>
                   <p className="text-gray-600 text-sm dark:text-gray-400">Amount Lent</p>
                 </div>

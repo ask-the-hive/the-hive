@@ -1,8 +1,18 @@
+import { z } from 'zod';
+import { LendInputSchema } from './input-schema';
+import { SolanaActionResult } from '../../solana-action';
+import { LendingYieldsPoolData } from '../lending-yields/types';
+import { Token } from '@/db/types';
+
+export type LendSchemaType = typeof LendInputSchema;
+
+export type LendArgumentsType = z.infer<LendSchemaType>;
+
 export type LendResultBodyType = {
-  success: boolean;
-  transactionHash?: string;
+  tx: string;
   amount: number;
-  tokenSymbol: string;
-  protocolName: string;
-  error?: string;
+  tokenData?: Token;
+  poolData?: LendingYieldsPoolData;
 };
+
+export type LendResultType = SolanaActionResult<LendResultBodyType>;

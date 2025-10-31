@@ -6,7 +6,7 @@ import { Card, Button } from '@/components/ui';
 import { SOLANA_LENDING_POOL_DATA_STORAGE_KEY } from '@/lib/constants';
 import { cn } from '@/lib/utils';
 import { capitalizeWords, getConfidenceLabel } from '@/lib/string-utils';
-import PoolDetailsModal from './pool-details-modal';
+import PoolDetailsModal from '../staking/pool-details-modal';
 
 import type { ToolInvocation } from 'ai';
 import type {
@@ -92,7 +92,7 @@ const LendingYields: React.FC<{
               {pool.project && <p className="font-medium">{capitalizeWords(pool.project)}</p>}
             </div>
 
-            <div className="items-end gap-1 relative hidden md:flex flex-col">
+            <div className="items-center gap-1 relative hidden md:flex flex-col">
               <p className="text-2xl font-semibold text-green-600">{pool.yield.toFixed(2)}%</p>
               <p className="text-gray-600 dark:text-gray-400 -top-[7px] relative text-xs">
                 variable APY
@@ -158,6 +158,7 @@ const LendingYields: React.FC<{
       <PoolDetailsModal
         pool={selectedPool}
         isOpen={isModalOpen}
+        variant="lending"
         onClose={() => {
           setIsModalOpen(false);
           setSelectedPool(null);

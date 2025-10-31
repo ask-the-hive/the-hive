@@ -28,15 +28,25 @@ interface Props {
 
 const SOL_MINT = 'So11111111111111111111111111111111111111112';
 
-interface TokenOptionsProps {
+interface TokenFundingOptionsProps {
   tokenSymbol: string;
   tokenAddress?: string;
   logoURI?: string;
+  onComplete?: () => void;
 }
 
-const TokenOptions: React.FC<TokenOptionsProps> = ({ tokenSymbol, tokenAddress, logoURI }) => {
+const TokenFundingOptions: React.FC<TokenFundingOptionsProps> = ({
+  tokenSymbol,
+  tokenAddress,
+  logoURI,
+  onComplete,
+}) => {
   const { onOpen: openSwapModal } = useSwapModal();
-  const { fundWallet } = useFundWallet();
+  const { fundWallet } = useFundWallet({
+    onUserExited: () => {
+      onComplete?.();
+    },
+  });
   const { wallet } = useSendTransaction();
 
   const isTokenSOL = tokenSymbol === 'SOL';
@@ -62,13 +72,17 @@ const TokenOptions: React.FC<TokenOptionsProps> = ({ tokenSymbol, tokenAddress, 
 
   const handleSwap = () => {
     if (finalTokenAddress) {
-      openSwapModal('buy', finalTokenAddress);
+      openSwapModal('buy', finalTokenAddress, onComplete);
     }
   };
 
-  const handleBuy = () => {
+  const handleBuy = async () => {
     if (wallet?.address) {
-      fundWallet(wallet.address, { amount: '100' });
+      try {
+        await fundWallet(wallet.address, { amount: '1' });
+      } catch {
+        // no-op; user may cancel funding
+      }
     }
   };
 
@@ -85,8 +99,8 @@ const TokenOptions: React.FC<TokenOptionsProps> = ({ tokenSymbol, tokenAddress, 
                   width={50}
                   height={50}
                   className="w-12 h-12 rounded-full"
-                  onError={(e) => {
-                    e.currentTarget.style.display = 'none';
+                  onError={(ev) => {
+                    ev.currentTarget.style.display = 'none';
                   }}
                 />
               )}
@@ -110,15 +124,25 @@ const TokenOptions: React.FC<TokenOptionsProps> = ({ tokenSymbol, tokenAddress, 
                 <div className="flex items-center gap-2">
                   Buy or Receive SOL
                   <TooltipProvider>
-                    <Tooltip>
+                    <Tooltip delayDuration={0}>
                       <TooltipTrigger asChild>
-                        <Info className="h-2 w-2 text-brand-600 cursor-help" />
+                        <div
+                          className="inline-flex items-center"
+                          onClick={(e) => e.stopPropagation()}
+                          onMouseDown={(e) => e.stopPropagation()}
+                        >
+                          <Info className="h-3 w-3 text-brand-600 cursor-help" />
+                        </div>
                       </TooltipTrigger>
                       <TooltipContent>
-                        <p className="text-sm">
-                          We currently only support buying SOL with fiat on-ramps. Buy SOL then swap
-                          for the token needed for your action.
-                        </p>
+                        <div className="p-2 flex flex-col">
+                          <p className="text-sm">
+                            We currently only support buying SOL with fiat on-ramps.
+                          </p>
+                          <p className="text-sm">
+                            Buy or receive SOL then swap for the token needed for your action.
+                          </p>
+                        </div>
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
@@ -133,7 +157,7 @@ const TokenOptions: React.FC<TokenOptionsProps> = ({ tokenSymbol, tokenAddress, 
 };
 
 const GetBalance: React.FC<Props> = ({ tool, prevToolAgent }) => {
-  const { messages } = useChat();
+  const { messages, sendMessage } = useChat();
 
   // Check if we're in a staking flow by looking for recent staking-related tool invocations
   const isInStakingOrLendingFlow = messages.some((message) =>
@@ -170,10 +194,15 @@ const GetBalance: React.FC<Props> = ({ tool, prevToolAgent }) => {
             // If in staking/lending flow and balance is 0, show options
             if (isInFlow && hasZeroBalance) {
               return (
-                <TokenOptions
+                <TokenFundingOptions
                   tokenSymbol={tokenSymbol}
                   tokenAddress={tool?.args?.tokenAddress}
                   logoURI={result.body.logoURI}
+                  onComplete={() =>
+                    sendMessage(
+                      `I have the required ${tokenSymbol}. Please continue the lending flow.`,
+                    )
+                  }
                 />
               );
             }

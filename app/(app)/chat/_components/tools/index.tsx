@@ -10,7 +10,7 @@ import {
   Trade,
   LiquidStakingYields,
   LendingYieldsTool,
-  LendCallBody,
+  LendTool,
   WithdrawCallBody,
   Transfer as SolanaTransfer,
   Stake,
@@ -347,7 +347,7 @@ const ToolInvocation: React.FC<Props> = ({ tool, prevToolAgent }) => {
       case SOLANA_LENDING_YIELDS_ACTION:
         return <LendingYieldsTool tool={tool} prevToolAgent={prevToolAgent} />;
       case SOLANA_LEND_ACTION:
-        return <LendCallBody tool={tool} args={tool.args} prevToolAgent={prevToolAgent} />;
+        return <LendTool tool={tool} prevToolAgent={prevToolAgent} />;
       case SOLANA_WITHDRAW_ACTION:
         return <WithdrawCallBody tool={tool} args={tool.args} prevToolAgent={prevToolAgent} />;
       case SOLANA_GET_TOKEN_ADDRESS_ACTION:
@@ -379,7 +379,7 @@ const ToolInvocation: React.FC<Props> = ({ tool, prevToolAgent }) => {
     case SOLANA_LENDING_YIELDS_ACTION:
       return <LendingYieldsTool tool={tool} prevToolAgent={prevToolAgent} />;
     case SOLANA_LEND_ACTION:
-      return <LendCallBody tool={tool} args={tool.args} prevToolAgent={prevToolAgent} />;
+      return <LendTool tool={tool} prevToolAgent={prevToolAgent} />;
     case SOLANA_WITHDRAW_ACTION:
       return <WithdrawCallBody tool={tool} args={tool.args} prevToolAgent={prevToolAgent} />;
     case SOLANA_LIQUID_STAKING_YIELDS_ACTION:
