@@ -23,13 +23,28 @@ export async function getBalance(
         new PublicKey(args.walletAddress),
       );
 
-      const token_account = await connection.getTokenAccountBalance(token_address);
-      balance = token_account.value.uiAmount ?? 0;
+      try {
+        const token_account = await connection.getTokenAccountBalance(token_address);
+        balance = token_account.value.uiAmount ?? 0;
+      } catch (tokenError) {
+        // Token account doesn't exist, balance is 0
+        console.log('Token account does not exist, balance is 0:', tokenError);
+        balance = 0;
+      }
     }
 
-    const tokenData = args.tokenAddress ? await getToken(args.tokenAddress) : null;
-    const tokenSymbol = tokenData?.symbol || 'SOL';
-    const tokenName = tokenData?.name || 'Solana';
+    let tokenData = null;
+    if (args.tokenAddress) {
+      try {
+        tokenData = await getToken(args.tokenAddress);
+      } catch (tokenError) {
+        console.log('Error fetching token data:', tokenError);
+        tokenData = null;
+      }
+    }
+
+    const tokenSymbol = tokenData?.symbol ?? '';
+    const tokenName = tokenData?.name ?? '';
     const tokenLogoURI =
       tokenData?.logoURI ||
       'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTX6PYmAiDpUliZWnmCHKPc3VI7QESDKhLndQ&s';
@@ -40,6 +55,8 @@ export async function getBalance(
       message += ` (Ready for staking)`;
     } else if (tokenSymbol === 'SOL' && balance === 0) {
       message += ` (Need SOL to stake)`;
+    } else if (args.tokenAddress && balance === 0) {
+      message += ` (Need ${tokenSymbol} to continue)`;
     }
 
     return {

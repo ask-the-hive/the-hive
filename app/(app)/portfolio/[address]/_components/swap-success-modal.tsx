@@ -49,7 +49,7 @@ const SwapSuccessModal: React.FC<SwapSuccessModalProps> = ({ isOpen, onClose, sw
 
         {/* Close Button */}
         <div className="p-6 pt-0">
-          <Button onClick={onClose} className="w-full" variant="default">
+          <Button onClick={onClose} className="w-full" variant="outline">
             Close
           </Button>
         </div>
