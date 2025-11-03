@@ -8,9 +8,9 @@ export type UnstakeArgumentsType = z.infer<UnstakeSchemaType>;
 
 export type UnstakeResultBodyType = {
   status: 'pending' | 'complete' | 'failed' | 'cancelled';
-  tx: string;
-  inputAmount: number;
-  symbol: string;
+    tx: string;
+    inputAmount: number;
+    symbol: string;
 };
 
 export type UnstakeResultType = SolanaActionResult<UnstakeResultBodyType>;

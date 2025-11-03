@@ -191,7 +191,7 @@ const GetBalance: React.FC<Props> = ({ tool, prevToolAgent }) => {
           const tokenSymbol = result.body?.token || '';
           const isInFlow = isInStakingOrLendingFlow;
           const hasZeroBalance = result.body?.balance && result.body.balance <= 0.00001;
-
+          console.log('isInFlow', isInFlow);
           if (result.body) {
             // If in staking/lending flow and balance is 0, show options
             if (isInFlow && hasZeroBalance) {

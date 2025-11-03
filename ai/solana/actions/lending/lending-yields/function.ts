@@ -20,7 +20,6 @@ export async function getLendingYields(): Promise<SolanaActionResult<LendingYiel
       'save', // Save Finance
       'credix', // Credix
       'francium', // Francium
-      'superstate-uscc', // Superstate
     ];
 
     // Stablecoin tokens for lending

@@ -9,6 +9,7 @@ import { LendingYieldsPoolData } from '@/ai/solana/actions/lending/lending-yield
 import { useTokenDataByAddress, usePrice } from '@/hooks';
 import PoolEarningPotential from '../../pool-earning-potential';
 import { capitalizeWords } from '@/lib/string-utils';
+import { VersionedTransaction } from '@solana/web3.js';
 
 import type { LendArgumentsType, LendResultBodyType } from '@/ai/solana/actions/lending/lend/types';
 import VarApyTooltip from '@/components/var-apy-tooltip';
@@ -20,7 +21,7 @@ interface Props {
 
 const LendCallBody: React.FC<Props> = ({ toolCallId, args }) => {
   const { addToolResult } = useChat();
-  const { wallet } = useSendTransaction();
+  const { wallet, sendTransaction } = useSendTransaction();
   const [isLending, setIsLending] = useState(false);
   const [amount, setAmount] = useState(args.amount?.toString() || '');
   const [poolData, setPoolData] = useState<LendingYieldsPoolData | null>(null);
@@ -91,9 +92,33 @@ const LendCallBody: React.FC<Props> = ({ toolCallId, args }) => {
         return;
       }
 
-      // TODO: Implement actual lending transaction
-      // For now, simulate success
-      const tx = 'stubbed-transaction-hash';
+      // Build lending transaction via backend API (Francium SDK requires Node.js)
+      const response = await fetch('/api/lending/build-transaction', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          walletAddress: wallet.address,
+          tokenMint: tokenData.id,
+          tokenSymbol: tokenData.symbol,
+          amount: Number(amount),
+          protocol: poolData.project,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to build transaction');
+      }
+
+      const { transaction: serializedTx } = await response.json();
+
+      // Deserialize the transaction
+      const transactionBuffer = Buffer.from(serializedTx, 'base64');
+      const transaction = VersionedTransaction.deserialize(transactionBuffer);
+
+      const tx = await sendTransaction(transaction);
 
       addToolResult<LendResultBodyType>(toolCallId, {
         message: `Lend successful!`,
@@ -108,7 +133,7 @@ const LendCallBody: React.FC<Props> = ({ toolCallId, args }) => {
     } catch (error) {
       console.error('Error executing lend:', error);
       addToolResult(toolCallId, {
-        message: `Lend failed: ${error}`,
+        message: `Lend failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
       });
     } finally {
       setIsLending(false);

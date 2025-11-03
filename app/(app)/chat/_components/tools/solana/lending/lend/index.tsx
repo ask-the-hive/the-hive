@@ -43,6 +43,7 @@ const Lend: React.FC<Props> = ({ tool, prevToolAgent }) => {
                     tokenData={result.body.tokenData}
                     poolData={result.body.poolData}
                     amount={result.body.amount}
+                    tx={result.body.tx}
                   />
                 </div>
               </div>

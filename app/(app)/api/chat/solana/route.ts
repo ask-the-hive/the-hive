@@ -54,73 +54,73 @@ Which interests you more - lending, staking, or finding trending tokens?"
 Be conversational, helpful, and guide them toward The Hive's features. Once they express interest in a specific feature, the system will route them to the specialized agent.`;
 
 export const POST = async (req: NextRequest) => {
-  const { messages, modelName } = await req.json();
+    const { messages, modelName } = await req.json();
 
-  let MAX_TOKENS: number | undefined = undefined;
-  let model: LanguageModelV1 | undefined = undefined;
+    let MAX_TOKENS: number | undefined = undefined;
+    let model: LanguageModelV1 | undefined = undefined;
 
-  if (modelName === Models.OpenAI) {
+    if (modelName === Models.OpenAI) {
     model = openai('gpt-4o-mini');
-    MAX_TOKENS = 128000;
-  }
-
-  if (modelName === Models.Anthropic) {
-    model = anthropic('claude-3-5-sonnet-latest');
-    MAX_TOKENS = 190000;
-  }
-
-  if (modelName === Models.XAI) {
-    model = xai('grok-beta');
-    MAX_TOKENS = 131072;
-  }
-
-  if (modelName === Models.Gemini) {
-    model = google('gemini-2.0-flash-exp');
-    MAX_TOKENS = 1048576;
-  }
-
-  if (modelName === Models.Deepseek) {
-    model = deepseek('deepseek-chat') as LanguageModelV1;
-    MAX_TOKENS = 64000;
-  }
-
-  if (!model || !MAX_TOKENS) {
-    throw new Error('Invalid model');
-  }
-
-  // Add message token limit check
-  let tokenCount = 0;
-  const truncatedMessages = [];
-
-  // Process messages from newest to oldest
-  for (let i = messages.length - 1; i >= 0; i--) {
-    const msg = messages[i];
-    // Rough token estimation: 4 chars ≈ 1 token
-    const estimatedTokens = Math.ceil((msg.content?.length || 0) / 4);
-
-    if (tokenCount + estimatedTokens <= MAX_TOKENS) {
-      truncatedMessages.unshift(msg);
-      tokenCount += estimatedTokens;
-    } else {
-      break;
+        MAX_TOKENS = 128000;
     }
-  }
 
-  const chosenAgent = await chooseAgent(model, truncatedMessages);
+    if (modelName === Models.Anthropic) {
+    model = anthropic('claude-3-5-sonnet-latest');
+        MAX_TOKENS = 190000;
+    }
 
-  let streamTextResult: StreamTextResult<Record<string, CoreTool<any, any>>, any>;
+    if (modelName === Models.XAI) {
+    model = xai('grok-beta');
+        MAX_TOKENS = 131072;
+    }
+
+    if (modelName === Models.Gemini) {
+    model = google('gemini-2.0-flash-exp');
+        MAX_TOKENS = 1048576;
+    }
+
+    if (modelName === Models.Deepseek) {
+    model = deepseek('deepseek-chat') as LanguageModelV1;
+        MAX_TOKENS = 64000;
+    }
+
+    if (!model || !MAX_TOKENS) {
+    throw new Error('Invalid model');
+    }
+
+    // Add message token limit check
+    let tokenCount = 0;
+    const truncatedMessages = [];
+
+    // Process messages from newest to oldest
+    for (let i = messages.length - 1; i >= 0; i--) {
+        const msg = messages[i];
+        // Rough token estimation: 4 chars ≈ 1 token
+        const estimatedTokens = Math.ceil((msg.content?.length || 0) / 4);
+
+        if (tokenCount + estimatedTokens <= MAX_TOKENS) {
+            truncatedMessages.unshift(msg);
+            tokenCount += estimatedTokens;
+        } else {
+            break;
+        }
+    }
+
+    const chosenAgent = await chooseAgent(model, truncatedMessages);
+
+    let streamTextResult: StreamTextResult<Record<string, CoreTool<any, any>>, any>;
 
   if (!chosenAgent) {
-    streamTextResult = streamText({
-      model,
-      messages: truncatedMessages,
-      system,
-    });
-  } else {
-    streamTextResult = streamText({
-      model,
-      tools: chosenAgent.tools,
-      messages: truncatedMessages,
+        streamTextResult = streamText({
+            model,
+            messages: truncatedMessages,
+            system,
+        });
+    } else {
+        streamTextResult = streamText({
+            model,
+            tools: chosenAgent.tools,
+            messages: truncatedMessages,
       system: `${chosenAgent.systemPrompt}\n\nCRITICAL - Tool Result Status-Based Communication:
 - After invoking a tool, check the result's 'status' field to determine what to say
 - The status field indicates the current state of the operation
@@ -148,8 +148,8 @@ Status-based responses:
 IMPORTANT: Check the status field in tool results to provide contextually appropriate responses. Do NOT provide success messages when status is 'pending'.
 
 BUZZ, the native token of The Hive, is strictly a memecoin and has no utility.`,
-    });
-  }
+        });
+    }
 
-  return streamTextResult.toDataStreamResponse();
+    return streamTextResult.toDataStreamResponse();
 };
