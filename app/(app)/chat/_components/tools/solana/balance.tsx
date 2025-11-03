@@ -179,7 +179,6 @@ const GetBalance: React.FC<Props> = ({ tool, prevToolAgent }) => {
           // console.log('result in balance heading', result);
           if (result.body?.token) {
             if (isInStakingOrLendingFlow && result.body?.balance > 0.00001) {
-              // Dont show a heading if a balance exists, we want to continue the flow instead
               return `${result.body.balance} ${result.body.token} balance`;
             }
             return `Fetched ${result.body.token} balance`;
@@ -187,11 +186,11 @@ const GetBalance: React.FC<Props> = ({ tool, prevToolAgent }) => {
           return `No balance found`;
         },
         body: (result: BalanceResultType) => {
-          console.log('result in balance body', result);
           const tokenSymbol = result.body?.token || '';
           const isInFlow = isInStakingOrLendingFlow;
-          const hasZeroBalance = result.body?.balance && result.body.balance <= 0.00001;
-          console.log('isInFlow', isInFlow);
+          const hasZeroBalance =
+            result.body?.balance !== undefined && result.body.balance <= 0.00001;
+
           if (result.body) {
             // If in staking/lending flow and balance is 0, show options
             if (isInFlow && hasZeroBalance) {
