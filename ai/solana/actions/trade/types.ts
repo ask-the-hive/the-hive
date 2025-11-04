@@ -8,10 +8,10 @@ export type SolanaTradeArgumentsType = z.infer<SolanaTradeSchemaType>;
 
 export type SolanaTradeResultBodyType = {
   status: 'pending' | 'complete' | 'failed' | 'cancelled';
-  transaction: string;
-  inputAmount: number;
-  inputToken: string;
-  outputToken: string;
+    transaction: string;
+    inputAmount: number;
+    inputToken: string;
+    outputToken: string;
 };
 
 export type SolanaTradeResultType = SolanaActionResult<SolanaTradeResultBodyType>;

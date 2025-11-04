@@ -8900,6 +8900,28 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@project-serum/anchor@npm:0.16.2":
+  version: 0.16.2
+  resolution: "@project-serum/anchor@npm:0.16.2"
+  dependencies:
+    "@project-serum/borsh": "npm:^0.2.2"
+    "@solana/web3.js": "npm:^1.17.0"
+    base64-js: "npm:^1.5.1"
+    bn.js: "npm:^5.1.2"
+    bs58: "npm:^4.0.1"
+    buffer-layout: "npm:^1.2.0"
+    camelcase: "npm:^5.3.1"
+    crypto-hash: "npm:^1.3.0"
+    eventemitter3: "npm:^4.0.7"
+    find: "npm:^0.3.0"
+    js-sha256: "npm:^0.9.0"
+    pako: "npm:^2.0.3"
+    snake-case: "npm:^3.0.4"
+    toml: "npm:^3.0.0"
+  checksum: 10c0/f1b76f0079cd55c7b57890e60166fed2aba53af252e2457bc0054f22480a3228e7a0966f266be51da327a067c1365203324220a6a1ec2da6ec0e494ff3d82a5f
+  languageName: node
+  linkType: hard
+
 "@project-serum/anchor@npm:0.23.0, @project-serum/anchor@npm:^0.23.0":
   version: 0.23.0
   resolution: "@project-serum/anchor@npm:0.23.0"
@@ -9160,7 +9182,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@project-serum/serum@npm:0.13.65, @project-serum/serum@npm:^0.13.21, @project-serum/serum@npm:^0.13.38, @project-serum/serum@npm:^0.13.61, @project-serum/serum@npm:^0.13.65":
+"@project-serum/serum@npm:0.13.65, @project-serum/serum@npm:^0.13.21, @project-serum/serum@npm:^0.13.38, @project-serum/serum@npm:^0.13.60, @project-serum/serum@npm:^0.13.61, @project-serum/serum@npm:^0.13.65":
   version: 0.13.65
   resolution: "@project-serum/serum@npm:0.13.65"
   dependencies:
@@ -12645,6 +12667,29 @@ __metadata:
     superstruct: "npm:^0.14.2"
     tweetnacl: "npm:^1.0.0"
   checksum: 10c0/8518770b2ac5513e866b25cce64af12249e6af4228703b13243254bdb8b72f1c41219d8fb2d12e138c94a390dab17d634e05a36661504c74d538682ba3fd70ec
+  languageName: node
+  linkType: hard
+
+"@solana/web3.js@npm:1.63.1":
+  version: 1.63.1
+  resolution: "@solana/web3.js@npm:1.63.1"
+  dependencies:
+    "@babel/runtime": "npm:^7.12.5"
+    "@noble/ed25519": "npm:^1.7.0"
+    "@noble/hashes": "npm:^1.1.2"
+    "@noble/secp256k1": "npm:^1.6.3"
+    "@solana/buffer-layout": "npm:^4.0.0"
+    bigint-buffer: "npm:^1.1.5"
+    bn.js: "npm:^5.0.0"
+    borsh: "npm:^0.7.0"
+    bs58: "npm:^4.0.1"
+    buffer: "npm:6.0.1"
+    fast-stable-stringify: "npm:^1.0.0"
+    jayson: "npm:^3.4.4"
+    node-fetch: "npm:2"
+    rpc-websockets: "npm:^7.5.0"
+    superstruct: "npm:^0.14.2"
+  checksum: 10c0/4661c1f026c2ae01b97f29778244c7a90c85ed81e3898da2b792b56024ef14203402d4b673bcfe548b103460d6a7bc925795a8ac0b8ed8d6f56815252f40afc2
   languageName: node
   linkType: hard
 
@@ -16958,6 +17003,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"axios@npm:^0.24.0":
+  version: 0.24.0
+  resolution: "axios@npm:0.24.0"
+  dependencies:
+    follow-redirects: "npm:^1.14.4"
+  checksum: 10c0/d106561e761bf48633633073626eafb80289eb7c7c27f9fae4fb796939b6ecd2c9f63b596e3b3d872f7c0bec6b2fb117c58456d387e4ca2da7fc07c795a979c3
+  languageName: node
+  linkType: hard
+
 "axios@npm:^0.28.0":
   version: 0.28.1
   resolution: "axios@npm:0.28.1"
@@ -18879,6 +18933,7 @@ __metadata:
     eslint-config-next: "npm:15.1.2"
     ethers: "npm:^6.13.4"
     framer-motion: "npm:^12.4.3"
+    francium-sdk: "npm:^1.4.16"
     helius-sdk: "npm:^1.4.1"
     jsbi: "npm:^4.3.0"
     jsdom: "npm:^25.0.1"
@@ -21931,7 +21986,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"follow-redirects@npm:^1.14.0, follow-redirects@npm:^1.14.9, follow-redirects@npm:^1.15.0, follow-redirects@npm:^1.15.6":
+"follow-redirects@npm:^1.14.0, follow-redirects@npm:^1.14.4, follow-redirects@npm:^1.14.9, follow-redirects@npm:^1.15.0, follow-redirects@npm:^1.15.6":
   version: 1.15.11
   resolution: "follow-redirects@npm:1.15.11"
   peerDependenciesMeta:
@@ -22090,6 +22145,24 @@ __metadata:
     react-dom:
       optional: true
   checksum: 10c0/66d0e8cd0b99fdbc39bb6d8c45dee9f710003c1919d306d18b21c2b3cb4233f9546e1fc4f01dcff03014d12c561fd973e1a1678958f81ca1d7eb98db2ce04b0b
+  languageName: node
+  linkType: hard
+
+"francium-sdk@npm:^1.4.16":
+  version: 1.4.16
+  resolution: "francium-sdk@npm:1.4.16"
+  dependencies:
+    "@project-serum/anchor": "npm:0.16.2"
+    "@project-serum/borsh": "npm:^0.2.2"
+    "@project-serum/serum": "npm:^0.13.60"
+    "@solana/spl-token": "npm:^0.1.8"
+    "@solana/web3.js": "npm:1.63.1"
+    axios: "npm:^0.24.0"
+    bigint-buffer: "npm:^1.1.5"
+    bignumber.js: "npm:^9.0.1"
+    bn.js: "npm:^5.2.0"
+    lodash: "npm:^4.17.21"
+  checksum: 10c0/a8d3ee25facff26fbef222e4289446b4c7212325fe5df0fd4b32bc0612ff26ef1e20c7d4b2de6b8428bf3b0746bd7b13f2f03721b569bf7cbc7bda4492370a3f
   languageName: node
   linkType: hard
 

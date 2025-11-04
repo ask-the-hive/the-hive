@@ -80,6 +80,7 @@
     "drizzle-orm": "^0.29.3",
     "ethers": "^6.13.4",
     "framer-motion": "^12.4.3",
+    "francium-sdk": "^1.4.16",
     "helius-sdk": "^1.4.1",
     "jsbi": "^4.3.0",
     "jsdom": "^25.0.1",
