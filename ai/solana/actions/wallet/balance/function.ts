@@ -49,10 +49,13 @@ export async function getBalance(
         new PublicKey(args.walletAddress),
       );
 
+      console.log('🔍 Calculated ATA for getBalance:', token_address.toBase58());
+      console.log('🔍 Wallet address:', args.walletAddress);
+
       try {
         const token_account = await connection.getTokenAccountBalance(token_address);
         balance = token_account.value.uiAmount ?? 0;
-        console.log('Token balance:', balance);
+        console.log('✅ Token balance from getBalance:', balance);
       } catch (tokenError) {
         // Token account does not exist, balance is 0
         console.log('❌ Token account does not exist, balance is 0');

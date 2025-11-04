@@ -8,7 +8,7 @@ Parameters:
 - protocolAddress: The contract address of the lending protocol
 - walletAddress: The user's wallet address
 
-NOTE: The Lending Agent should check SOL balance using the balance tool BEFORE calling this action. Users need at least 0.01 SOL to cover transaction fees. If they don't have enough SOL, direct them to add SOL to their wallet first.
+NOTE: The Lending Agent should check SOL balance using the balance tool BEFORE calling this action. Users need at least 0.0001 SOL to cover transaction fees. If they don't have enough SOL, direct them to add SOL to their wallet first.
 
 CRITICAL - Check the result status and respond accordingly:
 
