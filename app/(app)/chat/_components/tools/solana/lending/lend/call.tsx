@@ -26,7 +26,7 @@ const LendCallBody: React.FC<Props> = ({ toolCallId, args }) => {
   const [amount, setAmount] = useState(args.amount?.toString() || '');
   const [poolData, setPoolData] = useState<LendingYieldsPoolData | null>(null);
   const [hasFailed, setHasFailed] = useState(false);
-
+  console.log('LendCallBody args', args);
   // Fetch token data from the address
   const { data: tokenData, isLoading: tokenDataLoading } = useTokenDataByAddress(args.tokenAddress);
 
@@ -41,8 +41,15 @@ const LendCallBody: React.FC<Props> = ({ toolCallId, args }) => {
 
   // Fetch pool data from sessionStorage
   useEffect(() => {
+    console.log('=== Pool Data Fetch Debug ===');
+    console.log('tokenData:', tokenData);
+    console.log('tokenData?.symbol:', tokenData?.symbol);
+    console.log('typeof window:', typeof window);
+
     if (typeof window !== 'undefined' && tokenData?.symbol) {
       const storedPoolData = sessionStorage.getItem(SOLANA_LENDING_POOL_DATA_STORAGE_KEY);
+      console.log('storedPoolData from sessionStorage:', storedPoolData);
+      debugger;
       if (storedPoolData) {
         try {
           const allPools = JSON.parse(storedPoolData);
@@ -76,7 +83,7 @@ const LendCallBody: React.FC<Props> = ({ toolCallId, args }) => {
         });
       }
     }
-  }, [tokenData?.symbol, toolCallId, addToolResult]);
+  }, [tokenData, toolCallId, addToolResult]);
 
   const handleLend = async () => {
     if (!wallet || !tokenData || !amount || !poolData) return;
@@ -151,23 +158,20 @@ const LendCallBody: React.FC<Props> = ({ toolCallId, args }) => {
     });
   };
 
+  console.log('tokenData', tokenData);
+  console.log('tokenDataLoading', tokenDataLoading);
+  console.log('balanceLoading', balanceLoading);
+  console.log('tokenData.id', tokenData?.id);
+  console.log('poolData', poolData);
+
   // If we've failed to load data, don't render anything (error already sent to agent)
   if (hasFailed) {
     return null;
   }
 
-  if (tokenDataLoading || balanceLoading || !tokenData || !tokenData.id) {
-    return (
-      <div className="flex justify-center w-full">
-        <div className="w-full md:w-[70%]">
-          <Skeleton className="h-48 w-full" />
-        </div>
-      </div>
-    );
-  }
-
-  // Don't render until we have pool data
-  if (!poolData) {
+  // Only wait for essential data (tokenData and balance), poolData is optional
+  if (tokenDataLoading || balanceLoading || !tokenData || !tokenData.id || !poolData) {
+    console.log('Waiting for tokenData or balance...');
     return (
       <div className="flex justify-center w-full">
         <div className="w-full md:w-[70%]">

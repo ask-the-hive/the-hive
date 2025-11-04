@@ -118,6 +118,12 @@ CRITICAL - When user needs SOL:
 - ALWAYS show the trading interface immediately when SOL balance is 0
 - NEVER auto-execute trades - only show the trading interface for user to complete
 
+CRITICAL - When user closes onramp:
+If you receive the message "I have closed the onramp in the staking flow.":
+- Respond with: "Thanks for using the onramp! Once you have received SOL in your wallet, you can continue with staking your SOL."
+- **DO NOT** check balance again yet - wait for the user to indicate they have funds
+- The user will let you know when they're ready to continue
+
 EXAMPLE PATTERNS TO RECOGNIZE:
 - "stake SOL for JupSOL" → Stake SOL to get JupSOL tokens
 - "stake 0.04 SOL for MSOL" → Stake 0.04 SOL to get MSOL tokens

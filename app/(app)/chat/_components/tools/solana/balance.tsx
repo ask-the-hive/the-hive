@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useCallback } from 'react';
 import Image from 'next/image';
 
 import ToolCard from '../tool-card';
@@ -32,7 +32,7 @@ interface TokenFundingOptionsProps {
   tokenSymbol: string;
   tokenAddress?: string;
   logoURI?: string;
-  onComplete?: () => void;
+  onComplete?: (type: 'fundWallet' | 'swap') => void;
 }
 
 const TokenFundingOptions: React.FC<TokenFundingOptionsProps> = ({
@@ -44,7 +44,7 @@ const TokenFundingOptions: React.FC<TokenFundingOptionsProps> = ({
   const { onOpen: openSwapModal } = useSwapModal();
   const { fundWallet } = useFundWallet({
     onUserExited: () => {
-      onComplete?.();
+      onComplete?.('fundWallet');
     },
   });
   const { wallet } = useSendTransaction();
@@ -72,7 +72,7 @@ const TokenFundingOptions: React.FC<TokenFundingOptionsProps> = ({
 
   const handleSwap = () => {
     if (finalTokenAddress) {
-      openSwapModal('buy', finalTokenAddress, onComplete);
+      openSwapModal('buy', finalTokenAddress, () => onComplete?.('swap'));
     }
   };
 
@@ -159,15 +159,46 @@ const TokenFundingOptions: React.FC<TokenFundingOptionsProps> = ({
 const GetBalance: React.FC<Props> = ({ tool, prevToolAgent }) => {
   const { messages, sendMessage } = useChat();
 
-  // Check if we're in a staking flow by looking for recent staking-related tool invocations
-  const isInStakingOrLendingFlow = messages.some((message) =>
+  // Check if we're in a staking or lending flow
+  const isInStakingFlow = messages.some((message) =>
     message.parts?.some((part) => {
-      return (
-        part.type === 'tool-invocation' &&
-        (part.toolInvocation.toolName.includes(`staking-`) ||
-          part.toolInvocation.toolName.includes(`lending-`))
-      );
+      return part.type === 'tool-invocation' && part.toolInvocation.toolName.includes(`staking-`);
     }),
+  );
+
+  const isInLendingFlow = messages.some((message) =>
+    message.parts?.some((part) => {
+      return part.type === 'tool-invocation' && part.toolInvocation.toolName.includes(`lending-`);
+    }),
+  );
+
+  const isInStakingOrLendingFlow = isInStakingFlow || isInLendingFlow;
+
+  // Handler for when user completes funding options
+  const handleFundingComplete = useCallback(
+    (type: 'fundWallet' | 'swap', tokenSymbol: string) => {
+      console.log('handleFundingComplete', type, tokenSymbol);
+      if (type === 'fundWallet') {
+        // Different message based on flow context
+        if (isInLendingFlow) {
+          sendMessage(`I have closed the onramp in the lending flow.`);
+        } else if (isInStakingFlow) {
+          sendMessage(`I have closed the onramp in the staking flow.`);
+        } else {
+          sendMessage(`I have closed the onramp.`);
+        }
+      } else {
+        // User completed swap
+        if (isInLendingFlow) {
+          sendMessage(`I have the required ${tokenSymbol}. Please continue the lending flow.`);
+        } else if (isInStakingFlow) {
+          sendMessage(`I have the required ${tokenSymbol}. Please continue the staking flow.`);
+        } else {
+          sendMessage(`I have the required ${tokenSymbol}.`);
+        }
+      }
+    },
+    [sendMessage, isInLendingFlow, isInStakingFlow],
   );
 
   return (
@@ -199,11 +230,7 @@ const GetBalance: React.FC<Props> = ({ tool, prevToolAgent }) => {
                   tokenSymbol={tokenSymbol}
                   tokenAddress={tool?.args?.tokenAddress}
                   logoURI={result.body.logoURI}
-                  onComplete={() =>
-                    sendMessage(
-                      `I have the required ${tokenSymbol}. Please continue the lending flow.`,
-                    )
-                  }
+                  onComplete={(type) => handleFundingComplete(type, tokenSymbol)}
                 />
               );
             }
