@@ -38,7 +38,7 @@ const LendCallBody: React.FC<Props> = ({ toolCallId, args }) => {
     wallet?.address || '',
   );
 
-  // Fetch pool data from sessionStorage
+  // Fetch pool data from sessionStorage (optional - enhances UI with APY data)
   useEffect(() => {
     if (typeof window !== 'undefined' && tokenData?.symbol) {
       const storedPoolData = sessionStorage.getItem(SOLANA_LENDING_POOL_DATA_STORAGE_KEY);
