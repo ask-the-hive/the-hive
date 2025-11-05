@@ -16,18 +16,18 @@ const solanaButtons = [
     icon: 'ChartLine' as const,
     prompt: 'Show me the best lending pools',
   },
-  // {
-  //   title: 'Trade',
-  //   description: 'Swap on Jupiter',
-  //   icon: 'ChartCandlestick' as const,
-  //   prompt: "Let's trade some tokens",
-  // },
-  // {
-  //   title: 'Knowledge',
-  //   description: 'Get developer docs for protocols',
-  //   icon: 'Brain' as const,
-  //   prompt: 'Get me developer docs for Solana Protocols',
-  // },
+  {
+    title: 'Trade',
+    description: 'Swap on Jupiter',
+    icon: 'ChartCandlestick' as const,
+    prompt: "Let's trade some tokens",
+  },
+  {
+    title: 'Discover',
+    description: 'Discover trending Solana tokens',
+    icon: 'Brain' as const,
+    prompt: 'Show me trending Solana tokens',
+  },
 ] as const;
 
 const bscButtons = [
@@ -89,7 +89,7 @@ const StarterButtons = () => {
   const buttons = chain === 'solana' ? solanaButtons : chain === 'bsc' ? bscButtons : baseButtons;
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-4 w-full mt-4">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 w-full mt-4">
       {buttons.map((button) => (
         <StarterButton key={button.title} {...button} />
       ))}

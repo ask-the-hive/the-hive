@@ -48,51 +48,83 @@ const LendCallBody: React.FC<Props> = ({ toolCallId, args }) => {
   );
   // Fetch pool data from sessionStorage (optional - enhances UI with APY data)
   useEffect(() => {
+    console.log('🔍 LendCallBody poolData fetch debug');
+    console.log('args.tokenSymbol:', args.tokenSymbol);
+    console.log('args.protocol:', args.protocol);
+
     // Use tokenSymbol from args (reliable) instead of tokenData.symbol (may be undefined)
     if (typeof window !== 'undefined' && args.tokenSymbol) {
       const storedPoolData = sessionStorage.getItem(SOLANA_LENDING_POOL_DATA_STORAGE_KEY);
+      console.log('storedPoolData exists:', !!storedPoolData);
+
       if (storedPoolData) {
         try {
           const allPools = JSON.parse(storedPoolData);
-          const matchingPool = allPools.find(
-            (pool: LendingYieldsPoolData) =>
-              pool.symbol?.toLowerCase() === args.tokenSymbol.toLowerCase() &&
-              pool.project.toLowerCase() === args.protocol.toLowerCase(),
+          console.log('All pools from sessionStorage:', allPools);
+          console.log(
+            'Searching for pool with symbol:',
+            args.tokenSymbol,
+            'and protocol:',
+            args.protocol,
           );
+
+          const matchingPool = allPools.find((pool: LendingYieldsPoolData) => {
+            const symbolMatch = pool.symbol?.toLowerCase() === args.tokenSymbol.toLowerCase();
+            const projectMatch = pool.project.toLowerCase() === args.protocol.toLowerCase();
+            console.log(
+              `Pool: ${pool.symbol} (${pool.project}) - symbol match: ${symbolMatch}, project match: ${projectMatch}`,
+            );
+            return symbolMatch && projectMatch;
+          });
+
           if (matchingPool) {
+            console.log('✅ Found matching pool:', matchingPool);
             setPoolData(matchingPool);
           } else {
-            console.error('No matching pool found for token:', args.tokenSymbol);
+            console.error(
+              '❌ No matching pool found for token:',
+              args.tokenSymbol,
+              'protocol:',
+              args.protocol,
+            );
             setHasFailed(true);
             addToolResult(toolCallId, {
               message: `Could not find lending pool data for ${args.tokenSymbol}. Please use the lending-yields tool first to view available pools.`,
             });
           }
         } catch (error) {
-          console.error('Error parsing stored pool data:', error);
+          console.error('❌ Error parsing stored pool data:', error);
           setHasFailed(true);
           addToolResult(toolCallId, {
             message: `Error loading lending pool data. Please try again or use the lending-yields tool first.`,
           });
         }
       } else {
-        console.error('No pool data in sessionStorage');
+        console.error('❌ No pool data in sessionStorage');
         setHasFailed(true);
         addToolResult(toolCallId, {
           message: `No lending pool data found. Please use the lending-yields tool first to view available pools.`,
         });
       }
+    } else {
+      console.log('⚠️ Skipping pool data fetch - missing tokenSymbol or not in browser');
     }
   }, [args.tokenSymbol, args.protocol, addToolResult, toolCallId]);
 
   useEffect(() => {
-    if (tokenDataError || tokenPriceError || !balance || balance === 0) {
+    console.log('🔍 LendCallBody error check debug');
+    console.log('tokenDataError:', tokenDataError);
+    console.log('tokenPriceError:', tokenPriceError);
+
+    // Check for data loading errors
+    if (tokenDataError || tokenPriceError) {
+      console.error('❌ Setting hasFailed due to tokenDataError or tokenPriceError');
       setHasFailed(true);
       addToolResult(toolCallId, {
         message: `Error loading data. Please try again or use the lending-yields tool first.`,
       });
     }
-  }, [tokenDataError, tokenPriceError, balance, addToolResult, toolCallId]);
+  }, [tokenDataError, tokenPriceError, addToolResult, toolCallId]);
 
   const handleLend = async () => {
     if (!wallet || !tokenData || !amount) return;
@@ -241,6 +273,7 @@ const LendCallBody: React.FC<Props> = ({ toolCallId, args }) => {
                 poolData={poolData}
                 outputAmount={Number(amount) || 0}
                 outputTokenPrice={tokenPrice?.value}
+                actionType="lending"
               />
             )}
           </div>

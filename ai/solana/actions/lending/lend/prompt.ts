@@ -1,4 +1,10 @@
-export const LEND_PROMPT = `Show the lending interface for depositing stablecoins into a Solana lending protocol.
+export const LEND_PROMPT = `🚨🚨🚨 CRITICAL - READ FIRST 🚨🚨🚨
+When status='pending', the transaction has NOT started. DO NOT say "pending" or "initiated".
+INSTEAD: Explain the 6-step process below.
+
+---
+
+Show the lending interface for depositing stablecoins into a Solana lending protocol.
 
 This action displays a UI where users can lend USDC or USDT tokens to lending protocols like Kamino, Jupiter Lend, Marginfi, Maple Finance, or Francium.
 
@@ -14,21 +20,26 @@ CRITICAL - Check the result status and respond accordingly:
 
 When this tool is called, it returns a result with a 'status' field. You MUST check this status and provide the appropriate response:
 
-1. **If status is 'pending'**: The UI is showing and awaiting user confirmation. The transaction has NOT been initiated yet. Provide a clear educational breakdown:
+1. **If status is 'pending'**: The UI is showing and awaiting user confirmation. The transaction has NOT been initiated yet.
 
-   🚨 IMPORTANT: DO NOT say "transaction is pending" or "your lending transaction is pending" - the user hasn't even clicked Lend yet!
+   🚨 CRITICAL - WHAT NOT TO SAY:
+   - ❌ DO NOT mention "Connect Your Wallet" - already connected
+   - ❌ DO NOT mention "Select the pool" or "Navigate to lending section" - already selected
+   - ❌ DO NOT say "transaction is pending" - hasn't started yet
+   - ❌ DO NOT create your own steps - use ONLY the 4 steps below
 
-   Instead, explain the PROCESS:
-   - **What you're setting up**: "I'm showing you the lending interface for [TOKEN] to [PROTOCOL]"
-   - **Expected returns**: "This pool is currently offering [APY]% APY"
-   - **How the lending process works** (step-by-step):
-     1. Review the amount and APY in the interface
-     2. Click the 'Lend' button when you're ready
-     3. Your wallet will prompt you to approve the transaction
-     4. Once approved, your tokens are deposited into the lending pool
-     5. You'll start earning interest immediately after confirmation
-     6. You can withdraw your funds anytime
-   - **Next steps**: "Review the details and click 'Lend' when you're ready!"
+   ✅ YOU MUST USE THIS EXACT FORMAT:
+
+   "Perfect! I'm showing you the lending interface for [TOKEN] to [PROTOCOL]. This pool is currently offering [APY]% APY.
+
+   **Here's how to complete the lending:**
+
+   1. **Review**: Input an amount to lend and review the APY shown in the interface above
+   2. **Click 'Lend'**: When ready, click the Lend button
+   3. **Approve**: Your wallet will prompt you to approve the transaction
+   4. **Confirm**: Once approved, your tokens will be deposited and you'll start earning immediately
+
+   Review the details and click 'Lend' when you're ready!"
 
 2. **If status is 'complete'**: The transaction succeeded. Show success message:
    - Confirm the lending is complete with the amount and token
@@ -50,16 +61,14 @@ User: "I want to lend USDT to Francium"
 You: [Tool returns with status: 'pending']
 "Perfect! I'm showing you the lending interface for USDT to Francium. This pool is currently offering 16.49% APY.
 
-**Here's how the lending process works:**
+**Here's how to complete the lending:**
 
 1. **Review**: Check the amount and APY shown in the interface above
-2. **Click 'Lend'**: When you're ready, click the Lend button
+2. **Click 'Lend'**: When ready, click the Lend button
 3. **Approve**: Your wallet will prompt you to approve the transaction
-4. **Confirm**: Once approved, your USDT will be deposited into Francium's lending pool
-5. **Earn**: You'll start earning 16.49% APY immediately after confirmation
-6. **Withdraw**: You can withdraw your funds anytime
+4. **Confirm**: Once approved, your USDT will be deposited into Francium's lending pool and you'll start earning immediately
 
-The interface is ready - review the details and click 'Lend' when you're ready!"
+Review the details and click 'Lend' when you're ready!"
 
 **When status equals 'complete' (transaction succeeded):**
 You: "You're all set — your [amount] [token] is now lent to [protocol]!

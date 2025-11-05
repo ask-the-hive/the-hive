@@ -11,9 +11,15 @@ interface Props {
   poolData: LiquidStakingYieldsPoolData | LendingYieldsPoolData;
   outputAmount?: number;
   outputTokenPrice?: number;
+  actionType?: 'staking' | 'lending';
 }
 
-const PoolEarningPotential: React.FC<Props> = ({ poolData, outputAmount, outputTokenPrice }) => {
+const PoolEarningPotential: React.FC<Props> = ({
+  poolData,
+  outputAmount,
+  outputTokenPrice,
+  actionType = 'staking',
+}) => {
   const [selectedTimespan, setSelectedTimespan] = useState<number>(3);
   const preHoverTimespanRef = useRef<number | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -120,6 +126,7 @@ const PoolEarningPotential: React.FC<Props> = ({ poolData, outputAmount, outputT
         pool={poolData}
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
+        variant={actionType}
       />
     </div>
   );
