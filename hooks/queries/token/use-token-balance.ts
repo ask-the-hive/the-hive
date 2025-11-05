@@ -29,8 +29,14 @@ export const useTokenBalance = (tokenAddress: string, walletAddress: string) => 
             new PublicKey(walletAddress),
           );
 
-          const token_account = await connection.getTokenAccountBalance(token_address);
-          return token_account.value.uiAmount ?? 0;
+          try {
+            const token_account = await connection.getTokenAccountBalance(token_address);
+            console.log('✅ Successfully fetched token balance:', token_account.value.uiAmount);
+            return token_account.value.uiAmount ?? 0;
+          } catch (error) {
+            console.error('❌ Error getting token account balance:', error);
+            return 0;
+          }
         }
       } else {
         const provider = new ethers.JsonRpcProvider(process.env.NEXT_PUBLIC_BSC_RPC_URL);

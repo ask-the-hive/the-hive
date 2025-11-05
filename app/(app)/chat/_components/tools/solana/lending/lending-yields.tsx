@@ -55,7 +55,9 @@ const LendingYields: React.FC<{
 
   const handleLendClick = async (poolData: LendingYieldsPoolData) => {
     const symbol = poolData?.tokenData?.symbol || poolData?.symbol;
-    sendMessage(`I want to lend ${symbol} to ${poolData.project}`);
+    const tokenAddress = poolData?.tokenData?.id;
+    // Include token address in the message so the agent uses the correct one
+    sendMessage(`I want to lend ${symbol} (${tokenAddress}) to ${poolData.project}`);
   };
 
   const handleMoreDetailsClick = (poolData: LendingYieldsPoolData, event: React.MouseEvent) => {

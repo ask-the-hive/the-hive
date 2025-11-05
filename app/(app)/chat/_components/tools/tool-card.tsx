@@ -73,16 +73,21 @@ const ToolCard = <ActionResultBodyType, ActionArgsType>({
         ) : (
           (() => {
             const headingResult = 'result' in tool ? result.heading(tool.result) : null;
+            const bodyResult = 'result' in tool ? result.body(tool.result) : null;
+            const hasBodyContent = bodyResult !== null && bodyResult !== undefined;
+
             return (
               headingResult && (
-                <Collapsible defaultOpen={defaultOpen}>
+                <Collapsible defaultOpen={hasBodyContent ? defaultOpen : false}>
                   <CollapsibleTrigger className="flex items-center gap-2 text-neutral-600 dark:text-neutral-400 hover:underline">
                     <p className="text-sm">{headingResult}</p>
-                    <ChevronDown className="w-4 h-4 transition-transform duration-300 group-data-[state=open]:rotate-180" />
+                    {hasBodyContent && (
+                      <ChevronDown className="w-4 h-4 transition-transform duration-300 group-data-[state=open]:rotate-180" />
+                    )}
                   </CollapsibleTrigger>
-                  <CollapsibleContent className="text-sm pt-2">
-                    {'result' in tool ? result.body(tool.result) : null}
-                  </CollapsibleContent>
+                  {hasBodyContent && (
+                    <CollapsibleContent className="text-sm pt-2">{bodyResult}</CollapsibleContent>
+                  )}
                 </Collapsible>
               )
             );

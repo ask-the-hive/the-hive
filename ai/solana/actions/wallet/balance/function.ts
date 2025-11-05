@@ -6,6 +6,7 @@ import type { BalanceArgumentsType, BalanceResultBodyType } from './types';
 import type { SolanaActionResult } from '../../solana-action';
 import { getToken } from '@/db/services';
 
+// SOL native mint address - when this is passed, check native SOL balance
 const SOL_MINT = 'So11111111111111111111111111111111111111112';
 
 export async function getBalance(
@@ -22,6 +23,7 @@ export async function getBalance(
     if (isCheckingSOL) {
       // Get native SOL balance
       balance = (await connection.getBalance(new PublicKey(args.walletAddress))) / LAMPORTS_PER_SOL;
+      console.log('✅ Native SOL balance:', balance);
       tokenData = {
         symbol: 'SOL',
         name: 'Solana',
@@ -41,6 +43,7 @@ export async function getBalance(
       try {
         const token_account = await connection.getTokenAccountBalance(token_address);
         balance = token_account.value.uiAmount ?? 0;
+        console.log('✅ Token balance from getBalance:', balance);
       } catch (tokenError) {
         // Token account does not exist, balance is 0
         console.error(tokenError);
@@ -57,7 +60,7 @@ export async function getBalance(
         tokenData = null;
       }
     } else {
-      console.log('Skipping token data fetch - no tokenAddress provided (checking SOL balance)');
+      console.log('Skipping token data fetch - checking SOL balance');
     }
 
     // When no tokenAddress is provided, we're checking SOL balance, so default to SOL metadata
