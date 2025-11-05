@@ -85,7 +85,7 @@ export async function getLendingYields(): Promise<SolanaActionResult<LendingYiel
     );
 
     return {
-      message: `Found the ${body.length} top Solana lending pools. The user has been shown the options in the UI, ask them which they want to use. DO NOT REITERATE THE OPTIONS IN TEXT.`,
+      message: `Found the ${body.length} top Solana lending pools. The user has been shown the options in the UI. Tell them to "select a lending pool in the UI to continue". DO NOT REITERATE THE OPTIONS IN TEXT.`,
       body,
     };
   } catch (error) {
