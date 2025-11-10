@@ -14,6 +14,14 @@ export async function getBalance(
   args: BalanceArgumentsType,
 ): Promise<SolanaActionResult<BalanceResultBodyType>> {
   try {
+    // Validate wallet address is provided
+    if (!args.walletAddress || typeof args.walletAddress !== 'string') {
+      return {
+        message: `Error: Wallet address is required to check balance. Please connect your wallet first.`,
+        body: undefined,
+      };
+    }
+
     let balance: number;
     let tokenData = null;
 

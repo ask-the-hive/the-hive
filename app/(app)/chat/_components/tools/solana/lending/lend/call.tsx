@@ -199,8 +199,7 @@ const LendCallBody: React.FC<Props> = ({ toolCallId, args }) => {
       const transactionBuffer = Buffer.from(serializedTx, 'base64');
       const transaction = VersionedTransaction.deserialize(transactionBuffer);
       console.log('transaction:', transaction);
-      // const tx = await sendTransaction(transaction);
-      const tx = '123';
+      const tx = await sendTransaction(transaction);
 
       addToolResult<LendResultBodyType>(toolCallId, {
         message: `Successfully lent ${amount} ${args.tokenSymbol} to ${capitalizeWords(protocolName)}`,
