@@ -13,6 +13,7 @@ export const LendingYieldsResultBodyType = z.array(
     url: z.string().optional(),
     rewardTokens: z.array(z.string()).optional(),
     underlyingTokens: z.array(z.string()).optional(),
+    tokenMintAddress: z.string().optional(), // Mint address from DefiLlama's underlyingTokens[0]
     predictions: z
       .object({
         predictedClass: z.string(),

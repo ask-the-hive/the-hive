@@ -10,6 +10,7 @@ export type LendingYieldsResultBodyType = {
   url?: string;
   rewardTokens?: string[];
   underlyingTokens?: string[];
+  tokenMintAddress?: string; // Mint address from DefiLlama's underlyingTokens[0] - source of truth
   predictions?: {
     predictedClass: string;
     predictedProbability: number;

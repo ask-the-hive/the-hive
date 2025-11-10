@@ -43,6 +43,7 @@ const Stake: React.FC<Props> = ({ tool, prevToolAgent }) => {
                     outputTokenData={result.body.outputTokenData}
                     poolData={result.body.poolData}
                     outputAmount={result.body.outputAmount}
+                    tx={result.body.tx}
                   />
                 </div>
               </div>

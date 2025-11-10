@@ -55,7 +55,17 @@ const LendingYields: React.FC<{
 
   const handleLendClick = async (poolData: LendingYieldsPoolData) => {
     const symbol = poolData?.tokenData?.symbol || poolData?.symbol;
-    const tokenAddress = poolData?.tokenData?.id;
+    // Use tokenMintAddress from DefiLlama's underlyingTokens as source of truth
+    const tokenAddress = poolData?.tokenMintAddress || poolData?.tokenData?.id;
+
+    console.log('🔵 Lending with address from DefiLlama:', {
+      symbol,
+      tokenMintAddress: poolData?.tokenMintAddress,
+      tokenDataId: poolData?.tokenData?.id,
+      using: tokenAddress,
+      underlyingTokens: poolData?.underlyingTokens,
+    });
+
     // Include token address in the message so the agent uses the correct one
     sendMessage(
       `I want to lend ${symbol} (${tokenAddress}) to ${capitalizeWords(poolData.project)}`,

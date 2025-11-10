@@ -24,6 +24,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import { KaminoMarket, KaminoAction, VanillaObligation } from '@kamino-finance/klend-sdk';
 import { createSolanaRpc, address as createAddress, Instruction } from '@solana/kit';
 
+/**
+ * Kamino Lending Market Configuration
+ *
+ * Kamino has ONE main lending market that contains multiple reserves (one per token).
+ * All deposits (USDC, USDT, SOL, etc.) go through this same market address.
+ * The tokenMint parameter identifies which specific reserve to deposit into.
+ *
+ * Reference: https://github.com/Kamino-Finance/klend-sdk
+ */
 const KAMINO_MAIN_MARKET = new PublicKey('7u3HeHxYDLhnCoErrtycNokbQYbWGzLs6JSDqGAv5PfF');
 const KAMINO_PROGRAM_ID = new PublicKey('KLend2g3cP87fffoy8q1mQqGKjrxjC8boSyAYavgmjD');
 
@@ -268,11 +277,17 @@ async function buildJupiterLendTx(
 //   }
 // }
 
-// TODO: Kamino - Re-enable once WASM dependency issues are resolved
 /**
  * Kamino - Lending Transaction
+ *
  * Program: KLend2g3cP87fffoy8q1mQqGKjrxjC8boSyAYavgmjD
- * Using Kamino SDK (https://github.com/Kamino-Finance/klend-sdk)
+ * Using Kamino SDK: https://github.com/Kamino-Finance/klend-sdk
+ *
+ * Architecture:
+ * - Kamino has ONE main market (7u3HeHxYDLhnCoErrtycNokbQYbWGzLs6JSDqGAv5PfF)
+ * - This market contains multiple reserves (one for each token: USDC, USDT, SOL, etc.)
+ * - The tokenMint parameter automatically selects the correct reserve within the market
+ * - All tokens use the same market address, just different reserves
  */
 async function buildKaminoLendTx(
   connection: Connection,
@@ -282,6 +297,13 @@ async function buildKaminoLendTx(
   amount: number,
 ): Promise<VersionedTransaction> {
   try {
+    console.log('🔵 Building Kamino lend transaction:', {
+      tokenSymbol,
+      tokenMint,
+      amount,
+      wallet: wallet.toBase58(),
+    });
+
     // Create Kamino-compatible RPC and addresses
     const kaminoRpc = createSolanaRpc(process.env.NEXT_PUBLIC_SOLANA_RPC_URL!) as any;
     const marketAddress = createAddress(KAMINO_MAIN_MARKET.toBase58()) as any;
@@ -289,15 +311,21 @@ async function buildKaminoLendTx(
     const walletAddress = createAddress(wallet.toBase58()) as any;
     const mintAddress = createAddress(tokenMint) as any;
 
+    console.log('🔵 Loading Kamino market...');
+
     // Load Kamino market
     const market = await KaminoMarket.load(kaminoRpc, marketAddress, programId);
     if (!market) {
       throw new Error('Failed to load Kamino market');
     }
 
+    console.log('✅ Kamino market loaded');
+
     // Convert amount to base units (lamports/smallest unit)
     const decimals = tokenSymbol.toUpperCase() === 'SOL' ? 9 : 6;
     const amountBase = Math.floor(amount * Math.pow(10, decimals));
+
+    console.log('🔵 Amount in base units:', amountBase, 'decimals:', decimals);
 
     // Create a transaction signer for Kamino SDK
     const signer: any = {
@@ -308,7 +336,24 @@ async function buildKaminoLendTx(
     // Create a vanilla obligation (for first-time users)
     const obligation = new VanillaObligation(programId);
 
+    // Get current slot for Address Lookup Table creation
+    const currentSlot = await connection.getSlot();
+    console.log('🔵 Current slot:', currentSlot);
+
+    // Check if user's obligation account exists to determine if we need initialization
+    // For VanillaObligation, the PDA is derived from [seed, wallet, market, programId]
+    const [obligationPda] = PublicKey.findProgramAddressSync(
+      [Buffer.from('obligation'), wallet.toBuffer(), KAMINO_MAIN_MARKET.toBuffer()],
+      KAMINO_PROGRAM_ID,
+    );
+
+    const obligationAccount = await connection.getAccountInfo(obligationPda);
+    const obligationExists = obligationAccount !== null;
+
+    console.log('🔵 User obligation exists:', obligationExists, 'PDA:', obligationPda.toBase58());
+
     // Build deposit action
+    console.log('🔵 Building Kamino deposit action...');
     const depositAction = await KaminoAction.buildDepositTxns(
       market,
       new BN(amountBase),
@@ -317,6 +362,15 @@ async function buildKaminoLendTx(
       obligation,
       true, // useV2Ixs
       undefined, // scopeRefreshConfig
+      undefined, // extraComputeBudget
+      undefined, // includeAtaIxs
+      undefined, // requestElevationGroup
+      {
+        skipInitialization: obligationExists, // Skip only if user already has an obligation account
+        skipLutCreation: true, // Skip Address Lookup Table creation - not needed for deposits
+      },
+      undefined, // referrer
+      BigInt(currentSlot), // currentSlot
     );
 
     // Get all instructions from the action
@@ -326,8 +380,16 @@ async function buildKaminoLendTx(
       ...(depositAction.cleanupIxs || []),
     ] as any;
 
+    console.log('🔵 Kamino SDK returned:', {
+      setupIxs: depositAction.setupIxs?.length || 0,
+      lendingIxs: depositAction.lendingIxs?.length || 0,
+      cleanupIxs: depositAction.cleanupIxs?.length || 0,
+      total: allInstructions.length,
+    });
+
     // Convert Kamino instructions to legacy TransactionInstructions
     const legacyInstructions = allInstructions.map(convertKaminoInstructionToLegacy);
+    console.log('🔵 Converted to', legacyInstructions.length, 'legacy instructions');
 
     // Build the transaction
     const { blockhash } = await connection.getLatestBlockhash();
@@ -338,9 +400,41 @@ async function buildKaminoLendTx(
     }).compileToV0Message();
 
     const versionedTx = new VersionedTransaction(messageV0);
+
+    console.log('✅ Kamino transaction built successfully');
+
+    // Simulate for debugging purposes only (don't throw on error)
+    try {
+      console.log('🔵 Simulating Kamino transaction (for debugging)...');
+      const simulation = await connection.simulateTransaction(versionedTx, {
+        sigVerify: false,
+      });
+
+      if (simulation.value.err) {
+        console.error(
+          '⚠️ Kamino simulation warning:',
+          JSON.stringify(simulation.value.err, null, 2),
+        );
+        console.error('⚠️ Simulation logs:', simulation.value.logs);
+
+        // For first-time users, InitObligation will fail simulation (PrivilegeEscalation)
+        // because it requires a signature to create the account. This is expected.
+        if (!obligationExists) {
+          console.log(
+            'ℹ️ Note: First-time deposit simulation failures are expected (account needs signature to initialize)',
+          );
+        }
+      } else {
+        console.log('✅ Kamino simulation succeeded');
+        console.log('Simulation logs:', simulation.value.logs?.slice(0, 10)); // First 10 logs
+      }
+    } catch (simError: any) {
+      console.error('⚠️ Simulation error (non-blocking):', simError.message);
+    }
+
     return versionedTx;
   } catch (err: any) {
-    console.error('Error building Kamino lending transaction:', err);
+    console.error('❌ Error building Kamino lending transaction:', err);
     throw new Error(`Failed to build Kamino transaction: ${err.message}`);
   }
 }

@@ -16,9 +16,9 @@ Parameters:
 
 NOTE: The Lending Agent should check SOL balance using the balance tool BEFORE calling this action. Users need at least 0.0001 SOL to cover transaction fees. If they don't have enough SOL, direct them to add SOL to their wallet first.
 
-CRITICAL - Check the result status and respond accordingly:
+🚨 CRITICAL - Check the result status and respond accordingly 🚨
 
-When this tool is called, it returns a result with a 'status' field. You MUST check this status and provide the appropriate response:
+When this tool is called, it returns a result with a 'status' field in the BODY. You MUST check the body.status field FIRST and provide the appropriate response based on the status:
 
 1. **If status is 'pending'**: The UI is showing and awaiting user confirmation. The transaction has NOT been initiated yet.
 
@@ -46,9 +46,12 @@ When this tool is called, it returns a result with a 'status' field. You MUST ch
    - Explain that they're earning APY automatically and can withdraw anytime
    - Encourage them to ask if they have questions
 
-3. **If status is 'cancelled'**: User cancelled the transaction. Acknowledge neutrally:
-   - "No problem! Let me know if you'd like to try again or if you have any questions."
-   - Keep it brief and friendly
+3. **If status is 'cancelled'**: 🚨 User cancelled the transaction. DO NOT provide step-by-step instructions.
+
+   ✅ YOU MUST respond with ONLY this:
+   "No problem! Let me know if you'd like to try again or if you have any questions."
+
+   Keep it brief and friendly. DO NOT repeat the lending steps.
 
 4. **If status is 'failed'**: The transaction failed. Acknowledge the failure and offer help.
 

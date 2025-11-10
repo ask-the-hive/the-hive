@@ -212,10 +212,31 @@ const LendCallBody: React.FC<Props> = ({ toolCallId, args }) => {
         },
       });
     } catch (error) {
-      console.error('Error executing lend:', error);
-      addToolResult(toolCallId, {
-        message: `Lend failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
-      });
+      // Check if user cancelled the transaction
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const isUserCancellation =
+        errorMessage.toLowerCase().includes('user rejected') ||
+        errorMessage.toLowerCase().includes('user cancelled') ||
+        errorMessage.toLowerCase().includes('user denied') ||
+        errorMessage.toLowerCase().includes('rejected by user') ||
+        (error as any)?.code === 4001;
+
+      if (isUserCancellation) {
+        addToolResult(toolCallId, {
+          message: 'Transaction cancelled by user',
+          body: {
+            status: 'cancelled',
+            tx: '',
+            amount: Number(amount),
+            tokenData: tokenData,
+            poolData: poolData || undefined,
+          },
+        });
+      } else {
+        addToolResult(toolCallId, {
+          message: `Lend failed: ${errorMessage}`,
+        });
+      }
     } finally {
       setIsLending(false);
     }
@@ -223,7 +244,7 @@ const LendCallBody: React.FC<Props> = ({ toolCallId, args }) => {
 
   const handleCancel = () => {
     addToolResult(toolCallId, {
-      message: `Lend cancelled`,
+      message: 'Transaction cancelled',
       body: {
         status: 'cancelled',
         tx: '',

@@ -21,19 +21,6 @@ interface Props {
 
 const PROTOCOL_AUDITS = [
   {
-    name: 'francium',
-    audited: true,
-    rating: 'BB',
-    auditLink: 'https://skynet.certik.com/projects/francium',
-  },
-  {
-    name: 'save',
-    audited: true,
-    rating: 'Moderate Risk',
-    auditLink:
-      'https://github.com/solendprotocol/solana-program-library/blob/master/token-lending/audit/solend-audit-v1.0.pdf',
-  },
-  {
     name: 'kamino',
     audited: true,
     rating: 'BBB',
@@ -87,7 +74,7 @@ const PROTOCOL_AUDITS = [
 
 const PoolDetailsModal: React.FC<Props> = ({ pool, isOpen, onClose, variant = 'staking' }) => {
   if (!pool) return null;
-
+  console.log('🔵 Pool:', pool);
   const displayOrDash = (
     value: number | null | undefined,
     formatter: (n: number) => string,
@@ -411,16 +398,17 @@ const PoolDetailsModal: React.FC<Props> = ({ pool, isOpen, onClose, variant = 's
                     <p className="font-medium break-words">{pool.poolMeta}</p>
                   </div>
                 )}
-                {pool.url && (
+                {(pool.url || pool.project.toLowerCase().includes('kamino')) && (
                   <div>
                     <p className="text-gray-600 dark:text-gray-400">Website</p>
                     <a
-                      href={pool.url}
+                      href={pool.url || `https://kamino.finance/lend`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center gap-1 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 break-all"
                     >
-                      Visit Website <ExternalLink className="h-3 w-3 flex-shrink-0" />
+                      Visit {pool.project.toLowerCase().includes('kamino') ? 'Kamino' : 'Website'}{' '}
+                      <ExternalLink className="h-3 w-3 flex-shrink-0" />
                     </a>
                   </div>
                 )}

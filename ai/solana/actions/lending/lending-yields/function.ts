@@ -36,9 +36,10 @@ export async function getLendingYields(): Promise<SolanaActionResult<LendingYiel
 
       const isLPPair = pool.symbol.includes('-') || pool.symbol.includes('/');
       const hasAPY = pool.apy && pool.apy > 0;
+      const hasUnderlyingToken = pool.underlyingTokens && pool.underlyingTokens.length > 0;
 
-      // Include lending protocols with stablecoin tokens that aren't LP pairs
-      return isLendingProtocol && isStablecoin && !isLPPair && hasAPY;
+      // Include lending protocols with stablecoin tokens that aren't LP pairs and have valid token address
+      return isLendingProtocol && isStablecoin && !isLPPair && hasAPY && hasUnderlyingToken;
     });
 
     if (solLendingPools.length === 0) {
@@ -59,10 +60,20 @@ export async function getLendingYields(): Promise<SolanaActionResult<LendingYiel
       topSolanaPools[2] = third; // Third highest on right
     }
 
+    console.log('🔵 Top Solana pools:', topSolanaPools);
+
     // Transform to the expected format
     const body = await Promise.all(
       topSolanaPools.map(async (pool: any) => {
+        // Use underlyingTokens[0] from DefiLlama as the source of truth for the mint address
+        const tokenMintAddress = pool.underlyingTokens?.[0];
+
+        if (!tokenMintAddress) {
+          console.warn('⚠️ Pool missing underlyingTokens (should have been filtered):', pool);
+        }
+
         const tokenData = await getTokenBySymbol(pool.symbol);
+
         return {
           name: pool.symbol,
           symbol: pool.symbol,
@@ -75,6 +86,8 @@ export async function getLendingYields(): Promise<SolanaActionResult<LendingYiel
           url: pool.url,
           rewardTokens: pool.rewardTokens || [],
           underlyingTokens: pool.underlyingTokens || [],
+          // Override tokenData.id with the actual mint address from DefiLlama
+          tokenMintAddress: tokenMintAddress,
           predictions: pool.predictions,
           tokenData: tokenData || null,
         };
