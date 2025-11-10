@@ -22,7 +22,7 @@ CRITICAL ROUTING RULES:
    - These should trigger the conversational fallback to help users discover features
 
 2. **Lending Agent** - Use for specific lending requests:
-   - "Show me the best lending pools" ← LENDING AGENT
+   - "Show me the best lending pools for USDC, USDT, or SOL" ← LENDING AGENT
    - "Best lending yields" ← LENDING AGENT
    - "Lending rates for USDC/USDT" ← LENDING AGENT
    - Stablecoin lending (USDC/USDT) operations

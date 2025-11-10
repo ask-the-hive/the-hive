@@ -14,7 +14,7 @@ const solanaButtons = [
     title: 'Lend',
     description: 'Lend stablecoins to earn interest',
     icon: 'ChartLine' as const,
-    prompt: 'Show me the best lending pools',
+    prompt: 'Show me the best lending pools for USDC, USDT, or SOL',
   },
   {
     title: 'Trade',

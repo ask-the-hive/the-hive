@@ -12,33 +12,33 @@ export async function getLendingYields(): Promise<SolanaActionResult<LendingYiel
 
     // Filter for the specific Solana lending protocols
     const lendingProtocols = [
-      'kamino-lend', // Kamino Finance
-      'jupiter-lend', // Jupiter Lend
-      'marginfi-lending', // Marginfi
-      'marginfi-lend',
-      'maple', // Maple Finance
-      'save', // Save Finance
-      'credix', // Credix
-      'francium', // Francium
+      'kamino-lend', // Kamino Finance - PRIMARY (best yields)
+      'francium', // Francium - FALLBACK (takes 10% fee, so yields are lower)
+      // 'jupiter-lend', // Jupiter Lend - no pools in DeFiLlama
+      // 'marginfi-lending', // Marginfi - no pools in DeFiLlama
+      // 'credix', // Credix
+      // 'maple', // Maple Finance
+      // 'save', // Save Finance - SDK has dependency issues
     ];
 
     // Stablecoin tokens for lending
-    // const stablecoinTokens = [
-    //   'USDC', // USD Coin
-    //   'USDT', // Tether
-    // ];
+    const stablecoinTokens = [
+      'USDC', // USD Coin
+      'USDT', // Tether
+      'SOL', // Solana
+    ];
 
-    const solLendingPools = solanaPools.filter((pool: any) => {
+    let solLendingPools = solanaPools.filter((pool: any) => {
       // Check if it's a lending protocol
       const isLendingProtocol = lendingProtocols.includes(pool.project);
       // Check if it's a stablecoin token
-      // const isStablecoin = stablecoinTokens.includes(pool.symbol);
+      const isStablecoin = stablecoinTokens.includes(pool.symbol);
 
       const isLPPair = pool.symbol.includes('-') || pool.symbol.includes('/');
       const hasAPY = pool.apy && pool.apy > 0;
 
       // Include lending protocols with stablecoin tokens that aren't LP pairs
-      return isLendingProtocol && !isLPPair && hasAPY;
+      return isLendingProtocol && isStablecoin && !isLPPair && hasAPY;
     });
 
     if (solLendingPools.length === 0) {
@@ -47,10 +47,26 @@ export async function getLendingYields(): Promise<SolanaActionResult<LendingYiel
       };
     }
 
+    solLendingPools = solLendingPools.map((pool: any) => {
+      if (pool.project === 'francium') {
+        console.log('francium pool:', pool.apy);
+        if (pool.apy > 10) {
+          pool.apy = pool.apy - 10;
+        }
+        if (pool.baseApy > 10) {
+          pool.baseApy = pool.baseApy - 10;
+        }
+        if (pool.apyReward > 10) {
+          pool.apyReward = pool.apyReward - 10;
+        }
+        console.log('francium pool after:', pool.apy);
+      }
+
+      return pool;
+    });
+
     // Sort by APY (highest first) and take top 3
     let topSolanaPools = solLendingPools.sort((a: any, b: any) => (b.apy || 0) - (a.apy || 0));
-
-    console.log('topSolanaPools', topSolanaPools.slice(0, 10));
 
     topSolanaPools = topSolanaPools.slice(0, 3);
     // Reorder so highest APY is in the center (index 1)
@@ -84,7 +100,7 @@ export async function getLendingYields(): Promise<SolanaActionResult<LendingYiel
     );
 
     return {
-      message: `Found the ${body.length} top Solana lending pools. The user has been shown the options in the UI. Tell them to "select a lending pool in the UI to continue". DO NOT REITERATE THE OPTIONS IN TEXT.`,
+      message: `Found the ${body.length} top Solana lending pools. The user has been shown the options in the UI. Tell them to "select a lending pool in the UI to continue". DO NOT REITERATE THE OPTIONS IN TEXT. DO NOT CHECK BALANCES YET - wait for the user to select a specific pool first.`,
       body,
     };
   } catch (error) {

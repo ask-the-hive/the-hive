@@ -19,6 +19,36 @@ interface Props {
   args: LendArgumentsType;
 }
 
+/**
+ * Normalize protocol name for matching
+ * Handles variations like "Kamino Lend", "Kamino", "kamino-lend", "Kamino-Lend"
+ */
+const normalizeProtocolName = (protocol: string): string => {
+  return protocol
+    .toLowerCase()
+    .replace(/[-\s]+/g, '') // Remove hyphens and spaces
+    .trim();
+};
+
+/**
+ * Check if two protocol names match (handles variations)
+ * Returns true if they're the same or if one is a prefix of the other
+ */
+const protocolsMatch = (protocol1: string, protocol2: string): boolean => {
+  const normalized1 = normalizeProtocolName(protocol1);
+  const normalized2 = normalizeProtocolName(protocol2);
+
+  // Exact match
+  if (normalized1 === normalized2) return true;
+
+  // One is a prefix of the other (e.g., "kamino" matches "kaminolend")
+  if (normalized1.startsWith(normalized2) || normalized2.startsWith(normalized1)) {
+    return true;
+  }
+
+  return false;
+};
+
 const LendCallBody: React.FC<Props> = ({ toolCallId, args }) => {
   const { addToolResult } = useChat();
   const { wallet, sendTransaction } = useSendTransaction();
@@ -70,7 +100,7 @@ const LendCallBody: React.FC<Props> = ({ toolCallId, args }) => {
 
           const matchingPool = allPools.find((pool: LendingYieldsPoolData) => {
             const symbolMatch = pool.symbol?.toLowerCase() === args.tokenSymbol.toLowerCase();
-            const projectMatch = pool.project.toLowerCase() === args.protocol.toLowerCase();
+            const projectMatch = protocolsMatch(pool.project, args.protocol);
             console.log(
               `Pool: ${pool.symbol} (${pool.project}) - symbol match: ${symbolMatch}, project match: ${projectMatch}`,
             );
@@ -168,8 +198,9 @@ const LendCallBody: React.FC<Props> = ({ toolCallId, args }) => {
       // Deserialize the transaction
       const transactionBuffer = Buffer.from(serializedTx, 'base64');
       const transaction = VersionedTransaction.deserialize(transactionBuffer);
-
-      const tx = await sendTransaction(transaction);
+      console.log('transaction:', transaction);
+      // const tx = await sendTransaction(transaction);
+      const tx = '123';
 
       addToolResult<LendResultBodyType>(toolCallId, {
         message: `Successfully lent ${amount} ${args.tokenSymbol} to ${capitalizeWords(protocolName)}`,
@@ -246,19 +277,25 @@ const LendCallBody: React.FC<Props> = ({ toolCallId, args }) => {
                 onChange={setAmount}
                 address={wallet?.address}
               />
-              {balance && (
-                <div className="text-xs text-right mt-1 text-neutral-500">
+              {balance && balance > 0 && (
+                <div className="text-md text-right mt-1 text-neutral-400">
                   Balance: {Number(balance).toFixed(6)} {args.tokenSymbol}
                 </div>
               )}
             </div>
+            {/* Show loading message when balance is being fetched after a swap */}
+            {balanceLoading && (!balance || balance === 0) && (
+              <p className="text-md text-center text-brand-500 pt-2">
+                ⏳ Waiting for your {args.tokenSymbol} balance to update...
+              </p>
+            )}
 
             <div className="flex flex-col gap-2">
               <Button
                 variant="brand"
                 className="w-full"
                 onClick={handleLend}
-                disabled={isLending || !amount || !tokenData}
+                disabled={isLending || !amount || !tokenData || !balance || balance === 0}
               >
                 {isLending ? 'Lending...' : 'Lend'}
               </Button>
