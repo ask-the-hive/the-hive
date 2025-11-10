@@ -11,7 +11,6 @@ const nextConfig: NextConfig = {
     '@ai-sdk/google',
     '@ai-sdk/deepseek',
     '@kamino-finance/klend-sdk',
-    'francium-sdk',
   ],
   // Remove console logs in production (but keep errors/warnings for debugging)
   compiler: {

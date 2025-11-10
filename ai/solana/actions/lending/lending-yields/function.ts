@@ -13,8 +13,8 @@ export async function getLendingYields(): Promise<SolanaActionResult<LendingYiel
     // Filter for the specific Solana lending protocols
     const lendingProtocols = [
       'kamino-lend', // Kamino Finance - PRIMARY (best yields)
-      'francium', // Francium - FALLBACK (takes 10% fee, so yields are lower)
-      // 'jupiter-lend', // Jupiter Lend - no pools in DeFiLlama
+      'jupiter-lend', // Jupiter Lend - no pools in DeFiLlama
+      'jup-lend', // Jupiter Lend - no pools in DeFiLlama
       // 'marginfi-lending', // Marginfi - no pools in DeFiLlama
       // 'credix', // Credix
       // 'maple', // Maple Finance
@@ -28,7 +28,7 @@ export async function getLendingYields(): Promise<SolanaActionResult<LendingYiel
       'SOL', // Solana
     ];
 
-    let solLendingPools = solanaPools.filter((pool: any) => {
+    const solLendingPools = solanaPools.filter((pool: any) => {
       // Check if it's a lending protocol
       const isLendingProtocol = lendingProtocols.includes(pool.project);
       // Check if it's a stablecoin token
@@ -46,24 +46,6 @@ export async function getLendingYields(): Promise<SolanaActionResult<LendingYiel
         message: `No Solana lending pools found for the target protocols (Kamino, Jupiter Lend, Marginfi, Maple, Save). Please try again.`,
       };
     }
-
-    solLendingPools = solLendingPools.map((pool: any) => {
-      if (pool.project === 'francium') {
-        console.log('francium pool:', pool.apy);
-        if (pool.apy > 10) {
-          pool.apy = pool.apy - 10;
-        }
-        if (pool.baseApy > 10) {
-          pool.baseApy = pool.baseApy - 10;
-        }
-        if (pool.apyReward > 10) {
-          pool.apyReward = pool.apyReward - 10;
-        }
-        console.log('francium pool after:', pool.apy);
-      }
-
-      return pool;
-    });
 
     // Sort by APY (highest first) and take top 3
     let topSolanaPools = solLendingPools.sort((a: any, b: any) => (b.apy || 0) - (a.apy || 0));

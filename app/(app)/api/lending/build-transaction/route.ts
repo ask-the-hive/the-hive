@@ -5,7 +5,6 @@ import {
   VersionedTransaction,
   TransactionInstruction,
 } from '@solana/web3.js';
-import FranciumSDK from 'francium-sdk';
 import { getDepositIx } from '@jup-ag/lend/earn';
 // TODO: Solend SDK has unfixable Node.js dependency issues (jito-ts -> rpc-websockets)
 // The dependency chain is: @solendprotocol/solend-sdk -> @pythnetwork/pyth-solana-receiver
@@ -56,10 +55,6 @@ export async function POST(req: NextRequest) {
     let transaction: VersionedTransaction;
 
     switch (protocolKey) {
-      case 'francium':
-        transaction = await buildFranciumLendTx(connection, walletPubkey, tokenSymbol, amount);
-        break;
-
       case 'jupiter-lend':
       case 'jupiter-lend-earn':
       case 'jup-lend':
@@ -124,57 +119,6 @@ export async function POST(req: NextRequest) {
       { status: 500 },
     );
   }
-}
-
-/**
- * Francium - Lending Transaction
- * Program: FC81tbGt6JWRXidaWYFXxGnTk4VgobhJHATvTRVMqgWj
- * Using Francium SDK (https://github.com/Francium-DeFi/francium-sdk)
- */
-async function buildFranciumLendTx(
-  connection: Connection,
-  wallet: PublicKey,
-  tokenSymbol: string,
-  amount: number,
-): Promise<VersionedTransaction> {
-  // Initialize Francium SDK
-  const fr = new FranciumSDK({ connection });
-
-  // Convert amount to proper decimals (assuming 6 decimals for USDT/USDC)
-  const amountBN = new BN(Math.floor(amount * 1_000_000));
-
-  // Use Francium SDK to build the deposit transaction
-  const { trx, signers } = await fr.getLendingDepositTransaction(
-    tokenSymbol,
-    amountBN,
-    wallet,
-    {}, // Empty options object
-  );
-
-  // Set transaction parameters
-  const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
-  trx.recentBlockhash = blockhash;
-  trx.lastValidBlockHeight = lastValidBlockHeight;
-  trx.feePayer = wallet;
-
-  // Sign with PDAs if needed
-  if (signers && signers.length > 0) {
-    trx.partialSign(...signers);
-  }
-
-  // Convert legacy Transaction to VersionedTransaction and preserve signatures
-  const legacyMessage = trx.compileMessage();
-  const message = TransactionMessage.decompile(legacyMessage);
-  const versionedTx = new VersionedTransaction(message.compileToV0Message());
-
-  // Copy over the PDA signatures from the legacy transaction
-  if (trx.signatures && trx.signatures.length > 0) {
-    versionedTx.signatures = trx.signatures
-      .filter((sig) => sig.signature !== null)
-      .map((sig) => new Uint8Array(sig.signature!));
-  }
-
-  return versionedTx;
 }
 
 /**
