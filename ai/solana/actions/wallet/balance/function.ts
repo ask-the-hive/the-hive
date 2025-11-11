@@ -14,22 +14,22 @@ export async function getBalance(
   args: BalanceArgumentsType,
 ): Promise<SolanaActionResult<BalanceResultBodyType>> {
   try {
-    console.log('=== getBalance DEBUG START ===');
-    console.log('args:', JSON.stringify(args, null, 2));
-    console.log('tokenAddress:', args.tokenAddress);
-    console.log('tokenAddress type:', typeof args.tokenAddress);
+    // Validate wallet address is provided
+    if (!args.walletAddress || typeof args.walletAddress !== 'string') {
+      return {
+        message: `Error: Wallet address is required to check balance. Please connect your wallet first.`,
+        body: undefined,
+      };
+    }
 
     let balance: number;
     let tokenData = null;
 
     // Check if we're looking for SOL balance (either no tokenAddress or SOL mint address)
     const isCheckingSOL = !args.tokenAddress || args.tokenAddress === SOL_MINT;
-    console.log('isCheckingSOL:', isCheckingSOL);
-    console.log('Exact match:', args.tokenAddress === SOL_MINT);
 
     if (isCheckingSOL) {
       // Get native SOL balance
-      console.log('✅ Fetching NATIVE SOL balance for wallet:', args.walletAddress);
       balance = (await connection.getBalance(new PublicKey(args.walletAddress))) / LAMPORTS_PER_SOL;
       console.log('✅ Native SOL balance:', balance);
       tokenData = {
@@ -40,7 +40,6 @@ export async function getBalance(
       };
     } else {
       // Get SPL token balance
-      console.log('Fetching SPL token balance for:', args.tokenAddress);
       if (!args.tokenAddress) {
         throw new Error('Token address is required for SPL token balance check');
       }
@@ -49,16 +48,12 @@ export async function getBalance(
         new PublicKey(args.walletAddress),
       );
 
-      console.log('🔍 Calculated ATA for getBalance:', token_address.toBase58());
-      console.log('🔍 Wallet address:', args.walletAddress);
-
       try {
         const token_account = await connection.getTokenAccountBalance(token_address);
         balance = token_account.value.uiAmount ?? 0;
         console.log('✅ Token balance from getBalance:', balance);
       } catch (tokenError) {
         // Token account does not exist, balance is 0
-        console.log('❌ Token account does not exist, balance is 0');
         console.error(tokenError);
         balance = 0;
       }
@@ -66,10 +61,8 @@ export async function getBalance(
 
     // Only fetch token data from DB if it's not SOL
     if (args.tokenAddress && !isCheckingSOL) {
-      console.log('Fetching token data for address:', args.tokenAddress);
       try {
         tokenData = await getToken(args.tokenAddress);
-        console.log('Token data fetched successfully:', tokenData);
       } catch (tokenError) {
         console.log('Error fetching token data:', tokenError);
         tokenData = null;
@@ -84,9 +77,6 @@ export async function getBalance(
     const tokenLogoURI =
       tokenData?.logoURI ||
       'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTX6PYmAiDpUliZWnmCHKPc3VI7QESDKhLndQ&s';
-
-    console.log('Final token values:', { tokenSymbol, tokenName, tokenLogoURI, balance });
-    console.log('=== getBalance DEBUG END ===');
 
     // Add programmatic logic for staking context
     let message = `Balance: ${balance} ${tokenSymbol}`;

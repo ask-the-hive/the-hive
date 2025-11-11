@@ -28,12 +28,6 @@ const Lend: React.FC<Props> = ({ tool, prevToolAgent }) => {
           return result.body?.status === 'complete' ? 'Lend Complete' : 'Failed to Lend';
         },
         body: (result: LendResultType) => {
-          // If status is pending, this is awaiting user confirmation - show the call body
-          if (result.body?.status === 'pending') {
-            const args = tool.args as LendArgumentsType;
-            return <LendCallBody toolCallId={tool.toolCallId} args={args} />;
-          }
-
           // If status is complete, show the result
           if (result.body?.status === 'complete') {
             return (
@@ -50,7 +44,8 @@ const Lend: React.FC<Props> = ({ tool, prevToolAgent }) => {
             );
           }
 
-          return result.message;
+          const args = tool.args as LendArgumentsType;
+          return <LendCallBody toolCallId={tool.toolCallId} args={args} />;
         },
       }}
       call={{

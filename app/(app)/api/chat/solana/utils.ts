@@ -22,24 +22,29 @@ CRITICAL ROUTING RULES:
    - These should trigger the conversational fallback to help users discover features
 
 2. **Lending Agent** - Use for specific lending requests:
-   - "Show me the best lending pools" ← LENDING AGENT
+   🚨 CRITICAL: If the message contains the word "lend" or "lending", ALWAYS use Lending Agent, even for SOL
+   - "Show me the best lending pools for USDC, USDT, or SOL" ← LENDING AGENT
    - "Best lending yields" ← LENDING AGENT
-   - "Lending rates for USDC/USDT" ← LENDING AGENT
+   - "Lending rates for USDC/USDT/SOL" ← LENDING AGENT
+   - "Lend SOL to Kamino" ← LENDING AGENT (not Staking Agent!)
+   - "I want to lend SOL" ← LENDING AGENT (not Staking Agent!)
    - Stablecoin lending (USDC/USDT) operations
-   - Lending pools or protocols
-   - "How much can I lend?" (checks stablecoin balance)
-   - "Lend my USDT"
-   - Any query specifically asking about lending (not comparing with staking)
+   - Lending pools or protocols (Francium, Kamino Lend, etc.)
+   - "How much can I lend?" (checks token balance)
+   - "Lend my USDT/USDC/SOL"
+   - Any query with "lend" keyword → Lending Agent (takes priority over token type)
 
 3. **Staking Agent** - Use for specific staking requests:
+   🚨 CRITICAL: Only use Staking Agent when the message contains "stake"/"staking", NOT when it says "lend"
    - "Show me the best staking pools" ← STAKING AGENT
    - "Best staking yields" ← STAKING AGENT
    - "Liquid staking rates" ← STAKING AGENT
-   - SOL staking/unstaking operations
+   - "Stake my SOL" ← STAKING AGENT
+   - "I want to stake SOL" ← STAKING AGENT
+   - SOL staking/unstaking operations (ONLY when message says "stake", not "lend")
    - Liquid staking pools or tokens (LSTs)
    - "How much can I stake?" (checks SOL balance)
-   - "Stake my SOL"
-   - Any query specifically asking about staking (not comparing with lending)
+   - Any query with "stake" keyword → Staking Agent
 
 4. **Wallet Agent** - Use for:
    - Token transfers

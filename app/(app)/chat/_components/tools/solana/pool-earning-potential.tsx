@@ -11,9 +11,15 @@ interface Props {
   poolData: LiquidStakingYieldsPoolData | LendingYieldsPoolData;
   outputAmount?: number;
   outputTokenPrice?: number;
+  actionType?: 'staking' | 'lending';
 }
 
-const PoolEarningPotential: React.FC<Props> = ({ poolData, outputAmount, outputTokenPrice }) => {
+const PoolEarningPotential: React.FC<Props> = ({
+  poolData,
+  outputAmount,
+  outputTokenPrice,
+  actionType = 'staking',
+}) => {
   const [selectedTimespan, setSelectedTimespan] = useState<number>(3);
   const preHoverTimespanRef = useRef<number | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -47,13 +53,15 @@ const PoolEarningPotential: React.FC<Props> = ({ poolData, outputAmount, outputT
       <div className="mb-4 p-4 bg-neutral-50 dark:bg-neutral-900/20 rounded-lg border">
         <div className="flex items-end justify-between w-full gap-2 mb-4">
           <div className="flex items-center gap-2">
-            <Image
-              src={poolData.tokenData?.logoURI || ''}
-              alt={poolData.name}
-              width={24}
-              height={24}
-              className="w-6 h-6 rounded-full"
-            />
+            {poolData.tokenData?.logoURI && (
+              <Image
+                src={poolData.tokenData?.logoURI || ''}
+                alt={poolData.name}
+                width={24}
+                height={24}
+                className="w-6 h-6 rounded-full"
+              />
+            )}
             <h3 className="font-semibold text-lg">{poolData.name}</h3>
           </div>
           <div className="flex items-center gap-2">
@@ -120,6 +128,7 @@ const PoolEarningPotential: React.FC<Props> = ({ poolData, outputAmount, outputT
         pool={poolData}
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
+        variant={actionType}
       />
     </div>
   );

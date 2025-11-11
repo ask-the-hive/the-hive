@@ -16,13 +16,7 @@ export const useTokenBalance = (tokenAddress: string, walletAddress: string) => 
     tokenAddress && walletAddress
       ? `token-balance-${chain}-${tokenAddress}-${walletAddress}`
       : null,
-
     async () => {
-      console.log('=== useTokenBalance DEBUG ===');
-      console.log('tokenAddress:', tokenAddress);
-      console.log('walletAddress:', walletAddress);
-      console.log('chain:', chain);
-
       if (chain === 'solana') {
         const connection = new Connection(process.env.NEXT_PUBLIC_SOLANA_RPC_URL!);
         if (tokenAddress === 'So11111111111111111111111111111111111111112') {
@@ -34,8 +28,6 @@ export const useTokenBalance = (tokenAddress: string, walletAddress: string) => 
             new PublicKey(tokenAddress),
             new PublicKey(walletAddress),
           );
-
-          console.log('Calculated ATA:', token_address.toBase58());
 
           try {
             const token_account = await connection.getTokenAccountBalance(token_address);

@@ -12,33 +12,34 @@ export async function getLendingYields(): Promise<SolanaActionResult<LendingYiel
 
     // Filter for the specific Solana lending protocols
     const lendingProtocols = [
-      'kamino-lend', // Kamino Finance
-      'jupiter-lend', // Jupiter Lend
-      'marginfi-lending', // Marginfi
-      'marginfi-lend',
-      'maple', // Maple Finance
-      'save', // Save Finance
-      'credix', // Credix
-      'francium', // Francium
+      'kamino-lend', // Kamino Finance - PRIMARY (best yields)
+      'jupiter-lend', // Jupiter Lend - no pools in DeFiLlama
+      'jup-lend', // Jupiter Lend - no pools in DeFiLlama
+      // 'marginfi-lending', // Marginfi - no pools in DeFiLlama
+      // 'credix', // Credix
+      // 'maple', // Maple Finance
+      // 'save', // Save Finance - SDK has dependency issues
     ];
 
     // Stablecoin tokens for lending
-    // const stablecoinTokens = [
-    //   'USDC', // USD Coin
-    //   'USDT', // Tether
-    // ];
+    const stablecoinTokens = [
+      'USDC', // USD Coin
+      'USDT', // Tether
+      'SOL', // Solana
+    ];
 
     const solLendingPools = solanaPools.filter((pool: any) => {
       // Check if it's a lending protocol
       const isLendingProtocol = lendingProtocols.includes(pool.project);
       // Check if it's a stablecoin token
-      // const isStablecoin = stablecoinTokens.includes(pool.symbol);
+      const isStablecoin = stablecoinTokens.includes(pool.symbol);
 
       const isLPPair = pool.symbol.includes('-') || pool.symbol.includes('/');
       const hasAPY = pool.apy && pool.apy > 0;
+      const hasUnderlyingToken = pool.underlyingTokens && pool.underlyingTokens.length > 0;
 
-      // Include lending protocols with stablecoin tokens that aren't LP pairs
-      return isLendingProtocol && !isLPPair && hasAPY;
+      // Include lending protocols with stablecoin tokens that aren't LP pairs and have valid token address
+      return isLendingProtocol && isStablecoin && !isLPPair && hasAPY && hasUnderlyingToken;
     });
 
     if (solLendingPools.length === 0) {
@@ -50,8 +51,6 @@ export async function getLendingYields(): Promise<SolanaActionResult<LendingYiel
     // Sort by APY (highest first) and take top 3
     let topSolanaPools = solLendingPools.sort((a: any, b: any) => (b.apy || 0) - (a.apy || 0));
 
-    console.log('topSolanaPools', topSolanaPools.slice(0, 10));
-
     topSolanaPools = topSolanaPools.slice(0, 3);
     // Reorder so highest APY is in the center (index 1)
     if (topSolanaPools.length === 3) {
@@ -61,10 +60,20 @@ export async function getLendingYields(): Promise<SolanaActionResult<LendingYiel
       topSolanaPools[2] = third; // Third highest on right
     }
 
+    console.log('🔵 Top Solana pools:', topSolanaPools);
+
     // Transform to the expected format
     const body = await Promise.all(
       topSolanaPools.map(async (pool: any) => {
+        // Use underlyingTokens[0] from DefiLlama as the source of truth for the mint address
+        const tokenMintAddress = pool.underlyingTokens?.[0];
+
+        if (!tokenMintAddress) {
+          console.warn('⚠️ Pool missing underlyingTokens (should have been filtered):', pool);
+        }
+
         const tokenData = await getTokenBySymbol(pool.symbol);
+
         return {
           name: pool.symbol,
           symbol: pool.symbol,
@@ -77,6 +86,8 @@ export async function getLendingYields(): Promise<SolanaActionResult<LendingYiel
           url: pool.url,
           rewardTokens: pool.rewardTokens || [],
           underlyingTokens: pool.underlyingTokens || [],
+          // Override tokenData.id with the actual mint address from DefiLlama
+          tokenMintAddress: tokenMintAddress,
           predictions: pool.predictions,
           tokenData: tokenData || null,
         };
@@ -84,7 +95,7 @@ export async function getLendingYields(): Promise<SolanaActionResult<LendingYiel
     );
 
     return {
-      message: `Found the ${body.length} top Solana lending pools. The user has been shown the options in the UI, ask them which they want to use. DO NOT REITERATE THE OPTIONS IN TEXT.`,
+      message: `Found the ${body.length} top Solana lending pools. The user has been shown the options in the UI. Tell them to "select a lending pool in the UI to continue". DO NOT REITERATE THE OPTIONS IN TEXT. DO NOT CHECK BALANCES YET - wait for the user to select a specific pool first.`,
       body,
     };
   } catch (error) {

@@ -10,6 +10,7 @@ const nextConfig: NextConfig = {
     '@ai-sdk/xai',
     '@ai-sdk/google',
     '@ai-sdk/deepseek',
+    '@kamino-finance/klend-sdk',
   ],
   // Remove console logs in production (but keep errors/warnings for debugging)
   compiler: {
@@ -51,6 +52,19 @@ const nextConfig: NextConfig = {
         child_process: false,
       };
     }
+
+    // Handle WASM files for Orca/Kamino
+    config.experiments = {
+      ...config.experiments,
+      asyncWebAssembly: true,
+      layers: true,
+    };
+
+    config.module.rules.push({
+      test: /\.wasm$/,
+      type: 'asset/resource',
+    });
+
     return config;
   },
 };

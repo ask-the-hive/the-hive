@@ -25,9 +25,10 @@ interface Props {
   outputTokenData?: Token;
   poolData?: LiquidStakingYieldsPoolData;
   outputAmount?: number;
+  tx?: string;
 }
 
-const StakeResult: React.FC<Props> = ({ outputTokenData, poolData, outputAmount }) => {
+const StakeResult: React.FC<Props> = ({ outputTokenData, poolData, outputAmount, tx }) => {
   const { user } = usePrivy();
   const { data: outputTokenPrice } = usePrice(outputTokenData?.id || '');
   const [isNavigating, setIsNavigating] = useState(false);
@@ -167,27 +168,34 @@ const StakeResult: React.FC<Props> = ({ outputTokenData, poolData, outputAmount 
               </ChartContainer>
             </div>
           )}
-          {user?.wallet?.address && (
-            <div className="mt-6 mb-6 flex justify-center">
-              <div className="w-full px-4">
-                <Button
-                  variant="brand"
-                  className="w-full"
-                  onClick={handleViewPortfolio}
-                  disabled={isNavigating}
-                >
-                  {isNavigating ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Loading...
-                    </>
-                  ) : (
-                    'View Portfolio'
-                  )}
-                </Button>
-              </div>
-            </div>
-          )}
+          <div className="mt-6 mb-6 flex flex-col gap-2 px-4">
+            {user?.wallet?.address && (
+              <Button
+                variant="brand"
+                className="w-full"
+                onClick={handleViewPortfolio}
+                disabled={isNavigating}
+              >
+                {isNavigating ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Loading...
+                  </>
+                ) : (
+                  'View Portfolio'
+                )}
+              </Button>
+            )}
+            {tx && (
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => window.open(`https://solscan.io/tx/${tx}`, '_blank')}
+              >
+                View Transaction
+              </Button>
+            )}
+          </div>
         </Card>
       )}
     </div>

@@ -19,9 +19,62 @@ interface Props {
   variant?: 'staking' | 'lending';
 }
 
+const PROTOCOL_AUDITS = [
+  {
+    name: 'kamino',
+    audited: true,
+    rating: 'BBB',
+    auditLink: 'https://skynet.certik.com/projects/kamino-finance',
+  },
+  {
+    name: 'kamino-lend',
+    audited: true,
+    rating: 'BBB',
+    auditLink: 'https://skynet.certik.com/projects/kamino-finance',
+  },
+  {
+    name: 'jupiter',
+    audited: true,
+    rating: 'A',
+    auditLink:
+      'https://github.com/jup-ag/docs/blob/main/static/files/audits/lend-oracle-and-flashloan-offside.pdf',
+  },
+  {
+    name: 'jupiter-lend',
+    audited: true,
+    rating: 'A',
+    auditLink:
+      'https://github.com/jup-ag/docs/blob/main/static/files/audits/lend-oracle-and-flashloan-offside.pdf',
+  },
+  {
+    name: 'marginfi',
+    audited: true,
+    rating: 'A',
+    auditLink: 'https://github.com/mrgnlabs/marginfi-v2/blob/main/audits/2023_ottersec_general.pdf',
+  },
+  {
+    name: 'marginfi-lend',
+    audited: true,
+    rating: 'A',
+    auditLink: 'https://github.com/mrgnlabs/marginfi-v2/blob/main/audits/2023_ottersec_general.pdf',
+  },
+  {
+    name: 'marginfi-lending',
+    audited: true,
+    rating: 'A',
+    auditLink: 'https://github.com/mrgnlabs/marginfi-v2/blob/main/audits/2023_ottersec_general.pdf',
+  },
+  {
+    name: 'maple',
+    audited: true,
+    rating: 'A',
+    auditLink: 'https://resources.cryptocompare.com/asset-management/17878/1749210134573.pdf',
+  },
+];
+
 const PoolDetailsModal: React.FC<Props> = ({ pool, isOpen, onClose, variant = 'staking' }) => {
   if (!pool) return null;
-
+  console.log('🔵 Pool:', pool);
   const displayOrDash = (
     value: number | null | undefined,
     formatter: (n: number) => string,
@@ -29,6 +82,11 @@ const PoolDetailsModal: React.FC<Props> = ({ pool, isOpen, onClose, variant = 's
     if (!value) return '--';
     return formatter(value);
   };
+
+  // Get audit data for the current protocol
+  const auditData = PROTOCOL_AUDITS.find(
+    (audit) => audit.name.toLowerCase() === pool.project.toLowerCase(),
+  );
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -41,13 +99,15 @@ const PoolDetailsModal: React.FC<Props> = ({ pool, isOpen, onClose, variant = 's
       >
         <DialogHeader>
           <div className="flex items-center gap-3">
-            <Image
-              src={pool.tokenData?.logoURI || ''}
-              alt={pool.name}
-              width={40}
-              height={40}
-              className="w-10 h-10 rounded-full"
-            />
+            {pool.tokenData?.logoURI && (
+              <Image
+                src={pool.tokenData?.logoURI || ''}
+                alt={pool.name}
+                width={40}
+                height={40}
+                className="w-10 h-10 rounded-full"
+              />
+            )}
             <div className="min-w-0 flex-1">
               <DialogTitle className="text-lg sm:text-xl truncate">{pool.name}</DialogTitle>
               <DialogDescription className="text-sm">
@@ -128,7 +188,7 @@ const PoolDetailsModal: React.FC<Props> = ({ pool, isOpen, onClose, variant = 's
                       Confidence
                     </p>
                     <p className="font-semibold text-xs md:text-base">
-                      {pool.predictions.predictedProbability}%
+                      {displayOrDash(pool.predictions.predictedProbability, (n) => n.toFixed(0))}%
                     </p>
                   </div>
                   <div>
@@ -145,6 +205,44 @@ const PoolDetailsModal: React.FC<Props> = ({ pool, isOpen, onClose, variant = 's
                   DeFiLlama&apos;s confidence level in their 4-week APY prediction, based on
                   historical data accuracy and market conditions.
                 </p>
+              </div>
+            </div>
+          )}
+
+          {/* Security Audit */}
+          {auditData && (
+            <div className="space-y-3">
+              <h3 className="font-semibold text-base sm:text-lg">Security Audit</h3>
+              <div className="p-3 sm:p-4 rounded-lg bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800">
+                <div className="flex items-center gap-2 mb-3">
+                  <Shield className="h-4 w-4 sm:h-5 sm:w-5 text-purple-600 flex-shrink-0" />
+                  <span className="font-medium text-sm sm:text-base">Protocol Security</span>
+                </div>
+                <div className="grid grid-cols-2 gap-3 sm:gap-4 text-sm mb-3">
+                  <div>
+                    <p className="text-gray-600 dark:text-gray-400 text-xs md:text-base">
+                      Audit Status
+                    </p>
+                    <p className="font-semibold text-xs md:text-base text-green-600">
+                      {auditData.audited ? '✓ Audited' : 'Not Audited'}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-gray-600 dark:text-gray-400 text-xs md:text-base">
+                      Audit Rating
+                    </p>
+                    <p className="font-semibold text-xs md:text-base">{auditData.rating}</p>
+                  </div>
+                </div>
+                <a
+                  href={auditData.auditLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 text-purple-600 hover:text-purple-700 dark:text-purple-400 dark:hover:text-purple-300 transition-colors text-sm"
+                >
+                  <span>View Full Audit Report</span>
+                  <ExternalLink className="h-3 w-3 sm:h-4 sm:w-4" />
+                </a>
               </div>
             </div>
           )}
@@ -300,16 +398,17 @@ const PoolDetailsModal: React.FC<Props> = ({ pool, isOpen, onClose, variant = 's
                     <p className="font-medium break-words">{pool.poolMeta}</p>
                   </div>
                 )}
-                {pool.url && (
+                {(pool.url || pool.project.toLowerCase().includes('kamino')) && (
                   <div>
                     <p className="text-gray-600 dark:text-gray-400">Website</p>
                     <a
-                      href={pool.url}
+                      href={pool.url || `https://kamino.finance/lend`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center gap-1 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 break-all"
                     >
-                      Visit Website <ExternalLink className="h-3 w-3 flex-shrink-0" />
+                      Visit {pool.project.toLowerCase().includes('kamino') ? 'Kamino' : 'Website'}{' '}
+                      <ExternalLink className="h-3 w-3 flex-shrink-0" />
                     </a>
                   </div>
                 )}
