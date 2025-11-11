@@ -9,7 +9,7 @@ import { LendingYieldsPoolData } from '@/ai/solana/actions/lending/lending-yield
 import { useTokenDataByAddress, usePrice } from '@/hooks';
 import PoolEarningPotential from '../../pool-earning-potential';
 import { capitalizeWords } from '@/lib/string-utils';
-import { VersionedTransaction } from '@solana/web3.js';
+import { VersionedTransaction, Connection } from '@solana/web3.js';
 
 import type { LendArgumentsType, LendResultBodyType } from '@/ai/solana/actions/lending/lend/types';
 import VarApyTooltip from '@/components/var-apy-tooltip';
@@ -56,6 +56,7 @@ const LendCallBody: React.FC<Props> = ({ toolCallId, args }) => {
   const [amount, setAmount] = useState(args.amount?.toString() || '');
   const [poolData, setPoolData] = useState<LendingYieldsPoolData | null>(null);
   const [hasFailed, setHasFailed] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // Fetch token data from the address
   const {
@@ -78,45 +79,23 @@ const LendCallBody: React.FC<Props> = ({ toolCallId, args }) => {
   );
   // Fetch pool data from sessionStorage (optional - enhances UI with APY data)
   useEffect(() => {
-    console.log('🔍 LendCallBody poolData fetch debug');
-    console.log('args.tokenSymbol:', args.tokenSymbol);
-    console.log('args.protocol:', args.protocol);
-
     // Use tokenSymbol from args (reliable) instead of tokenData.symbol (may be undefined)
     if (typeof window !== 'undefined' && args.tokenSymbol) {
       const storedPoolData = sessionStorage.getItem(SOLANA_LENDING_POOL_DATA_STORAGE_KEY);
-      console.log('storedPoolData exists:', !!storedPoolData);
 
       if (storedPoolData) {
         try {
           const allPools = JSON.parse(storedPoolData);
-          console.log('All pools from sessionStorage:', allPools);
-          console.log(
-            'Searching for pool with symbol:',
-            args.tokenSymbol,
-            'and protocol:',
-            args.protocol,
-          );
 
           const matchingPool = allPools.find((pool: LendingYieldsPoolData) => {
             const symbolMatch = pool.symbol?.toLowerCase() === args.tokenSymbol.toLowerCase();
             const projectMatch = protocolsMatch(pool.project, args.protocol);
-            console.log(
-              `Pool: ${pool.symbol} (${pool.project}) - symbol match: ${symbolMatch}, project match: ${projectMatch}`,
-            );
             return symbolMatch && projectMatch;
           });
 
           if (matchingPool) {
-            console.log('✅ Found matching pool:', matchingPool);
             setPoolData(matchingPool);
           } else {
-            console.error(
-              '❌ No matching pool found for token:',
-              args.tokenSymbol,
-              'protocol:',
-              args.protocol,
-            );
             setHasFailed(true);
             addToolResult(toolCallId, {
               message: `Could not find lending pool data for ${args.tokenSymbol}. Please use the lending-yields tool first to view available pools.`,
@@ -142,13 +121,8 @@ const LendCallBody: React.FC<Props> = ({ toolCallId, args }) => {
   }, [args.tokenSymbol, args.protocol, addToolResult, toolCallId]);
 
   useEffect(() => {
-    console.log('🔍 LendCallBody error check debug');
-    console.log('tokenDataError:', tokenDataError);
-    console.log('tokenPriceError:', tokenPriceError);
-
     // Check for data loading errors
     if (tokenDataError || tokenPriceError) {
-      console.error('❌ Setting hasFailed due to tokenDataError or tokenPriceError');
       setHasFailed(true);
       addToolResult(toolCallId, {
         message: `Error loading data. Please try again or use the lending-yields tool first.`,
@@ -160,6 +134,7 @@ const LendCallBody: React.FC<Props> = ({ toolCallId, args }) => {
     if (!wallet || !tokenData || !amount) return;
 
     setIsLending(true);
+    setErrorMessage(null); // Clear any previous errors
 
     try {
       // Check if user has enough balance
@@ -189,8 +164,9 @@ const LendCallBody: React.FC<Props> = ({ toolCallId, args }) => {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to build transaction');
+        // const errorData = await response.json();
+        setErrorMessage('Failed to build transaction. Please try again.');
+        return;
       }
 
       const { transaction: serializedTx } = await response.json();
@@ -198,8 +174,22 @@ const LendCallBody: React.FC<Props> = ({ toolCallId, args }) => {
       // Deserialize the transaction
       const transactionBuffer = Buffer.from(serializedTx, 'base64');
       const transaction = VersionedTransaction.deserialize(transactionBuffer);
-      console.log('transaction:', transaction);
+
+      // Send transaction and get signature
       const tx = await sendTransaction(transaction);
+
+      // Wait for confirmation and check if it succeeded
+      // Note: We need to verify the transaction actually succeeded on-chain
+      // Privy's sendTransaction returns a signature even if the transaction fails
+      const connection = new Connection(
+        process.env.NEXT_PUBLIC_SOLANA_RPC_URL || 'https://api.mainnet-beta.solana.com',
+      );
+
+      const confirmation = await connection.confirmTransaction(tx, 'confirmed');
+      if (confirmation.value.err) {
+        setErrorMessage('Transaction failed on-chain. Please try again.');
+        return;
+      }
 
       addToolResult<LendResultBodyType>(toolCallId, {
         message: `Successfully lent ${amount} ${args.tokenSymbol} to ${capitalizeWords(protocolName)}`,
@@ -233,9 +223,7 @@ const LendCallBody: React.FC<Props> = ({ toolCallId, args }) => {
           },
         });
       } else {
-        addToolResult(toolCallId, {
-          message: `Lend failed: ${errorMessage}`,
-        });
+        setErrorMessage('There was an issue submitting the transaction. Please try again.');
       }
     } finally {
       setIsLending(false);
@@ -251,6 +239,11 @@ const LendCallBody: React.FC<Props> = ({ toolCallId, args }) => {
         amount: 0,
       },
     });
+  };
+
+  const handleAmountChange = (newAmount: string) => {
+    setAmount(newAmount);
+    setErrorMessage(null); // Clear error when user changes amount
   };
 
   if (hasFailed) {
@@ -294,7 +287,7 @@ const LendCallBody: React.FC<Props> = ({ toolCallId, args }) => {
                 token={tokenData}
                 label="Amount to Lend"
                 amount={amount}
-                onChange={setAmount}
+                onChange={handleAmountChange}
                 address={wallet?.address}
               />
               {balance && balance > 0 && (
@@ -315,13 +308,24 @@ const LendCallBody: React.FC<Props> = ({ toolCallId, args }) => {
                 variant="brand"
                 className="w-full"
                 onClick={handleLend}
-                disabled={isLending || !amount || !tokenData || !balance || balance === 0}
+                disabled={
+                  isLending || !amount || !tokenData || !balance || balance === 0 || !!errorMessage
+                }
               >
                 {isLending ? 'Lending...' : 'Lend'}
               </Button>
               <Button variant="outline" className="w-full" onClick={handleCancel}>
                 Cancel
               </Button>
+            </div>
+
+            {/* Show error message if transaction failed */}
+            <div className="flex justify-center w-full h-4 -mt-2">
+              {errorMessage && (
+                <p className="flex justify-center w-full text-sm text-red-600 dark:text-red-400 text-center">
+                  {errorMessage}
+                </p>
+              )}
             </div>
 
             {/* Display pool information and yield calculator if available */}

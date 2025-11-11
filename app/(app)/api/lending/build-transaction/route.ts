@@ -297,13 +297,6 @@ async function buildKaminoLendTx(
   amount: number,
 ): Promise<VersionedTransaction> {
   try {
-    console.log('🔵 Building Kamino lend transaction:', {
-      tokenSymbol,
-      tokenMint,
-      amount,
-      wallet: wallet.toBase58(),
-    });
-
     // Create Kamino-compatible RPC and addresses
     const kaminoRpc = createSolanaRpc(process.env.NEXT_PUBLIC_SOLANA_RPC_URL!) as any;
     const marketAddress = createAddress(KAMINO_MAIN_MARKET.toBase58()) as any;
@@ -311,21 +304,15 @@ async function buildKaminoLendTx(
     const walletAddress = createAddress(wallet.toBase58()) as any;
     const mintAddress = createAddress(tokenMint) as any;
 
-    console.log('🔵 Loading Kamino market...');
-
     // Load Kamino market
     const market = await KaminoMarket.load(kaminoRpc, marketAddress, programId);
     if (!market) {
       throw new Error('Failed to load Kamino market');
     }
 
-    console.log('✅ Kamino market loaded');
-
     // Convert amount to base units (lamports/smallest unit)
     const decimals = tokenSymbol.toUpperCase() === 'SOL' ? 9 : 6;
     const amountBase = Math.floor(amount * Math.pow(10, decimals));
-
-    console.log('🔵 Amount in base units:', amountBase, 'decimals:', decimals);
 
     // Create a transaction signer for Kamino SDK
     const signer: any = {
@@ -338,22 +325,22 @@ async function buildKaminoLendTx(
 
     // Get current slot for Address Lookup Table creation
     const currentSlot = await connection.getSlot();
-    console.log('🔵 Current slot:', currentSlot);
 
-    // Check if user's obligation account exists to determine if we need initialization
-    // For VanillaObligation, the PDA is derived from [seed, wallet, market, programId]
-    const [obligationPda] = PublicKey.findProgramAddressSync(
-      [Buffer.from('obligation'), wallet.toBuffer(), KAMINO_MAIN_MARKET.toBuffer()],
-      KAMINO_PROGRAM_ID,
-    );
+    // Check if user's obligation account exists using Kamino SDK's official method
+    // This ensures we use the correct PDA derivation that Kamino expects
+    // Note: getUserVanillaObligation throws an error if obligation doesn't exist
+    const walletAddressForObligation = createAddress(wallet.toBase58()) as any;
+    let obligationExists = false;
 
-    const obligationAccount = await connection.getAccountInfo(obligationPda);
-    const obligationExists = obligationAccount !== null;
-
-    console.log('🔵 User obligation exists:', obligationExists, 'PDA:', obligationPda.toBase58());
+    try {
+      await market.getUserVanillaObligation(walletAddressForObligation);
+      obligationExists = true;
+    } catch {
+      // Obligation doesn't exist yet (first-time user)
+      obligationExists = false;
+    }
 
     // Build deposit action
-    console.log('🔵 Building Kamino deposit action...');
     const depositAction = await KaminoAction.buildDepositTxns(
       market,
       new BN(amountBase),
@@ -380,16 +367,10 @@ async function buildKaminoLendTx(
       ...(depositAction.cleanupIxs || []),
     ] as any;
 
-    console.log('🔵 Kamino SDK returned:', {
-      setupIxs: depositAction.setupIxs?.length || 0,
-      lendingIxs: depositAction.lendingIxs?.length || 0,
-      cleanupIxs: depositAction.cleanupIxs?.length || 0,
-      total: allInstructions.length,
-    });
-
     // Convert Kamino instructions to legacy TransactionInstructions
-    const legacyInstructions = allInstructions.map(convertKaminoInstructionToLegacy);
-    console.log('🔵 Converted to', legacyInstructions.length, 'legacy instructions');
+    const legacyInstructions = allInstructions.map((instruction: any) =>
+      convertKaminoInstructionToLegacy(instruction),
+    );
 
     // Build the transaction
     const { blockhash } = await connection.getLatestBlockhash();
@@ -400,37 +381,6 @@ async function buildKaminoLendTx(
     }).compileToV0Message();
 
     const versionedTx = new VersionedTransaction(messageV0);
-
-    console.log('✅ Kamino transaction built successfully');
-
-    // Simulate for debugging purposes only (don't throw on error)
-    try {
-      console.log('🔵 Simulating Kamino transaction (for debugging)...');
-      const simulation = await connection.simulateTransaction(versionedTx, {
-        sigVerify: false,
-      });
-
-      if (simulation.value.err) {
-        console.error(
-          '⚠️ Kamino simulation warning:',
-          JSON.stringify(simulation.value.err, null, 2),
-        );
-        console.error('⚠️ Simulation logs:', simulation.value.logs);
-
-        // For first-time users, InitObligation will fail simulation (PrivilegeEscalation)
-        // because it requires a signature to create the account. This is expected.
-        if (!obligationExists) {
-          console.log(
-            'ℹ️ Note: First-time deposit simulation failures are expected (account needs signature to initialize)',
-          );
-        }
-      } else {
-        console.log('✅ Kamino simulation succeeded');
-        console.log('Simulation logs:', simulation.value.logs?.slice(0, 10)); // First 10 logs
-      }
-    } catch (simError: any) {
-      console.error('⚠️ Simulation error (non-blocking):', simError.message);
-    }
 
     return versionedTx;
   } catch (err: any) {
@@ -449,11 +399,22 @@ function convertKaminoInstructionToLegacy(instruction: Instruction): Transaction
 
   return new TransactionInstruction({
     programId: new PublicKey(instruction.programAddress),
-    keys: instruction.accounts.map((account: any) => ({
-      pubkey: new PublicKey(account.address),
-      isSigner: account.role?.signer || false,
-      isWritable: account.role?.writable || false,
-    })),
+    keys: instruction.accounts.map((account: any) => {
+      // Kamino SDK uses numeric roles as a bitfield:
+      // 0 = read-only
+      // 1 = writable (bit 0)
+      // 2 = signer (bit 1)
+      // 3 = signer + writable (bits 0 and 1)
+      const role = typeof account.role === 'number' ? account.role : 0;
+      const isWritable = (role & 1) !== 0; // Check bit 0
+      const isSigner = (role & 2) !== 0; // Check bit 1
+
+      return {
+        pubkey: new PublicKey(account.address),
+        isSigner,
+        isWritable,
+      };
+    }),
     data: Buffer.from(instruction.data),
   });
 }
