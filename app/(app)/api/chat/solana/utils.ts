@@ -23,7 +23,7 @@ CRITICAL ROUTING RULES:
 
 2. **Lending Agent** - Use for specific lending requests:
    🚨 CRITICAL: If the message contains the word "lend" or "lending", ALWAYS use Lending Agent, even for SOL
-   - "Show me the best lending pools for USDC, USDT, or SOL" ← LENDING AGENT
+   - "Show me the best lending pools on Solana" ← LENDING AGENT
    - "Best lending yields" ← LENDING AGENT
    - "Lending rates for USDC/USDT/SOL" ← LENDING AGENT
    - "Lend SOL to Kamino" ← LENDING AGENT (not Staking Agent!)

@@ -66,70 +66,58 @@ const ChatInput: React.FC = () => {
           // Remove loading state styling that prevents new chat creation
         )}
       >
-        <OptionalTooltip text={inputDisabledMessage}>
-          <Textarea
-            ref={inputRef}
-            tabIndex={0}
-            onKeyDown={onKeyDown}
-            placeholder="Ask the hive anything..."
-            className={cn(
-              'w-full max-h-60 resize-none bg-transparent px-5 pt-5 pb-5 text-[17px] file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-neutral-600 dark:placeholder:text-neutral-400 disabled:cursor-not-allowed disabled:opacity-50',
-              'focus-visible:outline-none',
-              'dark:placeholder:text-neutral-400',
-            )}
-            value={input}
-            onChange={(e) => {
-              setInput(e.target.value);
-            }}
-            // Only disable input for tool invocations, not for loading state
-            disabled={inputDisabledMessage !== '' || isLoading}
-            autoFocus
-          />
-        </OptionalTooltip>
-        <div className="flex items-center justify-between px-2 pb-1">
-          <div className="flex items-center gap-2">
-            {/* <ModelSelector
-              model={model}
-              onModelChange={setModel}
-              // Disable model changes after chat starts
-              disabled={hasMessages}
+        <div className="relative flex items-center">
+          <OptionalTooltip text={inputDisabledMessage}>
+            <Textarea
+              ref={inputRef}
+              tabIndex={0}
+              onKeyDown={onKeyDown}
+              placeholder="Ask the hive anything..."
+              className={cn(
+                'w-full max-h-40 resize-none bg-transparent px-5 pt-5 pb-5 pr-14 text-[17px] file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-neutral-600 dark:placeholder:text-neutral-400 disabled:cursor-not-allowed disabled:opacity-50',
+                'focus-visible:outline-none',
+                'dark:placeholder:text-neutral-400',
+              )}
+              value={input}
+              onChange={(e) => {
+                setInput(e.target.value);
+              }}
+              // Only disable input for tool invocations, not for loading state
+              disabled={inputDisabledMessage !== '' || isLoading}
+              autoFocus
             />
-            <ChainSelector
-              chain={chain}
-              onChainChange={setChain}
-              // Disable chain changes after chat starts
-              disabled={hasMessages}
-            /> */}
-          </div>
-          <TooltipProvider>
-            <Tooltip delayDuration={0}>
-              <TooltipTrigger asChild>
-                <Button
-                  type="submit"
-                  size="icon"
-                  // Only disable submit button for empty input or tool invocations
-                  disabled={
-                    input.trim() === '' || inputDisabledMessage !== '' || !user || isLoading
-                  }
-                  variant="ghost"
-                  className="h-8 w-8"
-                >
-                  <div
-                    className={cn(
-                      'flex items-center justify-center w-6 h-6 rounded-full transition-colors',
-                      input.trim().length > 0
-                        ? 'bg-brand-600 hover:bg-brand-700'
-                        : 'bg-brand-700 dark:bg-brand-700',
-                    )}
+          </OptionalTooltip>
+          <div className="absolute right-3 top-1/2 -translate-y-1/2">
+            <TooltipProvider>
+              <Tooltip delayDuration={0}>
+                <TooltipTrigger asChild>
+                  <Button
+                    type="submit"
+                    size="icon"
+                    // Only disable submit button for empty input or tool invocations
+                    disabled={
+                      input.trim() === '' || inputDisabledMessage !== '' || !user || isLoading
+                    }
+                    variant="ghost"
+                    className="h-8 w-8"
                   >
-                    <ArrowUp className="w-4 h-4 text-neutral-100" />
-                  </div>
-                  <span className="sr-only">Send message</span>
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Send message</TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+                    <div
+                      className={cn(
+                        'flex items-center justify-center w-6 h-6 rounded-full transition-colors',
+                        input.trim().length > 0
+                          ? 'bg-brand-600 hover:bg-brand-700'
+                          : 'bg-brand-700 dark:bg-brand-700',
+                      )}
+                    >
+                      <ArrowUp className="w-4 h-4 text-neutral-100" />
+                    </div>
+                    <span className="sr-only">Send message</span>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Send message</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
         </div>
       </form>
     </div>

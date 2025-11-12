@@ -74,7 +74,7 @@ const PROTOCOL_AUDITS = [
 
 const PoolDetailsModal: React.FC<Props> = ({ pool, isOpen, onClose, variant = 'staking' }) => {
   if (!pool) return null;
-  console.log('🔵 Pool:', pool);
+
   const displayOrDash = (
     value: number | null | undefined,
     formatter: (n: number) => string,

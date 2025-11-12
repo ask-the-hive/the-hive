@@ -10,6 +10,7 @@ import { useTokenDataByAddress, usePrice } from '@/hooks';
 import PoolEarningPotential from '../../pool-earning-potential';
 import { capitalizeWords } from '@/lib/string-utils';
 import { VersionedTransaction, Connection } from '@solana/web3.js';
+import LendResult from './lend-result';
 
 import type { LendArgumentsType, LendResultBodyType } from '@/ai/solana/actions/lending/lend/types';
 import VarApyTooltip from '@/components/var-apy-tooltip';
@@ -57,6 +58,8 @@ const LendCallBody: React.FC<Props> = ({ toolCallId, args }) => {
   const [poolData, setPoolData] = useState<LendingYieldsPoolData | null>(null);
   const [hasFailed, setHasFailed] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isSuccess, setIsSuccess] = useState(false);
+  const [txSignature, setTxSignature] = useState<string | null>(null);
 
   // Fetch token data from the address
   const {
@@ -188,9 +191,15 @@ const LendCallBody: React.FC<Props> = ({ toolCallId, args }) => {
       const confirmation = await connection.confirmTransaction(tx, 'confirmed');
       if (confirmation.value.err) {
         setErrorMessage('Transaction failed on-chain. Please try again.');
+        setIsLending(false);
         return;
       }
 
+      // Set success state immediately for UI feedback
+      setIsSuccess(true);
+      setTxSignature(tx);
+
+      // Also notify the chat system
       addToolResult<LendResultBodyType>(toolCallId, {
         message: `Successfully lent ${amount} ${args.tokenSymbol} to ${capitalizeWords(protocolName)}`,
         body: {
@@ -212,6 +221,7 @@ const LendCallBody: React.FC<Props> = ({ toolCallId, args }) => {
         (error as any)?.code === 4001;
 
       if (isUserCancellation) {
+        setIsLending(false);
         addToolResult(toolCallId, {
           message: 'Transaction cancelled by user',
           body: {
@@ -224,9 +234,8 @@ const LendCallBody: React.FC<Props> = ({ toolCallId, args }) => {
         });
       } else {
         setErrorMessage('There was an issue submitting the transaction. Please try again.');
+        setIsLending(false);
       }
-    } finally {
-      setIsLending(false);
     }
   };
 
@@ -248,6 +257,22 @@ const LendCallBody: React.FC<Props> = ({ toolCallId, args }) => {
 
   if (hasFailed) {
     return null;
+  }
+
+  // Show success state if transaction completed
+  if (isSuccess && txSignature) {
+    return (
+      <div className="flex justify-center w-full">
+        <div className="w-full md:w-[70%]">
+          <LendResult
+            tokenData={tokenData || undefined}
+            poolData={poolData || undefined}
+            amount={Number(amount)}
+            tx={txSignature}
+          />
+        </div>
+      </div>
+    );
   }
 
   // Only wait for essential data (tokenData and balance), poolData is optional

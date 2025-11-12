@@ -5,6 +5,7 @@ import { getAssociatedTokenAddressSync } from '@solana/spl-token';
 import type { BalanceArgumentsType, BalanceResultBodyType } from './types';
 import type { SolanaActionResult } from '../../solana-action';
 import { getToken } from '@/db/services';
+import { getTokenMetadata } from '@/services/birdeye';
 
 // SOL native mint address - when this is passed, check native SOL balance
 const SOL_MINT = 'So11111111111111111111111111111111111111112';
@@ -59,45 +60,88 @@ export async function getBalance(
       }
     }
 
-    // Only fetch token data from DB if it's not SOL
-    if (args.tokenAddress && !isCheckingSOL) {
+    // Only fetch token data from DB if it's not SOL and tokenSymbol not provided
+    if (args.tokenAddress && !isCheckingSOL && !args.tokenSymbol) {
       try {
         tokenData = await getToken(args.tokenAddress);
       } catch (tokenError) {
-        console.log('Error fetching token data:', tokenError);
-        tokenData = null;
+        console.log('Error fetching token data from DB, trying Birdeye API:', tokenError);
+        // Fallback to Birdeye API if DB lookup fails
+        try {
+          const birdeyeMetadata = await getTokenMetadata(args.tokenAddress, 'solana');
+          if (birdeyeMetadata && birdeyeMetadata.symbol !== 'UNKNOWN') {
+            tokenData = {
+              id: args.tokenAddress,
+              symbol: birdeyeMetadata.symbol,
+              name: birdeyeMetadata.name,
+              logoURI: birdeyeMetadata.logo_uri || '',
+              decimals: birdeyeMetadata.decimals || 6,
+              tags: [],
+              freezeAuthority: null,
+              mintAuthority: null,
+              permanentDelegate: null,
+              extensions: birdeyeMetadata.extensions || {},
+            };
+            console.log('✅ Fetched token metadata from Birdeye:', tokenData.symbol);
+          }
+        } catch (birdeyeError) {
+          console.log('Error fetching token data from Birdeye:', birdeyeError);
+          tokenData = null;
+        }
       }
-    } else {
+    } else if (isCheckingSOL) {
       console.log('Skipping token data fetch - checking SOL balance');
     }
 
-    // When no tokenAddress is provided, we're checking SOL balance, so default to SOL metadata
-    const tokenSymbol = tokenData?.symbol || 'SOL';
-    const tokenName = tokenData?.name || 'Solana';
+    // Determine token symbol - use provided symbol, or fetch from tokenData, or default to SOL only if checking SOL
+    const tokenSymbol = isCheckingSOL ? 'SOL' : args.tokenSymbol || tokenData?.symbol || undefined;
+    const tokenName = isCheckingSOL ? 'Solana' : tokenData?.name || args.tokenSymbol || undefined;
+
+    // Only use logoURI if we have tokenData, otherwise leave it undefined (no default SOL image)
     const tokenLogoURI =
       tokenData?.logoURI ||
-      'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTX6PYmAiDpUliZWnmCHKPc3VI7QESDKhLndQ&s';
+      (isCheckingSOL
+        ? 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTX6PYmAiDpUliZWnmCHKPc3VI7QESDKhLndQ&s'
+        : undefined);
+
+    // Debug logging
+    if (args.tokenAddress && !isCheckingSOL) {
+      console.log('🔍 Token metadata resolution:', {
+        tokenAddress: args.tokenAddress,
+        tokenSymbolProvided: args.tokenSymbol,
+        isCheckingSOL,
+        tokenDataFound: !!tokenData,
+        finalTokenSymbol: tokenSymbol,
+        finalTokenName: tokenName,
+      });
+    }
+
+    // Ensure we have a token symbol - use tokenAddress as last resort
+    const finalTokenSymbol =
+      tokenSymbol || (args.tokenAddress ? args.tokenAddress.slice(0, 8) : 'SOL');
 
     // Add programmatic logic for staking context
-    let message = `Balance: ${balance} ${tokenSymbol}`;
-    if (tokenSymbol === 'SOL' && balance > 0.00001) {
+    let message = `Balance: ${balance} ${finalTokenSymbol}`;
+    if (finalTokenSymbol === 'SOL' && balance > 0.00001) {
       message += ` (Ready for staking)`;
-    } else if (tokenSymbol === 'SOL' && balance <= 0.00001) {
+    } else if (finalTokenSymbol === 'SOL' && balance <= 0.00001) {
       message += ` (Need SOL to stake)`;
     } else if (args.tokenAddress && balance === 0) {
-      message += ` (Need ${tokenSymbol} to continue)`;
+      message += ` (Need ${finalTokenSymbol} to continue)`;
     }
 
     return {
       message,
       body: {
         balance: balance,
-        token: tokenSymbol,
+        token: finalTokenSymbol,
         name: tokenName,
         logoURI: tokenLogoURI,
         // Add programmatic hints for the agent
-        canStake: tokenSymbol === 'SOL' && balance > 0.00001,
-        needsSOL: tokenSymbol === 'SOL' && balance <= 0.00001,
+        canStake: finalTokenSymbol === 'SOL' && balance > 0.00001,
+        needsSOL: finalTokenSymbol === 'SOL' && balance <= 0.00001,
+        // Include the token address so TokenFundingOptions can use it
+        tokenAddress: isCheckingSOL ? SOL_MINT : args.tokenAddress,
       },
     };
   } catch (error) {
