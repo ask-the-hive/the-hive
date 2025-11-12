@@ -26,19 +26,27 @@ export async function getLendingYields(): Promise<SolanaActionResult<LendingYiel
       // 'save', // Save Finance - SDK has dependency issues
     ];
 
+    const stableCoins = ['USDC', 'USDT', 'EURC', 'FDUSD', 'PYUSD', 'USDS', 'SOL'];
+
     // Filter DefiLlama pools
     const defiLlamaPools = solanaPools.filter((pool: any) => {
       const isLendingProtocol = lendingProtocols.includes(pool.project);
+      const isStableCoin = stableCoins.includes(pool.symbol);
       const isLPPair = pool.symbol.includes('-') || pool.symbol.includes('/');
+
       const hasAPY = pool.apy && pool.apy > 0;
       const hasUnderlyingToken = pool.underlyingTokens && pool.underlyingTokens.length > 0;
 
-      return isLendingProtocol && !isLPPair && hasAPY && hasUnderlyingToken;
+      return isLendingProtocol && !isLPPair && hasAPY && hasUnderlyingToken && isStableCoin;
     });
 
     // Convert Kamino SDK pools to DefiLlama format
     const kaminoPoolsFormatted = kaminoPools
-      .filter((pool) => pool.apy > 0 && !pool.symbol.includes('-') && !pool.symbol.includes('/'))
+      .filter((pool) => {
+        const isStableCoin = stableCoins.includes(pool.symbol);
+        const isLPPair = pool.symbol.includes('-') || pool.symbol.includes('/');
+        return pool.apy > 0 && !isLPPair && isStableCoin;
+      })
       .map((pool) => ({
         project: 'kamino-lend',
         symbol: pool.symbol,
