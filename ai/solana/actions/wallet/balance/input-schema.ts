@@ -17,4 +17,10 @@ export const BalanceInputSchema = z.object({
     .regex(solanaAddressRegex, 'Invalid Solana token address format')
     .optional()
     .describe('The token address to check balance for. If not provided, returns SOL balance'),
+  tokenSymbol: z
+    .string()
+    .optional()
+    .describe(
+      'The token symbol (e.g., "USDG", "USDC"). If provided, will be used instead of fetching from DB.',
+    ),
 });

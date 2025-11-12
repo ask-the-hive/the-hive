@@ -92,7 +92,7 @@ const TokenFundingOptions: React.FC<TokenFundingOptionsProps> = ({
         <Card className="mt-4 p-4 border rounded-lg bg-blue-50 dark:bg-neutral-800">
           <div className="p-4 pt-8">
             <div className="flex flex-col items-center gap-3 mb-4">
-              {logoURI && (
+              {logoURI ? (
                 <Image
                   src={logoURI}
                   alt={tokenSymbol}
@@ -103,6 +103,12 @@ const TokenFundingOptions: React.FC<TokenFundingOptionsProps> = ({
                     ev.currentTarget.style.display = 'none';
                   }}
                 />
+              ) : (
+                <div className="w-12 h-12 rounded-full bg-neutral-200 dark:bg-neutral-700 flex items-center justify-center">
+                  <span className="text-xs font-semibold text-neutral-600 dark:text-neutral-300">
+                    {tokenSymbol?.toUpperCase()}
+                  </span>
+                </div>
               )}
               <p className="text-sm text-blue-700 dark:text-blue-300">
                 You need {tokenSymbol} to continue
@@ -222,13 +228,33 @@ const GetBalance: React.FC<Props> = ({ tool, prevToolAgent }) => {
           const hasZeroBalance =
             result.body?.balance !== undefined && result.body.balance <= 0.00001;
 
+          // Debug logging
+          if (isInFlow && hasZeroBalance) {
+            console.log('🔍 Balance check debug:', {
+              tokenSymbol,
+              tokenAddressFromArgs: tool?.args?.tokenAddress,
+              tokenAddressFromResult: result.body?.tokenAddress,
+              walletAddress: tool?.args?.walletAddress,
+              allToolArgs: tool?.args,
+            });
+          }
+
           if (result.body) {
             // If in staking/lending flow and balance is 0, show options
             if (isInFlow && hasZeroBalance) {
+              // Prefer tokenAddress from result.body, fallback to tool.args
+              const tokenAddress = result.body?.tokenAddress || tool?.args?.tokenAddress;
+
+              console.log('🔍 TokenFundingOptions props:', {
+                tokenSymbol,
+                tokenAddress,
+                logoURI: result.body.logoURI,
+              });
+
               return (
                 <TokenFundingOptions
                   tokenSymbol={tokenSymbol}
-                  tokenAddress={tool?.args?.tokenAddress}
+                  tokenAddress={tokenAddress}
                   logoURI={result.body.logoURI}
                   onComplete={(type) => handleFundingComplete(type, tokenSymbol)}
                 />
