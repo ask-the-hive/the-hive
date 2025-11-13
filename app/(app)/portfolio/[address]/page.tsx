@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation';
 
 import Header from './_components/header';
 import Tokens from './_components/tokens';
-import LiquidityPools from './_components/liquidity-pools';
+import StakingPositions from './_components/staking-positions';
+import LendingPositions from './_components/lending-positions';
 import Transactions from './_components/transactions';
 
 import { SwapModalProvider } from './_contexts/use-swap-modal';
@@ -21,7 +22,9 @@ import { Button } from '@/components/ui/button';
 // import { ChevronDown } from 'lucide-react';
 import PortfolioProjection from './_components/portfolio-projection';
 import { getAllLiquidStakingPositions } from '@/services/liquid-staking/get-all';
+import { getAllLendingPositions } from '@/services/lending/get-all';
 import { LiquidStakingPosition } from '@/db/types';
+import { LendingPosition } from '@/types/lending-position';
 import { usePortfolio } from '@/hooks';
 
 const Portfolio = ({ params }: { params: Promise<{ address: string }> }) => {
@@ -30,6 +33,7 @@ const Portfolio = ({ params }: { params: Promise<{ address: string }> }) => {
   const router = useRouter();
   const { currentChain, setCurrentChain, walletAddresses } = useChain();
   const [stakingPositions, setStakingPositions] = useState<LiquidStakingPosition[] | null>(null);
+  const [lendingPositions, setLendingPositions] = useState<LendingPosition[] | null>(null);
 
   // Use the appropriate address for the current chain
   const chainAddress =
@@ -62,14 +66,34 @@ const Portfolio = ({ params }: { params: Promise<{ address: string }> }) => {
     }
   }, [address, currentChain]);
 
+  // Fetch lending positions
+  const fetchLendingPositions = useCallback(async () => {
+    if (currentChain !== 'solana') {
+      setLendingPositions([]);
+      return;
+    }
+
+    try {
+      const positions = await getAllLendingPositions(address, currentChain);
+      console.log('lending positions', positions);
+      setLendingPositions(positions);
+    } catch (error) {
+      console.error('Error fetching lending positions:', error);
+      setLendingPositions([]);
+    }
+  }, [address, currentChain]);
+
   const handleRefresh = () => {
     fetchStakingPositions();
+    fetchLendingPositions();
     refreshPortfolio();
   };
 
   useEffect(() => {
     fetchStakingPositions();
-  }, [fetchStakingPositions]);
+    fetchLendingPositions();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Auto-switch to BSC if no Solana wallet is connected
   useEffect(() => {
@@ -95,20 +119,6 @@ const Portfolio = ({ params }: { params: Promise<{ address: string }> }) => {
     }
   }, [currentChain, walletAddresses, address, router]);
 
-  // Dropdown handler for chain switching
-  // const handleChainSwitch = (newChain: 'solana' | 'bsc' | 'base') => {
-  //   setCurrentChain(newChain);
-  //   const newAddress =
-  //     newChain === 'solana'
-  //       ? walletAddresses.solana
-  //       : newChain === 'base'
-  //         ? walletAddresses.base
-  //         : walletAddresses.bsc;
-  //   if (newAddress) {
-  //     router.replace(`/portfolio/${newAddress}?chain=${newChain}`);
-  //   }
-  // };
-
   // Determine if there is a wallet for each chain
   const hasSolana = !!walletAddresses.solana;
   const hasBsc = !!walletAddresses.bsc;
@@ -121,9 +131,6 @@ const Portfolio = ({ params }: { params: Promise<{ address: string }> }) => {
       <div className="max-w-4xl mx-auto w-full flex flex-col gap-12 md:pt-4 h-full overflow-y-scroll no-scrollbar">
         <div className="flex justify-between items-center">
           <Header address={address} />
-          {/* Chain selector dropdown */}
-          {/* <DropdownMenu>
-            <DropdownMenuTrigger asChild> */}
           <Button
             variant="outline"
             className="flex items-center gap-2 focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 cursor-default"
@@ -131,36 +138,7 @@ const Portfolio = ({ params }: { params: Promise<{ address: string }> }) => {
           >
             <ChainIcon chain={currentChain} className="w-4 h-4" />
             {currentChain === 'solana' ? 'Solana' : currentChain === 'base' ? 'Base' : 'BSC'}
-            {/* <ChevronDown className="h-4 w-4" /> */}
           </Button>
-          {/* </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem
-                onClick={() => handleChainSwitch('solana')}
-                className="flex items-center gap-2"
-                disabled={!hasSolana}
-              >
-                <ChainIcon chain="solana" className="w-4 h-4" />
-                Solana
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => handleChainSwitch('bsc')}
-                className="flex items-center gap-2"
-                disabled={!hasBsc}
-              >
-                <ChainIcon chain="bsc" className="w-4 h-4" />
-                BSC
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => handleChainSwitch('base')}
-                className="flex items-center gap-2"
-                disabled={!hasBase}
-              >
-                <ChainIcon chain="base" className="w-4 h-4" />
-                Base
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu> */}
         </div>
         <PortfolioProjection address={address} stakingPositions={stakingPositions} />
         <Tokens
@@ -169,8 +147,14 @@ const Portfolio = ({ params }: { params: Promise<{ address: string }> }) => {
           portfolioLoading={portfolioLoading}
           onRefresh={handleRefresh}
         />
-        <LiquidityPools
+        <StakingPositions
           stakingPositions={stakingPositions}
+          portfolio={portfolio}
+          portfolioLoading={portfolioLoading}
+          onRefresh={handleRefresh}
+        />
+        <LendingPositions
+          lendingPositions={lendingPositions}
           portfolio={portfolio}
           portfolioLoading={portfolioLoading}
           onRefresh={handleRefresh}

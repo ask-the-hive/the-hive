@@ -1,5 +1,5 @@
-import React from 'react';
-import { Droplet, Info } from 'lucide-react';
+import React, { useState } from 'react';
+import { PiggyBank, Info } from 'lucide-react';
 import Image from 'next/image';
 
 import {
@@ -14,16 +14,17 @@ import {
 } from '@/components/ui';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useChain } from '@/app/_contexts/chain-context';
-import { LiquidStakingPosition } from '@/db/types';
+import { LendingPosition } from '@/types/lending-position';
 import { formatFiat, formatCrypto, formatCompactNumber, formatUSD } from '@/lib/format';
 import { capitalizeWords, getConfidenceLabel } from '@/lib/string-utils';
 import { Card } from '@/components/ui/card';
-import { useSwapModal } from '../../_contexts/use-swap-modal';
 import { cn } from '@/lib/utils';
 import { Portfolio } from '@/services/birdeye/types';
+import WithdrawModal from './withdraw-modal';
+import SwapSuccessModal from '../swap-success-modal';
 
 interface Props {
-  stakingPositions: LiquidStakingPosition[] | null;
+  lendingPositions: LendingPosition[] | null;
   portfolio: Portfolio | undefined;
   portfolioLoading: boolean;
   onRefresh: () => void;
@@ -76,46 +77,61 @@ const PoolTooltip: React.FC<PoolTooltipProps> = ({ poolData }) => {
   );
 };
 
-const LiquidityPools: React.FC<Props> = ({
-  stakingPositions,
+const LendingPositions: React.FC<Props> = ({
+  lendingPositions,
   portfolio,
   portfolioLoading,
   onRefresh,
 }) => {
   const { currentChain } = useChain();
+  const [selectedPosition, setSelectedPosition] = useState<LendingPosition | null>(null);
+  const [isWithdrawModalOpen, setIsWithdrawModalOpen] = useState(false);
+  const [withdrawSuccessData, setWithdrawSuccessData] = useState<{
+    amount: number;
+    tokenSymbol: string;
+    tx: string;
+  } | null>(null);
+  const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
 
-  const { onOpen } = useSwapModal();
+  const handleWithdraw = (position: LendingPosition) => {
+    setSelectedPosition(position);
+    setIsWithdrawModalOpen(true);
+  };
 
-  const openSell = (tokenAddress: string) => onOpen('sell', tokenAddress, onRefresh, true);
+  const handleWithdrawSuccess = (data: { amount: number; tokenSymbol: string; tx: string }) => {
+    setWithdrawSuccessData(data);
+    setIsSuccessModalOpen(true);
+    onRefresh();
+  };
 
   if (currentChain !== 'solana') return null;
 
   // Show skeleton while loading
-  if (stakingPositions === null || portfolioLoading) {
+  if (lendingPositions === null || portfolioLoading) {
     return <Skeleton className="h-64 w-full" />;
   }
 
-  if (!stakingPositions?.length) {
+  if (!lendingPositions?.length) {
     return null; // Don't show anything if no positions
   }
 
-  // Calculate total value of liquid staking positions
-  const totalValue = stakingPositions.reduce((sum, pos) => {
+  // Calculate total value of lending positions
+  const totalValue = lendingPositions.reduce((sum, pos) => {
     const portfolioToken = portfolio?.items?.find(
-      (item) => item.address === pos.lstToken.id || item.symbol === pos.lstToken.symbol,
+      (item) => item.address === pos.token.id || item.symbol === pos.token.symbol,
     );
-    if (portfolioToken && portfolioToken.valueUsd) {
-      return sum + portfolioToken.valueUsd;
-    }
-    return sum;
+
+    // Fallback: calculate from position amount and pool data
+    const price = portfolioToken?.priceUsd || 1;
+    return sum + pos.amount * price;
   }, 0);
 
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Droplet className="w-6 h-6" />
-          <h2 className="text-xl font-bold">Liquid Staking Positions</h2>
+          <PiggyBank className="w-6 h-6" />
+          <h2 className="text-xl font-bold">Lending Positions</h2>
         </div>
         {totalValue > 0 && <p className="text-lg font-bold">{formatUSD(totalValue)}</p>}
       </div>
@@ -125,79 +141,56 @@ const LiquidityPools: React.FC<Props> = ({
             <TableRow>
               <TableHead>Token</TableHead>
               <TableHead>Balance</TableHead>
-              <TableHead>Yield Earned</TableHead>
               <TableHead>APY</TableHead>
               <TableHead className="hidden md:table-cell">Protocol</TableHead>
               <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody className="max-h-96 overflow-y-auto">
-            {stakingPositions.map((position) => {
+            {lendingPositions.map((position, index) => {
               // Find current balance from portfolio
               const portfolioToken = portfolio?.items?.find(
                 (item) =>
-                  item.address === position.lstToken.id || item.symbol === position.lstToken.symbol,
+                  item.address === position.token.id || item.symbol === position.token.symbol,
               );
 
-              const rawBalance = portfolioToken?.balance || '0';
               const price = portfolioToken?.priceUsd || 0;
-              const decimals = portfolioToken?.decimals || position.lstToken.decimals || 9;
+              const decimals = portfolioToken?.decimals || position.token.decimals || 6;
 
-              // Calculate yield earned (current balance - initial staked amount)
-              const currentBalance = parseFloat(rawBalance.toString()) / Math.pow(10, decimals);
-              const initialAmount = position.amount;
-              const yieldEarned = currentBalance - initialAmount;
+              // For lending, the position amount is the deposited amount
+              // We can show the current balance from portfolio (which includes accrued interest)
+              const depositedAmount = position.amount;
 
-              // Convert yield earned back to raw balance format for utilities
-              const yieldEarnedRaw = yieldEarned * Math.pow(10, decimals);
+              // Use position amount if portfolio doesn't have balance
+              const displayBalanceRaw = (depositedAmount * Math.pow(10, decimals)).toString();
 
               return (
-                <TableRow key={position.id}>
+                <TableRow key={`${position.walletAddress}-${position.token.symbol}-${index}`}>
                   <TableCell>
                     <div className="font-medium flex gap-2 items-center">
-                      {position.lstToken.logoURI ? (
+                      {position.token.logoURI ? (
                         <Image
-                          src={position.lstToken.logoURI}
-                          alt={position.lstToken.name}
+                          src={position.token.logoURI}
+                          alt={position.token.name}
                           width={16}
                           height={16}
                           className="w-4 h-4 rounded-full"
                         />
                       ) : (
-                        <div className="w-4 h-4 rounded-full bg-gray-200" />
+                        <div className="w-4 h-4 rounded-full bg-gray-200 flex items-center justify-center text-xs">
+                          {position.token.symbol.charAt(0)}
+                        </div>
                       )}
-                      <p>{position.lstToken.symbol}</p>
+                      <p>{position.token.symbol}</p>
                     </div>
                   </TableCell>
                   <TableCell>
                     <div className="flex flex-col">
                       <p className="font-medium">
-                        {formatCrypto(rawBalance, position.lstToken.symbol, decimals)}
+                        {formatCrypto(displayBalanceRaw, position.token.symbol, decimals)}
                       </p>
                       <p className="text-sm text-muted-foreground">
-                        {formatFiat(rawBalance, price, decimals)}
-                      </p>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex flex-col">
-                      <p className={yieldEarned > 0 ? 'text-green-600 font-medium' : 'font-medium'}>
-                        {yieldEarned > 0 ? '+' : ''}
-                        {formatCrypto(
-                          yieldEarnedRaw.toString(),
-                          position.lstToken.symbol,
-                          decimals,
-                        )}
-                      </p>
-                      <p
-                        className={
-                          yieldEarned > 0
-                            ? 'text-green-600/70 text-sm'
-                            : 'text-sm text-muted-foreground'
-                        }
-                      >
-                        {yieldEarned > 0 ? '+' : ''}
-                        {formatFiat(yieldEarnedRaw.toString(), price, decimals)}
+                        {formatFiat(displayBalanceRaw, price, decimals)}
                       </p>
                     </div>
                   </TableCell>
@@ -209,7 +202,7 @@ const LiquidityPools: React.FC<Props> = ({
                   <TableCell className="hidden md:table-cell">
                     <div className="flex items-center gap-2">
                       <span className="text-sm text-muted-foreground">
-                        {capitalizeWords(position.poolData.project || 'Unknown')}
+                        {capitalizeWords(position.protocol || 'Unknown')}
                       </span>
                       <TooltipProvider>
                         <Tooltip delayDuration={100}>
@@ -224,13 +217,13 @@ const LiquidityPools: React.FC<Props> = ({
                   <TableCell>
                     <Button
                       size="sm"
-                      onClick={() => openSell(position.lstToken.id)}
+                      onClick={() => handleWithdraw(position)}
                       className={cn(
                         'bg-emerald-100 hover:bg-emerald-200 text-emerald-800 border border-emerald-200',
                         'dark:bg-emerald-950/30 dark:hover:bg-emerald-900/50 dark:text-emerald-300 dark:border-emerald-800/50',
                       )}
                     >
-                      Claim SOL
+                      Withdraw
                     </Button>
                   </TableCell>
                 </TableRow>
@@ -239,8 +232,36 @@ const LiquidityPools: React.FC<Props> = ({
           </TableBody>
         </Table>
       </Card>
+
+      {selectedPosition && (
+        <WithdrawModal
+          position={selectedPosition}
+          isOpen={isWithdrawModalOpen}
+          onClose={() => {
+            setIsWithdrawModalOpen(false);
+            setSelectedPosition(null);
+          }}
+          onSuccess={handleWithdrawSuccess}
+        />
+      )}
+
+      {withdrawSuccessData && (
+        <SwapSuccessModal
+          isOpen={isSuccessModalOpen}
+          onClose={() => {
+            setIsSuccessModalOpen(false);
+            setWithdrawSuccessData(null);
+          }}
+          swapData={{
+            mode: 'withdraw',
+            inputToken: selectedPosition?.token.symbol || '',
+            outputToken: withdrawSuccessData.tokenSymbol,
+            outputAmount: withdrawSuccessData.amount.toString(),
+          }}
+        />
+      )}
     </div>
   );
 };
 
-export default LiquidityPools;
+export default LendingPositions;

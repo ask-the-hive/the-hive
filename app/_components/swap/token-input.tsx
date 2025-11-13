@@ -5,6 +5,7 @@ import { Token } from '@/db/types/token';
 import React from 'react';
 import { cn } from '@/lib/utils';
 import TokenBalance from './token-balance';
+import TokenBalanceFromAmount from './token-balance-from-amount';
 import { usePrice } from '@/hooks/queries/price';
 import {
   Skeleton,
@@ -24,6 +25,8 @@ interface Props {
   onChangeToken?: (token: Token | null) => void;
   address?: string;
   tooltip?: string | React.ReactNode;
+  useBalanceFromAmount?: boolean;
+  availableBalance?: number;
 }
 
 const TokenInput: React.FC<Props> = ({
@@ -34,6 +37,8 @@ const TokenInput: React.FC<Props> = ({
   onChangeToken,
   address,
   tooltip,
+  useBalanceFromAmount = false,
+  availableBalance,
 }) => {
   const [isFocused, setIsFocused] = React.useState(false);
 
@@ -47,7 +52,7 @@ const TokenInput: React.FC<Props> = ({
       >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <p className="text-sm font-semibold text-neutral-600 dark:text-neutral-400">{label}</p>
+            <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400">{label}</p>
             {tooltip && (
               <Tooltip delayDuration={100}>
                 <TooltipTrigger asChild>
@@ -59,10 +64,17 @@ const TokenInput: React.FC<Props> = ({
               </Tooltip>
             )}
           </div>
-          {token && address && (
+          {token && address && !useBalanceFromAmount && (
             <TokenBalance
               address={address}
               tokenAddress={token.id}
+              tokenSymbol={token.symbol}
+              setAmount={onChange}
+            />
+          )}
+          {token && useBalanceFromAmount && availableBalance !== undefined && (
+            <TokenBalanceFromAmount
+              amount={availableBalance}
               tokenSymbol={token.symbol}
               setAmount={onChange}
             />

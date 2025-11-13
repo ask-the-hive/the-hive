@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { CheckCircle } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -9,17 +9,24 @@ interface SwapSuccessModalProps {
   isOpen: boolean;
   onClose: () => void;
   swapData: {
-    mode: 'buy' | 'sell';
+    mode: 'buy' | 'sell' | 'withdraw';
     inputToken: string;
     outputToken: string;
     outputAmount: string;
-  } | null;
+  };
 }
 
 const SwapSuccessModal: React.FC<SwapSuccessModalProps> = ({ isOpen, onClose, swapData }) => {
-  if (!swapData) return null;
-
   const { mode, inputToken, outputToken, outputAmount } = swapData;
+
+  const title = useMemo(() => {
+    if (mode === 'withdraw') {
+      return `${outputAmount} ${outputToken} successful!`;
+    }
+    const action = mode === 'buy' ? 'Buy' : 'Sell';
+
+    return `${action} ${inputToken} for ${outputToken} successful!`;
+  }, [mode, inputToken, outputToken, outputAmount]);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -35,14 +42,24 @@ const SwapSuccessModal: React.FC<SwapSuccessModalProps> = ({ isOpen, onClose, sw
 
           {/* Success Message */}
           <div className="text-center space-y-2">
-            <p className="text-lg font-semibold">
-              {mode === 'buy' ? 'Buy' : 'Sell'} {inputToken} for {outputToken} successful!
-            </p>
+            <p className="text-lg font-semibold">{title}</p>
             <p className="text-sm text-muted-foreground">
-              You received{' '}
-              <span className="font-medium text-foreground">
-                {outputAmount} {outputToken}
-              </span>
+              {mode === 'withdraw' ? (
+                <>
+                  You withdrew{' '}
+                  <span className="font-medium text-foreground">
+                    {outputAmount} {outputToken}
+                  </span>{' '}
+                  from your lending position
+                </>
+              ) : (
+                <>
+                  You received{' '}
+                  <span className="font-medium text-foreground">
+                    {outputAmount} {outputToken}
+                  </span>
+                </>
+              )}
             </p>
           </div>
         </div>
