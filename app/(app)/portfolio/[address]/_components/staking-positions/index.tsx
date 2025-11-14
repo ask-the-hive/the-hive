@@ -76,7 +76,7 @@ const PoolTooltip: React.FC<PoolTooltipProps> = ({ poolData }) => {
   );
 };
 
-const LiquidityPools: React.FC<Props> = ({
+const StakingPositions: React.FC<Props> = ({
   stakingPositions,
   portfolio,
   portfolioLoading,
@@ -115,7 +115,7 @@ const LiquidityPools: React.FC<Props> = ({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Droplet className="w-6 h-6" />
-          <h2 className="text-xl font-bold">Liquid Staking Positions</h2>
+          <h2 className="text-xl font-bold">Staking</h2>
         </div>
         {totalValue > 0 && <p className="text-lg font-bold">{formatUSD(totalValue)}</p>}
       </div>
@@ -243,4 +243,4 @@ const LiquidityPools: React.FC<Props> = ({
   );
 };
 
-export default LiquidityPools;
+export default StakingPositions;

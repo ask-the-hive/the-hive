@@ -330,12 +330,13 @@ export const SwapModalProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       </Dialog>
 
       {/* Success Modal */}
-      <SwapSuccessModal
-        isOpen={isSuccessModalOpen}
-        onClose={closeSuccessModal}
-        swapData={swapSuccessData}
-      />
-
+      {swapSuccessData && (
+        <SwapSuccessModal
+          isOpen={isSuccessModalOpen}
+          onClose={closeSuccessModal}
+          swapData={swapSuccessData}
+        />
+      )}
       {/* Failed Modal */}
       <SwapFailedModal
         isOpen={isFailedModalOpen}

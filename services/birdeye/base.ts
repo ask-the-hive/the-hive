@@ -21,17 +21,6 @@ export const queryBirdeye = async <T>(
   const xChainValue = chain;
   const apiKey = process.env.BIRDEYE_API_KEY || '';
 
-  console.log(
-    `[Birdeye API] Making request:
-  - URL: ${url.toString()}
-  - Chain: ${chain}
-  - X-Chain: ${xChainValue}
-  - API Key present: ${apiKey ? 'Yes' : 'No'}
-  - Endpoint: ${endpoint}
-  - Params:`,
-    params,
-  );
-
   try {
     const headers = {
       'X-API-KEY': apiKey,
