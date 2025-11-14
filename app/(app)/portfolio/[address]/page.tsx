@@ -140,7 +140,11 @@ const Portfolio = ({ params }: { params: Promise<{ address: string }> }) => {
             {currentChain === 'solana' ? 'Solana' : currentChain === 'base' ? 'Base' : 'BSC'}
           </Button>
         </div>
-        <PortfolioProjection address={address} stakingPositions={stakingPositions} />
+        <PortfolioProjection
+          address={address}
+          stakingPositions={stakingPositions}
+          lendingPositions={lendingPositions}
+        />
         <Tokens
           stakingPositions={stakingPositions}
           portfolio={portfolio}

@@ -168,7 +168,6 @@ async function getKaminoLendingPositions(
           const decimals = fullReserve.state.liquidity.mintDecimals.toNumber();
 
           // Convert deposit amount from Decimal (in lamports) to human-readable
-          // Position.amount is a Decimal in lamports
           const amountBase = position.amount.toNumber();
           const amount = amountBase / Math.pow(10, decimals);
 
@@ -214,7 +213,7 @@ async function getKaminoLendingPositions(
 
     return positions;
   } catch (error) {
-    console.error('❌ Error fetching Kamino lending positions:', error);
+    console.error('❌ [SERVER] Error fetching Kamino lending positions:', error);
     return []; // Return empty array on error, don't break the portfolio page
   }
 }
@@ -246,7 +245,7 @@ export async function getAllLendingPositionsServer(
 
     return allPositions;
   } catch (error) {
-    console.error('❌ Error fetching lending positions:', error);
+    console.error('❌ [SERVER] Error fetching lending positions:', error);
     return []; // Return empty array on error, don't break the portfolio page
   }
 }

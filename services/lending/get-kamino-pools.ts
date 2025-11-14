@@ -72,7 +72,7 @@ export async function getKaminoPools(): Promise<KaminoPoolData[]> {
         // Continue to next reserve
       }
     }
-
+    console.log(pools);
     return pools;
   } catch (error) {
     console.error('❌ Error fetching Kamino pools:', error);

@@ -15,7 +15,7 @@ export const GET = async (
 
     return NextResponse.json(positions, { status: 200 });
   } catch (error) {
-    console.error('Error fetching lending positions:', error);
+    console.error('❌ [API] Error fetching lending positions:', error);
     return NextResponse.json({ error: 'Failed to fetch lending positions' }, { status: 500 });
   }
 };

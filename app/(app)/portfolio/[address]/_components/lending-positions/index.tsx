@@ -17,6 +17,7 @@ import { useChain } from '@/app/_contexts/chain-context';
 import { LendingPosition } from '@/types/lending-position';
 import { formatFiat, formatCrypto, formatCompactNumber, formatUSD } from '@/lib/format';
 import { capitalizeWords, getConfidenceLabel } from '@/lib/string-utils';
+import Link from 'next/link';
 import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { Portfolio } from '@/services/birdeye/types';
@@ -33,6 +34,27 @@ interface Props {
 interface PoolTooltipProps {
   poolData: any;
 }
+
+/**
+ * Get the website URL for a lending protocol
+ */
+const getProtocolUrl = (protocol: string | null | undefined): string | null => {
+  if (!protocol) return null;
+
+  const normalizedProtocol = protocol.toLowerCase().replace(/[-\s]+/g, '-');
+
+  const protocolUrls: Record<string, string> = {
+    'kamino-lend': 'https://kamino.com/lend',
+    kamino: 'https://kamino.com/lend',
+    'jupiter-lend': 'https://jup.ag/lend',
+    jupiter: 'https://jup.ag/lend',
+    solend: 'https://solend.fi',
+    marginfi: 'https://marginfi.com',
+    credix: 'https://credix.finance',
+  };
+
+  return protocolUrls[normalizedProtocol] || null;
+};
 
 const PoolTooltip: React.FC<PoolTooltipProps> = ({ poolData }) => {
   return (
@@ -131,7 +153,7 @@ const LendingPositions: React.FC<Props> = ({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <PiggyBank className="w-6 h-6" />
-          <h2 className="text-xl font-bold">Lending Positions</h2>
+          <h2 className="text-xl font-bold">Lending</h2>
         </div>
         {totalValue > 0 && <p className="text-lg font-bold">{formatUSD(totalValue)}</p>}
       </div>
@@ -201,9 +223,20 @@ const LendingPositions: React.FC<Props> = ({
                   </TableCell>
                   <TableCell className="hidden md:table-cell">
                     <div className="flex items-center gap-2">
-                      <span className="text-sm text-muted-foreground">
-                        {capitalizeWords(position.protocol || 'Unknown')}
-                      </span>
+                      {getProtocolUrl(position.protocol) ? (
+                        <Link
+                          href={getProtocolUrl(position.protocol)!}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm text-muted-foreground hover:text-foreground transition-colors underline-offset-4 hover:underline"
+                        >
+                          {capitalizeWords(position.protocol || 'Unknown')}
+                        </Link>
+                      ) : (
+                        <span className="text-sm text-muted-foreground">
+                          {capitalizeWords(position.protocol || 'Unknown')}
+                        </span>
+                      )}
                       <TooltipProvider>
                         <Tooltip delayDuration={100}>
                           <TooltipTrigger asChild>

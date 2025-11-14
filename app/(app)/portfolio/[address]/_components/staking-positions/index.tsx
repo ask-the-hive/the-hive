@@ -115,7 +115,7 @@ const StakingPositions: React.FC<Props> = ({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Droplet className="w-6 h-6" />
-          <h2 className="text-xl font-bold">Staking Positions</h2>
+          <h2 className="text-xl font-bold">Staking</h2>
         </div>
         {totalValue > 0 && <p className="text-lg font-bold">{formatUSD(totalValue)}</p>}
       </div>

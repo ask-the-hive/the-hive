@@ -26,7 +26,7 @@ export async function getLendingYields(): Promise<SolanaActionResult<LendingYiel
       // 'save', // Save Finance - SDK has dependency issues
     ];
 
-    const stableCoins = ['USDC', 'USDT', 'EURC', 'FDUSD', 'PYUSD', 'USDS', 'SOL'];
+    const stableCoins = ['USDC', 'USDT', 'EURC', 'FDUSD', 'PYUSD', 'USDS', 'USDY', 'USDS'];
 
     // Filter DefiLlama pools
     const defiLlamaPools = solanaPools.filter((pool: any) => {

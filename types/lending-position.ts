@@ -8,7 +8,7 @@ import { LendingYieldsPoolData } from '@/ai/solana/actions/lending/lending-yield
 export interface LendingPosition {
   walletAddress: string;
   chainId: string;
-  amount: number; // Deposit amount in human-readable format
+  amount: number; // Deposit amount in human-readable format (current balance)
   token: Token; // Token being lent
   poolData: LendingYieldsPoolData; // Pool metadata (APY, TVL, etc.)
   protocol: string; // Protocol name (e.g., 'kamino-lend')

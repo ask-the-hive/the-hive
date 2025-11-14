@@ -23,6 +23,7 @@ import {
 import { useChain } from '@/app/_contexts/chain-context';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { LiquidStakingPosition } from '@/db/types';
+import type { LendingPosition } from '@/types/lending-position';
 
 interface ProjectionData {
   baseNetWorth: number;
@@ -36,23 +37,27 @@ interface ProjectionData {
     netWorthWithStaking?: number;
   }>;
   netStakingAPY?: number;
+  netLendingAPY?: number;
   liquidStakingPositions?: (LiquidStakingPosition & {
     currentUsdValue?: number;
     currentPriceUsd?: number;
   })[];
+  lendingPositions?: LendingPosition[];
 }
 
 interface Props {
   address: string;
   stakingPositions: LiquidStakingPosition[] | null;
+  lendingPositions: LendingPosition[] | null;
 }
 
 const Wrapper: React.FC<{
   children: React.ReactNode;
   hasStakingPositions: boolean;
+  hasLendingPositions: boolean;
   loading: boolean;
   netWorth?: number;
-}> = ({ children, hasStakingPositions, loading, netWorth }) => {
+}> = ({ children, hasStakingPositions, hasLendingPositions, loading, netWorth }) => {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
@@ -62,11 +67,13 @@ const Wrapper: React.FC<{
             {loading && <Skeleton className="w-32 h-6" />}
             {!loading && (
               <h2 className="text-xl font-bold">
-                {hasStakingPositions ? 'Portfolio Projection' : 'Portfolio History'}
+                {hasStakingPositions || hasLendingPositions
+                  ? 'Portfolio Projection'
+                  : 'Portfolio History'}
               </h2>
             )}
           </div>
-          {!hasStakingPositions && netWorth && (
+          {!hasStakingPositions && !hasLendingPositions && netWorth && (
             <div className="text-center bg-muted/50 rounded-lg">
               <p className=" text-base md:text-xl font-bold">{formatCurrency(netWorth)}</p>
               <span className="text-xs md:text-sm text-muted-foreground">Net Worth</span>
@@ -105,7 +112,24 @@ const calculateNetStakingAPY = (positions: LiquidStakingPosition[]): number => {
   return totalValue > 0 ? weightedAPY / totalValue : 0;
 };
 
-const PortfolioProjection: React.FC<Props> = ({ address, stakingPositions }) => {
+// Helper function to calculate net APY from lending positions
+const calculateNetLendingAPY = (positions: LendingPosition[]): number => {
+  if (!positions.length) return 0;
+
+  // Calculate weighted APY based on position values
+  let totalValue = 0;
+  let weightedAPY = 0;
+
+  positions.forEach((position) => {
+    const positionValue = position.amount; // Amount in human-readable format
+    totalValue += positionValue;
+    weightedAPY += (position.poolData.yield || 0) * positionValue;
+  });
+
+  return totalValue > 0 ? weightedAPY / totalValue : 0;
+};
+
+const PortfolioProjection: React.FC<Props> = ({ address, stakingPositions, lendingPositions }) => {
   const { currentChain } = useChain();
   const [data, setData] = useState<ProjectionData | null>(null);
   const [, setLoading] = useState(false);
@@ -114,6 +138,7 @@ const PortfolioProjection: React.FC<Props> = ({ address, stakingPositions }) => 
   const [error, setError] = useState<string | null>(null);
   const [days, setDays] = useState(90);
   const [hasStakingPositions, setHasStakingPositions] = useState(false);
+  const [hasLendingPositions, setHasLendingPositions] = useState(false);
 
   const fetchProjectionData = React.useCallback(async () => {
     setLoading(true);
@@ -134,14 +159,20 @@ const PortfolioProjection: React.FC<Props> = ({ address, stakingPositions }) => 
       // Calculate net APY from liquid staking positions
       const netStakingAPY = calculateNetStakingAPY(stakingPositions || []);
 
-      // Add staking APY and positions data to the data
+      // Calculate net APY from lending positions
+      const netLendingAPY = calculateNetLendingAPY(lendingPositions || []);
+
+      // Add staking/lending APY and positions data to the data
       const enhancedData = {
         ...projectionData,
         netStakingAPY,
+        netLendingAPY,
         liquidStakingPositions: stakingPositions || [],
+        lendingPositions: lendingPositions || [],
       };
 
       setHasStakingPositions((stakingPositions || []).length > 0);
+      setHasLendingPositions((lendingPositions || []).length > 0);
       setData(enhancedData);
     } catch (err) {
       console.error('Error fetching portfolio projection:', err);
@@ -152,7 +183,7 @@ const PortfolioProjection: React.FC<Props> = ({ address, stakingPositions }) => 
         setInitialLoading(false);
       }
     }
-  }, [address, days, currentChain, initialLoading, stakingPositions]);
+  }, [address, days, currentChain, initialLoading, stakingPositions, lendingPositions]);
 
   useEffect(() => {
     if (address) {
@@ -198,30 +229,62 @@ const PortfolioProjection: React.FC<Props> = ({ address, stakingPositions }) => 
 
     // Calculate net APY from liquid staking positions
     const netStakingAPY = data.netStakingAPY || 0;
+    // Calculate net APY from lending positions
+    const netLendingAPY = data.netLendingAPY || 0;
 
-    // Generate forward projections if we have staking positions
-    const projectionData = [];
-    if (hasStakingPositions && netStakingAPY > 0 && data.liquidStakingPositions) {
-      // Calculate total current staking position value
-      const totalStakingValue = data.liquidStakingPositions.reduce((total, position) => {
+    // Calculate total value of staking positions
+    const totalStakingValue =
+      data.liquidStakingPositions?.reduce((total, position) => {
         return total + (position.currentUsdValue || 0);
-      }, 0);
+      }, 0) || 0;
 
-      // Calculate non-staking portfolio value (base portfolio minus staking positions)
-      const nonStakingValue = currentNetWorth - totalStakingValue;
+    // Calculate total value of lending positions (using amount as USD value proxy)
+    // Note: This assumes position.amount is already in USD or we need to multiply by token price
+    // For now, we'll use amount directly as it should represent the USD value
+    const totalLendingValue =
+      data.lendingPositions?.reduce((total, position) => {
+        // Get token price from portfolio if available, otherwise use amount as-is
+        // For simplicity, we'll use amount directly assuming it's already in USD terms
+        return total + position.amount;
+      }, 0) || 0;
 
-      // Start with current day (day 1), then generate one data point per week
-      for (let i = 1; i <= days; i = i === 1 ? 7 : i + 7) {
+    // Calculate combined yield positions value
+    const totalYieldPositionsValue = totalStakingValue + totalLendingValue;
+
+    // Calculate weighted combined APY
+    let combinedAPY = 0;
+    if (totalYieldPositionsValue > 0) {
+      const stakingWeight = totalStakingValue / totalYieldPositionsValue;
+      const lendingWeight = totalLendingValue / totalYieldPositionsValue;
+      combinedAPY = netStakingAPY * stakingWeight + netLendingAPY * lendingWeight;
+    }
+
+    // Generate forward projections if we have yield positions (staking or lending)
+    const projectionData = [];
+    const hasYieldPositions = hasStakingPositions || hasLendingPositions;
+    if (hasYieldPositions && combinedAPY > 0 && totalYieldPositionsValue > 0) {
+      // Calculate non-yield portfolio value (base portfolio minus yield positions)
+      const nonYieldValue = currentNetWorth - totalYieldPositionsValue;
+
+      // Add a projection point at day 0 (same day as last historical data) to connect the lines
+      projectionData.push({
+        date: lastHistoricalDate.toLocaleDateString(),
+        netWorth: currentNetWorth, // Start projection at current net worth
+        type: 'Projection',
+      });
+
+      // Start with day 7, then generate one data point per week
+      for (let i = 7; i <= days; i += 7) {
         const projectionDate = new Date(lastHistoricalDate);
         projectionDate.setDate(projectionDate.getDate() + i);
 
-        // Calculate staking gains with compound interest
+        // Calculate yield gains with compound interest (combined from staking + lending)
         const daysFromNow = i;
-        const stakingGains =
-          totalStakingValue * (Math.pow(1 + netStakingAPY / 100, daysFromNow / 365) - 1);
+        const yieldGains =
+          totalYieldPositionsValue * (Math.pow(1 + combinedAPY / 100, daysFromNow / 365) - 1);
 
-        // Total projected value = non-staking value + original staking value + staking gains
-        const projectedValue = nonStakingValue + totalStakingValue + stakingGains;
+        // Total projected value = non-yield value + original yield positions value + yield gains
+        const projectedValue = nonYieldValue + totalYieldPositionsValue + yieldGains;
 
         projectionData.push({
           date: projectionDate.toLocaleDateString(),
@@ -236,9 +299,9 @@ const PortfolioProjection: React.FC<Props> = ({ address, stakingPositions }) => 
         const projectionDate = new Date(lastHistoricalDate);
         projectionDate.setDate(projectionDate.getDate() + days);
 
-        const stakingGains =
-          totalStakingValue * (Math.pow(1 + netStakingAPY / 100, days / 365) - 1);
-        const projectedValue = nonStakingValue + totalStakingValue + stakingGains;
+        const yieldGains =
+          totalYieldPositionsValue * (Math.pow(1 + combinedAPY / 100, days / 365) - 1);
+        const projectedValue = nonYieldValue + totalYieldPositionsValue + yieldGains;
 
         projectionData.push({
           date: projectionDate.toLocaleDateString(),
@@ -260,7 +323,7 @@ const PortfolioProjection: React.FC<Props> = ({ address, stakingPositions }) => 
     ];
 
     return combined;
-  }, [data, days, hasStakingPositions, historicalData]);
+  }, [data, days, hasStakingPositions, hasLendingPositions, historicalData]);
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
@@ -281,9 +344,13 @@ const PortfolioProjection: React.FC<Props> = ({ address, stakingPositions }) => 
           {payload.some(
             (entry: any) => entry.dataKey === 'projectedNetWorth' && entry.value !== null,
           ) &&
-            hasStakingPositions && (
+            (hasStakingPositions || hasLendingPositions) && (
               <p className="text-xs text-muted-foreground mt-1">
-                Based on {data?.netStakingAPY?.toFixed(2) || 0}% staking APY
+                {hasStakingPositions && hasLendingPositions
+                  ? `Based on ${data?.netStakingAPY?.toFixed(2) || 0}% staking APY and ${data?.netLendingAPY?.toFixed(2) || 0}% lending APY`
+                  : hasStakingPositions
+                    ? `Based on ${data?.netStakingAPY?.toFixed(2) || 0}% staking APY`
+                    : `Based on ${data?.netLendingAPY?.toFixed(2) || 0}% lending APY`}
               </p>
             )}
         </div>
@@ -292,9 +359,13 @@ const PortfolioProjection: React.FC<Props> = ({ address, stakingPositions }) => 
     return null;
   };
 
-  if (initialLoading || stakingPositions === null) {
+  if (initialLoading || stakingPositions === null || lendingPositions === null) {
     return (
-      <Wrapper loading={initialLoading || stakingPositions === null} hasStakingPositions={false}>
+      <Wrapper
+        loading={initialLoading || stakingPositions === null || lendingPositions === null}
+        hasStakingPositions={false}
+        hasLendingPositions={false}
+      >
         <Skeleton className="h-64 w-full" />
       </Wrapper>
     );
@@ -302,7 +373,11 @@ const PortfolioProjection: React.FC<Props> = ({ address, stakingPositions }) => 
 
   if (error) {
     return (
-      <Wrapper hasStakingPositions={hasStakingPositions} loading={initialLoading}>
+      <Wrapper
+        hasStakingPositions={hasStakingPositions}
+        hasLendingPositions={hasLendingPositions}
+        loading={initialLoading}
+      >
         <CardContent>
           <div className="text-center py-8">
             <p className="text-destructive mb-4">{error}</p>
@@ -319,29 +394,60 @@ const PortfolioProjection: React.FC<Props> = ({ address, stakingPositions }) => 
     return null;
   }
 
-  const currentValue =
+  // Calculate total value of staking positions
+  const totalStakingValue =
+    data.liquidStakingPositions?.reduce((total, position) => {
+      return total + (position.currentUsdValue || 0);
+    }, 0) || 0;
+
+  // Calculate total value of lending positions (using amount as USD value proxy)
+  // Note: This assumes position.amount is already in USD or we need to multiply by token price
+  // For now, we'll use amount directly as it should represent the USD value
+  const totalLendingValue =
+    data.lendingPositions?.reduce((total, position) => {
+      // Get token price from portfolio if available, otherwise use amount as-is
+      // For simplicity, we'll use amount directly assuming it's already in USD terms
+      return total + position.amount;
+    }, 0) || 0;
+
+  // Calculate current value including lending positions
+  // The historical data may not include lending positions, so we add them here
+  const baseCurrentValue =
     data.historical.length > 0
       ? data.historical[data.historical.length - 1].netWorth
       : data.baseNetWorth;
 
-  // Calculate projected value based on staking APY (only applied to staking positions)
+  // Add lending positions to current value if they're not already included in historical data
+  // Note: We assume historical data doesn't include lending positions, so we add them
+  const currentValue = baseCurrentValue + totalLendingValue;
+
+  // Calculate projected value based on staking and lending APY
   const netStakingAPY = data.netStakingAPY || 0;
+  const netLendingAPY = data.netLendingAPY || 0;
   let projectedValue = currentValue;
 
-  if (data.liquidStakingPositions && data.liquidStakingPositions.length > 0 && netStakingAPY > 0) {
-    // Calculate total current staking position value
-    const totalStakingValue = data.liquidStakingPositions.reduce((total, position) => {
-      return total + (position.currentUsdValue || 0);
-    }, 0);
+  // Calculate combined yield positions value
+  const totalYieldPositionsValue = totalStakingValue + totalLendingValue;
 
-    // Calculate non-staking portfolio value
-    const nonStakingValue = currentValue - totalStakingValue;
+  // Calculate weighted combined APY
+  let combinedAPY = 0;
+  if (totalYieldPositionsValue > 0) {
+    const stakingWeight = totalStakingValue / totalYieldPositionsValue;
+    const lendingWeight = totalLendingValue / totalYieldPositionsValue;
+    combinedAPY = netStakingAPY * stakingWeight + netLendingAPY * lendingWeight;
+  }
 
-    // Calculate staking gains with compound interest over the selected period
-    const stakingGains = totalStakingValue * (Math.pow(1 + netStakingAPY / 100, days / 365) - 1);
+  // If we have yield positions (staking or lending), calculate projected value
+  const hasYieldPositions = hasStakingPositions || hasLendingPositions;
+  if (hasYieldPositions && combinedAPY > 0 && totalYieldPositionsValue > 0) {
+    // Calculate non-yield portfolio value (base portfolio minus yield positions)
+    const nonYieldValue = currentValue - totalYieldPositionsValue;
 
-    // Total projected value = non-staking value + original staking value + staking gains
-    projectedValue = nonStakingValue + totalStakingValue + stakingGains;
+    // Calculate yield gains with compound interest (combined from staking + lending)
+    const yieldGains = totalYieldPositionsValue * (Math.pow(1 + combinedAPY / 100, days / 365) - 1);
+
+    // Total projected value = non-yield value + original yield positions value + yield gains
+    projectedValue = nonYieldValue + totalYieldPositionsValue + yieldGains;
   }
 
   const totalGain = projectedValue - currentValue;
@@ -350,10 +456,11 @@ const PortfolioProjection: React.FC<Props> = ({ address, stakingPositions }) => 
   return (
     <Wrapper
       hasStakingPositions={hasStakingPositions}
+      hasLendingPositions={hasLendingPositions}
       loading={initialLoading}
       netWorth={currentValue}
     >
-      {hasStakingPositions && (
+      {(hasStakingPositions || hasLendingPositions) && (
         <CardHeader>
           <div className="flex items-center flex-col md:flex-row justify-between">
             {/* Summary Stats */}
@@ -393,18 +500,20 @@ const PortfolioProjection: React.FC<Props> = ({ address, stakingPositions }) => 
             </div>
             <div className="flex items-center flex-col gap-2">
               <p className="text-sm text-muted-foreground">Projected:</p>
-              <Select value={days.toString()} onValueChange={handleDaysChange}>
-                <SelectTrigger className="w-32">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="30">30 days</SelectItem>
-                  <SelectItem value="60">2 months</SelectItem>
-                  <SelectItem value="90">3 months</SelectItem>
-                  <SelectItem value="180">6 months</SelectItem>
-                  <SelectItem value="365">1 year</SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="">
+                <Select value={days.toString()} onValueChange={handleDaysChange}>
+                  <SelectTrigger className="w-32">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="30">30 days</SelectItem>
+                    <SelectItem value="60">2 months</SelectItem>
+                    <SelectItem value="90">3 months</SelectItem>
+                    <SelectItem value="180">6 months</SelectItem>
+                    <SelectItem value="365">1 year</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
         </CardHeader>
@@ -437,7 +546,8 @@ const PortfolioProjection: React.FC<Props> = ({ address, stakingPositions }) => 
                     dot={false}
                     name="Historical Portfolio Value"
                   />
-                  {data.liquidStakingPositions && data.liquidStakingPositions.length > 0 && (
+                  {((data.liquidStakingPositions && data.liquidStakingPositions.length > 0) ||
+                    (data.lendingPositions && data.lendingPositions.length > 0)) && (
                     <Line
                       type="monotone"
                       dataKey="projectedNetWorth"
@@ -445,7 +555,13 @@ const PortfolioProjection: React.FC<Props> = ({ address, stakingPositions }) => 
                       strokeWidth={2}
                       strokeDasharray="5 5"
                       dot={false}
-                      name={`Projected w/ Staking (${data?.netStakingAPY?.toFixed(2) || 0}% net APY)`}
+                      name={
+                        hasStakingPositions && hasLendingPositions
+                          ? `Projected w/ Yield (${data?.netStakingAPY?.toFixed(2) || 0}% staking, ${data?.netLendingAPY?.toFixed(2) || 0}% lending)`
+                          : hasStakingPositions
+                            ? `Projected w/ Staking (${data?.netStakingAPY?.toFixed(2) || 0}% net APY)`
+                            : `Projected w/ Lending (${data?.netLendingAPY?.toFixed(2) || 0}% net APY)`
+                      }
                     />
                   )}
                 </LineChart>
@@ -459,9 +575,9 @@ const PortfolioProjection: React.FC<Props> = ({ address, stakingPositions }) => 
               <div className="w-3 h-3 bg-brand-600 rounded-full"></div>
               <span>Historical Portfolio Value</span>
             </div>
-            {data.liquidStakingPositions &&
-              data.liquidStakingPositions.length > 0 &&
-              (data?.netStakingAPY || 0) > 0 && (
+            {((data.liquidStakingPositions && data.liquidStakingPositions.length > 0) ||
+              (data.lendingPositions && data.lendingPositions.length > 0)) &&
+              ((data?.netStakingAPY || 0) > 0 || (data?.netLendingAPY || 0) > 0) && (
                 <div className="flex items-center gap-2">
                   <div
                     className="w-3 h-3 bg-brand-600 rounded-full"
@@ -471,7 +587,11 @@ const PortfolioProjection: React.FC<Props> = ({ address, stakingPositions }) => 
                     }}
                   ></div>
                   <span>
-                    Projected w/ Staking ({data?.netStakingAPY?.toFixed(2) || 0}% net APY)
+                    {hasStakingPositions && hasLendingPositions
+                      ? `Projected w/ Yield (${data?.netStakingAPY?.toFixed(2) || 0}% staking, ${data?.netLendingAPY?.toFixed(2) || 0}% lending)`
+                      : hasStakingPositions
+                        ? `Projected w/ Staking (${data?.netStakingAPY?.toFixed(2) || 0}% net APY)`
+                        : `Projected w/ Lending (${data?.netLendingAPY?.toFixed(2) || 0}% net APY)`}
                   </span>
                 </div>
               )}
