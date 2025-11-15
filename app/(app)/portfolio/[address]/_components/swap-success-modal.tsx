@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useMemo } from 'react';
-import { CheckCircle } from 'lucide-react';
+import { CheckCircle, ArrowUpRight } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 
@@ -14,9 +14,17 @@ interface SwapSuccessModalProps {
     outputToken: string;
     outputAmount: string;
   };
+  txHash?: string;
+  chain?: 'solana' | 'bsc' | 'base';
 }
 
-const SwapSuccessModal: React.FC<SwapSuccessModalProps> = ({ isOpen, onClose, swapData }) => {
+const SwapSuccessModal: React.FC<SwapSuccessModalProps> = ({
+  isOpen,
+  onClose,
+  swapData,
+  txHash,
+  chain = 'solana',
+}) => {
   const { mode, inputToken, outputToken, outputAmount } = swapData;
 
   const title = useMemo(() => {
@@ -27,6 +35,21 @@ const SwapSuccessModal: React.FC<SwapSuccessModalProps> = ({ isOpen, onClose, sw
 
     return `${action} ${inputToken} for ${outputToken} successful!`;
   }, [mode, inputToken, outputToken, outputAmount]);
+
+  const explorerUrl = useMemo(() => {
+    if (!txHash) return null;
+
+    switch (chain) {
+      case 'solana':
+        return `https://solscan.io/tx/${txHash}`;
+      case 'bsc':
+        return `https://bscscan.com/tx/${txHash}`;
+      case 'base':
+        return `https://basescan.org/tx/${txHash}`;
+      default:
+        return `https://solscan.io/tx/${txHash}`;
+    }
+  }, [txHash, chain]);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -63,6 +86,21 @@ const SwapSuccessModal: React.FC<SwapSuccessModalProps> = ({ isOpen, onClose, sw
             </p>
           </div>
         </div>
+
+        {/* Explorer Link */}
+        {explorerUrl && (
+          <div className="px-6 pb-2">
+            <a
+              href={explorerUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm text-blue-600 dark:text-blue-400 hover:underline flex items-center justify-center gap-1"
+            >
+              View on Explorer
+              <ArrowUpRight className="w-3.5 h-3.5" />
+            </a>
+          </div>
+        )}
 
         {/* Close Button */}
         <div className="p-6 pt-0">
