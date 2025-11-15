@@ -31,4 +31,5 @@ export * from './tabs';
 export * from './scroll-area';
 export * from './badge';
 export * from './honeycomb-background';
+export * from './token-icon';
 export { default as CountdownTimer } from './countdown-timer';

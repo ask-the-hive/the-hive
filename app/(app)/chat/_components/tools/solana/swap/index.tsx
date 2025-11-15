@@ -31,12 +31,24 @@ const Swap: React.FC<SwapProps> = ({ tool, prevToolAgent }) => {
           // If status is pending, this is awaiting user confirmation - show the call body
           if (result.body?.status === 'pending') {
             const args = tool.args as SolanaTradeArgumentsType;
-            return <SwapCallBody toolCallId={tool.toolCallId} args={args} />;
+            return (
+              <div className="flex justify-center w-full">
+                <div className="w-full md:w-[70%]">
+                  <SwapCallBody toolCallId={tool.toolCallId} args={args} />
+                </div>
+              </div>
+            );
           }
 
           // If status is complete, show the result
           if (result.body?.status === 'complete') {
-            return <SwapResultCard result={result.body} />;
+            return (
+              <div className="flex justify-center w-full">
+                <div className="w-full md:w-[70%]">
+                  <SwapResultCard result={result.body} />
+                </div>
+              </div>
+            );
           }
 
           return result.message;
@@ -45,12 +57,16 @@ const Swap: React.FC<SwapProps> = ({ tool, prevToolAgent }) => {
       call={{
         heading: 'Swap',
         body: (toolCallId: string, args: SolanaTradeArgumentsType) => (
-          <SwapCallBody toolCallId={toolCallId} args={args} />
+          <div className="flex justify-center w-full">
+            <div className="w-full md:w-[70%]">
+              <SwapCallBody toolCallId={toolCallId} args={args} />
+            </div>
+          </div>
         ),
       }}
       defaultOpen={true}
       prevToolAgent={prevToolAgent}
-      className="max-w-full"
+      className="w-full"
     />
   );
 };

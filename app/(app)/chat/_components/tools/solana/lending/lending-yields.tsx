@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import Image from 'next/image';
 import { useChat } from '@/app/(app)/chat/_contexts/chat';
 import ToolCard from '../../tool-card';
-import { Card, Button } from '@/components/ui';
+import { Card, Button, TokenIcon } from '@/components/ui';
 import { SOLANA_LENDING_POOL_DATA_STORAGE_KEY } from '@/lib/constants';
 import { cn } from '@/lib/utils';
 import { capitalizeWords, getConfidenceLabel } from '@/lib/string-utils';
@@ -94,15 +93,13 @@ const LendingYields: React.FC<{
           >
             <div className="items-center flex-col justify-between gap-2 mb-2 hidden md:flex">
               <div className="flex items-center gap-2">
-                {pool.tokenData?.logoURI && (
-                  <Image
-                    src={pool.tokenData?.logoURI || ''}
-                    alt={pool.name}
-                    width={30}
-                    height={30}
-                    className="w-6 h-6 rounded-full"
-                  />
-                )}
+                <TokenIcon
+                  src={pool.tokenData?.logoURI}
+                  alt={pool.name}
+                  width={30}
+                  height={30}
+                  className="w-6 h-6 rounded-full"
+                />
                 <h3 className="font-semibold text-lg">{pool.name}</h3>
               </div>
 
@@ -120,15 +117,13 @@ const LendingYields: React.FC<{
 
             <div className="flex items-center gap-2 justify-between w-full md:hidden">
               <div className="flex items-center justify-center gap-2">
-                {pool.tokenData?.logoURI && (
-                  <Image
-                    src={pool.tokenData?.logoURI || ''}
-                    alt={pool.name}
-                    width={36}
-                    height={36}
-                    className="w-8 h-8 rounded-full"
-                  />
-                )}
+                <TokenIcon
+                  src={pool.tokenData?.logoURI}
+                  alt={pool.name}
+                  width={36}
+                  height={36}
+                  className="w-8 h-8 rounded-full"
+                />
                 <div className="items-center flex-col justify-between gap-2">
                   <h3 className="font-semibold text-md">{pool.name}</h3>
                   {pool.project && (

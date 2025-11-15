@@ -4,7 +4,7 @@ import React, { useEffect, useState, useCallback, useRef, useMemo } from 'react'
 
 import { ChevronDown } from 'lucide-react';
 
-import { VersionedTransaction } from '@solana/web3.js';
+import { VersionedTransaction, Connection } from '@solana/web3.js';
 
 import Decimal from 'decimal.js';
 
@@ -131,6 +131,20 @@ const Swap: React.FC<Props> = ({
 
       // Don't sign here - let the wallet handle signing when sending
       const txHash = await sendTransaction(transaction);
+
+      // Wait for confirmation and check if it succeeded
+      // Note: We need to verify the transaction actually succeeded on-chain
+      // Privy's sendTransaction returns a signature even if the transaction fails
+      const connection = new Connection(
+        process.env.NEXT_PUBLIC_SOLANA_RPC_URL || 'https://api.mainnet-beta.solana.com',
+      );
+
+      const confirmation = await connection.confirmTransaction(txHash, 'confirmed');
+      if (confirmation.value.err) {
+        onError?.('Transaction failed on-chain. Please try again.');
+        return;
+      }
+
       onSuccess?.(txHash);
     } catch (error) {
       onError?.(error instanceof Error ? error.message : 'Unknown error');
