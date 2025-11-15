@@ -180,10 +180,14 @@ const GetBalance: React.FC<Props> = ({ tool, prevToolAgent }) => {
 
   const isInStakingOrLendingFlow = isInStakingFlow || isInLendingFlow;
 
+  // Extract context from tool args to include in completion message
+  const tokenAddress = tool?.args?.tokenAddress;
+  const walletAddress = tool?.args?.walletAddress;
+
   // Handler for when user completes funding options
   const handleFundingComplete = useCallback(
-    (type: 'fundWallet' | 'swap', tokenSymbol: string) => {
-      console.log('handleFundingComplete', type, tokenSymbol);
+    (type: 'fundWallet' | 'swap', completedTokenSymbol: string) => {
+      console.log('handleFundingComplete', type, completedTokenSymbol);
       if (type === 'fundWallet') {
         // Different message based on flow context
         if (isInLendingFlow) {
@@ -194,17 +198,21 @@ const GetBalance: React.FC<Props> = ({ tool, prevToolAgent }) => {
           sendMessage(`I have closed the onramp.`);
         }
       } else {
-        // User completed swap
+        // User completed swap - include all context for agent to continue
         if (isInLendingFlow) {
-          sendMessage(`I have the required ${tokenSymbol}. Please continue the lending flow.`);
+          sendMessage(
+            `I have acquired ${completedTokenSymbol} (${tokenAddress}) and I'm ready to lend. My wallet address is ${walletAddress}. Please show me the lending interface now.`,
+          );
         } else if (isInStakingFlow) {
-          sendMessage(`I have the required ${tokenSymbol}. Please continue the staking flow.`);
+          sendMessage(
+            `I have acquired ${completedTokenSymbol} (${tokenAddress}) and I'm ready to stake. My wallet address is ${walletAddress}. Please show me the staking interface now.`,
+          );
         } else {
-          sendMessage(`I have the required ${tokenSymbol}.`);
+          sendMessage(`I have the required ${completedTokenSymbol}.`);
         }
       }
     },
-    [sendMessage, isInLendingFlow, isInStakingFlow],
+    [sendMessage, isInLendingFlow, isInStakingFlow, tokenAddress, walletAddress],
   );
 
   return (
@@ -236,6 +244,7 @@ const GetBalance: React.FC<Props> = ({ tool, prevToolAgent }) => {
               tokenAddressFromResult: result.body?.tokenAddress,
               walletAddress: tool?.args?.walletAddress,
               allToolArgs: tool?.args,
+              balance: result.body?.balance,
             });
           }
 

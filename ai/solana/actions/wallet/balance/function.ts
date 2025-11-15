@@ -1,6 +1,10 @@
 import { LAMPORTS_PER_SOL, PublicKey, Connection } from '@solana/web3.js';
 
-import { getAssociatedTokenAddressSync } from '@solana/spl-token';
+import {
+  getAssociatedTokenAddressSync,
+  TOKEN_PROGRAM_ID,
+  TOKEN_2022_PROGRAM_ID,
+} from '@solana/spl-token';
 
 import type { BalanceArgumentsType, BalanceResultBodyType } from './types';
 import type { SolanaActionResult } from '../../solana-action';
@@ -44,19 +48,69 @@ export async function getBalance(
       if (!args.tokenAddress) {
         throw new Error('Token address is required for SPL token balance check');
       }
-      const token_address = getAssociatedTokenAddressSync(
+
+      console.log('🔍 Getting token balance:', {
+        tokenAddress: args.tokenAddress,
+        walletAddress: args.walletAddress,
+        tokenSymbol: args.tokenSymbol,
+      });
+
+      // Try Token-2022 first, then fall back to regular SPL Token
+      let token_address = getAssociatedTokenAddressSync(
         new PublicKey(args.tokenAddress),
         new PublicKey(args.walletAddress),
+        false, // allowOwnerOffCurve
+        TOKEN_2022_PROGRAM_ID,
       );
+
+      console.log('🔍 Derived Token-2022 account address (ATA):', token_address.toBase58());
 
       try {
         const token_account = await connection.getTokenAccountBalance(token_address);
         balance = token_account.value.uiAmount ?? 0;
-        console.log('✅ Token balance from getBalance:', balance);
-      } catch (tokenError) {
-        // Token account does not exist, balance is 0
-        console.error(tokenError);
-        balance = 0;
+        console.log('✅ Token-2022 balance found:', {
+          balance,
+          rawAmount: token_account.value.amount,
+          decimals: token_account.value.decimals,
+          uiAmount: token_account.value.uiAmount,
+        });
+      } catch {
+        // Token-2022 account does not exist, try regular SPL Token
+        console.log('⚠️ No Token-2022 account found, trying SPL Token...');
+
+        token_address = getAssociatedTokenAddressSync(
+          new PublicKey(args.tokenAddress),
+          new PublicKey(args.walletAddress),
+          false, // allowOwnerOffCurve
+          TOKEN_PROGRAM_ID,
+        );
+
+        console.log('🔍 Derived SPL Token account address (ATA):', token_address.toBase58());
+
+        try {
+          const token_account = await connection.getTokenAccountBalance(token_address);
+          balance = token_account.value.uiAmount ?? 0;
+          console.log('✅ SPL Token balance found:', {
+            balance,
+            rawAmount: token_account.value.amount,
+            decimals: token_account.value.decimals,
+            uiAmount: token_account.value.uiAmount,
+          });
+        } catch {
+          // Neither Token-2022 nor SPL Token account exists
+          console.error('❌ No token account found (tried both Token-2022 and SPL Token)');
+          console.error(
+            '❌ Token-2022 ATA:',
+            getAssociatedTokenAddressSync(
+              new PublicKey(args.tokenAddress),
+              new PublicKey(args.walletAddress),
+              false,
+              TOKEN_2022_PROGRAM_ID,
+            ).toBase58(),
+          );
+          console.error('❌ SPL Token ATA:', token_address.toBase58());
+          balance = 0;
+        }
       }
     }
 

@@ -158,6 +158,19 @@ REFINED LENDING FLOW:
    - **NEVER use ${SOLANA_GET_TOKEN_ADDRESS_ACTION}** - always use the token address from the lending pool's tokenData.id
    - CRITICAL: When calling ${SOLANA_LEND_ACTION}, provide the same detailed educational text response IN THE SAME MESSAGE as the tool call, as described in step 3
 
+2b. 🚨 SPECIAL CASE - When user sends "I have acquired [TOKEN] ([TOKEN_ADDRESS]) and I'm ready to lend. My wallet address is [WALLET_ADDRESS]. Please show me the lending interface now.":
+   This message indicates the user has just completed a swap/funding and has the tokens ready. You MUST:
+   - Extract the token symbol, token address, and wallet address from the message
+   - Look back in the message history to find which protocol they originally selected (e.g., "I want to lend USDG to Kamino Lend")
+   - IMMEDIATELY call ${SOLANA_LEND_ACTION} with:
+     * tokenAddress: from the user's message (in parentheses)
+     * walletAddress: from the user's message
+     * protocol: from the original pool selection message in history
+     * tokenSymbol: from the user's message
+   - ❌ DO NOT check balance again - they just acquired the tokens
+   - ❌ DO NOT ask questions - they're ready to proceed
+   - ✅ Show the lending interface immediately
+
 3. When user says "lend [AMOUNT] [STABLECOIN] for [PROTOCOL]" or "lend [AMOUNT] [STABLECOIN] using [PROTOCOL]" or "lend [TOKEN] to [PROTOCOL]":
    🚨 CRITICAL - SEQUENTIAL FLOW (FOLLOW THESE STEPS IN ORDER):
 

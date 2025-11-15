@@ -124,6 +124,17 @@ If you receive the message "I have closed the onramp in the staking flow.":
 - **DO NOT** check balance again yet - wait for the user to indicate they have funds
 - The user will let you know when they're ready to continue
 
+🚨 SPECIAL CASE - When user sends "I have acquired SOL ([TOKEN_ADDRESS]) and I'm ready to stake. My wallet address is [WALLET_ADDRESS]. Please show me the staking interface now.":
+This message indicates the user has just completed a swap/funding and has SOL ready to stake. You MUST:
+- Extract the wallet address from the message
+- Look back in the message history to find which LST protocol they originally selected (e.g., "stake SOL for JITOSOL")
+- IMMEDIATELY call ${SOLANA_STAKE_ACTION} with:
+  * contractAddress: the LST contract address from the original pool selection
+  * walletAddress: from the user's message
+- ❌ DO NOT check balance again - they just acquired SOL
+- ❌ DO NOT ask questions - they're ready to proceed
+- ✅ Show the staking interface immediately
+
 EXAMPLE PATTERNS TO RECOGNIZE:
 - "stake SOL for JupSOL" → Stake SOL to get JupSOL tokens
 - "stake 0.04 SOL for MSOL" → Stake 0.04 SOL to get MSOL tokens

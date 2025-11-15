@@ -11,6 +11,7 @@ import PoolEarningPotential from '../../pool-earning-potential';
 import { capitalizeWords } from '@/lib/string-utils';
 import { VersionedTransaction, Connection } from '@solana/web3.js';
 import LendResult from './lend-result';
+import { Loader2 } from 'lucide-react';
 
 import type { LendArgumentsType, LendResultBodyType } from '@/ai/solana/actions/lending/lend/types';
 import VarApyTooltip from '@/components/var-apy-tooltip';
@@ -314,6 +315,8 @@ const LendCallBody: React.FC<Props> = ({ toolCallId, args }) => {
                 amount={amount}
                 onChange={handleAmountChange}
                 address={wallet?.address}
+                useBalanceFromAmount
+                availableBalance={Number(balance)}
               />
               {balance && balance > 0 && (
                 <div className="text-md text-right mt-1 text-neutral-400">
@@ -337,7 +340,14 @@ const LendCallBody: React.FC<Props> = ({ toolCallId, args }) => {
                   isLending || !amount || !tokenData || !balance || balance === 0 || !!errorMessage
                 }
               >
-                {isLending ? 'Lending...' : 'Lend'}
+                {isLending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Lending...
+                  </>
+                ) : (
+                  'Lend'
+                )}
               </Button>
               <Button variant="outline" className="w-full" onClick={handleCancel}>
                 Cancel
