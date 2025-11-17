@@ -2,6 +2,7 @@ import type { LiquidStakingPosition } from '@/db/types';
 import type { ChainType } from '@/app/_contexts/chain-context';
 import { getLiquidStakingPool } from './get-pool';
 import { deleteLiquidStakingPosition } from './delete';
+import { logger } from '@/lib/logger';
 
 export async function getAllLiquidStakingPositions(
   walletAddress: string,
@@ -10,53 +11,71 @@ export async function getAllLiquidStakingPositions(
   if (chain !== 'solana') {
     return [];
   }
-  // Fetch positions from API
-  const res = await fetch(`/api/liquid-staking-positions/${walletAddress}`);
+  // Fetch positions and portfolio data concurrently
+  const [res, portfolioRes] = await Promise.all([
+    fetch(`/api/liquid-staking-positions/${walletAddress}`),
+    fetch(`/api/portfolio/${walletAddress}?chain=${chain}`),
+  ]);
+
   if (!res.ok) {
     const text = await res.text();
     throw new Error(text || 'Failed to fetch liquid staking positions');
   }
   const positions = (await res.json()) as LiquidStakingPosition[];
 
-  // Fetch portfolio data to get current balances
-  const portfolioRes = await fetch(`/api/portfolio/${walletAddress}?chain=${chain}`);
   if (!portfolioRes.ok) {
-    console.error('Failed to fetch portfolio data');
+    logger.error('Failed to fetch portfolio data', { walletAddress, chain });
     return positions;
   }
   const portfolio = await portfolioRes.json();
 
   // Update each position with fresh pool data and delete if balance is 0
   const promises = positions.map(async (position) => {
+    logger.info('[Staking] Position details', {
+      ...position,
+    });
     try {
       // Check if user still has balance in this LST
       const portfolioToken = portfolio?.items?.find(
         (item: any) =>
           item.address === position.lstToken.id || item.symbol === position.lstToken.symbol,
       );
+      logger.info('[Staking] Portfolio token details', {
+        ...(portfolioToken ? { ...portfolioToken } : {}),
+      });
 
-      const rawBalance = portfolioToken?.balance;
+      const rawBalance = portfolioToken.balance;
+      logger.info('[Staking] Raw balance', {
+        rawBalance,
+      });
       // If current balance is 0 (user sold all their LST), delete the position
       // Only delete if position was created more than 5 minutes ago to avoid race conditions
-      const fiveMinutesAgo = Date.now() - 2 * 60 * 1000;
+      const twoMinutesAgo = Date.now() - 2 * 60 * 1000;
       const isOlderThan2Minutes =
-        position.createdAt && new Date(position.createdAt).getTime() < fiveMinutesAgo;
+        position.createdAt && new Date(position.createdAt).getTime() < twoMinutesAgo;
 
       if (
         (rawBalance === null || rawBalance === undefined || rawBalance === 0) &&
         isOlderThan2Minutes
       ) {
-        console.log('Deleting liquid staking position for ', position.lstToken.symbol);
-        console.log('Raw balance', rawBalance);
-        console.log('Is older than 2 minutes', isOlderThan2Minutes);
+        logger.info('🗑️ [Staking] Deleting liquid staking position', {
+          symbol: position.lstToken.symbol,
+          rawBalance,
+          isOlderThan2Minutes,
+          createdAt: position.createdAt,
+        });
         try {
           await deleteLiquidStakingPosition(position.id, position.walletAddress);
-          console.log(
-            `Deleted liquid staking position for ${position.lstToken.symbol} (zero balance)`,
-          );
+          logger.info('✅ [Staking] Successfully deleted liquid staking position', {
+            symbol: position.lstToken.symbol,
+            reason: 'zero balance',
+          });
           return null; // Return null to filter out this position
         } catch (deleteError) {
-          console.error(`Failed to delete position for ${position.lstToken.symbol}:`, deleteError);
+          logger.error('❌ [Staking] Failed to delete position', {
+            symbol: position.lstToken.symbol,
+            error: deleteError,
+          });
           return null;
         }
       }
@@ -85,10 +104,11 @@ export async function getAllLiquidStakingPositions(
         },
       };
     } catch (err) {
-      console.error(
-        `Failed to fetch fresh pool data for ${position.poolData.project}-${position.lstToken.symbol}:`,
-        err,
-      );
+      logger.error('Failed to fetch fresh pool data', {
+        project: position.poolData.project,
+        symbol: position.lstToken.symbol,
+        error: err,
+      });
       // Return original position if fetch fails
       return position;
     }

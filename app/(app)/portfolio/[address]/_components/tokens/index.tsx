@@ -45,7 +45,7 @@ const Tokens: React.FC<Props> = ({ stakingPositions, portfolio, portfolioLoading
   const openSell = (tokenAddress: string) => onOpen('sell', tokenAddress, handleSwapSuccess);
   const startStaking = () => {
     // Navigate to new chat with initial message as query param
-    const message = encodeURIComponent('Find me the best staking yields');
+    const message = encodeURIComponent('Find me the best staking yields on Solana');
     router.push(`/chat?message=${message}`);
   };
 
