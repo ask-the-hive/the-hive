@@ -8,7 +8,7 @@ const solanaButtons = [
     title: 'Stake SOL, Keep Liquidity',
     description: 'Earn the highest yields with liquid staking',
     icon: 'Droplet' as const,
-    prompt: 'Find me the best staking yields',
+    prompt: 'Find me the best staking yields on Solana',
   },
   {
     title: 'Lend',
