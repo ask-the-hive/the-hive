@@ -125,7 +125,6 @@ const StakingPositions: React.FC<Props> = ({
             <TableRow>
               <TableHead>Token</TableHead>
               <TableHead>Balance</TableHead>
-              <TableHead>Yield Earned</TableHead>
               <TableHead>APY</TableHead>
               <TableHead className="hidden md:table-cell">Protocol</TableHead>
               <TableHead>Actions</TableHead>
@@ -142,14 +141,6 @@ const StakingPositions: React.FC<Props> = ({
               const rawBalance = portfolioToken?.balance || '0';
               const price = portfolioToken?.priceUsd || 0;
               const decimals = portfolioToken?.decimals || position.lstToken.decimals || 9;
-
-              // Calculate yield earned (current balance - initial staked amount)
-              const currentBalance = parseFloat(rawBalance.toString()) / Math.pow(10, decimals);
-              const initialAmount = position.amount;
-              const yieldEarned = currentBalance - initialAmount;
-
-              // Convert yield earned back to raw balance format for utilities
-              const yieldEarnedRaw = yieldEarned * Math.pow(10, decimals);
 
               return (
                 <TableRow key={position.id}>
@@ -179,28 +170,7 @@ const StakingPositions: React.FC<Props> = ({
                       </p>
                     </div>
                   </TableCell>
-                  <TableCell>
-                    <div className="flex flex-col">
-                      <p className={yieldEarned > 0 ? 'text-green-600 font-medium' : 'font-medium'}>
-                        {yieldEarned > 0 ? '+' : ''}
-                        {formatCrypto(
-                          yieldEarnedRaw.toString(),
-                          position.lstToken.symbol,
-                          decimals,
-                        )}
-                      </p>
-                      <p
-                        className={
-                          yieldEarned > 0
-                            ? 'text-green-600/70 text-sm'
-                            : 'text-sm text-muted-foreground'
-                        }
-                      >
-                        {yieldEarned > 0 ? '+' : ''}
-                        {formatFiat(yieldEarnedRaw.toString(), price, decimals)}
-                      </p>
-                    </div>
-                  </TableCell>
+
                   <TableCell>
                     <span className="text-green-600 font-medium">
                       {`${position.poolData.yield.toFixed(2)}%`}
