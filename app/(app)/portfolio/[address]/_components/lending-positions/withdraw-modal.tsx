@@ -85,6 +85,8 @@ const WithdrawModal: React.FC<Props> = ({ position, isOpen, onClose, onSuccess }
       });
       onClose();
     } catch (error) {
+      debugger;
+      console.error('Error withdrawing:', error);
       // Check if user cancelled the transaction
       const errorMsg = error instanceof Error ? error.message : String(error);
       const isUserCancellation =
