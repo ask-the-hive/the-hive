@@ -1,5 +1,4 @@
 import React from 'react';
-import Image from 'next/image';
 import {
   Dialog,
   DialogContent,
@@ -7,6 +6,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog';
+import { TokenIcon } from '@/components/ui';
 import { ExternalLink, TrendingUp, DollarSign, Shield } from 'lucide-react';
 import { capitalizeWords, getConfidenceLabel } from '@/lib/string-utils';
 import type { LiquidStakingYieldsPoolData } from '@/ai';
@@ -99,15 +99,14 @@ const PoolDetailsModal: React.FC<Props> = ({ pool, isOpen, onClose, variant = 's
       >
         <DialogHeader>
           <div className="flex items-center gap-3">
-            {pool.tokenData?.logoURI && (
-              <Image
-                src={pool.tokenData?.logoURI || ''}
-                alt={pool.name}
-                width={40}
-                height={40}
-                className="w-10 h-10 rounded-full"
-              />
-            )}
+            <TokenIcon
+              src={pool.tokenData?.logoURI}
+              alt={pool.name}
+              tokenSymbol={pool.tokenData?.symbol}
+              width={40}
+              height={40}
+              className="w-10 h-10 rounded-full"
+            />
             <div className="min-w-0 flex-1">
               <DialogTitle className="text-lg sm:text-xl truncate">{pool.name}</DialogTitle>
               <DialogDescription className="text-sm">

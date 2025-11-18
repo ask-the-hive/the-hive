@@ -9,6 +9,7 @@ import { SOLANA_STAKING_POOL_DATA_STORAGE_KEY } from '@/lib/constants';
 import type { StakeArgumentsType, StakeResultBodyType } from '@/ai';
 import { saveLiquidStakingPosition } from '@/services/liquid-staking/save';
 import PoolEarningPotential from '../../pool-earning-potential';
+import StakeResult from './stake-result';
 
 const ReceiveTooltip = () => {
   return (
@@ -35,6 +36,9 @@ const StakeCallBody: React.FC<Props> = ({ toolCallId, args }) => {
   const { user } = usePrivy();
   const [poolData, setPoolData] = React.useState<any>(null);
   const [outputAmount, setOutputAmount] = React.useState<number>(0);
+  const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
+  const [isSuccess, setIsSuccess] = React.useState(false);
+  const [txSignature, setTxSignature] = React.useState<string | null>(null);
 
   // Set the current chain to Solana for staking
   useEffect(() => {
@@ -73,6 +77,11 @@ const StakeCallBody: React.FC<Props> = ({ toolCallId, args }) => {
       return;
     }
 
+    // Set success state immediately for UI feedback
+    setIsSuccess(true);
+    setTxSignature(tx);
+    setErrorMessage(null); // Clear any previous errors
+
     try {
       await saveLiquidStakingPosition({
         walletAddress: user.wallet.address,
@@ -84,6 +93,7 @@ const StakeCallBody: React.FC<Props> = ({ toolCallId, args }) => {
     } catch (error) {
       console.error('Error saving liquid staking position:', error);
     } finally {
+      // Also notify the chat system
       addToolResult<StakeResultBodyType>(toolCallId, {
         message: `Stake successful!`,
         body: {
@@ -97,6 +107,49 @@ const StakeCallBody: React.FC<Props> = ({ toolCallId, args }) => {
       });
     }
   };
+
+  const handleError = (error: unknown) => {
+    console.error('Error staking:', error);
+    // Check if user cancelled the transaction
+    const errorStr = String(error);
+    const isUserCancellation =
+      errorStr.toLowerCase().includes('user rejected') ||
+      errorStr.toLowerCase().includes('user cancelled') ||
+      errorStr.toLowerCase().includes('user denied') ||
+      errorStr.toLowerCase().includes('rejected by user') ||
+      (error as any)?.code === 4001;
+
+    if (isUserCancellation) {
+      addToolResult(toolCallId, {
+        message: 'Transaction cancelled by user',
+        body: {
+          status: 'cancelled',
+          tx: '',
+          symbol: '',
+          outputAmount: 0,
+        },
+      });
+    } else {
+      // Show error message but keep UI visible for retry
+      setErrorMessage('There was an issue submitting the transaction. Please try again.');
+    }
+  };
+
+  // Show success state if transaction completed
+  if (isSuccess && txSignature && outputTokenData) {
+    return (
+      <div className="flex justify-center w-full">
+        <div className="w-full md:w-[70%]">
+          <StakeResult
+            outputTokenData={outputTokenData}
+            poolData={poolData}
+            outputAmount={outputAmount}
+            tx={txSignature}
+          />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex justify-center w-full">
@@ -115,14 +168,12 @@ const StakeCallBody: React.FC<Props> = ({ toolCallId, args }) => {
                 swapText="Stake"
                 swappingText="Staking..."
                 receiveTooltip={<ReceiveTooltip />}
-                onOutputChange={setOutputAmount}
-                onSuccess={handleStakeSuccess}
-                onError={(error) => {
-                  console.error('Error staking:', error);
-                  addToolResult(toolCallId, {
-                    message: `Stake failed: ${error}`,
-                  });
+                onOutputChange={(amount) => {
+                  setOutputAmount(amount);
+                  setErrorMessage(null); // Clear error when user changes amount
                 }}
+                onSuccess={handleStakeSuccess}
+                onError={handleError}
                 onCancel={() => {
                   addToolResult(toolCallId, {
                     message: `Stake cancelled`,
@@ -134,6 +185,16 @@ const StakeCallBody: React.FC<Props> = ({ toolCallId, args }) => {
                   });
                 }}
               />
+
+              {/* Show error message if transaction failed */}
+              <div className="flex justify-center w-full h-4 mt-2">
+                {errorMessage && (
+                  <p className="flex justify-center w-full text-sm text-red-600 dark:text-red-400 text-center">
+                    {errorMessage}
+                  </p>
+                )}
+              </div>
+
               {/* Display pool information and yield calculator if available */}
               {poolData && (
                 <PoolEarningPotential

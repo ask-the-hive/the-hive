@@ -151,6 +151,7 @@ const SavedTokensGroup: React.FC = () => {
                         <TokenIcon
                           src={getTokenLogo(savedToken)}
                           alt={savedToken.name}
+                          tokenSymbol={savedToken.symbol}
                           width={16}
                           height={16}
                           className="w-4 h-4 rounded-full flex-shrink-0"
