@@ -71,7 +71,6 @@ async function buildKaminoWithdrawTx(
     const marketAddress: Address = createAddress(KAMINO_MAIN_MARKET.toBase58());
     const programId: Address = createAddress(KAMINO_PROGRAM_ID.toBase58());
     const walletAddress: Address = createAddress(wallet.toBase58());
-    const mintAddress: Address = createAddress(tokenMint);
 
     // Load Kamino market
     const market = await KaminoMarket.load(
@@ -80,12 +79,44 @@ async function buildKaminoWithdrawTx(
       DEFAULT_RECENT_SLOT_DURATION_MS,
       programId,
     );
+
     if (!market) {
       throw new Error('Failed to load Kamino market');
     }
 
+    // Find the reserve for this token mint
+    let targetReserve = null;
+    for (const reserve of market.reserves.values()) {
+      const reserveMint = reserve.state?.liquidity?.mintPubkey?.toString();
+      if (reserveMint === tokenMint || reserve.symbol.toUpperCase() === tokenSymbol.toUpperCase()) {
+        targetReserve = reserve;
+        break;
+      }
+    }
+
+    if (!targetReserve) {
+      throw new Error(
+        `Reserve not found for token ${tokenSymbol} (${tokenMint}) in Kamino market. Available reserves: ${Array.from(
+          market.reserves.values(),
+        )
+          .map((r) => r.symbol)
+          .join(', ')}`,
+      );
+    }
+
+    // Get the mint address from the reserve (this is the source of truth)
+    const tokenMintAddress = targetReserve.state?.liquidity?.mintPubkey?.toString() ?? tokenMint;
+    if (!tokenMintAddress) {
+      throw new Error(`Could not get mint address from reserve for ${tokenSymbol}`);
+    }
+
+    // Use the mint address from the reserve, not from the position data
+    const mintAddress: Address = createAddress(tokenMintAddress);
+
     // Convert amount to base units (lamports/smallest unit)
-    const decimals = tokenSymbol.toUpperCase() === 'SOL' ? 9 : 6;
+    const decimals =
+      targetReserve.state?.liquidity?.mintDecimals?.toNumber() ||
+      (tokenSymbol.toUpperCase() === 'SOL' ? 9 : 6);
     const amountBase = Math.floor(amount * Math.pow(10, decimals));
 
     // Create a transaction signer for Kamino SDK
