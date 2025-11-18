@@ -55,6 +55,7 @@ const PoolEarningPotential: React.FC<Props> = ({
             <TokenIcon
               src={poolData.tokenData?.logoURI}
               alt={poolData.name}
+              tokenSymbol={poolData.tokenData?.symbol}
               width={24}
               height={24}
               className="w-6 h-6 rounded-full"

@@ -28,12 +28,6 @@ const Stake: React.FC<Props> = ({ tool, prevToolAgent }) => {
           return result.body?.status === 'complete' ? 'Stake Complete' : 'Failed to Stake';
         },
         body: (result: StakeResultType) => {
-          // If status is pending, this is awaiting user confirmation - show the call body
-          if (result.body?.status === 'pending') {
-            const args = tool.args as StakeArgumentsType;
-            return <StakeCallBody toolCallId={tool.toolCallId} args={args} />;
-          }
-
           // If status is complete, show the result
           if (result.body?.status === 'complete') {
             return (
@@ -50,7 +44,8 @@ const Stake: React.FC<Props> = ({ tool, prevToolAgent }) => {
             );
           }
 
-          return result.message;
+          const args = tool.args as StakeArgumentsType;
+          return <StakeCallBody toolCallId={tool.toolCallId} args={args} />;
         },
       }}
       call={{
