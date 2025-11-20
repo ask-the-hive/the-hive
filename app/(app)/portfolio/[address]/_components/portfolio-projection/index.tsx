@@ -57,7 +57,7 @@ interface Props {
   address: string;
   stakingPositions: LiquidStakingPosition[] | null;
   lendingPositions: LendingPosition[] | null;
-  portfolio: Portfolio; // Portfolio data from usePortfolio
+  portfolio: Portfolio | null; // Portfolio data from usePortfolio
 }
 
 const Wrapper: React.FC<{

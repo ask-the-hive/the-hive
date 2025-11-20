@@ -235,7 +235,7 @@ const Portfolio = ({ params }: { params: Promise<{ address: string }> }) => {
           address={address}
           stakingPositions={stakingPositions}
           lendingPositions={lendingPositions}
-          portfolio={portfolio}
+          portfolio={portfolio || null}
         />
         <StakingPositions
           stakingPositions={stakingPositions}
