@@ -10,9 +10,16 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts';
-import { TrendingUp, Calendar, DollarSign } from 'lucide-react';
+import { TrendingUp, ArrowRight, HelpCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator';
+import {
+  Tooltip as UITooltip,
+  TooltipTrigger,
+  TooltipContent,
+  TooltipProvider,
+} from '@/components/ui/tooltip';
 import {
   Select,
   SelectContent,
@@ -24,6 +31,7 @@ import { useChain } from '@/app/_contexts/chain-context';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { LiquidStakingPosition } from '@/db/types';
 import type { LendingPosition } from '@/types/lending-position';
+import { Portfolio } from '@/services/birdeye/types';
 
 interface ProjectionData {
   baseNetWorth: number;
@@ -49,6 +57,7 @@ interface Props {
   address: string;
   stakingPositions: LiquidStakingPosition[] | null;
   lendingPositions: LendingPosition[] | null;
+  portfolio: Portfolio; // Portfolio data from usePortfolio
 }
 
 const Wrapper: React.FC<{
@@ -129,7 +138,12 @@ const calculateNetLendingAPY = (positions: LendingPosition[]): number => {
   return totalValue > 0 ? weightedAPY / totalValue : 0;
 };
 
-const PortfolioProjection: React.FC<Props> = ({ address, stakingPositions, lendingPositions }) => {
+const PortfolioProjection: React.FC<Props> = ({
+  address,
+  stakingPositions,
+  lendingPositions,
+  portfolio,
+}) => {
   const { currentChain } = useChain();
   const [data, setData] = useState<ProjectionData | null>(null);
   const [, setLoading] = useState(false);
@@ -189,7 +203,8 @@ const PortfolioProjection: React.FC<Props> = ({ address, stakingPositions, lendi
     if (address) {
       fetchProjectionData();
     }
-  }, [address, fetchProjectionData]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [address, days, currentChain, stakingPositions, lendingPositions]);
 
   // Handle days change with loading state
   const handleDaysChange = React.useCallback((value: string) => {
@@ -211,6 +226,49 @@ const PortfolioProjection: React.FC<Props> = ({ address, stakingPositions, lendi
     }));
   }, [data]);
 
+  // Enrich staking positions with currentUsdValue from portfolio data
+  const enrichedStakingPositions = React.useMemo(() => {
+    if (!data) return [];
+    return (
+      data.liquidStakingPositions?.map((position) => {
+        // Find the token in portfolio
+        const portfolioToken = portfolio?.items?.find(
+          (item: any) =>
+            item.address === position.lstToken.id || item.symbol === position.lstToken.symbol,
+        );
+
+        if (portfolioToken) {
+          const rawBalance = portfolioToken.balance || 0;
+          const priceUsd = portfolioToken.priceUsd || 0;
+          const decimals = portfolioToken.decimals || position.lstToken.decimals || 9;
+          const currentBalance = rawBalance
+            ? parseFloat(rawBalance.toString()) / Math.pow(10, decimals)
+            : 0;
+          const currentUsdValue = currentBalance * priceUsd;
+
+          return {
+            ...position,
+            currentUsdValue,
+            currentPriceUsd: priceUsd,
+          };
+        }
+
+        return position;
+      }) || []
+    );
+  }, [data, portfolio]);
+
+  // Calculate total value of staking positions using enriched data
+  const totalStakingValue = enrichedStakingPositions.reduce((total, position) => {
+    return total + (position.currentUsdValue || 0);
+  }, 0);
+
+  // Calculate total value of lending positions
+  const totalLendingValue =
+    data?.lendingPositions?.reduce((total, position) => {
+      return total + position.amount;
+    }, 0) || 0;
+
   // Combine historical and projection data for the chart
   const chartData = React.useMemo(() => {
     if (!data) return [];
@@ -231,12 +289,6 @@ const PortfolioProjection: React.FC<Props> = ({ address, stakingPositions, lendi
     const netStakingAPY = data.netStakingAPY || 0;
     // Calculate net APY from lending positions
     const netLendingAPY = data.netLendingAPY || 0;
-
-    // Calculate total value of staking positions
-    const totalStakingValue =
-      data.liquidStakingPositions?.reduce((total, position) => {
-        return total + (position.currentUsdValue || 0);
-      }, 0) || 0;
 
     // Calculate total value of lending positions (using amount as USD value proxy)
     // Note: This assumes position.amount is already in USD or we need to multiply by token price
@@ -323,7 +375,7 @@ const PortfolioProjection: React.FC<Props> = ({ address, stakingPositions, lendi
     ];
 
     return combined;
-  }, [data, days, hasStakingPositions, hasLendingPositions, historicalData]);
+  }, [data, days, hasStakingPositions, hasLendingPositions, historicalData, totalStakingValue]);
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
@@ -394,22 +446,6 @@ const PortfolioProjection: React.FC<Props> = ({ address, stakingPositions, lendi
     return null;
   }
 
-  // Calculate total value of staking positions
-  const totalStakingValue =
-    data.liquidStakingPositions?.reduce((total, position) => {
-      return total + (position.currentUsdValue || 0);
-    }, 0) || 0;
-
-  // Calculate total value of lending positions (using amount as USD value proxy)
-  // Note: This assumes position.amount is already in USD or we need to multiply by token price
-  // For now, we'll use amount directly as it should represent the USD value
-  const totalLendingValue =
-    data.lendingPositions?.reduce((total, position) => {
-      // Get token price from portfolio if available, otherwise use amount as-is
-      // For simplicity, we'll use amount directly assuming it's already in USD terms
-      return total + position.amount;
-    }, 0) || 0;
-
   // Calculate current value including lending positions
   // The historical data may not include lending positions, so we add them here
   const baseCurrentValue =
@@ -454,151 +490,232 @@ const PortfolioProjection: React.FC<Props> = ({ address, stakingPositions, lendi
   const percentageGain = currentValue > 0 ? (totalGain / currentValue) * 100 : 0;
 
   return (
-    <Wrapper
-      hasStakingPositions={hasStakingPositions}
-      hasLendingPositions={hasLendingPositions}
-      loading={initialLoading}
-      netWorth={currentValue}
-    >
-      {(hasStakingPositions || hasLendingPositions) && (
-        <CardHeader>
-          <div className="flex items-center flex-col md:flex-row justify-between">
-            {/* Summary Stats */}
-            <div className="grid grid-cols-3 gap-4">
-              <div className="text-center bg-muted/50 rounded-lg">
-                <p className=" text-base md:text-xl font-bold">{formatCurrency(currentValue)}</p>
-                <div className="flex items-center justify-center gap-1 mb-2">
-                  <DollarSign className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-xs md:text-sm text-muted-foreground">Current Value</span>
+    <TooltipProvider delayDuration={0}>
+      <Wrapper
+        hasStakingPositions={hasStakingPositions}
+        hasLendingPositions={hasLendingPositions}
+        loading={initialLoading}
+        netWorth={currentValue}
+      >
+        {(hasStakingPositions || hasLendingPositions) && (
+          <CardHeader className="p-4">
+            <div className="flex items-center flex-col md:flex-row justify-between">
+              {/* Summary Stats */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
+                {/* Current Value -> Projected Value */}
+                <div className="flex items-center justify-center bg-muted/30 rounded-lg p-2">
+                  <div className="text-center bg-muted/50 rounded-lg flex-1">
+                    <p className=" text-base md:text-xl font-bold">
+                      {formatCurrency(currentValue)}
+                    </p>
+                    <div className="flex items-center justify-center gap-1 mb-2">
+                      <span className="text-xs md:text-sm text-muted-foreground">
+                        Current Value
+                      </span>
+                      <UITooltip>
+                        <TooltipTrigger asChild>
+                          <HelpCircle className="w-3 h-3 text-muted-foreground cursor-help" />
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-xs">
+                          <p>
+                            Your total portfolio value including all assets, staking, and lending
+                            positions
+                          </p>
+                        </TooltipContent>
+                      </UITooltip>
+                    </div>
+                  </div>
+                  <ArrowRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+
+                  <div className="text-center bg-muted/50 rounded-lg flex-1">
+                    <p className="text-base md:text-xl font-bold">
+                      {formatCurrency(projectedValue)}
+                    </p>
+                    <div className="flex items-center justify-center gap-2 mb-2">
+                      <span className="text-xs md:text-sm text-muted-foreground">
+                        Projected Value
+                      </span>
+                      <UITooltip>
+                        <TooltipTrigger asChild>
+                          <HelpCircle className="w-3 h-3 text-muted-foreground cursor-help" />
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-xs">
+                          <p>
+                            Expected portfolio value after the selected time period, including
+                            earned yield
+                          </p>
+                        </TooltipContent>
+                      </UITooltip>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Earning Amount -> Projected Gain */}
+                <div className="flex items-center justify-center bg-muted/30 rounded-lg p-2">
+                  <div className="text-center bg-muted/50 rounded-lg flex-1">
+                    <p className="text-base md:text-xl font-bold">
+                      {formatCurrency(totalYieldPositionsValue)}
+                    </p>
+                    <div className="flex items-center justify-center gap-2 mb-2">
+                      <span className="text-xs md:text-sm text-muted-foreground">
+                        Earning Amount
+                      </span>
+                      <UITooltip>
+                        <TooltipTrigger asChild>
+                          <HelpCircle className="w-3 h-3 text-muted-foreground cursor-help" />
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-xs">
+                          <p>Total value of your yield-earning positions (staking + lending)</p>
+                        </TooltipContent>
+                      </UITooltip>
+                    </div>
+                  </div>
+                  <ArrowRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                  <div className="text-center bg-muted/50 rounded-lg flex-1">
+                    <div className="flex flex-col items-center gap-2">
+                      <div className="flex items-center gap-2">
+                        <p
+                          className={`text-base md:text-xl font-bold ${totalGain >= 0 ? 'text-green-600' : 'text-red-600'}`}
+                        >
+                          {totalGain >= 0 ? '+' : ''}
+                          {formatCurrency(totalGain)}
+                        </p>
+                        <p
+                          className={`text-sm ${totalGain >= 0 ? 'text-green-600' : 'text-red-600'}`}
+                        >
+                          ({totalGain >= 0 ? '+' : ''}
+                          {percentageGain.toFixed(2)}%)
+                        </p>
+                      </div>
+                      <div className="flex items-center justify-center gap-2 mb-2">
+                        <span className="text-xs md:text-sm text-muted-foreground">
+                          Projected Gain
+                        </span>
+                        <UITooltip>
+                          <TooltipTrigger asChild>
+                            <HelpCircle className="w-3 h-3 text-muted-foreground cursor-help" />
+                          </TooltipTrigger>
+                          <TooltipContent className="max-w-xs">
+                            <p>
+                              Expected increase in your entire portfolio value from staking and
+                              lending yields
+                            </p>
+                          </TooltipContent>
+                        </UITooltip>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
-              <div className="text-center bg-muted/50 rounded-lg">
-                <p className="text-base md:text-xl font-bold">{formatCurrency(projectedValue)}</p>
-                <div className="flex items-center justify-center gap-2 mb-2">
-                  <Calendar className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-xs md:text-sm text-muted-foreground">Projected Value</span>
-                </div>
-              </div>
-              <div className="text-center bg-muted/50 rounded-lg">
-                <div className="flex items-center gap-2">
-                  <p
-                    className={`text-base md:text-xl font-bold ${totalGain >= 0 ? 'text-green-600' : 'text-red-600'}`}
-                  >
-                    {totalGain >= 0 ? '+' : ''}
-                    {formatCurrency(totalGain)}
-                  </p>
-                  <p className={`text-sm ${totalGain >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                    ({totalGain >= 0 ? '+' : ''}
-                    {percentageGain.toFixed(2)}%)
-                  </p>
-                </div>
-                <div className="flex items-center justify-center gap-2 mb-2">
-                  <TrendingUp className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-xs md:text-sm text-muted-foreground">Projected Gain</span>
+              <Separator
+                orientation="vertical"
+                className="hidden md:block h-16 dark:bg-gray-600 mx-4"
+              />
+              <div className="flex items-center flex-col gap-2">
+                <p className="text-sm text-muted-foreground">Projected:</p>
+                <div className="border border-gray-600 rounded-lg">
+                  <Select value={days.toString()} onValueChange={handleDaysChange}>
+                    <SelectTrigger className="w-32">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="30">30 days</SelectItem>
+                      <SelectItem value="60">2 months</SelectItem>
+                      <SelectItem value="90">3 months</SelectItem>
+                      <SelectItem value="180">6 months</SelectItem>
+                      <SelectItem value="365">1 year</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
             </div>
-            <div className="flex items-center flex-col gap-2">
-              <p className="text-sm text-muted-foreground">Projected:</p>
-              <div className="">
-                <Select value={days.toString()} onValueChange={handleDaysChange}>
-                  <SelectTrigger className="w-32">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="30">30 days</SelectItem>
-                    <SelectItem value="60">2 months</SelectItem>
-                    <SelectItem value="90">3 months</SelectItem>
-                    <SelectItem value="180">6 months</SelectItem>
-                    <SelectItem value="365">1 year</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </div>
-        </CardHeader>
-      )}
-      <CardContent>
-        <div className={`space-y-6 ${!hasStakingPositions ? 'pt-10' : ''}`}>
-          {/* Chart */}
-          {projectionLoading ? (
-            <Skeleton className="h-80 w-full" />
-          ) : (
-            <div className="h-80">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-                  <XAxis
-                    dataKey="date"
-                    tick={{ fontSize: 12 }}
-                    tickFormatter={(value) => {
-                      const date = new Date(value);
-                      return `${date.getMonth() + 1}/${date.getDate()}`;
-                    }}
-                  />
-                  <YAxis tick={{ fontSize: 12 }} tickFormatter={(value) => formatCurrency(value)} />
-                  <Tooltip content={<CustomTooltip />} />
-                  <Line
-                    type="monotone"
-                    dataKey="netWorth"
-                    stroke="#D19900"
-                    strokeWidth={2}
-                    dot={false}
-                    name="Historical Portfolio Value"
-                  />
-                  {((data.liquidStakingPositions && data.liquidStakingPositions.length > 0) ||
-                    (data.lendingPositions && data.lendingPositions.length > 0)) && (
+          </CardHeader>
+        )}
+        <CardContent>
+          <div className={`space-y-6 ${!hasStakingPositions ? 'pt-10' : ''}`}>
+            {/* Chart */}
+            {projectionLoading ? (
+              <Skeleton className="h-80 w-full" />
+            ) : (
+              <div className="h-80">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+                    <XAxis
+                      dataKey="date"
+                      tick={{ fontSize: 12 }}
+                      tickFormatter={(value) => {
+                        const date = new Date(value);
+                        return `${date.getMonth() + 1}/${date.getDate()}`;
+                      }}
+                    />
+                    <YAxis
+                      tick={{ fontSize: 12 }}
+                      tickFormatter={(value) => formatCurrency(value)}
+                    />
+                    <Tooltip content={<CustomTooltip />} />
                     <Line
                       type="monotone"
-                      dataKey="projectedNetWorth"
+                      dataKey="netWorth"
                       stroke="#D19900"
                       strokeWidth={2}
-                      strokeDasharray="5 5"
                       dot={false}
-                      name={
-                        hasStakingPositions && hasLendingPositions
-                          ? `Projected w/ Yield (${data?.netStakingAPY?.toFixed(2) || 0}% staking, ${data?.netLendingAPY?.toFixed(2) || 0}% lending)`
-                          : hasStakingPositions
-                            ? `Projected w/ Staking (${data?.netStakingAPY?.toFixed(2) || 0}% net APY)`
-                            : `Projected w/ Lending (${data?.netLendingAPY?.toFixed(2) || 0}% net APY)`
-                      }
+                      name="Historical Portfolio Value"
                     />
-                  )}
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          )}
+                    {((data.liquidStakingPositions && data.liquidStakingPositions.length > 0) ||
+                      (data.lendingPositions && data.lendingPositions.length > 0)) && (
+                      <Line
+                        type="monotone"
+                        dataKey="projectedNetWorth"
+                        stroke="#D19900"
+                        strokeWidth={2}
+                        strokeDasharray="5 5"
+                        dot={false}
+                        name={
+                          hasStakingPositions && hasLendingPositions
+                            ? `Projected w/ Yield (${data?.netStakingAPY?.toFixed(2) || 0}% staking, ${data?.netLendingAPY?.toFixed(2) || 0}% lending)`
+                            : hasStakingPositions
+                              ? `Projected w/ Staking (${data?.netStakingAPY?.toFixed(2) || 0}% net APY)`
+                              : `Projected w/ Lending (${data?.netLendingAPY?.toFixed(2) || 0}% net APY)`
+                        }
+                      />
+                    )}
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            )}
 
-          {/* Legend */}
-          <div className="flex items-center justify-center gap-6 text-sm">
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-brand-600 rounded-full"></div>
-              <span>Historical Portfolio Value</span>
+            {/* Legend */}
+            <div className="flex items-center justify-center gap-6 text-sm">
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 bg-brand-600 rounded-full"></div>
+                <span>Historical Portfolio Value</span>
+              </div>
+              {((data.liquidStakingPositions && data.liquidStakingPositions.length > 0) ||
+                (data.lendingPositions && data.lendingPositions.length > 0)) &&
+                ((data?.netStakingAPY || 0) > 0 || (data?.netLendingAPY || 0) > 0) && (
+                  <div className="flex items-center gap-2">
+                    <div
+                      className="w-3 h-3 bg-brand-600 rounded-full"
+                      style={{
+                        background:
+                          'repeating-linear-gradient(90deg, #d19900 0px, #d19900 3px, transparent 3px, transparent 6px)',
+                      }}
+                    ></div>
+                    <span>
+                      {hasStakingPositions && hasLendingPositions
+                        ? `Projected w/ Yield (${data?.netStakingAPY?.toFixed(2) || 0}% staking, ${data?.netLendingAPY?.toFixed(2) || 0}% lending)`
+                        : hasStakingPositions
+                          ? `Projected w/ Staking (${data?.netStakingAPY?.toFixed(2) || 0}% net APY)`
+                          : `Projected w/ Lending (${data?.netLendingAPY?.toFixed(2) || 0}% net APY)`}
+                    </span>
+                  </div>
+                )}
             </div>
-            {((data.liquidStakingPositions && data.liquidStakingPositions.length > 0) ||
-              (data.lendingPositions && data.lendingPositions.length > 0)) &&
-              ((data?.netStakingAPY || 0) > 0 || (data?.netLendingAPY || 0) > 0) && (
-                <div className="flex items-center gap-2">
-                  <div
-                    className="w-3 h-3 bg-brand-600 rounded-full"
-                    style={{
-                      background:
-                        'repeating-linear-gradient(90deg, #d19900 0px, #d19900 3px, transparent 3px, transparent 6px)',
-                    }}
-                  ></div>
-                  <span>
-                    {hasStakingPositions && hasLendingPositions
-                      ? `Projected w/ Yield (${data?.netStakingAPY?.toFixed(2) || 0}% staking, ${data?.netLendingAPY?.toFixed(2) || 0}% lending)`
-                      : hasStakingPositions
-                        ? `Projected w/ Staking (${data?.netStakingAPY?.toFixed(2) || 0}% net APY)`
-                        : `Projected w/ Lending (${data?.netLendingAPY?.toFixed(2) || 0}% net APY)`}
-                  </span>
-                </div>
-              )}
           </div>
-        </div>
-      </CardContent>
-    </Wrapper>
+        </CardContent>
+      </Wrapper>
+    </TooltipProvider>
   );
 };
 

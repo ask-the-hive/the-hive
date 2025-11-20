@@ -37,12 +37,7 @@ const Portfolio = ({ params }: { params: Promise<{ address: string }> }) => {
   const [lendingPositions, setLendingPositions] = useState<LendingPosition[] | null>(null);
 
   // Use the appropriate address for the current chain
-  const chainAddress =
-    currentChain === 'solana'
-      ? walletAddresses.solana || address
-      : currentChain === 'base'
-        ? walletAddresses.base || address
-        : walletAddresses.bsc || address;
+  const chainAddress = walletAddresses.solana || address;
 
   // Fetch portfolio data
   const {
@@ -240,6 +235,7 @@ const Portfolio = ({ params }: { params: Promise<{ address: string }> }) => {
           address={address}
           stakingPositions={stakingPositions}
           lendingPositions={lendingPositions}
+          portfolio={portfolio}
         />
         <StakingPositions
           stakingPositions={stakingPositions}
