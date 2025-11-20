@@ -24,11 +24,20 @@ export const PrivyProvider: React.FC<Props> = ({ children }) => {
           theme: 'dark',
           accentColor: '#d19900',
           logo: '/logo.png',
-          walletChainType: 'solana-only',
+          walletChainType: 'solana-only', // TODO: Change to 'all-chains' to re-enable EVM
           showWalletLoginFirst: true,
           walletList: ['phantom', 'wallet_connect', 'detected_solana_wallets'],
         },
         loginMethods: ['email', 'wallet', 'google', 'twitter', 'discord', 'github'],
+        // Ensure embedded wallets (from email/social login) are Solana-only
+        embeddedWallets: {
+          createOnLogin: 'users-without-wallets',
+          requireUserPasswordOnCreate: false,
+        },
+        // NOTE: Do not specify supportedChains for Solana-only mode
+        // walletChainType: 'solana-only' already restricts to Solana
+        // TODO: To re-enable EVM chains, uncomment and add chains:
+        // supportedChains: [base, bsc, mainnet, etc.],
         externalWallets: {
           solana: {
             connectors: solanaConnectors,

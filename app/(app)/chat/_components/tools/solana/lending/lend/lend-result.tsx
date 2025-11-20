@@ -5,10 +5,10 @@ import { Token } from '@/db/types';
 import { LendingYieldsPoolData } from '@/ai/solana/actions/lending/lending-yields/schema';
 import { usePrice } from '@/hooks';
 import Image from 'next/image';
-import { usePrivy } from '@privy-io/react-auth';
 import { Button, Card } from '@/components/ui';
 import { Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useChain } from '@/app/_contexts/chain-context';
 
 function capitalizeWords(str: string): string {
   return str
@@ -29,7 +29,7 @@ interface Props {
 }
 
 const LendResult: React.FC<Props> = ({ tokenData, poolData, amount, tx }) => {
-  const { user } = usePrivy();
+  const { walletAddresses } = useChain();
   const { data: tokenPrice } = usePrice(tokenData?.id || '');
   const [isNavigating, setIsNavigating] = useState(false);
   const router = useRouter();
@@ -40,11 +40,11 @@ const LendResult: React.FC<Props> = ({ tokenData, poolData, amount, tx }) => {
   }, [amount, tokenPrice]);
 
   const handleViewPortfolio = async () => {
-    if (!user?.wallet?.address || isNavigating) return;
+    if (!walletAddresses.solana || isNavigating) return;
 
     setIsNavigating(true);
     try {
-      await router.push(`/portfolio/${user.wallet.address}`);
+      await router.push(`/portfolio/${walletAddresses.solana}`);
     } catch (error) {
       console.error('Navigation error:', error);
     } finally {
@@ -168,7 +168,7 @@ const LendResult: React.FC<Props> = ({ tokenData, poolData, amount, tx }) => {
             </div>
           )}
           <div className="mt-6 mb-6 flex flex-col gap-2 px-4">
-            {user?.wallet?.address && (
+            {walletAddresses.solana && (
               <Button
                 variant="brand"
                 className="w-full"

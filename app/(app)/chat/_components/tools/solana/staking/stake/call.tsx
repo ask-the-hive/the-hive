@@ -2,7 +2,6 @@ import React, { useEffect } from 'react';
 import { Card, Skeleton } from '@/components/ui';
 import Swap from '@/app/_components/swap';
 import { useTokenDataByAddress, usePrice } from '@/hooks';
-import { usePrivy } from '@privy-io/react-auth';
 import { useChat } from '@/app/(app)/chat/_contexts/chat';
 import { useChain } from '@/app/_contexts/chain-context';
 import { SOLANA_STAKING_POOL_DATA_STORAGE_KEY } from '@/lib/constants';
@@ -32,8 +31,7 @@ interface Props {
 
 const StakeCallBody: React.FC<Props> = ({ toolCallId, args }) => {
   const { addToolResult } = useChat();
-  const { setCurrentChain } = useChain();
-  const { user } = usePrivy();
+  const { setCurrentChain, walletAddresses } = useChain();
   const [poolData, setPoolData] = React.useState<any>(null);
   const [outputAmount, setOutputAmount] = React.useState<number>(0);
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
@@ -72,8 +70,16 @@ const StakeCallBody: React.FC<Props> = ({ toolCallId, args }) => {
   }, [outputTokenData?.symbol]);
 
   const handleStakeSuccess = async (tx: string) => {
-    if (!user?.wallet?.address || !outputTokenData || !poolData) {
-      console.error('Missing required data for creating liquid staking position');
+    // Use Solana wallet address from chain context, not user.wallet.address
+    const solanaAddress = walletAddresses.solana;
+    console.log('solanaAddress', solanaAddress);
+
+    if (!solanaAddress || !outputTokenData || !poolData) {
+      console.error('Missing required data for creating liquid staking position', {
+        solanaAddress,
+        hasOutputTokenData: !!outputTokenData,
+        hasPoolData: !!poolData,
+      });
       return;
     }
 
@@ -84,7 +90,7 @@ const StakeCallBody: React.FC<Props> = ({ toolCallId, args }) => {
 
     try {
       await saveLiquidStakingPosition({
-        walletAddress: user.wallet.address,
+        walletAddress: solanaAddress,
         chainId: 'solana',
         amount: outputAmount,
         lstToken: outputTokenData,
