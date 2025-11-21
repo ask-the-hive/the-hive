@@ -377,10 +377,43 @@ const PortfolioProjection: React.FC<Props> = ({
     return combined;
   }, [data, days, hasStakingPositions, hasLendingPositions, historicalData, totalStakingValue]);
 
-  const CustomTooltip = ({ active, payload, label }: any) => {
+  // Calculate Y-axis domain with padding to center the chart line
+  const yAxisDomain = React.useMemo(() => {
+    if (!chartData || chartData.length === 0) {
+      return ['auto', 'auto'];
+    }
+
+    const allValues = chartData.flatMap((item: any) => {
+      const values = [];
+      if (item.netWorth !== null && item.netWorth !== undefined) {
+        values.push(item.netWorth);
+      }
+      if (item.projectedNetWorth !== null && item.projectedNetWorth !== undefined) {
+        values.push(item.projectedNetWorth);
+      }
+      return values;
+    });
+
+    if (allValues.length === 0) {
+      return ['auto', 'auto'];
+    }
+
+    const minValue = Math.min(...allValues);
+    const maxValue = Math.max(...allValues);
+    const range = maxValue - minValue;
+
+    // Add 20% padding above and below
+    const padding = range * 0.8;
+    const yMin = Math.max(0, minValue - padding);
+    const yMax = maxValue + padding;
+
+    return [yMin, yMax];
+  }, [chartData]);
+
+  const CustomTooltip = ({ active, payload, label, earningAmount }: any) => {
     if (active && payload && payload.length) {
       return (
-        <div className="bg-background border border-border rounded-lg p-3 shadow-lg">
+        <div className="bg-gray-800 border border-gray-500 rounded-lg p-3 shadow-lg">
           <p className="text-sm font-medium">{label}</p>
           {payload.map((entry: any, index: number) => {
             if (entry.value === null || entry.value === undefined) return null;
@@ -397,13 +430,21 @@ const PortfolioProjection: React.FC<Props> = ({
             (entry: any) => entry.dataKey === 'projectedNetWorth' && entry.value !== null,
           ) &&
             (hasStakingPositions || hasLendingPositions) && (
-              <p className="text-xs text-muted-foreground mt-1">
-                {hasStakingPositions && hasLendingPositions
-                  ? `Based on ${data?.netStakingAPY?.toFixed(2) || 0}% staking APY and ${data?.netLendingAPY?.toFixed(2) || 0}% lending APY`
-                  : hasStakingPositions
-                    ? `Based on ${data?.netStakingAPY?.toFixed(2) || 0}% staking APY`
-                    : `Based on ${data?.netLendingAPY?.toFixed(2) || 0}% lending APY`}
-              </p>
+              <div className="mt-1 space-y-0.5">
+                <p className="text-[12px] text-muted-foreground">
+                  {formatCurrency(earningAmount)} earning
+                </p>
+                {hasStakingPositions && (
+                  <p className="text-[12px] text-muted-foreground">
+                    {data?.netStakingAPY?.toFixed(2) || 0}% staking APY
+                  </p>
+                )}
+                {hasLendingPositions && (
+                  <p className="text-[12px] text-muted-foreground">
+                    {data?.netLendingAPY?.toFixed(2) || 0}% lending APY
+                  </p>
+                )}
+              </div>
             )}
         </div>
       );
@@ -572,7 +613,7 @@ const PortfolioProjection: React.FC<Props> = ({
                   </div>
                   <ArrowRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
                   <div className="text-center bg-muted/50 rounded-lg flex-1">
-                    <div className="flex flex-col items-center gap-2">
+                    <div className="flex flex-col items-center">
                       <div className="flex items-center gap-2">
                         <p
                           className={`text-base md:text-xl font-bold ${totalGain >= 0 ? 'text-green-600' : 'text-red-600'}`}
@@ -652,8 +693,9 @@ const PortfolioProjection: React.FC<Props> = ({
                     <YAxis
                       tick={{ fontSize: 12 }}
                       tickFormatter={(value) => formatCurrency(value)}
+                      domain={yAxisDomain}
                     />
-                    <Tooltip content={<CustomTooltip />} />
+                    <Tooltip content={<CustomTooltip earningAmount={totalYieldPositionsValue} />} />
                     <Line
                       type="monotone"
                       dataKey="netWorth"

@@ -2,7 +2,6 @@
 
 import React, { useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import Image from 'next/image';
 import { Coins } from 'lucide-react';
 import {
   Table,
@@ -14,6 +13,7 @@ import {
   Button,
   Skeleton,
   Card,
+  TokenIcon,
 } from '@/components/ui';
 import { useSwapModal } from '../../_contexts/use-swap-modal';
 import { useChain } from '@/app/_contexts/chain-context';
@@ -121,17 +121,14 @@ const Tokens: React.FC<Props> = ({ stakingPositions, portfolio, portfolioLoading
                 <TableRow key={token.address}>
                   <TableCell>
                     <div className="font-medium flex gap-2 items-center">
-                      {token.logoURI ? (
-                        <Image
-                          src={token.logoURI}
-                          alt={token.name}
-                          width={16}
-                          height={16}
-                          className="rounded-full"
-                        />
-                      ) : (
-                        <div className="w-4 h-4 rounded-full bg-gray-200" />
-                      )}
+                      <TokenIcon
+                        src={token.logoURI}
+                        alt={token.name}
+                        tokenSymbol={token.symbol}
+                        width={16}
+                        height={16}
+                        className="w-4 h-4 rounded-full"
+                      />
                       <p>{token.symbol}</p>
                     </div>
                   </TableCell>

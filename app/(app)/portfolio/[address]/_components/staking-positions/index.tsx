@@ -1,6 +1,5 @@
 import React from 'react';
 import { Droplet, Info } from 'lucide-react';
-import Image from 'next/image';
 
 import {
   Table,
@@ -11,6 +10,7 @@ import {
   TableCell,
   Skeleton,
   Button,
+  TokenIcon,
 } from '@/components/ui';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useChain } from '@/app/_contexts/chain-context';
@@ -146,17 +146,14 @@ const StakingPositions: React.FC<Props> = ({
                 <TableRow key={position.id}>
                   <TableCell>
                     <div className="font-medium flex gap-2 items-center">
-                      {position.lstToken.logoURI ? (
-                        <Image
-                          src={position.lstToken.logoURI}
-                          alt={position.lstToken.name}
-                          width={16}
-                          height={16}
-                          className="w-4 h-4 rounded-full"
-                        />
-                      ) : (
-                        <div className="w-4 h-4 rounded-full bg-gray-200" />
-                      )}
+                      <TokenIcon
+                        src={position.lstToken.logoURI}
+                        alt={position.lstToken.name}
+                        tokenSymbol={position.lstToken.symbol}
+                        width={16}
+                        height={16}
+                        className="w-4 h-4 rounded-full"
+                      />
                       <p>{position.lstToken.symbol}</p>
                     </div>
                   </TableCell>
@@ -196,7 +193,7 @@ const StakingPositions: React.FC<Props> = ({
                       size="sm"
                       onClick={() => openSell(position.lstToken.id)}
                       className={cn(
-                        'bg-emerald-100 hover:bg-emerald-200 text-emerald-800 border border-emerald-200',
+                        '-m-5 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 border border-emerald-200',
                         'dark:bg-emerald-950/30 dark:hover:bg-emerald-900/50 dark:text-emerald-300 dark:border-emerald-800/50',
                       )}
                     >

@@ -9,6 +9,8 @@ import type { StakeArgumentsType, StakeResultBodyType } from '@/ai';
 import { saveLiquidStakingPosition } from '@/services/liquid-staking/save';
 import PoolEarningPotential from '../../pool-earning-potential';
 import StakeResult from './stake-result';
+import VarApyTooltip from '@/components/var-apy-tooltip';
+import { capitalizeWords } from '@/lib/string-utils';
 
 const ReceiveTooltip = () => {
   return (
@@ -165,6 +167,27 @@ const StakeCallBody: React.FC<Props> = ({ toolCallId, args }) => {
             <Skeleton className="h-48 w-full" />
           ) : (
             <div className="w-full">
+              <div className="text-center space-y-2 mb-4">
+                <h3 className="font-semibold text-lg">
+                  Stake to{' '}
+                  {capitalizeWords(
+                    poolData?.project || outputTokenData?.symbol || 'Solana Liquid Staking Pool',
+                  )}
+                </h3>
+                {poolData && (
+                  <div className="flex items-center justify-center text-center gap-1">
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      Earn{' '}
+                      <span className="text-green-400 font-medium">
+                        {poolData.yield.toFixed(2)}%
+                      </span>{' '}
+                      APY
+                    </p>
+                    <VarApyTooltip size="xs" />
+                  </div>
+                )}
+              </div>
+
               <Swap
                 initialInputToken={inputTokenData}
                 initialOutputToken={outputTokenData}

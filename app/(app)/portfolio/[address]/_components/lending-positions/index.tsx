@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { PiggyBank, Info } from 'lucide-react';
-import Image from 'next/image';
 
 import {
   Table,
@@ -11,6 +10,7 @@ import {
   TableCell,
   Skeleton,
   Button,
+  TokenIcon,
 } from '@/components/ui';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useChain } from '@/app/_contexts/chain-context';
@@ -190,19 +190,14 @@ const LendingPositions: React.FC<Props> = ({
                 <TableRow key={`${position.walletAddress}-${position.token.symbol}-${index}`}>
                   <TableCell>
                     <div className="font-medium flex gap-2 items-center">
-                      {position.token.logoURI ? (
-                        <Image
-                          src={position.token.logoURI}
-                          alt={position.token.name}
-                          width={16}
-                          height={16}
-                          className="w-4 h-4 rounded-full"
-                        />
-                      ) : (
-                        <div className="w-4 h-4 rounded-full bg-gray-200 flex items-center justify-center text-xs">
-                          {position.token.symbol.charAt(0)}
-                        </div>
-                      )}
+                      <TokenIcon
+                        src={position.token.logoURI}
+                        alt={position.token.name}
+                        tokenSymbol={position.token.symbol}
+                        width={16}
+                        height={16}
+                        className="w-4 h-4 rounded-full"
+                      />
                       <p>{position.token.symbol}</p>
                     </div>
                   </TableCell>
@@ -252,7 +247,7 @@ const LendingPositions: React.FC<Props> = ({
                       size="sm"
                       onClick={() => handleWithdraw(position)}
                       className={cn(
-                        'bg-emerald-100 hover:bg-emerald-200 text-emerald-800 border border-emerald-200',
+                        '-m-5 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 border border-emerald-200',
                         'dark:bg-emerald-950/30 dark:hover:bg-emerald-900/50 dark:text-emerald-300 dark:border-emerald-800/50',
                       )}
                     >

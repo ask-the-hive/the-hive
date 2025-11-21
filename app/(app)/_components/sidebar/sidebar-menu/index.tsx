@@ -11,11 +11,11 @@ import PortfolioButton from './portfolio-button';
 
 const SidebarMenu: React.FC = () => {
   return (
-    <SidebarMenuUI className="flex flex-col justify-center min-h-full">
+    <SidebarMenuUI className="flex flex-start">
       <div className="flex flex-col gap-2 transition-all duration-300 ease-in-out">
         <AccountButton />
-        <ChatsGroup />
         <PortfolioButton />
+        <ChatsGroup />
       </div>
     </SidebarMenuUI>
   );

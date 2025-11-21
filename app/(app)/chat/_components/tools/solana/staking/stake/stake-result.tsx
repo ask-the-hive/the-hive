@@ -9,14 +9,7 @@ import { Button, Card } from '@/components/ui';
 import { Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useChain } from '@/app/_contexts/chain-context';
-
-function capitalizeWords(str: string): string {
-  return str
-    .replace(/-/g, ' ')
-    .split(' ')
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ');
-}
+import { capitalizeWords } from '@/lib/string-utils';
 
 // Generate quarters for 2 years: [3,6,9,12,15,18,21,24]
 const MONTHS = Array.from({ length: 8 }, (_, i) => (i + 1) * 3);
