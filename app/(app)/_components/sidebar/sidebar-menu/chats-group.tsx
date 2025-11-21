@@ -31,7 +31,7 @@ import { useGlobalChatManager } from '../../../chat/_contexts/global-chat-manage
 import { cn } from '@/lib/utils';
 import { ChainType } from '@/app/_contexts/chain-context';
 import ChainIcon from '@/app/(app)/_components/chain-icon';
-
+//commit
 const ChatChainIcon = ({ chain }: { chain?: ChainType }) => {
   // Default to solana if no chain is specified, but use the chat's chain if available
   const chainType = chain || 'solana';
