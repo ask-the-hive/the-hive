@@ -6,23 +6,27 @@ import ErrorBoundary from '@/components/error-boundary';
 
 import Header from './_components/header';
 import Tokens from './_components/tokens';
-import LiquidityPools from './_components/liquidity-pools';
+import StakingPositions from './_components/staking-positions';
+import LendingPositions from './_components/lending-positions';
 import Transactions from './_components/transactions';
 
 import { SwapModalProvider } from './_contexts/use-swap-modal';
 import { useChain } from '@/app/_contexts/chain-context';
 import ChainIcon from '@/app/(app)/_components/chain-icon';
-import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuItem,
-} from '@/components/ui/dropdown-menu';
+// import {
+//   DropdownMenu,
+//   DropdownMenuTrigger,
+//   DropdownMenuContent,
+//   DropdownMenuItem,
+// } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
-import { ChevronDown } from 'lucide-react';
+// import { ChevronDown } from 'lucide-react';
 import PortfolioProjection from './_components/portfolio-projection';
 import { getAllLiquidStakingPositions } from '@/services/liquid-staking/get-all';
+import { deleteLiquidStakingPosition } from '@/services/liquid-staking/delete';
+import { getAllLendingPositions } from '@/services/lending/get-all';
 import { LiquidStakingPosition } from '@/db/types';
+import { LendingPosition } from '@/types/lending-position';
 import { usePortfolio } from '@/hooks';
 
 const PortfolioContent = ({ params }: { params: Promise<{ address: string }> }) => {
@@ -31,14 +35,10 @@ const PortfolioContent = ({ params }: { params: Promise<{ address: string }> }) 
   const router = useRouter();
   const { currentChain, setCurrentChain, walletAddresses } = useChain();
   const [stakingPositions, setStakingPositions] = useState<LiquidStakingPosition[] | null>(null);
+  const [lendingPositions, setLendingPositions] = useState<LendingPosition[] | null>(null);
 
   // Use the appropriate address for the current chain
-  const chainAddress =
-    currentChain === 'solana'
-      ? walletAddresses.solana || address
-      : currentChain === 'base'
-        ? walletAddresses.base || address
-        : walletAddresses.bsc || address;
+  const chainAddress = walletAddresses.solana || address;
 
   // Fetch portfolio data
   const {
@@ -54,23 +54,138 @@ const PortfolioContent = ({ params }: { params: Promise<{ address: string }> }) 
       return;
     }
 
+    // Wait for portfolio to load before processing staking positions
+    if (!portfolio || !portfolio.items) {
+      console.log('[Portfolio Page] Portfolio not loaded yet, skipping staking positions fetch');
+      return;
+    }
+
+    console.log('[Portfolio Page] Fetching staking positions for:', address);
     try {
       const positions = await getAllLiquidStakingPositions(address, currentChain);
-      setStakingPositions(positions);
+      console.log('[Portfolio Page] Successfully fetched positions:', {
+        count: positions.length,
+        positions: positions.map((p) => ({
+          id: p.id,
+          symbol: p.lstToken.symbol,
+        })),
+      });
+
+      // Check each position against portfolio and delete if token balance is 0
+      console.log('[Portfolio Page] Checking positions against portfolio', {
+        portfolioItemCount: portfolio.items.length,
+      });
+
+      const validPositions = await Promise.all(
+        positions.map(async (position) => {
+          // Find the token in portfolio
+          const portfolioToken = portfolio.items.find(
+            (item) =>
+              item.address === position.lstToken.id || item.symbol === position.lstToken.symbol,
+          );
+
+          console.log('[Portfolio Page] Checking position', {
+            symbol: position.lstToken.symbol,
+            lstTokenId: position.lstToken.id,
+            foundInPortfolio: !!portfolioToken,
+            balance: portfolioToken?.balance,
+          });
+
+          // If token not found in portfolio or balance is 0, consider deleting
+          const rawBalance = portfolioToken?.balance;
+          const hasZeroBalance =
+            rawBalance === null || rawBalance === undefined || rawBalance === 0;
+
+          // Only delete if position is older than 2 minutes (to avoid race conditions with new stakes)
+          const twoMinutesAgo = Date.now() - 2 * 60 * 1000;
+          const isOlderThan2Minutes =
+            position.createdAt && new Date(position.createdAt).getTime() < twoMinutesAgo;
+
+          if (hasZeroBalance && isOlderThan2Minutes) {
+            console.log('🗑️ [Portfolio Page] Deleting staking position', {
+              symbol: position.lstToken.symbol,
+              reason: 'zero balance in portfolio',
+              rawBalance,
+              createdAt: position.createdAt,
+            });
+
+            try {
+              await deleteLiquidStakingPosition(position.id, position.walletAddress);
+              console.log('✅ [Portfolio Page] Successfully deleted position', {
+                symbol: position.lstToken.symbol,
+              });
+              return null; // Filter out this position
+            } catch (deleteError) {
+              console.error('❌ [Portfolio Page] Failed to delete position', {
+                symbol: position.lstToken.symbol,
+                error: deleteError,
+              });
+              return null; // Still filter it out to avoid displaying bad data
+            }
+          }
+
+          // Keep this position
+          return position;
+        }),
+      );
+
+      // Filter out null values (deleted positions)
+      const filteredPositions = validPositions.filter(
+        (p): p is LiquidStakingPosition => p !== null,
+      );
+
+      console.log('[Portfolio Page] Setting filtered positions', {
+        original: positions.length,
+        deleted: positions.length - filteredPositions.length,
+        final: filteredPositions.length,
+      });
+
+      setStakingPositions(filteredPositions);
     } catch (error) {
-      console.error('Error fetching staking positions:', error);
+      console.error('❌ [Portfolio Page] Error fetching staking positions:', error);
+      console.error('[Portfolio Page] Error details:', {
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      });
       setStakingPositions([]);
+    }
+  }, [address, currentChain, portfolio]);
+
+  // Fetch lending positions
+  const fetchLendingPositions = useCallback(async () => {
+    if (currentChain !== 'solana') {
+      setLendingPositions([]);
+      return;
+    }
+
+    try {
+      const positions = await getAllLendingPositions(address, currentChain);
+      console.log('lending positions', positions);
+      setLendingPositions(positions);
+    } catch (error) {
+      console.error('Error fetching lending positions:', error);
+      setLendingPositions([]);
     }
   }, [address, currentChain]);
 
   const handleRefresh = () => {
     fetchStakingPositions();
+    fetchLendingPositions();
     refreshPortfolio();
   };
 
   useEffect(() => {
-    fetchStakingPositions();
-  }, [fetchStakingPositions]);
+    fetchLendingPositions();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Fetch staking positions when portfolio loads
+  useEffect(() => {
+    if (portfolio && portfolio.items) {
+      console.log('[Portfolio Page] Portfolio loaded, fetching staking positions');
+      fetchStakingPositions();
+    }
+  }, [portfolio, fetchStakingPositions]);
 
   // Auto-switch to BSC if no Solana wallet is connected
   useEffect(() => {
@@ -96,20 +211,6 @@ const PortfolioContent = ({ params }: { params: Promise<{ address: string }> }) 
     }
   }, [currentChain, walletAddresses, address, router]);
 
-  // Dropdown handler for chain switching
-  const handleChainSwitch = (newChain: 'solana' | 'bsc' | 'base') => {
-    setCurrentChain(newChain);
-    const newAddress =
-      newChain === 'solana'
-        ? walletAddresses.solana
-        : newChain === 'base'
-          ? walletAddresses.base
-          : walletAddresses.bsc;
-    if (newAddress) {
-      router.replace(`/portfolio/${newAddress}?chain=${newChain}`);
-    }
-  };
-
   // Determine if there is a wallet for each chain
   const hasSolana = !!walletAddresses.solana;
   const hasBsc = !!walletAddresses.bsc;
@@ -122,55 +223,34 @@ const PortfolioContent = ({ params }: { params: Promise<{ address: string }> }) 
       <div className="max-w-4xl mx-auto w-full flex flex-col gap-12 md:pt-4 h-full overflow-y-scroll no-scrollbar">
         <div className="flex justify-between items-center">
           <Header address={address} />
-          {/* Chain selector dropdown */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="outline"
-                className="flex items-center gap-2 focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0"
-                disabled={!hasCurrent}
-              >
-                <ChainIcon chain={currentChain} className="w-4 h-4" />
-                {currentChain === 'solana' ? 'Solana' : currentChain === 'base' ? 'Base' : 'BSC'}
-                <ChevronDown className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem
-                onClick={() => handleChainSwitch('solana')}
-                className="flex items-center gap-2"
-                disabled={!hasSolana}
-              >
-                <ChainIcon chain="solana" className="w-4 h-4" />
-                Solana
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => handleChainSwitch('bsc')}
-                className="flex items-center gap-2"
-                disabled={!hasBsc}
-              >
-                <ChainIcon chain="bsc" className="w-4 h-4" />
-                BSC
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => handleChainSwitch('base')}
-                className="flex items-center gap-2"
-                disabled={!hasBase}
-              >
-                <ChainIcon chain="base" className="w-4 h-4" />
-                Base
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <Button
+            variant="outline"
+            className="flex items-center gap-2 focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 cursor-default"
+            disabled={!hasCurrent}
+          >
+            <ChainIcon chain={currentChain} className="w-4 h-4" />
+            {currentChain === 'solana' ? 'Solana' : currentChain === 'base' ? 'Base' : 'BSC'}
+          </Button>
         </div>
-        <PortfolioProjection address={address} stakingPositions={stakingPositions} />
-        <Tokens
+        <PortfolioProjection
+          address={address}
+          stakingPositions={stakingPositions}
+          lendingPositions={lendingPositions}
+          portfolio={portfolio || null}
+        />
+        <StakingPositions
           stakingPositions={stakingPositions}
           portfolio={portfolio}
           portfolioLoading={portfolioLoading}
           onRefresh={handleRefresh}
         />
-        <LiquidityPools
+        <LendingPositions
+          lendingPositions={lendingPositions}
+          portfolio={portfolio}
+          portfolioLoading={portfolioLoading}
+          onRefresh={handleRefresh}
+        />
+        <Tokens
           stakingPositions={stakingPositions}
           portfolio={portfolio}
           portfolioLoading={portfolioLoading}

@@ -17,7 +17,6 @@ import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-  SidebarMenuSub,
   SidebarMenuSubItem,
   SidebarMenuSubButton,
   useSidebar,
@@ -32,7 +31,7 @@ import { useGlobalChatManager } from '../../../chat/_contexts/global-chat-manage
 import { cn } from '@/lib/utils';
 import { ChainType } from '@/app/_contexts/chain-context';
 import ChainIcon from '@/app/(app)/_components/chain-icon';
-
+//commit
 const ChatChainIcon = ({ chain }: { chain?: ChainType }) => {
   // Default to solana if no chain is specified, but use the chat's chain if available
   const chainType = chain || 'solana';
@@ -118,7 +117,19 @@ const ChatsGroup: React.FC = () => {
               className="justify-between w-full"
               isActive={pathname.includes('/chat')}
             >
-              <div className="flex items-center gap-2">
+              <div
+                className="flex items-center gap-2 cursor-pointer"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  // Navigate to /chat if not already there
+                  if (!pathname.includes('/chat')) {
+                    router.push('/chat');
+                  }
+                  // Toggle the collapsible dropdown
+                  setIsChatsOpen(!isChatsOpen);
+                }}
+              >
                 <MessageSquare className="h-4 w-4" />
                 <h1 className="text-sm font-semibold">Chats</h1>
               </div>
@@ -142,67 +153,68 @@ const ChatsGroup: React.FC = () => {
             </SidebarMenuButton>
           </CollapsibleTrigger>
         </div>
-        <CollapsibleContent>
-          <SidebarMenuSub className="flex-1 overflow-hidden relative flex flex-col">
-            {isLoading || !ready ? (
-              <Skeleton className="h-10 w-full" />
-            ) : chats.length > 0 ? (
-              chats.map((chat) => {
-                // Get the loading state for this specific chat
-                const chatThreadState = chatThreads.get(chat.id);
-                const isChatLoading =
-                  chatThreadState?.isLoading || chatThreadState?.isResponseLoading;
+        <CollapsibleContent
+          className="max-h-[min(67vh)] overflow-y-auto transition-all duration-300 ease-in-out mb-0 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:border-2 [&::-webkit-scrollbar-thumb]:border-transparent dark:[&::-webkit-scrollbar-thumb]:bg-gray-700"
+          withMaxHeight={false}
+        >
+          {isLoading || !ready ? (
+            <Skeleton className="h-10 w-full" />
+          ) : chats.length > 0 ? (
+            chats.map((chat) => {
+              // Get the loading state for this specific chat
+              const chatThreadState = chatThreads.get(chat.id);
+              const isChatLoading =
+                chatThreadState?.isLoading || chatThreadState?.isResponseLoading;
 
-                return (
-                  <SidebarMenuSubItem key={chat.id} className="group/chat">
-                    <SidebarMenuSubButton
-                      asChild
-                      isActive={chat.id === chatId}
-                      onClick={() => setChat(chat.id)}
+              return (
+                <SidebarMenuSubItem key={chat.id} className="group/chat">
+                  <SidebarMenuSubButton
+                    asChild
+                    isActive={chat.id === chatId}
+                    onClick={() => setChat(chat.id)}
+                  >
+                    <Link
+                      href={`/chat/${chat.id}`}
+                      className="flex items-center justify-between w-full"
                     >
-                      <Link
-                        href={`/chat/${chat.id}`}
-                        className="flex items-center justify-between w-full"
+                      <div className="flex items-center gap-2 truncate">
+                        <ChatChainIcon chain={chat.chain} />
+                        <span className="truncate">{chat.tagline}</span>
+                        {/* Show loading indicator for this specific chat */}
+                        {isChatLoading && (
+                          <div className="flex items-center gap-1.5">
+                            <Loader2 className="h-4 w-4 animate-spin text-brand-600" />
+                            <span className="text-xs text-brand-600 font-medium">
+                              Generating...
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                      <div
+                        onClick={(e) => handleDelete(chat.id, e)}
+                        className={cn(
+                          'size-6 shrink-0 dark:hover:bg-neutral-700 hover:bg-neutral-200 rounded-md transition-all duration-300 flex items-center justify-center opacity-0 group-hover/chat:opacity-100',
+                          deletingChatId === chat.id && 'opacity-50 pointer-events-none',
+                        )}
                       >
-                        <div className="flex items-center gap-2 truncate">
-                          <ChatChainIcon chain={chat.chain} />
-                          <span className="truncate">{chat.tagline}</span>
-                          {/* Show loading indicator for this specific chat */}
-                          {isChatLoading && (
-                            <div className="flex items-center gap-1.5">
-                              <Loader2 className="h-4 w-4 animate-spin text-brand-600" />
-                              <span className="text-xs text-brand-600 font-medium">
-                                Generating...
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                        <div
-                          onClick={(e) => handleDelete(chat.id, e)}
-                          className={cn(
-                            'size-6 shrink-0 dark:hover:bg-neutral-700 hover:bg-neutral-200 rounded-md transition-all duration-300 flex items-center justify-center opacity-0 group-hover/chat:opacity-100',
-                            deletingChatId === chat.id && 'opacity-50 pointer-events-none',
-                          )}
-                        >
-                          {deletingChatId === chat.id ? (
-                            <Loader2 className="size-4 animate-spin" />
-                          ) : (
-                            <Trash2 className="size-4 text-red-600" />
-                          )}
-                        </div>
-                      </Link>
-                    </SidebarMenuSubButton>
-                  </SidebarMenuSubItem>
-                );
-              })
-            ) : user ? (
-              <p className="text-sm text-neutral-500 dark:text-neutral-400 pl-2">No chats found</p>
-            ) : (
-              <p className="text-sm text-neutral-500 dark:text-neutral-400 pl-2">
-                Sign in to save chats
-              </p>
-            )}
-          </SidebarMenuSub>
+                        {deletingChatId === chat.id ? (
+                          <Loader2 className="size-4 animate-spin" />
+                        ) : (
+                          <Trash2 className="size-4 text-red-600" />
+                        )}
+                      </div>
+                    </Link>
+                  </SidebarMenuSubButton>
+                </SidebarMenuSubItem>
+              );
+            })
+          ) : user ? (
+            <p className="text-sm text-neutral-500 dark:text-neutral-400 pl-2">No chats found</p>
+          ) : (
+            <p className="text-sm text-neutral-500 dark:text-neutral-400 pl-2">
+              Sign in to save chats
+            </p>
+          )}
         </CollapsibleContent>
       </SidebarMenuItem>
     </Collapsible>

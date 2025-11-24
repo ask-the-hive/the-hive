@@ -46,7 +46,7 @@ const ToolCard = <ActionResultBodyType, ActionArgsType>({
     <div className={cn('flex flex-col gap-2 w-fit', className)}>
       <div className={cn('flex items-center gap-2', prevToolAgent === agentName && 'hidden')}>
         {tool.state === 'result' ? (
-          tool.result.body ? (
+          'result' in tool && tool.result.body ? (
             <Icon name={agentIcon} className="w-4 h-4 text-brand-600 dark:text-brand-600" />
           ) : (
             <Icon name="X" className="w-4 h-4 text-red-500 dark:text-red-400" />
@@ -71,17 +71,27 @@ const ToolCard = <ActionResultBodyType, ActionArgsType>({
             <AnimatedShinyText className="text-sm">{loadingText}</AnimatedShinyText>
           )
         ) : (
-          result.heading(tool.result) && (
-            <Collapsible defaultOpen={defaultOpen}>
-              <CollapsibleTrigger className="flex items-center gap-2 text-neutral-600 dark:text-neutral-400 hover:underline">
-                <p className="text-sm">{result.heading(tool.result)}</p>
-                <ChevronDown className="w-4 h-4 transition-transform duration-300 group-data-[state=open]:rotate-180" />
-              </CollapsibleTrigger>
-              <CollapsibleContent className="text-sm pt-2">
-                {result.body(tool.result)}
-              </CollapsibleContent>
-            </Collapsible>
-          )
+          (() => {
+            const headingResult = 'result' in tool ? result.heading(tool.result) : null;
+            const bodyResult = 'result' in tool ? result.body(tool.result) : null;
+            const hasBodyContent = bodyResult !== null && bodyResult !== undefined;
+
+            return (
+              headingResult && (
+                <Collapsible defaultOpen={hasBodyContent ? defaultOpen : false}>
+                  <CollapsibleTrigger className="flex items-center gap-2 text-neutral-600 dark:text-neutral-400 hover:underline">
+                    <p className="text-sm">{headingResult}</p>
+                    {hasBodyContent && (
+                      <ChevronDown className="w-4 h-4 transition-transform duration-300 group-data-[state=open]:rotate-180" />
+                    )}
+                  </CollapsibleTrigger>
+                  {hasBodyContent && (
+                    <CollapsibleContent className="text-sm pt-2">{bodyResult}</CollapsibleContent>
+                  )}
+                </Collapsible>
+              )
+            );
+          })()
         )}
       </div>
     </div>

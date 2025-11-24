@@ -103,7 +103,7 @@ const FollowUpSuggestions: React.FC = () => {
   if (isLoading) return null;
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mt-4 mb-2">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mt-4 mb-2 px-4">
       {isGenerating ? (
         <>
           {/* Mobile: Show only 1 skeleton */}

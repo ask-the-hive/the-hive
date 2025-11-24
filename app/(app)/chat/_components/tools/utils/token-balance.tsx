@@ -30,13 +30,15 @@ const TokenBalance: React.FC<Props> = ({ balance, logoURI, symbol, token, name }
   return (
     <Card className="flex items-center justify-between gap-2 p-4">
       <div className="flex flex-row items-center gap-2">
-        <Image
-          src={logoURI || 'https://www.birdeye.so/images/unknown-token-icon.svg'}
-          alt={altText}
-          width={32}
-          height={32}
-          className="rounded-full"
-        />
+        {logoURI ? (
+          <Image src={logoURI} alt={altText} width={32} height={32} className="rounded-full" />
+        ) : (
+          <div className="w-8 h-8 rounded-full bg-neutral-200 dark:bg-neutral-700 flex items-center justify-center">
+            <span className="text-xs font-semibold text-neutral-600 dark:text-neutral-300">
+              {displaySymbol?.toUpperCase()}
+            </span>
+          </div>
+        )}
 
         <span className="text-lg font-medium text-muted-foreground">{displaySymbol}</span>
       </div>

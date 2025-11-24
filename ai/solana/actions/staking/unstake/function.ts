@@ -1,8 +1,8 @@
-import { Connection } from "@solana/web3.js";
-import { getToken } from "@/db/services";
+import { Connection } from '@solana/web3.js';
+import { getToken } from '@/db/services';
 
-import type { UnstakeArgumentsType, UnstakeResultBodyType } from "./types";
-import type { SolanaActionResult } from "../../solana-action";
+import type { UnstakeArgumentsType, UnstakeResultBodyType } from './types';
+import type { SolanaActionResult } from '../../solana-action';
 
 /**
  * Prepare unstaking data for liquid staking tokens back to SOL.
@@ -14,7 +14,7 @@ import type { SolanaActionResult } from "../../solana-action";
  */
 export async function unstakeSol(
   connection: Connection,
-  args: UnstakeArgumentsType
+  args: UnstakeArgumentsType,
 ): Promise<SolanaActionResult<UnstakeResultBodyType>> {
   try {
     // Get token data for the liquid staking token
@@ -31,16 +31,16 @@ export async function unstakeSol(
     return {
       message: `Ready to unstake ${amount} ${inputToken.symbol} back to SOL. The Swap component will handle getting quotes and executing the transaction.`,
       body: {
-        tx: "", // Will be filled by the UI component after transaction execution
+        status: 'pending',
+        tx: '', // Will be filled by the UI component after transaction execution
         symbol: inputToken.symbol,
-        inputAmount: amount
-      }
+        inputAmount: amount,
+      },
     };
-
   } catch (error) {
-    console.error("Error in unstakeSol:", error);
+    console.error('Error in unstakeSol:', error);
     return {
-      message: `Error preparing unstaking: ${error instanceof Error ? error.message : "Unknown error"}`,
+      message: `Error preparing unstaking: ${error instanceof Error ? error.message : 'Unknown error'}`,
     };
   }
 }

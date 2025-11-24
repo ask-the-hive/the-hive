@@ -11,6 +11,7 @@ export type StakeSchemaType = typeof StakeInputSchema;
 export type StakeArgumentsType = z.infer<StakeSchemaType>;
 
 export type StakeResultBodyType = {
+  status: 'pending' | 'complete' | 'failed' | 'cancelled';
   tx: string;
   symbol: string;
   quote?: QuoteResponse;

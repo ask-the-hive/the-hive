@@ -2,7 +2,7 @@
 
 import React, { useRef, useEffect } from 'react';
 
-import { CornerDownRight } from 'lucide-react';
+import { ArrowUp } from 'lucide-react';
 
 import Textarea from 'react-textarea-autosize';
 
@@ -14,8 +14,8 @@ import { useChat } from '../_contexts/chat';
 
 import { cn } from '@/lib/utils';
 
-import ModelSelector from '../../_components/chat/model-selector';
-import ChainSelector from '../../_components/chat/chain-selector';
+// import ModelSelector from '../../_components/chat/model-selector';
+// import ChainSelector from '../../_components/chat/chain-selector';
 import { usePrivy } from '@privy-io/react-auth';
 import FollowUpSuggestions from './follow-up-suggestions';
 
@@ -26,12 +26,12 @@ const ChatInput: React.FC = () => {
     input,
     setInput,
     onSubmit,
-    model,
-    setModel,
-    chain,
-    setChain,
+    // model,
+    // setModel,
+    // chain,
+    // setChain,
     inputDisabledMessage,
-    messages,
+    // messages,
     isLoading,
   } = useChat();
 
@@ -40,7 +40,7 @@ const ChatInput: React.FC = () => {
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   // Check if chat has started (has messages)
-  const hasMessages = messages.length > 0;
+  // const hasMessages = messages.length > 0;
 
   useEffect(() => {
     if (!isLoading && inputRef.current) {
@@ -58,69 +58,66 @@ const ChatInput: React.FC = () => {
         }}
         className={cn(
           // Base styles
-          'w-full rounded-md flex flex-col overflow-hidden transition-colors duration-200 ease-in-out border border-transparent shadow-none',
+          'w-full rounded-lg flex flex-col overflow-hidden transition-colors duration-200 ease-in-out border border-transparent shadow-md',
           // Light mode styles
           'bg-neutral-100 focus-within:border-brand-600',
           // Dark mode styles
-          'dark:bg-neutral-800/50 dark:focus-within:border-brand-600',
+          'dark:bg-neutral-700/50 dark:focus-within:border-brand-600',
           // Remove loading state styling that prevents new chat creation
         )}
       >
-        <OptionalTooltip text={inputDisabledMessage}>
-          <Textarea
-            ref={inputRef}
-            tabIndex={0}
-            onKeyDown={onKeyDown}
-            placeholder="Ask the hive anything..."
-            className={cn(
-              'w-full max-h-60 resize-none bg-transparent px-5 py-4 text-md file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-neutral-600 dark:placeholder:text-neutral-400 disabled:cursor-not-allowed disabled:opacity-50',
-              'focus-visible:outline-none',
-              'dark:placeholder:text-neutral-400',
-            )}
-            value={input}
-            onChange={(e) => {
-              setInput(e.target.value);
-            }}
-            // Only disable input for tool invocations, not for loading state
-            disabled={inputDisabledMessage !== '' || isLoading}
-            autoFocus
-          />
-        </OptionalTooltip>
-        <div className="flex items-center justify-between px-2 pb-2">
-          <div className="flex items-center gap-2">
-            <ModelSelector
-              model={model}
-              onModelChange={setModel}
-              // Disable model changes after chat starts
-              disabled={hasMessages}
+        <div className="relative flex items-center">
+          <OptionalTooltip text={inputDisabledMessage}>
+            <Textarea
+              ref={inputRef}
+              tabIndex={0}
+              onKeyDown={onKeyDown}
+              placeholder="Ask the hive anything..."
+              className={cn(
+                'w-full max-h-40 resize-none bg-transparent px-5 pt-5 pb-5 pr-14 text-[17px] file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-neutral-600 dark:placeholder:text-neutral-400 disabled:cursor-not-allowed disabled:opacity-50',
+                'focus-visible:outline-none',
+                'dark:placeholder:text-neutral-400',
+              )}
+              value={input}
+              onChange={(e) => {
+                setInput(e.target.value);
+              }}
+              // Only disable input for tool invocations, not for loading state
+              disabled={inputDisabledMessage !== '' || isLoading}
+              autoFocus
             />
-            <ChainSelector
-              chain={chain}
-              onChainChange={setChain}
-              // Disable chain changes after chat starts
-              disabled={hasMessages}
-            />
+          </OptionalTooltip>
+          <div className="absolute right-3 top-1/2 -translate-y-1/2">
+            <TooltipProvider>
+              <Tooltip delayDuration={0}>
+                <TooltipTrigger asChild>
+                  <Button
+                    type="submit"
+                    size="icon"
+                    // Only disable submit button for empty input or tool invocations
+                    disabled={
+                      input.trim() === '' || inputDisabledMessage !== '' || !user || isLoading
+                    }
+                    variant="ghost"
+                    className="h-8 w-8"
+                  >
+                    <div
+                      className={cn(
+                        'flex items-center justify-center w-6 h-6 rounded-full transition-colors',
+                        input.trim().length > 0
+                          ? 'bg-brand-600 hover:bg-brand-700'
+                          : 'bg-brand-700 dark:bg-brand-700',
+                      )}
+                    >
+                      <ArrowUp className="w-4 h-4 text-neutral-100" />
+                    </div>
+                    <span className="sr-only">Send message</span>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Send message</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
-          <TooltipProvider>
-            <Tooltip delayDuration={0}>
-              <TooltipTrigger asChild>
-                <Button
-                  type="submit"
-                  size="icon"
-                  // Only disable submit button for empty input or tool invocations
-                  disabled={
-                    input.trim() === '' || inputDisabledMessage !== '' || !user || isLoading
-                  }
-                  variant="ghost"
-                  className="h-8 w-8"
-                >
-                  <CornerDownRight className="w-4 h-4 text-neutral-600 dark:text-neutral-400" />
-                  <span className="sr-only">Send message</span>
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Send message</TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
         </div>
       </form>
     </div>

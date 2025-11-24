@@ -1,7 +1,7 @@
-'use client'
+'use client';
 
 import Image from 'next/image';
-import CountdownTimer from '@/components/ui/countdown-timer'
+import CountdownTimer from '@/components/ui/countdown-timer';
 import { motion } from 'framer-motion';
 
 // Original graph imports - commented out for easy restoration
@@ -51,34 +51,34 @@ function LogoComponent() {
           A modular network of interoperable DeFi agents
         </motion.p>
       </div>
-      
+
       {/* Logo in the center */}
-      <motion.div 
+      <motion.div
         className="relative mt-12"
-        initial={{ 
-          opacity: 0, 
+        initial={{
+          opacity: 0,
           scale: 0.3,
           y: 100,
           rotateY: 45,
-          rotateX: 15
+          rotateX: 15,
         }}
-        animate={{ 
-          opacity: 1, 
+        animate={{
+          opacity: 1,
           scale: 1,
           y: 0,
           rotateY: 0,
-          rotateX: 0
+          rotateX: 0,
         }}
-        whileHover={{ 
-          scale: 1.1
+        whileHover={{
+          scale: 1.1,
         }}
-        transition={{ 
-          duration: 1.2, 
-          delay: 0.5, 
+        transition={{
+          duration: 1.2,
+          delay: 0.5,
           ease: [0.21, 1.11, 0.81, 0.99],
-          type: "spring",
+          type: 'spring',
           stiffness: 100,
-          damping: 15
+          damping: 15,
         }}
       >
         <Image
@@ -178,7 +178,7 @@ function ReactFlowPro({ strength = -500, distance = 150 }: ExampleProps = {}) {
         minZoom={0.4}
         maxZoom={1.5}
         defaultViewport={{ x: 0, y: 150, zoom: 0.6 }}
-        style={{ 
+        style={{
           pointerEvents: 'none',
           background: 'transparent',
           position: 'absolute',
@@ -200,13 +200,13 @@ function ReactFlowPro({ strength = -500, distance = 150 }: ExampleProps = {}) {
 function GraphComponent() {
   // To restore the original graph, uncomment the ReactFlowProvider section below
   // and comment out the LogoComponent section
-  
+
   return (
     <div className="absolute inset-0 w-full h-full">
       <LogoComponent />
     </div>
   );
-  
+
   // Original graph implementation - uncomment to restore
   /*
   return (
@@ -220,3 +220,4 @@ function GraphComponent() {
 }
 
 export default GraphComponent;
+export { LandingPage } from './landing-page';

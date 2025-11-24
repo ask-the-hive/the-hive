@@ -34,7 +34,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" className="dark">
+      <head></head>
       <body className={`${dmSans.variable} antialiased bg-white dark:bg-neutral-900`}>
         <Providers>{children}</Providers>
       </body>

@@ -15,13 +15,8 @@ const EmptyChat: React.FC = () => {
   const chainName = chain === 'solana' ? 'Solana' : chain === 'bsc' ? 'BSC' : 'Base';
 
   return (
-    <div
-      className={cn(
-        // Base
-        'flex flex-col items-center justify-center w-full h-full px-4',
-      )}
-    >
-      <div className="flex flex-col items-center justify-center w-full max-w-2xl gap-4 md:gap-8">
+    <div className={cn('flex flex-col items-center justify-center w-full h-full px-4 relative')}>
+      <div className="flex flex-col items-center justify-center w-full max-w-2xl gap-4 md:gap-8 relative z-10">
         <div className="flex flex-col gap-4 items-center justify-center">
           <Logo className="w-20 h-20" />
           <div className="flex flex-col gap-1">

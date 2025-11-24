@@ -2,11 +2,11 @@
 
 import React, { useState } from 'react';
 
-import { ChevronsUpDown, Coins, LogIn, LogOut, Wallet, AlertCircle, ArrowLeft } from 'lucide-react';
+import { ChevronsUpDown, Coins, LogIn, LogOut, Wallet, ArrowLeft } from 'lucide-react';
 import Image from 'next/image';
 
 import { useLogin } from '@/hooks';
-import { useChain, ChainType } from '@/app/_contexts/chain-context';
+import { useChain } from '@/app/_contexts/chain-context';
 import ChainIcon from '@/app/(app)/_components/chain-icon';
 
 import {
@@ -24,8 +24,8 @@ import {
   Skeleton,
 } from '@/components/ui';
 
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Label } from '@/components/ui/label';
+// import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+// import { Label } from '@/components/ui/label';
 
 import Balances from './balances';
 
@@ -39,14 +39,14 @@ const AuthButton: React.FC = () => {
   const [showBaseBridges, setShowBaseBridges] = useState(false);
   const [showBaseBridgeOptions, setShowBaseBridgeOptions] = useState(false);
 
-  const { currentChain, setCurrentChain, walletAddresses, currentWalletAddress } = useChain();
+  const { currentChain, walletAddresses, currentWalletAddress } = useChain();
 
   const { isMobile } = useSidebar();
 
   // Handle chain switching
-  const handleChainSwitch = (chain: ChainType) => {
-    setCurrentChain(chain);
-  };
+  // const handleChainSwitch = (chain: ChainType) => {
+  //   setCurrentChain(chain);
+  // };
 
   const handleCopyAddress = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -172,7 +172,7 @@ const AuthButton: React.FC = () => {
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
 
-                <div className="px-2 py-2">
+                {/* <div className="px-2 py-2">
                   <RadioGroup
                     value={currentChain}
                     className="flex gap-4"
@@ -209,7 +209,7 @@ const AuthButton: React.FC = () => {
                       </Label>
                     </div>
                   </RadioGroup>
-                </div>
+                </div> */}
 
                 <DropdownMenuSeparator />
                 {hasCurrentChainWallet ? (

@@ -10,7 +10,6 @@ export const getQuote = async (inputMint: string, outputMint: string, amount: st
     }
 
     const quote = await response.json();
-    console.log('Jupiter quote response:', JSON.stringify(quote, null, 2));
 
     return quote;
   } catch (error) {

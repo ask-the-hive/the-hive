@@ -19,20 +19,54 @@ const Swap: React.FC<SwapProps> = ({ tool, prevToolAgent }) => {
       tool={tool}
       loadingText="Completing Trade..."
       result={{
-        heading: (result: SolanaTradeResultType) =>
-          result.body?.transaction ? 'Swap Complete' : 'Failed to complete trade',
-        body: (result: SolanaTradeResultType) =>
-          result.body?.transaction ? <SwapResultCard result={result.body} /> : result.message,
+        heading: (result: SolanaTradeResultType) => {
+          // If status is pending, this is awaiting user confirmation - don't show a heading
+          if (result.body?.status === 'pending') {
+            return 'Swap';
+          }
+          // If status is complete or failed, show appropriate heading
+          return result.body?.status === 'complete' ? 'Swap Complete' : 'Failed to complete trade';
+        },
+        body: (result: SolanaTradeResultType) => {
+          // If status is pending, this is awaiting user confirmation - show the call body
+          if (result.body?.status === 'pending') {
+            const args = tool.args as SolanaTradeArgumentsType;
+            return (
+              <div className="flex justify-center w-full">
+                <div className="w-full md:w-[70%]">
+                  <SwapCallBody toolCallId={tool.toolCallId} args={args} />
+                </div>
+              </div>
+            );
+          }
+
+          // If status is complete, show the result
+          if (result.body?.status === 'complete') {
+            return (
+              <div className="flex justify-center w-full">
+                <div className="w-full md:w-[70%]">
+                  <SwapResultCard result={result.body} />
+                </div>
+              </div>
+            );
+          }
+
+          return result.message;
+        },
       }}
       call={{
         heading: 'Swap',
         body: (toolCallId: string, args: SolanaTradeArgumentsType) => (
-          <SwapCallBody toolCallId={toolCallId} args={args} />
+          <div className="flex justify-center w-full">
+            <div className="w-full md:w-[70%]">
+              <SwapCallBody toolCallId={toolCallId} args={args} />
+            </div>
+          </div>
         ),
       }}
       defaultOpen={true}
       prevToolAgent={prevToolAgent}
-      className="max-w-full"
+      className="w-full"
     />
   );
 };

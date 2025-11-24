@@ -34,6 +34,7 @@ export async function stakeSol(
     return {
       message: `Ready to stake ${amount} SOL for ${outputToken.symbol}. The Swap component will handle getting quotes and executing the transaction.`,
       body: {
+        status: 'pending',
         tx: '', // Will be filled by the UI component after transaction execution
         symbol: outputToken.symbol,
         amount: amount,

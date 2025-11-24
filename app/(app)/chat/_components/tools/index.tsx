@@ -9,6 +9,9 @@ import {
   GetTokenData,
   Trade,
   LiquidStakingYields,
+  LendingYieldsTool,
+  LendTool,
+  WithdrawCallBody,
   Transfer as SolanaTransfer,
   Stake,
   Unstake,
@@ -75,6 +78,9 @@ import {
   SOLANA_GET_TOKEN_DATA_NAME,
   SOLANA_TRADE_ACTION,
   SOLANA_LIQUID_STAKING_YIELDS_ACTION,
+  SOLANA_LENDING_YIELDS_ACTION,
+  SOLANA_LEND_ACTION,
+  SOLANA_WITHDRAW_ACTION,
   SOLANA_TRANSFER_NAME,
   TWITTER_SEARCH_RECENT_NAME,
   SOLANA_STAKE_ACTION,
@@ -106,6 +112,7 @@ import {
   BASE_GET_TRADER_TRADES_NAME,
   BASE_TRADE_NAME,
 } from '@/ai/action-names';
+
 import { BSC_BUBBLE_MAPS_NAME } from '@/ai/bsc/actions/token/bubble-maps/name';
 import { BSC_TOP_HOLDERS_NAME } from '@/ai/bsc/actions/token/top-holders/name';
 import { BSC_PRICE_CHART_NAME } from '@/ai/bsc/actions/token/price-chart/name';
@@ -334,6 +341,29 @@ const ToolInvocation: React.FC<Props> = ({ tool, prevToolAgent }) => {
     }
   }
 
+  // Handle Lending tools
+  if (toolAgent === 'lending') {
+    switch (toolName) {
+      case SOLANA_LENDING_YIELDS_ACTION:
+        return <LendingYieldsTool tool={tool} prevToolAgent={prevToolAgent} />;
+      case SOLANA_LEND_ACTION:
+        return <LendTool tool={tool} prevToolAgent={prevToolAgent} />;
+      case SOLANA_WITHDRAW_ACTION:
+        return <WithdrawCallBody tool={tool} args={tool.args} prevToolAgent={prevToolAgent} />;
+      case SOLANA_GET_TOKEN_ADDRESS_ACTION:
+        return <GetTokenAddress tool={tool} prevToolAgent={prevToolAgent} />;
+      case SOLANA_GET_WALLET_ADDRESS_ACTION:
+        return <GetWalletAddress tool={tool} prevToolAgent={prevToolAgent} />;
+      case SOLANA_BALANCE_ACTION:
+        return <Balance tool={tool} prevToolAgent={prevToolAgent} />;
+      case SOLANA_TRADE_ACTION:
+        return <Trade tool={tool} prevToolAgent={prevToolAgent} />;
+      default:
+        console.log(`Unknown lending tool: ${toolName}`);
+        return <pre className="whitespace-pre-wrap">{JSON.stringify(tool, null, 2)}</pre>;
+    }
+  }
+
   // Handle Solana tools
   switch (toolName) {
     case SOLANA_BALANCE_ACTION:
@@ -346,6 +376,12 @@ const ToolInvocation: React.FC<Props> = ({ tool, prevToolAgent }) => {
       return <GetTokenData tool={tool} prevToolAgent={prevToolAgent} />;
     case SOLANA_TRADE_ACTION:
       return <Trade tool={tool} prevToolAgent={prevToolAgent} />;
+    case SOLANA_LENDING_YIELDS_ACTION:
+      return <LendingYieldsTool tool={tool} prevToolAgent={prevToolAgent} />;
+    case SOLANA_LEND_ACTION:
+      return <LendTool tool={tool} prevToolAgent={prevToolAgent} />;
+    case SOLANA_WITHDRAW_ACTION:
+      return <WithdrawCallBody tool={tool} args={tool.args} prevToolAgent={prevToolAgent} />;
     case SOLANA_LIQUID_STAKING_YIELDS_ACTION:
       return <LiquidStakingYields tool={tool} prevToolAgent={prevToolAgent} />;
     case SOLANA_TRANSFER_NAME:
