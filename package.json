@@ -83,7 +83,7 @@
     "chart": "^0.1.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "cmdk": "1.0.0",
+    "cmdk": "^1.0.4",
     "cookies-next": "^5.0.2",
     "d3-force": "^3.0.0",
     "decimal.js": "^10.4.3",
@@ -140,6 +140,10 @@
     "typescript": "^5"
   },
   "overrides": {
-    "react-is": "^19.0.0-rc-69d4b800-20241021"
+    "react-is": "^19.0.0-rc-69d4b800-20241021",
+    "cmdk": {
+      "react": "^19.0.0",
+      "react-dom": "^19.0.0"
+    }
   }
 }
