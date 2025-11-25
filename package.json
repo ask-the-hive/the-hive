@@ -83,7 +83,7 @@
     "chart": "^0.1.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "cmdk": "^1.0.4",
+    "cmdk": "^1.1.1",
     "cookies-next": "^5.0.2",
     "d3-force": "^3.0.0",
     "decimal.js": "^10.4.3",
@@ -140,19 +140,9 @@
     "typescript": "^5"
   },
   "resolutions": {
-    "react-is": "^19.0.0-rc-69d4b800-20241021",
-    "cmdk/react": "^19.0.0",
-    "cmdk/react-dom": "^19.0.0",
-    "cmdk/@radix-ui/react-primitive": "^2.0.0",
-    "cmdk/@radix-ui/react-slot": "^1.1.1"
+    "react-is": "^19.0.0-rc-69d4b800-20241021"
   },
   "overrides": {
-    "react-is": "^19.0.0-rc-69d4b800-20241021",
-    "cmdk": {
-      "react": "^19.0.0",
-      "react-dom": "^19.0.0",
-      "@radix-ui/react-primitive": "^2.0.0",
-      "@radix-ui/react-slot": "^1.1.1"
-    }
+    "react-is": "^19.0.0-rc-69d4b800-20241021"
   }
 }
