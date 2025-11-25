@@ -4,8 +4,7 @@ import LoginButton from '@/app/(app)/_components/log-in-button';
 
 import ToolCard from '../tool-card';
 
-import { usePrivy, Wallet } from '@privy-io/react-auth';
-import { useSolanaWallets } from '@privy-io/react-auth/solana';
+import { Wallet } from '@privy-io/react-auth';
 
 import { useChat } from '@/app/(app)/chat/_contexts/chat';
 import { useChain } from '@/app/_contexts/chain-context';
@@ -66,9 +65,7 @@ const GetWalletAddress: React.FC<Props> = ({ tool, prevToolAgent }) => {
 };
 
 const GetWalletAddressAction = ({ toolCallId }: { toolCallId: string }) => {
-  const { setCurrentChain } = useChain();
-  const { user } = usePrivy();
-  const { wallets: solanaWallets } = useSolanaWallets();
+  const { setCurrentChain, walletAddresses } = useChain();
   const { addToolResult, isLoading } = useChat();
 
   // Set the current chain to Solana
@@ -76,33 +73,21 @@ const GetWalletAddressAction = ({ toolCallId }: { toolCallId: string }) => {
     setCurrentChain('solana');
   }, [setCurrentChain]);
 
-  // Check for Solana wallets
+  // Check for Solana wallet address from chain context
+  // The ChainContext already aggregates wallet info from all sources:
+  // - useSolanaWallets()
+  // - user.wallet
+  // - user.linkedAccounts
   useEffect(() => {
-    if (!isLoading) {
-      // First try to find a Solana wallet from the useSolanaWallets hook
-      if (solanaWallets.length > 0) {
-        const solanaWallet = solanaWallets[0]; // Use the first Solana wallet
-        addToolResult(toolCallId, {
-          message: 'Solana Wallet connected',
-          body: {
-            address: solanaWallet.address,
-          },
-        });
-        return;
-      }
-
-      // Fallback to user's main wallet if it's a Solana wallet (not starting with 0x)
-      if (user?.wallet?.address && !user.wallet.address.startsWith('0x')) {
-        addToolResult(toolCallId, {
-          message: 'Solana Wallet connected',
-          body: {
-            address: user.wallet.address,
-          },
-        });
-        return;
-      }
+    if (!isLoading && walletAddresses.solana) {
+      addToolResult(toolCallId, {
+        message: 'Solana Wallet connected',
+        body: {
+          address: walletAddresses.solana,
+        },
+      });
     }
-  }, [user, solanaWallets, isLoading, addToolResult, toolCallId]);
+  }, [walletAddresses.solana, isLoading, addToolResult, toolCallId]);
 
   const onComplete = (wallet: Wallet) => {
     // Only use the wallet if it's a Solana wallet (not starting with 0x)

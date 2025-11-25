@@ -142,13 +142,17 @@
   "resolutions": {
     "react-is": "^19.0.0-rc-69d4b800-20241021",
     "cmdk/react": "^19.0.0",
-    "cmdk/react-dom": "^19.0.0"
+    "cmdk/react-dom": "^19.0.0",
+    "cmdk/@radix-ui/react-primitive": "^2.0.0",
+    "cmdk/@radix-ui/react-slot": "^1.1.1"
   },
   "overrides": {
     "react-is": "^19.0.0-rc-69d4b800-20241021",
     "cmdk": {
       "react": "^19.0.0",
-      "react-dom": "^19.0.0"
+      "react-dom": "^19.0.0",
+      "@radix-ui/react-primitive": "^2.0.0",
+      "@radix-ui/react-slot": "^1.1.1"
     }
   }
 }
