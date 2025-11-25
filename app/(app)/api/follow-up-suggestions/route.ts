@@ -7,10 +7,11 @@ import { deepseek } from '@ai-sdk/deepseek';
 import { Models } from '@/types/models';
 import { generateObject } from 'ai';
 import { z } from 'zod';
+import { withErrorHandling } from '@/lib/api-error-handler';
 
 const defaultPrompt = `Generate 3 follow-up suggestions for what I can do next. They can be declarative or questions. The prompts should be specific to the previous messages. Reference specific tokens, projects, etc.`;
 
-export async function POST(req: NextRequest) {
+export const POST = withErrorHandling(async (req: NextRequest) => {
   const { messages, modelName, prompt: userPrompt } = await req.json();
 
   const prompt = userPrompt || defaultPrompt;
@@ -58,4 +59,4 @@ export async function POST(req: NextRequest) {
   });
 
   return NextResponse.json(object.suggestions);
-}
+});

@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import * as Sentry from '@sentry/nextjs';
 
 interface ErrorBoundaryState {
   hasError: boolean;
@@ -9,6 +10,7 @@ interface ErrorBoundaryState {
 
 interface ErrorBoundaryProps {
   children: React.ReactNode;
+  pageKey: string;
   fallback?: React.ComponentType<{ error?: Error; resetError: () => void }>;
 }
 
@@ -44,6 +46,16 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
     if (!this.state.hasError) return;
 
     console.error('ErrorBoundary caught an error:', error, errorInfo);
+
+    // Send to Sentry with component stack trace and page context
+    Sentry.withScope((scope) => {
+      scope.setContext('react', {
+        componentStack: errorInfo.componentStack,
+      });
+      scope.setTag('error_boundary', 'true');
+      scope.setTag('page_key', this.props.pageKey);
+      Sentry.captureException(error);
+    });
   }
 
   resetError = () => {

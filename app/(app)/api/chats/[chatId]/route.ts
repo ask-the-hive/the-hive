@@ -7,14 +7,12 @@ import { generateText } from 'ai';
 import { Message } from 'ai';
 import { openai } from '@ai-sdk/openai';
 import { ChainType } from '@/app/_contexts/chain-context';
+import { withErrorHandling } from '@/lib/api-error-handler';
 
-export const GET = async (
-  req: NextRequest,
-  { params }: { params: Promise<{ chatId: string }> },
-) => {
-  const { chatId } = await params;
+export const GET = withErrorHandling(
+  async (req: NextRequest, { params }: { params: Promise<{ chatId: string }> }) => {
+    const { chatId } = await params;
 
-  try {
     // Get the authorization header
     const authHeader = req.headers.get('authorization');
     if (!authHeader?.startsWith('Bearer ')) {
@@ -31,21 +29,15 @@ export const GET = async (
     }
 
     return NextResponse.json(await getChat(chatId, userId));
-  } catch (error) {
-    console.error('Error in /api/chats/[chatId]:', error);
-    return NextResponse.json(null, { status: 500 });
-  }
-};
+  },
+);
 
-export const POST = async (
-  req: NextRequest,
-  { params }: { params: Promise<{ chatId: string }> },
-) => {
-  const { chatId } = await params;
+export const POST = withErrorHandling(
+  async (req: NextRequest, { params }: { params: Promise<{ chatId: string }> }) => {
+    const { chatId } = await params;
 
-  const { messages, chain } = await req.json();
+    const { messages, chain } = await req.json();
 
-  try {
     // Get the authorization header
     const authHeader = req.headers.get('authorization');
     if (!authHeader?.startsWith('Bearer ')) {
@@ -94,19 +86,13 @@ export const POST = async (
         }),
       );
     }
-  } catch (error) {
-    console.error('Error in /api/chats/[chatId]:', error);
-    return NextResponse.json(false, { status: 500 });
-  }
-};
+  },
+);
 
-export const DELETE = async (
-  req: NextRequest,
-  { params }: { params: Promise<{ chatId: string }> },
-) => {
-  const { chatId } = await params;
+export const DELETE = withErrorHandling(
+  async (req: NextRequest, { params }: { params: Promise<{ chatId: string }> }) => {
+    const { chatId } = await params;
 
-  try {
     const authHeader = req.headers.get('authorization');
     if (!authHeader?.startsWith('Bearer ')) {
       return NextResponse.json(
@@ -129,11 +115,8 @@ export const DELETE = async (
     } else {
       return NextResponse.json({ error: 'Failed to delete chat' }, { status: 500 });
     }
-  } catch (error) {
-    console.error('Error in DELETE /api/chats/[chatId]:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
-  }
-};
+  },
+);
 
 const generateTagline = async (messages: Omit<Message, 'id'>[]) => {
   const { text } = await generateText({

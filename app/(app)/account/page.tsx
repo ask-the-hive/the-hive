@@ -1,10 +1,13 @@
 export const dynamic = 'force-dynamic';
 
+import ErrorBoundary from "@/components/error-boundary";
 import Account from "./_components";
 
 const AccountPage = () => {
     return (
-        <Account />
+        <ErrorBoundary pageKey="account">
+            <Account />
+        </ErrorBoundary>
     )
 }
 

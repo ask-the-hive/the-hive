@@ -1,8 +1,9 @@
-import { getAllTags } from "@/services/arkham";
-import { NextResponse } from "next/server";
+import { getAllTags } from '@/services/arkham';
+import { NextResponse } from 'next/server';
+import { withErrorHandling } from '@/lib/api-error-handler';
 
-export const GET = async () => {
-    const tokenTopFlow = await getAllTags();
+export const GET = withErrorHandling(async () => {
+  const tokenTopFlow = await getAllTags();
 
-    return NextResponse.json(tokenTopFlow);
-}
+  return NextResponse.json(tokenTopFlow);
+});

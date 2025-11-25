@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import ErrorBoundary from '@/components/error-boundary';
 
 import Header from './_components/header';
 import Tokens from './_components/tokens';
@@ -28,7 +29,7 @@ import { LiquidStakingPosition } from '@/db/types';
 import { LendingPosition } from '@/types/lending-position';
 import { usePortfolio } from '@/hooks';
 
-const Portfolio = ({ params }: { params: Promise<{ address: string }> }) => {
+const PortfolioContent = ({ params }: { params: Promise<{ address: string }> }) => {
   // Unwrap params using React.use()
   const { address } = React.use(params);
   const router = useRouter();
@@ -258,6 +259,14 @@ const Portfolio = ({ params }: { params: Promise<{ address: string }> }) => {
         <Transactions address={address} />
       </div>
     </SwapModalProvider>
+  );
+};
+
+const Portfolio = ({ params }: { params: Promise<{ address: string }> }) => {
+  return (
+    <ErrorBoundary pageKey="portfolio">
+      <PortfolioContent params={params} />
+    </ErrorBoundary>
   );
 };
 
