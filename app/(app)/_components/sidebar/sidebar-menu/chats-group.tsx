@@ -154,7 +154,7 @@ const ChatsGroup: React.FC = () => {
           </CollapsibleTrigger>
         </div>
         <CollapsibleContent
-          className="max-h-[min(60vh)] overflow-y-auto transition-all duration-300 ease-in-out mb-0 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:border-2 [&::-webkit-scrollbar-thumb]:border-transparent dark:[&::-webkit-scrollbar-thumb]:bg-gray-700"
+          className="max-h-[min(45vh)] overflow-y-auto transition-all duration-300 ease-in-out mb-0 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:border-2 [&::-webkit-scrollbar-thumb]:border-transparent dark:[&::-webkit-scrollbar-thumb]:bg-gray-700"
           withMaxHeight={false}
         >
           {isLoading || !ready ? (

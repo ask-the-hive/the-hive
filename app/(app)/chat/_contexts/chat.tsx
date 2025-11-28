@@ -10,7 +10,8 @@ import React, {
   useRef,
 } from 'react';
 
-import { Message, useChat as useAiChat } from 'ai/react';
+import { Message } from 'ai/react';
+import { useChat as useAiChat } from '@ai-sdk/react';
 import { Models } from '@/types/models';
 import { usePrivy } from '@privy-io/react-auth';
 import { generateId } from 'ai';
@@ -28,6 +29,7 @@ import {
   SOLANA_DEPOSIT_LIQUIDITY_NAME,
   SOLANA_WITHDRAW_LIQUIDITY_NAME,
 } from '@/ai/action-names';
+import * as Sentry from '@sentry/nextjs';
 
 export enum ColorMode {
   LIGHT = 'light',
@@ -167,7 +169,16 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
     input,
     setInput,
     append,
-    isLoading,
+    /**
+     * Hook status:
+     *
+     * - `submitted`: The message has been sent to the API and we're awaiting the start of the response stream.
+     * - `streaming`: The response is actively streaming in from the API, receiving chunks of data.
+     * - `ready`: The full response has been received and processed; a new user message can be submitted.
+     * - `error`: An error occurred during the API request, preventing successful completion.
+     */
+    // status: 'submitted' | 'streaming' | 'ready' | 'error';
+    status,
     addToolResult: addToolResultBase,
     setMessages,
   } = useAiChat({
@@ -188,7 +199,17 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
       chatId,
       chain,
     },
+    onError: (error) => {
+      Sentry.captureException(error, {
+        tags: {
+          component: 'ChatProvider',
+          action: 'chatError',
+        },
+      });
+    },
   });
+
+  const isLoading = status === 'submitted' || status === 'streaming';
 
   // Handle isLoading state changes from useAiChat hook
   useEffect(() => {
@@ -318,6 +339,12 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
         }
       } catch (error) {
         console.error('Error creating new chat:', error);
+        Sentry.captureException(error, {
+          tags: {
+            component: 'ChatProvider',
+            action: 'createNewChat',
+          },
+        });
       }
     }
 

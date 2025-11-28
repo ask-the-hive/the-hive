@@ -28,7 +28,7 @@ const LoadingMessage: React.FC<Props> = ({ compressed }) => {
       <Logo className={cn('w-6 h-6 md:w-10 md:h-10')} />
       <div className="md:pt-2 w-full max-w-full md:flex-1 md:w-0 overflow-hidden flex flex-col gap-2 items-start">
         <Skeleton className="h-8 w-1/4" />
-        <Skeleton className="h-4 w-1/2" />
+        <Skeleton className="h-4 w-1/4" />
       </div>
     </div>
   );

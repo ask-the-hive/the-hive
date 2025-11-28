@@ -5,26 +5,26 @@ import { useChat } from '../../_contexts/chat';
 
 const solanaButtons = [
   {
-    title: 'Stake SOL, Keep Liquidity',
-    description: 'Earn the highest yields with liquid staking',
+    title: 'Stake SOL',
+    description: 'Compare liquid staking yields',
     icon: 'Droplet' as const,
     prompt: 'Find me the best staking yields on Solana',
   },
   {
-    title: 'Lend',
-    description: 'Lend stablecoins to earn interest',
+    title: 'Lend Stablecoins',
+    description: 'Find top lending markets',
     icon: 'ChartLine' as const,
     prompt: 'Show me the best lending pools on Solana',
   },
   {
     title: 'Trade',
-    description: 'Swap on Jupiter',
+    description: 'Swap instantly with Jupiter',
     icon: 'ChartCandlestick' as const,
     prompt: "Let's trade some tokens",
   },
   {
     title: 'Discover',
-    description: 'Discover trending Solana tokens',
+    description: 'Explore trending Solana assets',
     icon: 'Brain' as const,
     prompt: 'Show me trending Solana tokens',
   },

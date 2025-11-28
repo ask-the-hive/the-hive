@@ -11,6 +11,7 @@ import {
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
+  Skeleton,
 } from '@/components/ui';
 import { useSwapModal } from '@/app/(app)/portfolio/[address]/_contexts/use-swap-modal';
 import { useFundWallet } from '@privy-io/react-auth/solana';
@@ -219,9 +220,17 @@ const GetBalance: React.FC<Props> = ({ tool, prevToolAgent }) => {
     <ToolCard
       tool={tool}
       loadingText={`Getting ${tool.args.tokenAddress || 'SOL'} balance...`}
+      call={{
+        heading: 'Checking balance...',
+        body: () => (
+          <div className="flex w-full">
+            <Skeleton className="h-6 w-1/4" />
+          </div>
+        ),
+      }}
       result={{
         heading: (result: BalanceResultType) => {
-          // console.log('result in balance heading', result);
+          console.log('result in balance heading', result);
           if (result.body?.token) {
             if (isInStakingOrLendingFlow && result.body?.balance > 0.00001) {
               return `${result.body.balance} ${result.body.token} balance`;
@@ -236,29 +245,11 @@ const GetBalance: React.FC<Props> = ({ tool, prevToolAgent }) => {
           const hasZeroBalance =
             result.body?.balance !== undefined && result.body.balance <= 0.00001;
 
-          // Debug logging
-          if (isInFlow && hasZeroBalance) {
-            console.log('🔍 Balance check debug:', {
-              tokenSymbol,
-              tokenAddressFromArgs: tool?.args?.tokenAddress,
-              tokenAddressFromResult: result.body?.tokenAddress,
-              walletAddress: tool?.args?.walletAddress,
-              allToolArgs: tool?.args,
-              balance: result.body?.balance,
-            });
-          }
-
           if (result.body) {
             // If in staking/lending flow and balance is 0, show options
             if (isInFlow && hasZeroBalance) {
               // Prefer tokenAddress from result.body, fallback to tool.args
               const tokenAddress = result.body?.tokenAddress || tool?.args?.tokenAddress;
-
-              console.log('🔍 TokenFundingOptions props:', {
-                tokenSymbol,
-                tokenAddress,
-                logoURI: result.body.logoURI,
-              });
 
               return (
                 <TokenFundingOptions

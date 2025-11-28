@@ -24,6 +24,7 @@ interface PoolDetailsCardProps<T extends PoolData> {
   index: number;
   onClick: (pool: T) => void | Promise<void>;
   onMoreDetailsClick: (pool: T, event: React.MouseEvent) => void;
+  disabled?: boolean;
 }
 
 function PoolDetailsCard<T extends PoolData>({
@@ -31,17 +32,21 @@ function PoolDetailsCard<T extends PoolData>({
   index,
   onClick,
   onMoreDetailsClick,
+  disabled = false,
 }: PoolDetailsCardProps<T>) {
   return (
     <Card
       key={`${pool.name}-${pool.project}-${index}`}
       className={cn(
-        'group relative flex flex-col gap-2 items-center p-4 cursor-pointer transition-all duration-300 overflow-hidden',
-        index === 1
-          ? 'hover:border-brand-600 dark:hover:border-brand-600 !shadow-[0_0_10px_rgba(234,179,8,0.5)] dark:!shadow-[0_0_10px_rgba(234,179,8,0.5)]'
-          : 'hover:border-brand-600/50 dark:hover:border-brand-600/50',
+        'group relative flex flex-col gap-2 items-center p-4 transition-all duration-300 overflow-hidden',
+        disabled
+          ? 'opacity-50 cursor-not-allowed'
+          : 'cursor-pointer hover:border-brand-600/50 dark:hover:border-brand-600/50',
+        !disabled &&
+          index === 1 &&
+          'hover:border-brand-600 dark:hover:border-brand-600 !shadow-[0_0_10px_rgba(234,179,8,0.5)] dark:!shadow-[0_0_10px_rgba(234,179,8,0.5)]',
       )}
-      onClick={() => onClick(pool)}
+      onClick={() => !disabled && onClick(pool)}
     >
       <div className="items-center flex-col justify-between gap-2 mb-2 hidden md:flex">
         <div className="flex items-center gap-2">
@@ -117,7 +122,8 @@ function PoolDetailsCard<T extends PoolData>({
           variant="outline"
           size="sm"
           className="w-full"
-          onClick={(e) => onMoreDetailsClick(pool, e)}
+          onClick={(e) => !disabled && onMoreDetailsClick(pool, e)}
+          disabled={disabled}
         >
           More Details
         </Button>

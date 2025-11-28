@@ -43,10 +43,10 @@ export default function LoginPage() {
       <Button
         variant="brandGhost"
         size="icon"
-        className="absolute top-4 left-4 z-10 h-14 w-14 rounded-full bg-neutral-100 backdrop-blur-sm hover:bg-neutral-200 dark:bg-neutral-600 dark:hover:bg-neutral-600"
+        className="absolute top-4 left-4 z-10 h-10 w-10 rounded-full bg-neutral-100 backdrop-blur-sm hover:bg-neutral-200 dark:bg-neutral-700 dark:hover:bg-neutral-600"
         onClick={handleBackClick}
       >
-        <ArrowLeft className="h-20 w-20 text-brand-600" />
+        <ArrowLeft className="size-6 text-brand-600" />
       </Button>
 
       {/* Left side - Login Form (40%) */}
