@@ -2,9 +2,9 @@
 
 import React, { useState } from 'react';
 import { ChevronsUpDown } from 'lucide-react';
-import Image from 'next/image';
 
 import { Button, Popover, PopoverTrigger, PopoverContent, Input, Skeleton } from '@/components/ui';
+import { TokenIcon } from '@/components/ui/token-icon';
 
 import SaveToken from '../(app)/_components/save-token';
 
@@ -13,6 +13,7 @@ import { usePortfolio } from '@/hooks/queries/portfolio';
 import { useChain } from '@/app/_contexts/chain-context';
 
 import { cn } from '@/lib/utils';
+import { formatUSD } from '@/lib/format';
 
 import { Token } from '@/db/types';
 import type { TokenSearchResult } from '@/services/birdeye/types';
@@ -100,6 +101,7 @@ const TokenSelect: React.FC<Props> = ({ value, onChange }) => {
       token: TokenSearchResult;
       isFromPortfolio: boolean;
       isFromSearch: boolean;
+      balanceUsd?: number;
     }> = [];
 
     // Helper function to normalize token data (fix SOL mint address)
@@ -116,10 +118,14 @@ const TokenSelect: React.FC<Props> = ({ value, onChange }) => {
     // Add search results first
     if (tokens && tokens.length > 0) {
       tokens.forEach((token: TokenSearchResult) => {
+        // Check if this token is in the portfolio to include balance
+        const portfolioItem = portfolio?.items?.find((item) => item.address === token.address);
+
         results.push({
           token: normalizeToken(token),
-          isFromPortfolio: false,
+          isFromPortfolio: !!portfolioItem,
           isFromSearch: true,
+          balanceUsd: portfolioItem?.valueUsd,
         });
       });
     }
@@ -129,17 +135,21 @@ const TokenSelect: React.FC<Props> = ({ value, onChange }) => {
       const searchAddresses = new Set(tokens?.map((t: TokenSearchResult) => t.address) || []);
       portfolioTokens.forEach((token: TokenSearchResult) => {
         if (!searchAddresses.has(token.address)) {
+          // Get balance from portfolio items
+          const portfolioItem = portfolio?.items?.find((item) => item.address === token.address);
+
           results.push({
             token: normalizeToken(token),
             isFromPortfolio: true,
             isFromSearch: false,
+            balanceUsd: portfolioItem?.valueUsd,
           });
         }
       });
     }
 
     return results;
-  }, [tokens, portfolioTokens]);
+  }, [tokens, portfolioTokens, portfolio?.items]);
 
   // Sort the unified results
   const sortedUnifiedResults = React.useMemo(() => {
@@ -169,9 +179,10 @@ const TokenSelect: React.FC<Props> = ({ value, onChange }) => {
       <PopoverTrigger asChild>
         <div className="w-fit shrink-0 flex items-center bg-neutral-200 dark:bg-neutral-700 hover:bg-neutral-300 dark:hover:bg-neutral-600 rounded-md px-1 py-1 gap-2 cursor-pointer transition-colors duration-200">
           {value ? (
-            <Image
-              src={value.logoURI || 'https://www.birdeye.so/images/unknown-token-icon.svg'}
+            <TokenIcon
+              src={value.logoURI}
               alt={value.name}
+              tokenSymbol={value.symbol}
               width={24}
               height={24}
               className="w-6 h-6 rounded-full"
@@ -202,7 +213,7 @@ const TokenSelect: React.FC<Props> = ({ value, onChange }) => {
             ) : (
               <>
                 {sortedUnifiedResults.map((item) => {
-                  const { token, isFromPortfolio } = item;
+                  const { token, isFromPortfolio, balanceUsd } = item;
 
                   return (
                     <React.Fragment key={token.address}>
@@ -226,20 +237,18 @@ const TokenSelect: React.FC<Props> = ({ value, onChange }) => {
                         }}
                       >
                         <div className="flex items-center gap-2">
-                          <Image
-                            src={
-                              token.logo_uri ||
-                              'https://www.birdeye.so/images/unknown-token-icon.svg'
-                            }
+                          <TokenIcon
+                            src={token.logo_uri}
                             alt={token.name}
+                            tokenSymbol={token.symbol}
                             width={24}
                             height={24}
                             className="w-6 h-6 rounded-full"
                           />
                           <div className="flex flex-col items-start">
                             <p className="text-sm font-bold">{token.symbol}</p>
-                            {isFromPortfolio && (
-                              <p className="text-xs text-neutral-500">In portfolio</p>
+                            {isFromPortfolio && balanceUsd !== undefined && (
+                              <p className="text-xs text-neutral-400">{formatUSD(balanceUsd)}</p>
                             )}
                           </div>
                         </div>

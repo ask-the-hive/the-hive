@@ -74,7 +74,8 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
         <div className="flex flex-col items-center justify-center p-8 text-center">
           <h2 className="text-lg font-semibold text-red-600 mb-2">Something went wrong</h2>
           <p className="text-gray-600 mb-4">
-            {this.state.error?.message || 'An unexpected error occurred'}
+            An unexpected error occurred. Please try again. If the problem persists, please contact
+            support.
           </p>
           <button
             onClick={this.resetError}

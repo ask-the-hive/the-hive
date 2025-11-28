@@ -3,6 +3,8 @@ import React from 'react';
 import { Card } from '@/components/ui/card';
 import SaveToken from '@/app/(app)/_components/save-token';
 import Link from 'next/link';
+import { TokenIcon } from '@/components/ui/token-icon';
+import { formatCompactNumber } from '@/lib/format';
 
 import ToolCard from '../tool-card';
 
@@ -44,21 +46,19 @@ const TrendingTokens = ({ body }: { body: GetTrendingTokensResultBodyType }) => 
 };
 
 const TokenCard = ({ token }: { token: TrendingToken }) => {
-  const placeholderIcon = 'https://www.birdeye.so/images/unknown-token-icon.svg';
-
   return (
     <Link href={`/token/${token.address}`}>
       <Card className="flex flex-col gap-2 p-4 justify-center hover:border-brand-600 dark:hover:border-brand-600 transition-all duration-300">
         <div className="flex flex-row items-center gap-2 justify-between">
           <div className="flex flex-col">
             <div className="flex flex-row items-center gap-2">
-              <img
-                src={token.logoURI || placeholderIcon}
+              <TokenIcon
+                src={token.logoURI}
                 alt={token.name}
+                tokenSymbol={token.symbol}
+                width={40}
+                height={40}
                 className="w-10 h-10 rounded-full"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).src = placeholderIcon;
-                }}
               />
               <div className="flex flex-col">
                 <p className="text-md font-bold">
@@ -85,8 +85,8 @@ const TokenCard = ({ token }: { token: TrendingToken }) => {
               </div>
             </div>
             <div className="flex flex-col mt-2 px-2">
-              <p className="text-xs text-muted-foreground">
-                24h Volume: ${token.volume24hUSD?.toLocaleString() ?? '0'}
+              <p className="text-sm text-muted-foreground text-brand-600">
+                24h vol: {token.volume24hUSD ? formatCompactNumber(token.volume24hUSD) : '--'}
               </p>
             </div>
           </div>

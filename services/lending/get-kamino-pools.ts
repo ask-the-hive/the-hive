@@ -23,7 +23,6 @@ export async function getKaminoPools(): Promise<KaminoPoolData[]> {
     const kaminoRpc = createSolanaRpc(process.env.NEXT_PUBLIC_SOLANA_RPC_URL!) as any;
     const marketAddress = createAddress(KAMINO_MAIN_MARKET.toBase58()) as any;
     const programId = createAddress(KAMINO_PROGRAM_ID.toBase58()) as any;
-
     // Load Kamino market
     const market = await KaminoMarket.load(
       kaminoRpc,

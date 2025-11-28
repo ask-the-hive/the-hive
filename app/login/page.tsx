@@ -13,13 +13,7 @@ export default function LoginPage() {
   const router = useRouter();
 
   const handleBackClick = () => {
-    // Check if there's history to go back to
-    if (window.history.length > 1) {
-      router.back();
-    } else {
-      // Default to chat if no previous route
-      router.push('/chat');
-    }
+    router.push('/chat');
   };
 
   // Redirect if already authenticated
@@ -49,10 +43,10 @@ export default function LoginPage() {
       <Button
         variant="brandGhost"
         size="icon"
-        className="absolute top-4 left-4 z-10 h-10 w-10 rounded-full bg-neutral-100 backdrop-blur-sm hover:bg-neutral-200 dark:bg-sidebar dark:hover:bg-neutral-600"
+        className="absolute top-4 left-4 z-10 h-14 w-14 rounded-full bg-neutral-100 backdrop-blur-sm hover:bg-neutral-200 dark:bg-neutral-600 dark:hover:bg-neutral-600"
         onClick={handleBackClick}
       >
-        <ArrowLeft className="h-10   w-10 text-brand-600" />
+        <ArrowLeft className="h-20 w-20 text-brand-600" />
       </Button>
 
       {/* Left side - Login Form (40%) */}
