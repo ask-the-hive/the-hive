@@ -26,6 +26,7 @@ import { Loader2 } from 'lucide-react';
 import { pfpURL } from '@/lib/pfp';
 import { uploadImage } from '@/services/storage';
 import { getUserData, updateUserUsername } from './actions';
+import * as Sentry from '@sentry/nextjs';
 
 interface Props {
   user: PrivyUser;
@@ -37,7 +38,18 @@ const AccountHeading: React.FC<Props> = ({ user }) => {
   const [isEditingUsername, setIsEditingUsername] = useState(false);
   const [username, setUsername] = useState('');
   const [isLoading, setIsLoading] = useState(true);
-  const { linkWallet, logout } = useLogin();
+  const { linkWallet, logout } = useLogin({
+    onError: (err: any) => {
+      if (!err?.includes('exited_auth_flow')) {
+        Sentry.captureException(err, {
+          tags: {
+            component: 'AccountHeading',
+            action: 'login',
+          },
+        });
+      }
+    },
+  });
   const { unlinkWallet } = usePrivy();
   const { isCopied: isAddressCopied, copyToClipboard: copyAddress } = useCopyToClipboard({
     timeout: 10000,

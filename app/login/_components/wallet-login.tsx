@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui';
 import { Loader2, Wallet } from 'lucide-react';
 import { useLogin } from '@privy-io/react-auth';
+import * as Sentry from '@sentry/nextjs';
 
 export function WalletLogin() {
   const router = useRouter();
@@ -17,7 +18,19 @@ export function WalletLogin() {
     },
     onError: (err: any) => {
       if (!err?.includes('exited_auth_flow')) {
-        setError(err?.message || String(err) || 'Failed to connect wallet.');
+        const errorMessage = err?.message || String(err) || 'Failed to connect wallet.';
+        setError(errorMessage);
+
+        // Log to Sentry
+        Sentry.captureException(err, {
+          tags: {
+            component: 'WalletLogin',
+            action: 'login',
+          },
+          extra: {
+            errorMessage,
+          },
+        });
       }
       setConnectingWallet(false);
     },

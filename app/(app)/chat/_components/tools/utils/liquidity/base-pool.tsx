@@ -8,6 +8,7 @@ import { BrowserProvider, Contract, parseUnits } from 'ethers';
 import Decimal from 'decimal.js';
 import { usePrivy } from '@privy-io/react-auth';
 import { useLogin } from '@/hooks';
+import * as Sentry from '@sentry/nextjs';
 
 import {
   Card,
@@ -42,7 +43,18 @@ const routerAbi = [
 
 const BasePool: React.FC<Props> = ({ pair }) => {
   const { user } = usePrivy();
-  const { login, linkWallet } = useLogin();
+  const { login, linkWallet } = useLogin({
+    onError: (err: any) => {
+      if (!err?.includes('exited_auth_flow')) {
+        Sentry.captureException(err, {
+          tags: {
+            component: 'BasePool',
+            action: 'login',
+          },
+        });
+      }
+    },
+  });
 
   // Get token info from the pair
   const baseToken = pair.pair[0];

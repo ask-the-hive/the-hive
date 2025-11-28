@@ -8,6 +8,7 @@ import { BrowserProvider, Contract, parseUnits } from 'ethers';
 import { Decimal } from 'decimal.js';
 import { usePrivy } from '@privy-io/react-auth';
 import { useLogin } from '@/hooks';
+import * as Sentry from '@sentry/nextjs';
 
 import {
   Card,
@@ -42,7 +43,18 @@ const routerAbi = [
 
 const BscPool: React.FC<Props> = ({ pair }) => {
   const { user } = usePrivy();
-  const { login, linkWallet } = useLogin();
+  const { login, linkWallet } = useLogin({
+    onError: (err: any) => {
+      if (!err?.includes('exited_auth_flow')) {
+        Sentry.captureException(err, {
+          tags: {
+            component: 'BscPool',
+            action: 'login',
+          },
+        });
+      }
+    },
+  });
   const [isOpen, setIsOpen] = useState(false);
   const [baseAmount, setBaseAmount] = useState('');
   const [quoteAmount, setQuoteAmount] = useState('');
