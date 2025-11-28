@@ -11,7 +11,7 @@ import {
   SidebarMenuSubButton,
   useSidebar,
 } from '@/components/ui';
-
+//
 const shortcuts = [
   {
     title: 'Stake',
