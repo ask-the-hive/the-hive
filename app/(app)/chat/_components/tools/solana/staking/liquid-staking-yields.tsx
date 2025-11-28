@@ -37,9 +37,10 @@ const LiquidStakingYieldsTool: React.FC<Props> = ({ tool, prevToolAgent }) => {
 const LiquidStakingYields: React.FC<{
   body: LiquidStakingYieldsResultBodyType;
 }> = ({ body }) => {
-  const { sendMessage } = useChat();
+  const { sendMessage, isResponseLoading } = useChat();
   const [selectedPool, setSelectedPool] = useState<LiquidStakingYieldsPoolData | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isDisabled, setIsDisabled] = useState(true);
 
   useEffect(() => {
     if (!body) return;
@@ -63,6 +64,14 @@ const LiquidStakingYields: React.FC<{
     setIsModalOpen(true);
   };
 
+  useEffect(() => {
+    if (!isResponseLoading) {
+      setTimeout(() => {
+        setIsDisabled(false);
+      }, 2000);
+    }
+  }, [isResponseLoading]);
+
   return (
     <>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4 mt-4">
@@ -73,6 +82,7 @@ const LiquidStakingYields: React.FC<{
             index={index}
             onClick={handleStakeClick}
             onMoreDetailsClick={handleMoreDetailsClick}
+            disabled={isDisabled}
           />
         ))}
       </div>

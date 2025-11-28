@@ -131,6 +131,25 @@ export const HoneycombBackground: React.FC<HoneycombBackgroundProps> = ({
       x += baseWidth * 0.05;
       y += baseHeight * 0.05;
 
+      // Apply inverse rotation to account for the 15-degree rotation in the transform
+      // Since the hexagons are rotated 15° clockwise, we need to rotate the mouse position
+      // -15° (counter-clockwise) around the center to align with the rotated coordinate system
+      const centerX = baseWidth / 2;
+      const centerY = baseHeight / 2;
+      const angle = -15 * (Math.PI / 180); // -15 degrees in radians
+
+      // Step 1: Translate mouse position so rotation center is at origin
+      const translatedX = x - centerX;
+      const translatedY = y - centerY;
+
+      // Step 2: Apply 2D rotation matrix
+      const rotatedX = translatedX * Math.cos(angle) - translatedY * Math.sin(angle);
+      const rotatedY = translatedX * Math.sin(angle) + translatedY * Math.cos(angle);
+
+      // Step 3: Translate back to original coordinate system
+      x = rotatedX + centerX;
+      y = rotatedY + centerY;
+
       setMousePos({ x, y });
     },
     [finalWidth, finalHeight, baseWidth, baseHeight],

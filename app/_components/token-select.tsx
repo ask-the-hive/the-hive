@@ -196,7 +196,7 @@ const TokenSelect: React.FC<Props> = ({ value, onChange }) => {
           <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
         </div>
       </PopoverTrigger>
-      <PopoverContent className="w-[200px] p-2 flex flex-col gap-2">
+      <PopoverContent className="w-[200px] p-2 flex flex-col gap-2 overflow-hidden">
         <Input
           placeholder="Search tokens..."
           value={input}
@@ -205,7 +205,7 @@ const TokenSelect: React.FC<Props> = ({ value, onChange }) => {
         {isLoading || portfolioLoading ? (
           <Skeleton className="h-48 w-full" />
         ) : (
-          <div className="flex flex-col gap-2 max-h-[300px] overflow-y-scroll">
+          <div className="flex flex-col gap-2 max-h-[300px] overflow-y-auto">
             {sortedUnifiedResults.length === 0 ? (
               <p className="text-xs text-neutral-500">
                 {input ? `No results for "${input}"` : 'No tokens found'}

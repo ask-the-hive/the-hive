@@ -38,9 +38,10 @@ const LendingYieldsTool: React.FC<Props> = ({ tool, prevToolAgent }) => {
 const LendingYields: React.FC<{
   body: LendingYieldsResultBodyType;
 }> = ({ body }) => {
-  const { sendMessage } = useChat();
+  const { sendMessage, isResponseLoading } = useChat();
   const [selectedPool, setSelectedPool] = useState<LendingYieldsPoolData | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isDisabled, setIsDisabled] = useState(true);
 
   useEffect(() => {
     if (!body) return;
@@ -67,6 +68,14 @@ const LendingYields: React.FC<{
     setIsModalOpen(true);
   };
 
+  useEffect(() => {
+    if (!isResponseLoading) {
+      setTimeout(() => {
+        setIsDisabled(false);
+      }, 2000);
+    }
+  }, [isResponseLoading]);
+
   return (
     <>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4 mt-4">
@@ -77,6 +86,7 @@ const LendingYields: React.FC<{
             index={index}
             onClick={handleLendClick}
             onMoreDetailsClick={handleMoreDetailsClick}
+            disabled={isDisabled}
           />
         ))}
       </div>

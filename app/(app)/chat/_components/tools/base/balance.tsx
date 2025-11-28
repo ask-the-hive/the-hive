@@ -4,6 +4,7 @@ import React from 'react';
 
 import TokenBalance from '../utils/token-balance';
 import ToolCard from '../tool-card';
+import { Card, Skeleton } from '@/components/ui';
 
 import type { ToolInvocation } from 'ai';
 import type { BaseActionResult } from '@/ai/base/actions/base-action';
@@ -23,6 +24,14 @@ const GetBalance: React.FC<Props> = ({ tool, prevToolAgent }) => {
         <ToolCard
           tool={tool}
           loadingText={`Getting ${tool.args.tokenSymbol || 'ETH'} Balance...`}
+          call={{
+            heading: 'Checking balance...',
+            body: () => (
+              <div className="flex w-full">
+                <Skeleton className="h-6 w-16" />
+              </div>
+            ),
+          }}
           result={{
             heading: (result: BalanceResultType) =>
               result.body?.token
