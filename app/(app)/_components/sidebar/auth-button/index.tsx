@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 
 import { ChevronsUpDown, Coins, LogIn, LogOut, Wallet, ArrowLeft } from 'lucide-react';
 import Image from 'next/image';
+import * as Sentry from '@sentry/nextjs';
 
 import { useLogin } from '@/hooks';
 import { useChain } from '@/app/_contexts/chain-context';
@@ -35,6 +36,16 @@ const AuthButton: React.FC = () => {
   const [copied, setCopied] = useState(false);
   const { user, ready, login, logout, linkWallet, fundWallet, fundBscWallet } = useLogin({
     onComplete: () => {},
+    onError: (err: any) => {
+      if (!err?.includes('exited_auth_flow')) {
+        Sentry.captureException(err, {
+          tags: {
+            component: 'AuthButton',
+            action: 'login',
+          },
+        });
+      }
+    },
   });
   const [showBaseBridges, setShowBaseBridges] = useState(false);
   const [showBaseBridgeOptions, setShowBaseBridgeOptions] = useState(false);

@@ -15,8 +15,10 @@ import { clearUserDataCache, disconnectExternalWallets } from '@/lib/swr-cache';
 
 export const useLogin = ({
   onComplete,
+  onError,
 }: {
   onComplete?: (wallet: Wallet) => void;
+  onError?: (error: any) => void;
 } = {}) => {
   const router = useRouter();
   const { user, ready, logout, linkWallet: privyLinkWallet } = usePrivy();
@@ -113,6 +115,9 @@ export const useLogin = ({
 
         onComplete?.(user.wallet);
       }
+    },
+    onError: (error) => {
+      onError?.(error);
     },
   });
 

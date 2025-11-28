@@ -9,6 +9,7 @@ import { useWallets, type ConnectedWallet } from '@privy-io/react-auth';
 import { useChain } from '@/app/_contexts/chain-context';
 import { useLogin } from '@/hooks';
 import { BNB_METADATA, WBNB_ADDRESS } from '@/lib/config/bsc';
+import * as Sentry from '@sentry/nextjs';
 import type { TradeArgumentsType, TradeResultBodyType } from '@/ai/bsc/actions/trade/actions/types';
 import TokenInput from '../../bsc/transfer/token-input';
 import { ChevronDown } from 'lucide-react';
@@ -53,7 +54,18 @@ interface Props {
 const SwapCallBody: React.FC<Props> = ({ toolCallId, args }) => {
   const { addToolResult } = useChat();
   const { user } = usePrivy();
-  const { login, linkWallet } = useLogin();
+  const { login, linkWallet } = useLogin({
+    onError: (err: any) => {
+      if (!err?.includes('exited_auth_flow')) {
+        Sentry.captureException(err, {
+          tags: {
+            component: 'BSCTradeCall',
+            action: 'login',
+          },
+        });
+      }
+    },
+  });
   const { wallets } = useWallets();
   const { setCurrentChain } = useChain();
   const [isSwapping, setIsSwapping] = useState(false);

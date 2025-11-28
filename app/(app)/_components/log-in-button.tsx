@@ -8,6 +8,7 @@ import { Wallet, useWallets } from '@privy-io/react-auth';
 import { useSolanaWallets } from '@privy-io/react-auth/solana';
 import { useChain } from '@/app/_contexts/chain-context';
 import { cn } from '@/lib/utils';
+import * as Sentry from '@sentry/nextjs';
 
 interface Props {
   onComplete?: (wallet: Wallet) => void;
@@ -17,6 +18,16 @@ interface Props {
 const LogInButton: React.FC<Props> = ({ onComplete, className }) => {
   const { login, user, linkWallet } = useLogin({
     onComplete,
+    onError: (err: any) => {
+      if (!err?.includes('exited_auth_flow')) {
+        Sentry.captureException(err, {
+          tags: {
+            component: 'LogInButton',
+            action: 'login',
+          },
+        });
+      }
+    },
   });
   const { currentChain, walletAddresses } = useChain();
   const { wallets } = useWallets();

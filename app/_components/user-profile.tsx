@@ -8,12 +8,24 @@ import { getUserData } from '@/app/(app)/account/_components/heading/actions';
 import { pfpURL } from '@/lib/pfp';
 import { useLogin } from '@/hooks';
 import { clearUserDataCache, disconnectExternalWallets } from '@/lib/swr-cache';
+import * as Sentry from '@sentry/nextjs';
 
 const UserProfile = () => {
   const { user, ready, authenticated } = usePrivy();
   const [username, setUsername] = useState<string>('');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const { login, logout } = useLogin();
+  const { login, logout } = useLogin({
+    onError: (err: any) => {
+      if (!err?.includes('exited_auth_flow')) {
+        Sentry.captureException(err, {
+          tags: {
+            component: 'UserProfile',
+            action: 'login',
+          },
+        });
+      }
+    },
+  });
 
   useEffect(() => {
     setIsLoggedIn(authenticated && !!user);
