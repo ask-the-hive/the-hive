@@ -15,6 +15,7 @@ import { Loader2 } from 'lucide-react';
 
 import type { LendArgumentsType, LendResultBodyType } from '@/ai/solana/actions/lending/lend/types';
 import VarApyTooltip from '@/components/var-apy-tooltip';
+import * as Sentry from '@sentry/nextjs';
 
 interface Props {
   toolCallId: string;
@@ -234,6 +235,7 @@ const LendCallBody: React.FC<Props> = ({ toolCallId, args }) => {
           },
         });
       } else {
+        Sentry.captureException(error);
         setErrorMessage('There was an issue submitting the transaction. Please try again.');
         setIsLending(false);
       }

@@ -117,7 +117,9 @@ export const useLogin = ({
       }
     },
     onError: (error) => {
-      onError?.(error);
+      if (!error?.includes('exited_auth_flow')) {
+        onError?.(error);
+      }
     },
   });
 

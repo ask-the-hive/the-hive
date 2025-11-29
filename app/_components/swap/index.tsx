@@ -37,6 +37,8 @@ interface Props {
   onCancel?: () => void;
   onInputChange?: (amount: number) => void;
   onOutputChange?: (amount: number) => void;
+  onOutputTokenChange?: (token: Token) => void;
+  onInputTokenChange?: (token: Token) => void;
   className?: string;
   setSwapResult?: (result: { outputAmount: string; outputToken: string }) => void;
 }
@@ -54,6 +56,8 @@ const Swap: React.FC<Props> = ({
   onCancel,
   onInputChange,
   onOutputChange,
+  onOutputTokenChange,
+  onInputTokenChange,
   receiveTooltip,
   className,
   setSwapResult,
@@ -90,6 +94,18 @@ const Swap: React.FC<Props> = ({
       setOutputToken(completeOutputTokenData);
     }
   }, [outputToken, completeOutputTokenData]);
+
+  useEffect(() => {
+    if (outputToken) {
+      onOutputTokenChange?.(outputToken);
+    }
+  }, [outputToken, onOutputTokenChange]);
+
+  useEffect(() => {
+    if (inputToken) {
+      onInputTokenChange?.(inputToken);
+    }
+  }, [inputToken, onInputTokenChange]);
 
   // Check if tokens have complete data needed for calculations
   const hasCompleteTokenData =
