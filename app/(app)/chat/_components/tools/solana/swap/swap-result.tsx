@@ -1,46 +1,108 @@
-import React from 'react';
-import { Card } from '@/components/ui';
-import { useTokenDataByAddress } from '@/hooks';
+import React, { useMemo, useState } from 'react';
+import { Button, Card } from '@/components/ui';
+import { usePrice } from '@/hooks';
+import { CheckCircle } from 'lucide-react';
 import type { SolanaTradeResultBodyType } from '@/ai';
+import { useChain } from '@/app/_contexts/chain-context';
+import { useRouter } from 'next/navigation';
+import { Loader2 } from 'lucide-react';
 
 interface SwapResultCardProps {
   result: SolanaTradeResultBodyType;
 }
 
 const SwapResultCard: React.FC<SwapResultCardProps> = ({ result }) => {
-  const { inputAmount, inputToken, outputToken, transaction } = result;
-
+  const { inputAmount, outputAmount, inputToken, outputToken, outputTokenAddress, transaction } =
+    result;
+  const { walletAddresses } = useChain();
+  const [isNavigating, setIsNavigating] = useState(false);
+  const router = useRouter();
   // Get token symbols from addresses
-  const { data: inputTokenData } = useTokenDataByAddress(inputToken);
-  const { data: outputTokenData } = useTokenDataByAddress(outputToken);
+  const { data: outputTokenPrice } = usePrice(outputTokenAddress || '');
 
-  const inputSymbol = inputTokenData?.symbol || inputToken;
-  const outputSymbol = outputTokenData?.symbol || outputToken;
+  const toAmountUSD = useMemo(() => {
+    if (!outputAmount || !outputTokenPrice) return null;
+    return outputAmount * outputTokenPrice.value;
+  }, [outputAmount, outputTokenPrice]);
+
+  const handleViewPortfolio = async () => {
+    if (!walletAddresses.solana || isNavigating) return;
+
+    setIsNavigating(true);
+    try {
+      await router.push(`/portfolio/${walletAddresses.solana}`);
+    } catch (error) {
+      console.error('Navigation error:', error);
+    } finally {
+      setIsNavigating(false);
+    }
+  };
 
   return (
-    <Card className="p-6 my-6 bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800">
-      <div className="flex items-center gap-3">
-        <div className="w-8 h-8 rounded-full bg-green-100 dark:bg-green-800 flex items-center justify-center">
-          <svg
-            className="w-5 h-5 text-green-600 dark:text-green-400"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-          </svg>
+    <Card>
+      <div className="flex flex-col items-center space-y-6 py-6 px-6">
+        {/* Success Icon */}
+        <div className="flex flex-col items-center gap-1">
+          <div className="flex items-center justify-center w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full">
+            <CheckCircle className="w-10 h-10 text-green-600 dark:text-green-400" />
+          </div>
+          <p className="text-lg font-semibold">Swap Successful!</p>
         </div>
-        <div className="flex-1">
-          <h3 className="font-semibold text-green-800 dark:text-green-200">Swap Successful!</h3>
-          <p className="text-sm text-green-700 dark:text-green-300">
-            Swapped {inputAmount} {inputSymbol} for {outputSymbol}
+
+        {/* Success Message */}
+        <div className="text-center">
+          <p className="text-lg text-muted-foreground">
+            You swapped{' '}
+            <span className="font-medium text-foreground">
+              {inputAmount ?? '--'} {inputToken}
+            </span>{' '}
           </p>
-          {transaction && (
-            <p className="text-xs text-green-600 dark:text-green-400 mt-1">
-              Transaction: {transaction}
-            </p>
-          )}
+          <p className="text-lg text-muted-foreground">
+            for{' '}
+            <span className="font-medium text-foreground">
+              {outputAmount ?? '--'} {outputToken}
+            </span>{' '}
+            {toAmountUSD && (
+              <span className="">
+                (~$
+                {toAmountUSD.toLocaleString(undefined, {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}
+                )
+              </span>
+            )}
+          </p>
         </div>
+      </div>
+
+      <div className="mt-6 mb-6 flex flex-col gap-2 px-4">
+        {walletAddresses.solana && (
+          <Button
+            variant="brand"
+            className="w-full"
+            onClick={handleViewPortfolio}
+            disabled={isNavigating}
+          >
+            {isNavigating ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Loading...
+              </>
+            ) : (
+              'View Portfolio'
+            )}
+          </Button>
+        )}
+        {transaction && (
+          <Button
+            variant="outline"
+            className="w-full"
+            onClick={() => window.open(`https://solscan.io/tx/${transaction}`, '_blank')}
+          >
+            View Transaction
+          </Button>
+        )}
       </div>
     </Card>
   );

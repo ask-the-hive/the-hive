@@ -11,6 +11,7 @@ import PoolEarningPotential from '../../pool-earning-potential';
 import StakeResult from './stake-result';
 import VarApyTooltip from '@/components/var-apy-tooltip';
 import { capitalizeWords } from '@/lib/string-utils';
+import * as Sentry from '@sentry/nextjs';
 
 const ReceiveTooltip = () => {
   return (
@@ -138,6 +139,7 @@ const StakeCallBody: React.FC<Props> = ({ toolCallId, args }) => {
         },
       });
     } else {
+      Sentry.captureException(error);
       // Show error message but keep UI visible for retry
       setErrorMessage('There was an issue submitting the transaction. Please try again.');
     }

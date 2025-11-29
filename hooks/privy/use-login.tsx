@@ -9,7 +9,7 @@ import {
 } from '@privy-io/react-auth';
 import { useFundWallet, useSolanaWallets } from '@privy-io/react-auth/solana';
 import { useChain } from '@/app/_contexts/chain-context';
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { clearUserDataCache, disconnectExternalWallets } from '@/lib/swr-cache';
 
@@ -22,12 +22,9 @@ export const useLogin = ({
 } = {}) => {
   const router = useRouter();
   const { user, ready, logout, linkWallet: privyLinkWallet } = usePrivy();
-  const { walletAddresses, setWalletAddress, currentChain, setCurrentChain } = useChain();
+  const { walletAddresses, currentChain, setCurrentChain, setWalletAddress } = useChain();
   const { wallets } = useWallets();
   const { wallets: solanaWallets } = useSolanaWallets();
-
-  // Use refs to prevent infinite loops
-  const processedWallets = useRef<Set<string>>(new Set());
 
   // Filter wallets to get EVM wallets (BSC)
   const evmWallets = wallets.filter((wallet) => wallet.address.startsWith('0x'));
@@ -46,78 +43,45 @@ export const useLogin = ({
     });
   }, [user, solanaWallets, evmWallets, wallets, currentChain, walletAddresses]);
 
-  // Monitor for changes in linked wallets - only process each wallet once
-  useEffect(() => {
-    if (solanaWallets.length > 0) {
-      solanaWallets.forEach((wallet) => {
-        if (wallet.address) {
-          const key = `solana:${wallet.address}`;
-          if (!processedWallets.current.has(key)) {
-            console.log('Setting Solana wallet from useLogin hook:', wallet.address);
-            processedWallets.current.add(key);
-            setWalletAddress('solana', wallet.address);
-            // Ensure chain is set to Solana when Solana wallet is detected
-            setCurrentChain('solana');
-          }
-        }
-      });
-    }
-
-    // Process EVM wallets
-    if (evmWallets.length > 0) {
-      evmWallets.forEach((wallet) => {
-        if (wallet.address) {
-          const key = `bsc:${wallet.address}`;
-          if (!processedWallets.current.has(key)) {
-            console.log('Setting BSC wallet from useLogin hook:', wallet.address);
-            processedWallets.current.add(key);
-            setWalletAddress('bsc', wallet.address);
-          }
-        }
-      });
-    }
-  }, [solanaWallets, evmWallets, setWalletAddress, setCurrentChain]);
+  // Note: Wallet address tracking is handled by ChainContext (single source of truth)
+  // ChainContext uses useSolanaWallets()[0] to track the active wallet
 
   const { login } = usePrivyLogin({
     onComplete: async (user) => {
-      if (user.wallet) {
-        console.log('Wallet connection completed:', {
+      // Find the most recently verified Solana wallet from linkedAccounts
+      const solanaWalletAccounts = user.linkedAccounts
+        ?.filter((account: any) => account.type === 'wallet' && account.chainType === 'solana')
+        .sort((a: any, b: any) => {
+          const dateA = new Date(a.latestVerifiedAt).getTime();
+          const dateB = new Date(b.latestVerifiedAt).getTime();
+          return dateB - dateA; // Sort descending (most recent first)
+        });
+
+      if (solanaWalletAccounts && solanaWalletAccounts.length > 0) {
+        const mostRecentWallet = solanaWalletAccounts[0] as any;
+
+        setWalletAddress('solana', mostRecentWallet.address);
+        setCurrentChain('solana');
+
+        // Call the user's onComplete callback with the most recent wallet
+        onComplete?.({
+          address: mostRecentWallet.address,
+          chainType: 'solana',
+          walletClientType: mostRecentWallet.walletClientType,
+        } as any);
+      } else if (user.wallet) {
+        // Fallback to primary wallet if no Solana wallets found
+        console.log('Login completed - using primary wallet:', {
           address: user.wallet.address,
           walletClientType: user.wallet.walletClientType,
-          addressStartsWith0x: user.wallet.address.startsWith('0x'),
         });
-
-        // Determine wallet type and store address
-        // Force Phantom to always be treated as Solana
-        const isSolanaWallet =
-          !user.wallet.address.startsWith('0x') ||
-          user.wallet.walletClientType === 'phantom' ||
-          user.wallet.walletClientType === 'solana' ||
-          user.wallet.walletClientType === 'phantom-solana';
-
-        console.log('Wallet type determination:', {
-          isSolanaWallet,
-          addressStartsWith0x: user.wallet.address.startsWith('0x'),
-          walletClientType: user.wallet.walletClientType,
-        });
-
-        if (isSolanaWallet) {
-          console.log('Login completed with Solana wallet:', user.wallet.address);
-          setWalletAddress('solana', user.wallet.address);
-          setCurrentChain('solana');
-        } else {
-          console.log('Login completed with EVM wallet:', user.wallet.address);
-          setWalletAddress('bsc', user.wallet.address);
-          setWalletAddress('base', user.wallet.address);
-          // Keep the current chain as 'solana' by default, don't auto-switch to BSC
-          // setCurrentChain('bsc');
-        }
-
         onComplete?.(user.wallet);
       }
     },
     onError: (error) => {
-      onError?.(error);
+      if (!error?.includes('exited_auth_flow')) {
+        onError?.(error);
+      }
     },
   });
 

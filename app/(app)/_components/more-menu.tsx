@@ -29,7 +29,11 @@ export function MoreMenu() {
         </DropdownMenuTrigger>
         <DropdownMenuContent side="top" align="end" className="w-50">
           <DropdownMenuItem asChild>
-            <Link href="/about" className="flex items-center gap-3 cursor-pointer">
+            <Link
+              href="https://the-hive-docs.gitbook.io/the-hive-docs/"
+              target="_blank"
+              className="flex items-center gap-3 cursor-pointer"
+            >
               <Home className="w-4 h-4" />
               <span>About The Hive</span>
             </Link>

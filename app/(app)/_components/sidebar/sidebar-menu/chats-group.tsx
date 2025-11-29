@@ -13,6 +13,7 @@ import { usePrivy } from '@privy-io/react-auth';
 import {
   SidebarMenuItem,
   SidebarMenuButton,
+  SidebarMenuSub,
   Skeleton,
   Collapsible,
   CollapsibleContent,
@@ -160,54 +161,56 @@ const ChatsGroup: React.FC = () => {
           {isLoading || !ready ? (
             <Skeleton className="h-10 w-full" />
           ) : chats.length > 0 ? (
-            chats.map((chat) => {
-              // Get the loading state for this specific chat
-              const chatThreadState = chatThreads.get(chat.id);
-              const isChatLoading =
-                chatThreadState?.isLoading || chatThreadState?.isResponseLoading;
+            <SidebarMenuSub>
+              {chats.map((chat) => {
+                // Get the loading state for this specific chat
+                const chatThreadState = chatThreads.get(chat.id);
+                const isChatLoading =
+                  chatThreadState?.isLoading || chatThreadState?.isResponseLoading;
 
-              return (
-                <SidebarMenuSubItem key={chat.id} className="group/chat">
-                  <SidebarMenuSubButton
-                    asChild
-                    isActive={chat.id === chatId}
-                    onClick={() => setChat(chat.id)}
-                  >
-                    <Link
-                      href={`/chat/${chat.id}`}
-                      className="flex items-center justify-between w-full"
+                return (
+                  <SidebarMenuSubItem key={chat.id} className="group/chat">
+                    <SidebarMenuSubButton
+                      asChild
+                      isActive={chat.id === chatId}
+                      onClick={() => setChat(chat.id)}
                     >
-                      <div className="flex items-center gap-2 truncate">
-                        <ChatChainIcon chain={chat.chain} />
-                        <span className="truncate">{chat.tagline}</span>
-                        {/* Show loading indicator for this specific chat */}
-                        {isChatLoading && (
-                          <div className="flex items-center gap-1.5">
-                            <Loader2 className="h-4 w-4 animate-spin text-brand-600" />
-                            <span className="text-xs text-brand-600 font-medium">
-                              Generating...
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                      <div
-                        onClick={(e) => handleDelete(chat.id, e)}
-                        className={cn(
-                          'size-6 shrink-0 dark:hover:bg-neutral-700 hover:bg-neutral-200 rounded-md transition-all duration-300 flex items-center justify-center opacity-0 group-hover/chat:opacity-100',
-                          deletingChatId === chat.id && 'opacity-50 pointer-events-none',
-                        )}
+                      <Link
+                        href={`/chat/${chat.id}`}
+                        className="flex items-center justify-between w-full"
                       >
-                        {deletingChatId === chat.id ? (
-                          <Loader2 className="size-4 animate-spin" />
-                        ) : (
-                          <Trash2 className="size-4 text-red-600" />
-                        )}
-                      </div>
-                    </Link>
-                  </SidebarMenuSubButton>
-                </SidebarMenuSubItem>
-              );
-            })
+                        <div className="flex items-center gap-2 truncate">
+                          <ChatChainIcon chain={chat.chain} />
+                          <span className="truncate">{chat.tagline}</span>
+                          {/* Show loading indicator for this specific chat */}
+                          {isChatLoading && (
+                            <div className="flex items-center gap-1.5">
+                              <Loader2 className="h-4 w-4 animate-spin text-brand-600" />
+                              <span className="text-xs text-brand-600 font-medium">
+                                Generating...
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                        <div
+                          onClick={(e) => handleDelete(chat.id, e)}
+                          className={cn(
+                            'size-6 shrink-0 dark:hover:bg-neutral-700 hover:bg-neutral-200 rounded-md transition-all duration-300 flex items-center justify-center opacity-0 group-hover/chat:opacity-100',
+                            deletingChatId === chat.id && 'opacity-50 pointer-events-none',
+                          )}
+                        >
+                          {deletingChatId === chat.id ? (
+                            <Loader2 className="size-4 animate-spin" />
+                          ) : (
+                            <Trash2 className="size-4 text-red-600" />
+                          )}
+                        </div>
+                      </Link>
+                    </SidebarMenuSubButton>
+                  </SidebarMenuSubItem>
+                );
+              })}
+            </SidebarMenuSub>
           ) : user ? (
             <p className="text-sm text-neutral-500 dark:text-neutral-400 pl-2">No chats found</p>
           ) : (

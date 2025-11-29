@@ -73,7 +73,7 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
       return (
         <div className="flex flex-col items-center justify-center p-8 text-center">
           <h2 className="text-lg font-semibold text-red-600 mb-2">Something went wrong</h2>
-          <p className="text-gray-600 mb-4">
+          <p className="text-gray-100 mb-4">
             An unexpected error occurred. Please try again. If the problem persists, please contact
             support.
           </p>
