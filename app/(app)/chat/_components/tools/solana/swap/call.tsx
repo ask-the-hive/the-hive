@@ -50,7 +50,6 @@ const SwapCallBody: React.FC<Props> = ({ toolCallId, args }) => {
   }, [outputTokenData, inputTokenData, outputTokenLoading, inputTokenLoading]);
 
   const handleSuccess = async (tx: string) => {
-    debugger;
     // Set success state immediately for UI feedback
     setIsSuccess(true);
     setTxSignature(tx);
