@@ -171,9 +171,8 @@ export const ChainProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       });
 
     if (solanaWalletAccounts && solanaWalletAccounts.length > 0) {
-      // Just use the first Solana wallet as fallback
+      // Use the most recently verified Solana wallet as fallback
       const fallbackWallet = solanaWalletAccounts[0] as any;
-      console.log('Using fallback Privy wallet:', fallbackWallet.address);
 
       setWalletAddresses((prev) => ({
         ...prev,
