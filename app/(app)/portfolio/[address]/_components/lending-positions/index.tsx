@@ -11,11 +11,12 @@ import {
   Skeleton,
   Button,
   TokenIcon,
+  BalanceTableCell,
 } from '@/components/ui';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useChain } from '@/app/_contexts/chain-context';
 import { LendingPosition } from '@/types/lending-position';
-import { formatFiat, formatCrypto, formatCompactNumber, formatUSD } from '@/lib/format';
+import { formatCompactNumber, formatUSD } from '@/lib/format';
 import { capitalizeWords, getConfidenceLabel } from '@/lib/string-utils';
 import Link from 'next/link';
 import { Card } from '@/components/ui/card';
@@ -201,16 +202,13 @@ const LendingPositions: React.FC<Props> = ({
                       <p>{position.token.symbol}</p>
                     </div>
                   </TableCell>
-                  <TableCell>
-                    <div className="flex flex-col">
-                      <p className="font-medium">
-                        {formatCrypto(displayBalanceRaw, position.token.symbol, decimals)}
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        {formatFiat(displayBalanceRaw, price, decimals)}
-                      </p>
-                    </div>
-                  </TableCell>
+                  <BalanceTableCell
+                    displayBalanceRaw={displayBalanceRaw}
+                    tokenSymbol={position.token.symbol}
+                    tokenId={position.token.id}
+                    decimals={decimals}
+                    portfolioPrice={price}
+                  />
                   <TableCell>
                     <span className="text-green-600 font-medium">
                       {`${position.poolData.yield.toFixed(2)}%`}

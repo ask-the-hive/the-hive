@@ -51,6 +51,8 @@ const LiquidStakingYields: React.FC<{
   }, [body]);
 
   const handleStakeClick = async (poolData: LiquidStakingYieldsPoolData) => {
+    if (isResponseLoading) return;
+
     const symbol = poolData?.tokenData?.symbol || poolData?.symbol;
     sendMessage(`I want to stake SOL for ${symbol}`);
   };
