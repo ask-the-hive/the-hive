@@ -28,6 +28,8 @@ import { clearUserDataCache } from '@/lib/swr-cache';
 declare global {
   interface Window {
     solana?: {
+      publicKey: PublicKey | null;
+      isConnected: boolean;
       on: (event: string, callback: (publicKey: PublicKey | null) => void) => void;
       removeListener?: (event: string, callback: (publicKey: PublicKey | null) => void) => void;
       isPhantom?: boolean;
@@ -49,6 +51,7 @@ interface ChainContextType {
   walletAddresses: WalletAddresses;
   setWalletAddress: (chain: ChainType, address: string) => void;
   currentWalletAddress: string | undefined;
+  setLastVerifiedSolanaWallet: () => void;
 }
 
 const ChainContext = createContext<ChainContextType | undefined>(undefined);
@@ -145,14 +148,21 @@ export const ChainProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   // Get the current wallet address based on the selected chain
   const currentWalletAddress = walletAddresses[currentChain];
 
-  // Initialize wallet address from user's linked accounts on app load/refresh
-  // Use latestVerifiedAt to determine the most recently used wallet
-  useEffect(() => {
-    if (!user) return;
-    if (walletAddresses.solana) return;
+  const setLastVerifiedSolanaWallet = useCallback(() => {
+    // First, check if solana has a currently connected wallet
+    if (typeof window !== 'undefined' && window.solana?.publicKey && window.solana?.isConnected) {
+      const currentPhantomAddress = window.solana.publicKey.toString();
+      console.log('Using current Phantom wallet:', currentPhantomAddress);
 
-    // Find the most recently verified Solana wallet from linkedAccounts
-    const solanaWalletAccounts = user.linkedAccounts
+      setWalletAddresses((prev) => ({
+        ...prev,
+        solana: currentPhantomAddress,
+      }));
+      return;
+    }
+
+    // Fallback: If wallet provider doesn't have an active wallet, use Privy's linked accounts
+    const solanaWalletAccounts = user?.linkedAccounts
       ?.filter((account: any) => account.type === 'wallet' && account.chainType === 'solana')
       .sort((a: any, b: any) => {
         const dateA = new Date(a.latestVerifiedAt).getTime();
@@ -161,14 +171,25 @@ export const ChainProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       });
 
     if (solanaWalletAccounts && solanaWalletAccounts.length > 0) {
-      const mostRecentWallet = solanaWalletAccounts[0] as any;
+      // Just use the first Solana wallet as fallback
+      const fallbackWallet = solanaWalletAccounts[0] as any;
+      console.log('Using fallback Privy wallet:', fallbackWallet.address);
 
       setWalletAddresses((prev) => ({
         ...prev,
-        solana: mostRecentWallet.address,
+        solana: fallbackWallet.address,
       }));
     }
-  }, [user, walletAddresses.solana]);
+  }, [user]);
+
+  // Initialize wallet address from user's linked accounts on app load/refresh
+  // Prioritize window.solana.publicKey as the most reliable source of truth
+  useEffect(() => {
+    if (!user) return;
+    if (walletAddresses.solana) return;
+
+    setLastVerifiedSolanaWallet();
+  }, [user, walletAddresses.solana, setLastVerifiedSolanaWallet]);
 
   const handleDisconnect = useCallback(async () => {
     // Check if user has other authentication methods (email, social, etc.)
@@ -183,22 +204,22 @@ export const ChainProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         solana: undefined,
       }));
     } else {
-      // Phantom is their only auth method - log them out completely
+      // wallet provider is their only auth method - log them out completely
       clearUserDataCache();
       await logout();
       router.push('/chat');
     }
   }, [user, logout, router]);
 
-  // Handle Phantom account switching
-  // When a user switches accounts in Phantom, update our wallet address
+  // Handle wallet provider account switching
+  // When a user switches accounts in wallet provider, update our wallet address
   useEffect(() => {
     if (typeof window === 'undefined' || !window?.solana?.on) return;
 
     const handleAccountChanged = async (publicKey: PublicKey | null) => {
       if (publicKey) {
         const newAddress = publicKey.toString();
-        console.log('Phantom account changed to:', newAddress);
+        console.log('wallet provider account changed to:', newAddress);
 
         // Update the wallet address in our context
         setWalletAddresses((prev) => ({
@@ -239,6 +260,7 @@ export const ChainProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         walletAddresses,
         setWalletAddress,
         currentWalletAddress,
+        setLastVerifiedSolanaWallet,
       }}
     >
       {children}

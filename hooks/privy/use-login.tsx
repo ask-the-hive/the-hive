@@ -22,7 +22,13 @@ export const useLogin = ({
 } = {}) => {
   const router = useRouter();
   const { user, ready, logout, linkWallet: privyLinkWallet } = usePrivy();
-  const { walletAddresses, currentChain, setCurrentChain, setWalletAddress } = useChain();
+  const {
+    walletAddresses,
+    currentChain,
+    setCurrentChain,
+    setWalletAddress,
+    setLastVerifiedSolanaWallet,
+  } = useChain();
   const { wallets } = useWallets();
   const { wallets: solanaWallets } = useSolanaWallets();
 
@@ -48,33 +54,8 @@ export const useLogin = ({
 
   const { login } = usePrivyLogin({
     onComplete: async (user) => {
-      // Find the most recently verified Solana wallet from linkedAccounts
-      const solanaWalletAccounts = user.linkedAccounts
-        ?.filter((account: any) => account.type === 'wallet' && account.chainType === 'solana')
-        .sort((a: any, b: any) => {
-          const dateA = new Date(a.latestVerifiedAt).getTime();
-          const dateB = new Date(b.latestVerifiedAt).getTime();
-          return dateB - dateA; // Sort descending (most recent first)
-        });
-
-      if (solanaWalletAccounts && solanaWalletAccounts.length > 0) {
-        const mostRecentWallet = solanaWalletAccounts[0] as any;
-
-        setWalletAddress('solana', mostRecentWallet.address);
-        setCurrentChain('solana');
-
-        // Call the user's onComplete callback with the most recent wallet
-        onComplete?.({
-          address: mostRecentWallet.address,
-          chainType: 'solana',
-          walletClientType: mostRecentWallet.walletClientType,
-        } as any);
-      } else if (user.wallet) {
-        // Fallback to primary wallet if no Solana wallets found
-        console.log('Login completed - using primary wallet:', {
-          address: user.wallet.address,
-          walletClientType: user.wallet.walletClientType,
-        });
+      setLastVerifiedSolanaWallet();
+      if (user.wallet) {
         onComplete?.(user.wallet);
       }
     },
