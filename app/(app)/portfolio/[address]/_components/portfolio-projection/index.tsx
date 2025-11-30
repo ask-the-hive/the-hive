@@ -680,7 +680,7 @@ const PortfolioProjection: React.FC<Props> = ({
             ) : (
               <div className="h-80">
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                  <LineChart data={chartData} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
                     <XAxis
                       dataKey="date"

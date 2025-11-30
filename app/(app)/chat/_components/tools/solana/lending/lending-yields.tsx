@@ -52,6 +52,8 @@ const LendingYields: React.FC<{
   }, [body]);
 
   const handleLendClick = async (poolData: LendingYieldsPoolData) => {
+    if (isResponseLoading) return;
+
     const symbol = poolData?.tokenData?.symbol || poolData?.symbol;
     // Use tokenMintAddress from DefiLlama's underlyingTokens as source of truth
     const tokenAddress = poolData?.tokenMintAddress || poolData?.tokenData?.id;
@@ -64,6 +66,7 @@ const LendingYields: React.FC<{
 
   const handleMoreDetailsClick = (poolData: LendingYieldsPoolData, event: React.MouseEvent) => {
     event.stopPropagation(); // Prevent triggering the lend click
+
     setSelectedPool(poolData);
     setIsModalOpen(true);
   };

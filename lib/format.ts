@@ -15,10 +15,10 @@ export const formatFiat = (
   price: number,
   decimals: number,
 ): string => {
-  if (!rawBalance || !price || price <= 0) return '$0.00';
+  if (!rawBalance || !price || price <= 0) return '$--';
 
   const balance = typeof rawBalance === 'string' ? parseFloat(rawBalance) : rawBalance;
-  if (isNaN(balance) || balance <= 0) return '$0.00';
+  if (isNaN(balance) || balance <= 0) return '$--';
 
   const actualBalance = balance / Math.pow(10, decimals);
   const fiatValue = actualBalance * price;
@@ -44,7 +44,7 @@ export const formatCrypto = (
   if (!rawBalance) return `0 ${symbol}`;
 
   const balance = typeof rawBalance === 'string' ? parseFloat(rawBalance) : rawBalance;
-  if (isNaN(balance) || balance <= 0) return `0 ${symbol}`;
+  if (isNaN(balance) || balance <= 0) return `-- ${symbol}`;
 
   const actualBalance = balance / Math.pow(10, decimals);
 
