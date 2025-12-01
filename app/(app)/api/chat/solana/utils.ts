@@ -21,10 +21,10 @@ CRITICAL ROUTING RULES:
    - Users exploring what they can do without a specific strategy in mind
    - These should trigger the conversational fallback to help users discover features
 
-2. **Lending Agent** - Use for specific lending requests:
-   🚨 CRITICAL: If the message contains the word "lend" or "lending", ALWAYS use Lending Agent, even for SOL
+2. **Lending Agent** - Use for specific lending requests or yield-shopping:
+   🚨 CRITICAL: If the message contains the word "lend", "lending", "yield", or "apy" for stablecoins/SOL, ALWAYS use Lending Agent, even for SOL
    - "Show me the best lending pools on Solana" ← LENDING AGENT
-   - "Best lending yields" ← LENDING AGENT
+   - "Best lending yields" / "best stablecoin yields" / "best USDC APY" ← LENDING AGENT
    - "Lending rates for USDC/USDT/SOL" ← LENDING AGENT
    - "Lend SOL to Kamino" ← LENDING AGENT (not Staking Agent!)
    - "I want to lend SOL" ← LENDING AGENT (not Staking Agent!)
@@ -32,7 +32,9 @@ CRITICAL ROUTING RULES:
    - Lending pools or protocols (Francium, Kamino Lend, etc.)
    - "How much can I lend?" (checks token balance)
    - "Lend my USDT/USDC/SOL"
-   - Any query with "lend" keyword → Lending Agent (takes priority over token type)
+   - If the user already said they want lending and then replies "yes" or "sure", continue with Lending Agent (do not send to Knowledge Agent)
+   - If the previous assistant message offered lending and the user responds with a short confirmation ("yes", "yep", "sure", "ok"), route to the Lending Agent to return yields.
+   - Any query with "lend"/"lending"/"yield"/"apy" → Lending Agent (takes priority over token type)
 
 3. **Staking Agent** - Use for specific staking requests:
    🚨 CRITICAL: Only use Staking Agent when the message contains "stake"/"staking", NOT when it says "lend"
