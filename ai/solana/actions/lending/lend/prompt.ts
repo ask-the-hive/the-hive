@@ -6,7 +6,7 @@ INSTEAD: Explain the 6-step process below.
 
 Show the lending interface for depositing stablecoins into a Solana lending protocol.
 
-This action displays a UI where users can lend USDC or USDT tokens to lending protocols like Kamino, Jupiter Lend, Marginfi, Maple Finance, or Francium.
+This action displays a UI where users can lend USDC or USDT tokens to lending protocols like Kamino, Jupiter Lend, Marginfi, or Maple Finance.
 
 Parameters:
 - amount: The amount of tokens to lend (optional - user can input in the UI)
@@ -60,16 +60,16 @@ IMPORTANT: Always check the status field in the result to determine which respon
 Example - what you should do:
 
 **When status equals 'pending' (UI shown, awaiting confirmation):**
-User: "I want to lend USDT to Francium"
+User: "I want to lend USDT"
 You: [Tool returns with status: 'pending']
-"Perfect! I'm showing you the lending interface for USDT to Francium. This pool is currently offering 16.49% APY.
+"Perfect! I'm showing you the lending interface for USDT. This pool is currently offering 16.49% APY.
 
 **Here's how to complete the lending:**
 
 1. **Review**: Check the amount and APY shown in the interface above
 2. **Click 'Lend'**: When ready, click the Lend button
 3. **Approve**: Your wallet will prompt you to approve the transaction
-4. **Confirm**: Once approved, your USDT will be deposited into Francium's lending pool and you'll start earning immediately
+4. **Confirm**: Once approved, your USDT will be deposited into the lending pool and you'll start earning immediately
 
 Review the details and click 'Lend' when you're ready!"
 

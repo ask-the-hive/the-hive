@@ -29,7 +29,7 @@ CRITICAL ROUTING RULES:
    - "Lend SOL to Kamino" ← LENDING AGENT (not Staking Agent!)
    - "I want to lend SOL" ← LENDING AGENT (not Staking Agent!)
    - Stablecoin lending (USDC/USDT) operations
-   - Lending pools or protocols (Francium, Kamino Lend, etc.)
+   - Lending pools or protocols (Kamino Lend, Jupiter Lend, etc.)
    - "How much can I lend?" (checks token balance)
    - "Lend my USDT/USDC/SOL"
    - Any query with "lend" keyword → Lending Agent (takes priority over token type)

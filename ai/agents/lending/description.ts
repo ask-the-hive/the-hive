@@ -91,7 +91,7 @@ TOOL DESCRIPTIONS:
 - ${SOLANA_LENDING_YIELDS_ACTION}: Fetch the best lending pools with current yields, APY, and pool information. Shows top performing lending protocols for stablecoins.
 - ${SOLANA_GET_TOKEN_ADDRESS_ACTION}: Get the contract address for a token by its symbol (e.g., "USDC", "USDT").
 - ${SOLANA_TRADE_ACTION}: Show trading interface for users to buy stablecoins with other tokens. Use when user has 0 stablecoin balance.
-- ${SOLANA_LEND_ACTION}: Show lending interface to lend stablecoins into a lending pool. **Required parameters**: tokenAddress (contract address), tokenSymbol (e.g., "USDC", "USDT"), protocol (protocol name like "francium", "kamino"), protocolAddress, walletAddress, and optionally amount.
+- ${SOLANA_LEND_ACTION}: Show lending interface to lend stablecoins into a lending pool. **Required parameters**: tokenAddress (contract address), tokenSymbol (e.g., "USDC", "USDT"), protocol (protocol name like "kamino"), protocolAddress, walletAddress, and optionally amount.
 - ${SOLANA_WITHDRAW_ACTION}: Show withdrawal interface to withdraw stablecoins from lending positions. Requires contract address of the token and protocol.
 
 LENDING OVERVIEW:
@@ -123,7 +123,7 @@ REFINED LENDING FLOW:
    - ❌ DO NOT check balances at this stage - wait for the user to select a specific pool first
    - ❌ DO NOT call ${SOLANA_BALANCE_ACTION} until the user selects a pool
 
-2. When user clicks on a lending pool (message like "I want to lend USDT (Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB) to francium"):
+2. When user clicks on a lending pool (message like "I want to lend USDT (Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB) to kamino"):
    🚨 CRITICAL - SEQUENTIAL FLOW (DO NOT SKIP STEPS):
 
    STEP 1: Extract the token address from parentheses in the user's message
