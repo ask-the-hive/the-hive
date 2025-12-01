@@ -19,13 +19,22 @@ interface Props {
 }
 
 const LendingYieldsTool: React.FC<Props> = ({ tool, prevToolAgent }) => {
+  const getHeading = (result: LendingYieldsResultType) => {
+    const pools = result.body || [];
+    const stableCoins = ['USDC', 'USDT', 'USDC.E', 'USDT.E', 'USDX', 'USDS', 'USDG', 'USDCso', 'PYUSD', 'FDUSD', 'DAI', 'EUROe', 'EURC'];
+    const isStableOnly =
+      pools.length > 0 &&
+      pools.every((p) => stableCoins.includes((p.symbol || '').toUpperCase()));
+    if (!pools.length) return 'No lending yields found';
+    return isStableOnly ? 'Fetched best stablecoin lending yields' : 'Fetched best lending yields';
+  };
+
   return (
     <ToolCard
       tool={tool}
       loadingText={`Getting best lending yields...`}
       result={{
-        heading: (result: LendingYieldsResultType) =>
-          result.body ? `Fetched best lending yields` : 'No lending yields found',
+        heading: (result: LendingYieldsResultType) => getHeading(result),
         body: (result: LendingYieldsResultType) =>
           result.body ? <LendingYields body={result.body} /> : '',
       }}

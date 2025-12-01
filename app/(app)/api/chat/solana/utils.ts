@@ -4,6 +4,7 @@ import { generateObject, LanguageModelV1, Message } from 'ai';
 
 import { agents } from '@/ai/agents';
 import { Agent } from '@/ai/agent';
+import { LENDING_AGENT_NAME } from '@/ai/agents/lending/name';
 
 export const system = `You are the orchestrator of a swarm of blockchain agents that each have specialized tasks.
 
@@ -87,6 +88,23 @@ export const chooseAgent = async (
   model: LanguageModelV1,
   messages: Message[],
 ): Promise<Agent | null> => {
+  // Heuristic fast-path: if the user is asking for yields/lending or confirms a prior lending prompt, route directly to Lending Agent.
+  const lastUserMsg = [...messages].reverse().find((m) => m.role === 'user');
+  const lastAssistantMsg = [...messages].reverse().find((m) => m.role === 'assistant');
+  const userText = (lastUserMsg?.content as string | undefined)?.toLowerCase() || '';
+  const assistantText = (lastAssistantMsg?.content as string | undefined)?.toLowerCase() || '';
+  const affirmative = /^(yes|yep|yeah|sure|ok|okay|alright|continue|go ahead)\b/.test(
+    userText.trim(),
+  );
+  const wantsLending =
+    /\b(lend|lending|yield|apy)\b/.test(userText) ||
+    (affirmative && /\b(lend|lending|yield|apy|stablecoin)\b/.test(assistantText));
+
+  if (wantsLending) {
+    const lending = agents.find((a) => a.name === LENDING_AGENT_NAME);
+    if (lending) return lending;
+  }
+
   // Use last 5 messages for context (or all if fewer than 5)
   const contextMessages = messages.slice(-5);
 
