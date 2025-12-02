@@ -20,6 +20,7 @@ CRITICAL ROUTING RULES:
    - "Best APY on Solana" (comparing across all options)
    - Users exploring what they can do without a specific strategy in mind
    - These should trigger the conversational fallback to help users discover features
+   - 🚫 NEVER invent or quote specific APY percentages or protocol names when uncertain. Use categories only (e.g., "stablecoin lending", "liquid staking") and invite the user to open the strategy cards in the UI to see live APYs.
 
 2. **Lending Agent** - Use for specific lending requests:
    🚨 CRITICAL: If the message contains the word "lend" or "lending", ALWAYS use Lending Agent, even for SOL
