@@ -162,11 +162,11 @@ const LendingPositions: React.FC<Props> = ({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Token</TableHead>
-              <TableHead>Balance</TableHead>
-              <TableHead>APY</TableHead>
-              <TableHead className="hidden md:table-cell">Protocol</TableHead>
-              <TableHead>Actions</TableHead>
+              <TableHead className="w-[120px]">Token</TableHead>
+              <TableHead className="w-[160px]">Balance</TableHead>
+              <TableHead className="w-[100px]">APY</TableHead>
+              <TableHead className="w-[180px] hidden md:table-cell">Protocol</TableHead>
+              <TableHead className="w-[140px]">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody className="max-h-96 overflow-y-auto">
@@ -189,7 +189,7 @@ const LendingPositions: React.FC<Props> = ({
 
               return (
                 <TableRow key={`${position.walletAddress}-${position.token.symbol}-${index}`}>
-                  <TableCell>
+                  <TableCell className="w-[120px]">
                     <div className="font-medium flex gap-2 items-center">
                       <TokenIcon
                         src={position.token.logoURI}
@@ -208,13 +208,14 @@ const LendingPositions: React.FC<Props> = ({
                     tokenId={position.token.id}
                     decimals={decimals}
                     portfolioPrice={price}
+                    className="w-[160px]"
                   />
-                  <TableCell>
+                  <TableCell className="w-[100px]">
                     <span className="text-green-600 font-medium">
                       {`${position.poolData.yield.toFixed(2)}%`}
                     </span>
                   </TableCell>
-                  <TableCell className="hidden md:table-cell">
+                  <TableCell className="w-[180px] hidden md:table-cell">
                     <div className="flex items-center gap-2">
                       {getProtocolUrl(position.protocol) ? (
                         <Link
@@ -240,7 +241,7 @@ const LendingPositions: React.FC<Props> = ({
                       </TooltipProvider>
                     </div>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="w-[140px]">
                     <Button
                       size="sm"
                       onClick={() => handleWithdraw(position)}

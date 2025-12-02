@@ -87,6 +87,10 @@ export const ChainProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       }
     },
     onError: (error) => {
+      // Ignore user cancellation errors
+      const errorStr = String(error);
+      if (errorStr.includes('exited')) return;
+
       console.error('Error connecting wallet:', error);
       Sentry.captureException(error);
     },
@@ -114,6 +118,10 @@ export const ChainProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       }
     },
     onError: (error) => {
+      // Ignore user cancellation errors (e.g. "exited_link_flow")
+      const errorStr = String(error);
+      if (errorStr.includes('exited')) return;
+
       console.error('Error linking account:', error);
       Sentry.captureException(error);
     },
