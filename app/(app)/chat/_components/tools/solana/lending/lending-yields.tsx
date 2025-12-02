@@ -42,7 +42,6 @@ const LendingYields: React.FC<{
   const [selectedPool, setSelectedPool] = useState<LendingYieldsPoolData | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDisabled, setIsDisabled] = useState(true);
-  const isSendingRef = React.useRef(false);
 
   useEffect(() => {
     if (!body) return;
@@ -53,11 +52,7 @@ const LendingYields: React.FC<{
   }, [body]);
 
   const handleLendClick = async (poolData: LendingYieldsPoolData) => {
-    if (isResponseLoading || isDisabled || isSendingRef.current) return;
-
-    // Prevent subsequent clicks from firing duplicate chat requests until the response finishes
-    isSendingRef.current = true;
-    setIsDisabled(true);
+    if (isResponseLoading) return;
 
     const symbol = poolData?.tokenData?.symbol || poolData?.symbol;
     // Use tokenMintAddress from DefiLlama's underlyingTokens as source of truth
@@ -72,23 +67,16 @@ const LendingYields: React.FC<{
   const handleMoreDetailsClick = (poolData: LendingYieldsPoolData, event: React.MouseEvent) => {
     event.stopPropagation(); // Prevent triggering the lend click
 
-    // Keep cards disabled while modal is open to avoid stray clicks sending messages
-    setIsDisabled(true);
     setSelectedPool(poolData);
     setIsModalOpen(true);
   };
 
   useEffect(() => {
-    if (isResponseLoading) {
-      setIsDisabled(true);
-      return;
+    if (!isResponseLoading) {
+      setTimeout(() => {
+        setIsDisabled(false);
+      }, 2000);
     }
-
-    // Response finished; allow another selection after a short delay
-    setTimeout(() => {
-      isSendingRef.current = false;
-      setIsDisabled(false);
-    }, 300);
   }, [isResponseLoading]);
 
   return (
@@ -114,11 +102,6 @@ const LendingYields: React.FC<{
         onClose={() => {
           setIsModalOpen(false);
           setSelectedPool(null);
-          // Re-enable cards shortly after closing modal
-          setTimeout(() => {
-            isSendingRef.current = false;
-            setIsDisabled(false);
-          }, 300);
         }}
       />
     </>
