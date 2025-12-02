@@ -22,12 +22,6 @@ const solanaButtons = [
     icon: 'ChartCandlestick' as const,
     prompt: "Let's trade some tokens",
   },
-  {
-    title: 'Discover',
-    description: 'Explore trending Solana assets',
-    icon: 'Brain' as const,
-    prompt: 'Show me trending Solana tokens',
-  },
 ] as const;
 
 const bscButtons = [
@@ -90,8 +84,12 @@ const StarterButtons = () => {
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-2 w-full mt-4">
-      {buttons.map((button) => (
-        <StarterButton key={button.title} {...button} />
+      {buttons.map((button, index) => (
+        <StarterButton
+          key={button.title}
+          {...button}
+          className={index === 2 ? 'md:col-span-2 md:w-[calc(50%-0.25rem)] md:mx-auto' : ''}
+        />
       ))}
     </div>
   );

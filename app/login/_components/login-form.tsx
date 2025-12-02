@@ -12,7 +12,7 @@ export function LoginForm() {
   const [activeTab, setActiveTab] = useState('wallet');
 
   return (
-    <div className="w-full max-w-md mx-auto p-8">
+    <div className="w-full max-w-md mx-auto md:px-8 py-8">
       {/* Logo and Header */}
       <div className="mb-8 text-center">
         <div className="flex justify-center mb-4">
