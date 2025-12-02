@@ -12,6 +12,7 @@ import { getTokenBySymbol } from '@/db/services/tokens';
 import { Token } from '@/db/types/token';
 import { LendingYieldsPoolData } from '@/ai/solana/actions/lending/lending-yields/schema';
 import { getJupiterPools, type JupiterPool } from './get-jupiter-pools';
+import * as Sentry from '@sentry/nextjs';
 
 const KAMINO_MAIN_MARKET = new PublicKey('7u3HeHxYDLhnCoErrtycNokbQYbWGzLs6JSDqGAv5PfF');
 const KAMINO_PROGRAM_ID = new PublicKey('KLend2g3cP87fffoy8q1mQqGKjrxjC8boSyAYavgmjD');
@@ -285,8 +286,18 @@ async function getJupiterLendingPositions(
   ]);
 
   if (!positionsRes.ok) {
-    console.error(
-      `❌ [SERVER] Jupiter positions fetch failed: ${positionsRes.status} ${await positionsRes.text()}`,
+    const text = await positionsRes.text();
+    Sentry.captureException(
+      new Error(
+        `❌ [SERVER] Jupiter positions fetch failed: ${positionsRes.status} ${text}`,
+      ),
+      {
+        extra: {
+          status: positionsRes.status,
+          responseText: text,
+          walletAddress,
+        },
+      },
     );
     return [];
   }

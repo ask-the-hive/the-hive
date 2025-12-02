@@ -28,13 +28,14 @@ export const getTransactionHistory = async (address: string): Promise<EnrichedTr
     // Keep type inside Helius enums; treat unlabeled Jupiter-lend as transfer-like
     const patchedType: TransactionType =
       tx.type && tx.type !== 'UNKNOWN' ? tx.type : TransactionType.TRANSFER;
-    const patchedSource: Source = isJupiterLend
-      ? Source.JUPITER
-      : isKamino
-        ? Source.UNKNOWN
-        : tx.source && tx.source !== 'UNKNOWN'
-          ? (tx.source as Source)
-          : Source.UNKNOWN;
+    let patchedSource: Source = Source.UNKNOWN;
+    if (isJupiterLend) {
+      patchedSource = Source.JUPITER;
+    } else if (isKamino) {
+      patchedSource = Source.UNKNOWN;
+    } else if (tx.source && tx.source !== 'UNKNOWN') {
+      patchedSource = tx.source as Source;
+    }
 
     return {
       ...tx,

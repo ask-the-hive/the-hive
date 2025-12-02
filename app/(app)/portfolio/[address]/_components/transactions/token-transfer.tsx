@@ -1,13 +1,14 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 
-import { Skeleton } from '@/components/ui';
+import { Skeleton, TokenIcon } from '@/components/ui';
 
 import { useTokenDataByAddress } from '@/hooks';
 import { useChain } from '@/app/_contexts/chain-context';
 
 import { cn } from '@/lib/utils';
+import { formatFiat } from '@/lib/format';
 
 // Generic token transfer interface that works for both Solana and BSC
 interface GenericTokenTransfer {
@@ -33,12 +34,9 @@ interface Props {
   address?: string;
 }
 
-const DEFAULT_FALLBACK = 'https://www.birdeye.so/images/unknown-token-icon.svg';
-
 const TokenTransfer: React.FC<Props> = ({ tokenTransfer, address }) => {
   const { currentChain } = useChain();
   const isSolana = currentChain === 'solana';
-  const [imgError, setImgError] = useState(false);
 
   // Always call the hook, but only use its result when needed
   const { data: solanaTokenData, isLoading: isSolanaTokenLoading } = useTokenDataByAddress(
@@ -59,11 +57,13 @@ const TokenTransfer: React.FC<Props> = ({ tokenTransfer, address }) => {
 
     return (
       <div className="flex items-center gap-2">
-        <img
-          src={imgError ? DEFAULT_FALLBACK : solanaTokenData?.logoURI || DEFAULT_FALLBACK}
-          onError={() => setImgError(true)}
-          className={cn('w-6 h-6 rounded-full', imgError && 'opacity-50')}
+        <TokenIcon
+          src={solanaTokenData?.logoURI}
           alt={solanaTokenData?.name || 'Token'}
+          tokenSymbol={solanaTokenData?.symbol}
+          width={24}
+          height={24}
+          className="w-6 h-6"
         />
         <div className="flex flex-col">
           <div className="flex items-center gap-1">
@@ -72,7 +72,7 @@ const TokenTransfer: React.FC<Props> = ({ tokenTransfer, address }) => {
               className={cn('text-sm font-medium', isOutgoing ? 'text-red-500' : 'text-green-500')}
             >
               {isOutgoing ? '-' : '+'}
-              {amount.toLocaleString(undefined, { maximumFractionDigits: 4 })}
+              {formatFiat(Math.abs(amount), 1, 0)}
             </span>
           </div>
           <span className="text-xs text-muted-foreground">
@@ -90,15 +90,17 @@ const TokenTransfer: React.FC<Props> = ({ tokenTransfer, address }) => {
     const isBaseToken = tokenTransfer.token.symbol.toUpperCase() === 'BASE';
     const logoUrl = isBaseToken
       ? 'https://basescan.org/assets/base/images/svg/empty-token.svg?v=25.4.2.0'
-      : tokenTransfer.token.logo || DEFAULT_FALLBACK;
+      : tokenTransfer.token.logo;
 
     return (
       <div className="flex items-center gap-2">
-        <img
-          src={imgError ? DEFAULT_FALLBACK : logoUrl}
-          onError={() => setImgError(true)}
-          className={cn('w-6 h-6 rounded-full', imgError && 'opacity-50')}
+        <TokenIcon
+          src={logoUrl}
           alt={tokenTransfer.token.name}
+          tokenSymbol={tokenTransfer.token.symbol}
+          width={24}
+          height={24}
+          className="w-6 h-6"
         />
         <div className="flex flex-col">
           <div className="flex items-center gap-1">
@@ -107,7 +109,7 @@ const TokenTransfer: React.FC<Props> = ({ tokenTransfer, address }) => {
               className={cn('text-sm font-medium', isOutgoing ? 'text-red-500' : 'text-green-500')}
             >
               {isOutgoing ? '-' : '+'}
-              {Math.abs(amount).toLocaleString(undefined, { maximumFractionDigits: 4 })}
+              {formatFiat(Math.abs(amount), 1, 0)}
             </span>
           </div>
           <span className="text-xs text-muted-foreground">{tokenTransfer.token.name}</span>

@@ -7,6 +7,7 @@ import {
 } from '@solana/spl-token';
 import { Connection, LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js';
 import { ethers } from 'ethers';
+import * as Sentry from '@sentry/nextjs';
 
 const ERC20_ABI = [
   'function balanceOf(address owner) view returns (uint256)',
@@ -16,7 +17,7 @@ const ERC20_ABI = [
 export const useTokenBalance = (tokenAddress: string, walletAddress: string) => {
   const { currentChain: chain } = useChain();
 
-  const { data, isLoading } = useSWR<number>(
+  const { data, isLoading } = useSWR<number | null>(
     tokenAddress && walletAddress
       ? `token-balance-${chain}-${tokenAddress}-${walletAddress}`
       : null,
@@ -28,9 +29,9 @@ export const useTokenBalance = (tokenAddress: string, walletAddress: string) => 
             (await connection.getBalance(new PublicKey(walletAddress))) / LAMPORTS_PER_SOL;
           return balance;
         } else {
-          // Basic validation: if tokenAddress is not a valid base58 pubkey length, return 0
+          // Basic validation: if tokenAddress is not a valid base58 pubkey length, return null so UI can show '--'
           if (tokenAddress.length < 32 || tokenAddress.length > 44) {
-            return 0;
+            return null;
           }
 
           // Try Token-2022 first, then fall back to regular SPL Token
@@ -44,7 +45,15 @@ export const useTokenBalance = (tokenAddress: string, walletAddress: string) => 
 
             const token_account_2022 = await connection.getTokenAccountBalance(token_address);
             return token_account_2022.value.uiAmount ?? 0;
-          } catch {
+          } catch (error) {
+            Sentry.captureException(error, {
+              extra: {
+                tokenAddress,
+                walletAddress,
+                chain,
+                context: 'useTokenBalance token-2022 ATA lookup',
+              },
+            });
             try {
               const token_address = getAssociatedTokenAddressSync(
                 new PublicKey(tokenAddress),
@@ -54,8 +63,16 @@ export const useTokenBalance = (tokenAddress: string, walletAddress: string) => 
               );
               const token_account = await connection.getTokenAccountBalance(token_address);
               return token_account.value.uiAmount ?? 0;
-            } catch {
-              return 0;
+            } catch (err) {
+              Sentry.captureException(err, {
+                extra: {
+                  tokenAddress,
+                  walletAddress,
+                  chain,
+                  context: 'useTokenBalance SPL ATA lookup',
+                },
+              });
+              return null;
             }
           }
         }
@@ -77,7 +94,7 @@ export const useTokenBalance = (tokenAddress: string, walletAddress: string) => 
   );
 
   return {
-    balance: data || 0,
+    balance: data ?? null,
     isLoading,
   };
 };
