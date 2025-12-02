@@ -39,16 +39,13 @@ const formatSource = (source: string): string => {
 };
 
 const isJupiterLendTx = (tx: any) =>
-  tx?.instructions?.some((ix: any) => ix?.programId === 'jup3YeL8QhtSx1e253b2FDvsMNC87fDrgQZivbrndc9');
+  tx?.instructions?.some(
+    (ix: any) => ix?.programId === 'jup3YeL8QhtSx1e253b2FDvsMNC87fDrgQZivbrndc9',
+  );
 const isKaminoLendTx = (tx: any) =>
   tx?.source?.toUpperCase?.().includes('KAMINO') || tx?.type === 'REFRESH_OBLIGATION';
 
 const getDisplayType = (tx: any, address: string) => {
-  // Heuristic for Jupiter swap: source marks JUPITER and unknown type
-  if (tx?.source === 'JUPITER' && tx?.type === 'UNKNOWN') {
-    return 'Swap';
-  }
-
   if (isJupiterLendTx(tx)) {
     const hasInflow = tx?.tokenTransfers?.some(
       (t: any) => t?.toUserAccount && t.toUserAccount === address,
@@ -61,7 +58,7 @@ const getDisplayType = (tx: any, address: string) => {
     return 'Lend';
   }
 
-   if (isKaminoLendTx(tx)) {
+  if (isKaminoLendTx(tx)) {
     const hasInflow = tx?.tokenTransfers?.some(
       (t: any) => t?.toUserAccount && t.toUserAccount === address,
     );
@@ -71,6 +68,11 @@ const getDisplayType = (tx: any, address: string) => {
     if (hasInflow && !hasOutflow) return 'Lend Withdraw';
     if (hasOutflow && !hasInflow) return 'Lend Deposit';
     return 'Lend';
+  }
+
+  // Heuristic for Jupiter swap: source marks JUPITER and unknown type
+  if (tx?.source === 'JUPITER' && tx?.type === 'UNKNOWN') {
+    return 'Swap';
   }
 
   return tx.type

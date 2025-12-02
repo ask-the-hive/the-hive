@@ -5,6 +5,7 @@ import {
   VersionedTransaction,
   TransactionInstruction,
 } from '@solana/web3.js';
+import * as Sentry from '@sentry/nextjs';
 import { NextRequest, NextResponse } from 'next/server';
 
 // Kamino - Testing with WASM webpack config
@@ -157,6 +158,18 @@ async function buildJupiterLendTx(
 
   if (!res.ok) {
     const text = await res.text();
+    Sentry.captureException(
+      new Error(`Jupiter deposit instructions failed: ${res.status} ${text}`),
+      {
+        extra: {
+          status: res.status,
+          responseText: text,
+          tokenMint,
+          tokenSymbol,
+          amountBase,
+        },
+      },
+    );
     throw new Error(`Jupiter deposit instructions failed: ${res.status} ${text}`);
   }
 

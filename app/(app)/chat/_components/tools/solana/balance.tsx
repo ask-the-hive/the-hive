@@ -149,7 +149,7 @@ const TokenFundingOptions: React.FC<TokenFundingOptionsProps> = ({
                     <span>Swap for {tokenSymbol}</span>
                   </div>
                 ) : (
-                  `Swap for ${tokenSymbol}`
+                  <span>Swap for {tokenSymbol}</span>
                 )}
               </Button>
               <Button
@@ -158,39 +158,35 @@ const TokenFundingOptions: React.FC<TokenFundingOptionsProps> = ({
                 variant="brandOutline"
                 disabled={isBuyLoading}
               >
-                {isBuyLoading ? (
-                  <div className="flex items-center justify-center gap-2">
+                <div className="flex items-center gap-2">
+                  {isBuyLoading && (
                     <div className="h-4 w-4 border-2 border-white/60 border-t-white animate-spin rounded-full" />
-                    <span>Buy or Receive SOL</span>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2">
-                    Buy or Receive SOL
-                    <TooltipProvider>
-                      <Tooltip delayDuration={0}>
-                        <TooltipTrigger asChild>
-                          <div
-                            className="inline-flex items-center"
-                            onClick={(e) => e.stopPropagation()}
-                            onMouseDown={(e) => e.stopPropagation()}
-                          >
-                            <Info className="h-3 w-3 text-brand-600 cursor-help" />
-                          </div>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <div className="p-2 flex flex-col">
-                            <p className="text-sm">
-                              We currently only support buying SOL with fiat on-ramps.
-                            </p>
-                            <p className="text-sm">
-                              Buy or receive SOL then swap for the token needed for your action.
-                            </p>
-                          </div>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </div>
-                )}
+                  )}
+                  Buy or Receive SOL
+                  <TooltipProvider>
+                    <Tooltip delayDuration={0}>
+                      <TooltipTrigger asChild>
+                        <div
+                          className="inline-flex items-center"
+                          onClick={(e) => e.stopPropagation()}
+                          onMouseDown={(e) => e.stopPropagation()}
+                        >
+                          <Info className="h-3 w-3 text-brand-600 cursor-help" />
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <div className="p-2 flex flex-col">
+                          <p className="text-sm">
+                            We currently only support buying SOL with fiat on-ramps.
+                          </p>
+                          <p className="text-sm">
+                            Buy or receive SOL then swap for the token needed for your action.
+                          </p>
+                        </div>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
               </Button>
             </div>
           </div>
@@ -275,7 +271,9 @@ const GetBalance: React.FC<Props> = ({ tool, prevToolAgent }) => {
             result.body?.balance !== undefined && result.body.balance <= 0.00001;
 
           if (!result.body) {
-            return <p className="text-sm text-neutral-600 dark:text-neutral-400">No balance found</p>;
+            return (
+              <p className="text-sm text-neutral-600 dark:text-neutral-400">No balance found</p>
+            );
           }
 
           // Always show swap/onramp when balance is zero

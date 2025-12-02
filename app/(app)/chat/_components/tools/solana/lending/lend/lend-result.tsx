@@ -174,10 +174,7 @@ const LendResult: React.FC<Props> = ({ tokenData, poolData, amount, tx }) => {
                     Loading...
                   </>
                 ) : (
-                  <>
-                    <ExternalLink className="w-4 h-4 mr-2" />
-                    View Portfolio
-                  </>
+                  'View Portfolio'
                 )}
               </Button>
             )}

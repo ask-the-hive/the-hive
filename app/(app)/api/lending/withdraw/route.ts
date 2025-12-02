@@ -22,6 +22,7 @@ import {
   type Address,
   type Rpc,
 } from '@solana/kit';
+import * as Sentry from '@sentry/nextjs';
 
 const KAMINO_MAIN_MARKET = new PublicKey('7u3HeHxYDLhnCoErrtycNokbQYbWGzLs6JSDqGAv5PfF');
 const KAMINO_PROGRAM_ID = new PublicKey('KLend2g3cP87fffoy8q1mQqGKjrxjC8boSyAYavgmjD');
@@ -291,6 +292,18 @@ async function buildJupiterWithdrawTx(
 
   if (!res.ok) {
     const text = await res.text();
+    Sentry.captureException(new Error(`Jupiter ${endpoint} failed: ${res.status} ${text}`), {
+      extra: {
+        status: res.status,
+        responseText: text,
+        endpoint,
+        tokenMint,
+        tokenSymbol: 'unknown',
+        amountBase,
+        wallet: wallet.toBase58(),
+        shares,
+      },
+    });
     throw new Error(`Jupiter ${endpoint} failed: ${res.status} ${text}`);
   }
 
