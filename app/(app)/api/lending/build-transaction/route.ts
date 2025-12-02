@@ -105,7 +105,7 @@ export async function POST(req: NextRequest) {
       default:
         return NextResponse.json(
           {
-            error: `Protocol "${protocol}" not supported. Supported: Francium, Jupiter Lend, Solend`,
+            error: `Protocol "${protocol}" not supported. Supported: Jupiter Lend, Kamino`,
           },
           { status: 400 },
         );

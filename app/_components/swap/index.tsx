@@ -22,7 +22,7 @@ import { getSwapObj, getQuote } from '@/services/jupiter';
 // QuoteResponse type for Jupiter lite API
 type QuoteResponse = any;
 import type { Token } from '@/db/types';
-
+import * as Sentry from '@sentry/nextjs';
 interface Props {
   initialInputToken: Token | null;
   initialOutputToken: Token | null;
@@ -163,7 +163,8 @@ const Swap: React.FC<Props> = ({
 
       onSuccess?.(txHash);
     } catch (error) {
-      onError?.(error instanceof Error ? error.message : 'Unknown error');
+      Sentry.captureException(error);
+      onError?.('There was an issue submitting the transaction. Please try again.');
     } finally {
       setIsSwapping(false);
     }
@@ -201,7 +202,8 @@ const Swap: React.FC<Props> = ({
             });
           }
         } catch (error) {
-          console.error('Error fetching quote:', error);
+          onError?.('There was an issue fetching the quote. Please try again.');
+          Sentry.captureException(error);
         } finally {
           setIsQuoteLoading(false);
         }
@@ -217,6 +219,7 @@ const Swap: React.FC<Props> = ({
   }, [
     hasCompleteTokenData,
     inputToken,
+    onError,
     outputToken,
     inputAmount,
     handleOutputAmountChange,

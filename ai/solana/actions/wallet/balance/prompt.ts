@@ -26,7 +26,7 @@ Choose the option that works best for you, and once you have [TOKEN SYMBOL], we 
 WHY: The UI automatically shows funding options when balance = 0. Your job is to EXPLAIN those options, NOT ask if they want help.
 
 Example of CORRECT behavior:
-User: "I want to lend USDC to Francium"
+User: "I want to lend USDC to Kamino Lend"
 Agent: [Calls this balance tool for USDC]
 Balance returns: 0 USDC
 UI: [Automatically shows funding options interface]

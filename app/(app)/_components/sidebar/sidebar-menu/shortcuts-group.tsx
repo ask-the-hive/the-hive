@@ -31,12 +31,6 @@ const shortcuts = [
     icon: ChartCandlestick,
     prompt: "Let's trade some tokens",
   },
-  {
-    title: 'Discover',
-    description: 'Discover trending Solana tokens',
-    icon: Brain,
-    prompt: 'Show me trending Solana tokens',
-  },
 ] as const;
 
 const ShortcutsGroup = () => {
