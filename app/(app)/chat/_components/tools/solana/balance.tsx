@@ -43,10 +43,9 @@ const TokenFundingOptions: React.FC<TokenFundingOptionsProps> = ({
   logoURI,
   onComplete,
 }) => {
-  const { onOpen: openSwapModal, isOpen: isSwapOpen } = useSwapModal();
+  const { onOpen: openSwapModal } = useSwapModal();
   const { fundWallet } = useFundWallet({
     onUserExited: () => {
-      setIsBuyLoading(false);
       onComplete?.('fundWallet');
     },
   });
@@ -88,9 +87,7 @@ const TokenFundingOptions: React.FC<TokenFundingOptionsProps> = ({
 
   const handleSwap = () => {
     if (finalTokenAddress) {
-      setIsSwapLoading(true);
       openSwapModal('buy', finalTokenAddress, () => {
-        setIsSwapLoading(false);
         onComplete?.('swap');
       });
     }
@@ -98,13 +95,11 @@ const TokenFundingOptions: React.FC<TokenFundingOptionsProps> = ({
 
   const handleBuy = async () => {
     if (wallet?.address) {
-      setIsBuyLoading(true);
       try {
         await fundWallet(wallet.address, { amount: '1' });
       } catch {
         // no-op; user may cancel funding
       } finally {
-        setIsBuyLoading(false);
         onComplete?.('fundWallet');
       }
     }
@@ -140,16 +135,8 @@ const TokenFundingOptions: React.FC<TokenFundingOptionsProps> = ({
               >
                 {isResolving || isLoadingMetadata ? 'Loading...' : `Swap for ${tokenSymbol}`}
               </Button>
-              <Button
-                onClick={handleBuy}
-                className="w-full"
-                variant="brandOutline"
-                disabled={isBuyLoading}
-              >
+              <Button onClick={handleBuy} className="w-full" variant="brandOutline">
                 <div className="flex items-center gap-2">
-                  {isBuyLoading && (
-                    <div className="h-4 w-4 border-2 border-white/60 border-t-white animate-spin rounded-full" />
-                  )}
                   Buy or Receive SOL
                   <TooltipProvider>
                     <Tooltip delayDuration={0}>
