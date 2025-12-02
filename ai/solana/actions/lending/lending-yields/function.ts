@@ -42,71 +42,73 @@ export async function getLendingYields(): Promise<SolanaActionResult<LendingYiel
       return isLendingProtocol && !isLPPair && hasAPY && hasUnderlyingToken && isStableCoin;
     });
 
-    // Convert Kamino SDK pools to DefiLlama format
-    const kaminoPoolsFormatted = kaminoPools
+    // Split DefiLlama pools by project
+    const defiLlamaKaminoPools = defiLlamaPools.filter((p: any) => p.project === 'kamino-lend');
+    const defiLlamaJupiterPools = defiLlamaPools.filter(
+      (p: any) => p.project === 'jupiter-lend' || p.project === 'jup-lend',
+    );
+
+    // Create maps for each protocol (keyed by mint address)
+    const kaminoPoolsByMint = new Map<string, any>();
+    const jupiterPoolsByMint = new Map<string, any>();
+
+    // Helper to enrich a pool with DefiLlama metadata
+    const enrichPool = (basePool: any, defiLlamaPool: any) => ({
+      ...basePool,
+      // Prefer DefiLlama predictions/metadata, keep base pool's APY data
+      predictions: defiLlamaPool?.predictions ?? basePool.predictions,
+      rewardTokens: defiLlamaPool?.rewardTokens?.length
+        ? defiLlamaPool.rewardTokens
+        : basePool.rewardTokens,
+      url: defiLlamaPool?.url ?? basePool.url,
+    });
+
+    // Process Kamino SDK pools
+    kaminoPools
       .filter((pool) => {
         const isStableCoin = stableCoins.includes(pool.symbol);
         const isLPPair = pool.symbol.includes('-') || pool.symbol.includes('/');
         return pool.apy > 0 && !isLPPair && isStableCoin;
       })
-      .map((pool) => ({
-        project: 'kamino-lend',
-        symbol: pool.symbol,
-        tvlUsd: pool.tvlUsd,
-        apyBase: pool.apyBase,
-        apyReward: null,
-        apy: pool.apy,
-        rewardTokens: [],
-        poolMeta: null,
-        url: null,
-        underlyingTokens: [pool.mintAddress],
-        predictions: null,
-      }));
+      .forEach((pool) => {
+        const mint = pool.mintAddress;
+        if (!mint) return;
 
-    // Merge pools, preferring the highest APY per mint (project-agnostic)
-    const poolsByMint = new Map<string, any>();
+        const basePool = {
+          project: 'kamino-lend',
+          symbol: pool.symbol,
+          tvlUsd: pool.tvlUsd,
+          apyBase: pool.apyBase,
+          apyReward: null,
+          apy: pool.apy,
+          rewardTokens: [],
+          poolMeta: null,
+          url: null,
+          underlyingTokens: [pool.mintAddress],
+          predictions: null,
+        };
 
-    const mergePool = (pool: any) => {
-      const mint = pool?.underlyingTokens?.[0];
-      if (!mint) return;
-      const existing = poolsByMint.get(mint);
+        // Find matching DefiLlama pool for enrichment
+        const matchingDefiLlama = defiLlamaKaminoPools.find(
+          (p: any) => p.underlyingTokens?.[0] === mint,
+        );
 
-      if (!existing) {
-        poolsByMint.set(mint, pool);
-        return;
-      }
+        let enrichedKaminoPool = basePool;
 
-      const existingApy = existing.apy ?? existing.apyBase ?? 0;
-      const incomingApy = pool.apy ?? pool.apyBase ?? 0;
-      const useIncoming = incomingApy > existingApy;
+        if (matchingDefiLlama) {
+          enrichedKaminoPool = enrichPool(basePool, matchingDefiLlama);
+        }
 
-      poolsByMint.set(mint, {
-        ...existing,
-        apy: useIncoming ? (pool.apy ?? existing.apy) : existing.apy,
-        apyBase: useIncoming ? (pool.apyBase ?? existing.apyBase) : existing.apyBase,
-        apyReward: useIncoming ? (pool.apyReward ?? existing.apyReward) : existing.apyReward,
-        tvlUsd: pool.tvlUsd ?? existing.tvlUsd,
-        rewardTokens: existing.rewardTokens?.length
-          ? existing.rewardTokens
-          : (pool.rewardTokens ?? existing.rewardTokens),
-        predictions: existing.predictions ?? pool.predictions,
-        poolMeta: existing.poolMeta ?? pool.poolMeta,
-        url: existing.url ?? pool.url,
+        kaminoPoolsByMint.set(mint, enrichedKaminoPool);
       });
-    };
 
-    // Add DefiLlama pools first (they have more metadata like predictions)
-    defiLlamaPools.forEach((p: any) => mergePool(p));
-
-    // Merge Kamino SDK pools (prefer higher APY)
-    kaminoPoolsFormatted.forEach((p) => mergePool(p));
-
-    // Merge Jupiter pools (stablecoin-only) - treat as primary source for these mints
+    // Process Jupiter pools
     jupiterPools.forEach((pool) => {
-      const mintAddress = pool.mintAddress;
-      if (!mintAddress) return;
-      mergePool({
-        project: pool.project,
+      const mint = pool.mintAddress;
+      if (!mint) return;
+
+      const basePool = {
+        project: 'jupiter-lend',
         symbol: pool.symbol,
         tvlUsd: pool.tvlUsd,
         apyBase: pool.apyBase,
@@ -117,10 +119,27 @@ export async function getLendingYields(): Promise<SolanaActionResult<LendingYiel
         url: null,
         underlyingTokens: [pool.mintAddress],
         predictions: pool.predictions || null,
-      });
+      };
+
+      // Find matching DefiLlama pool for enrichment
+      const matchingDefiLlama = defiLlamaJupiterPools.find(
+        (p: any) => p.underlyingTokens?.[0] === mint,
+      );
+
+      let enrichedJupiterPool = basePool;
+
+      if (matchingDefiLlama) {
+        enrichedJupiterPool = enrichPool(basePool, matchingDefiLlama);
+      }
+
+      jupiterPoolsByMint.set(mint, enrichedJupiterPool);
     });
 
-    const solLendingPools = Array.from(poolsByMint.values());
+    // Combine all pools (Kamino + Jupiter as separate entries)
+    const solLendingPools = [
+      ...Array.from(kaminoPoolsByMint.values()),
+      ...Array.from(jupiterPoolsByMint.values()),
+    ];
 
     if (solLendingPools.length === 0) {
       return {
@@ -132,7 +151,7 @@ export async function getLendingYields(): Promise<SolanaActionResult<LendingYiel
     let topSolanaPools = solLendingPools.sort((a: any, b: any) => (b.apy || 0) - (a.apy || 0));
     topSolanaPools = topSolanaPools.slice(0, 6);
     // Reorder only when showing exactly 3 cards; otherwise leave sorted
-    if (topSolanaPools.length === 3) {
+    if (topSolanaPools.length >= 3) {
       const [highest, second, third] = topSolanaPools;
       topSolanaPools[0] = second;
       topSolanaPools[1] = highest;

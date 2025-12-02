@@ -80,6 +80,16 @@ export async function getJupiterPools(): Promise<JupiterPool[]> {
       isFinite(totalAssets) && isFinite(price) ? (totalAssets / Math.pow(10, decimals)) * price : 0;
     const confidence =
       tvlUsd >= 100_000_000 ? '3' : tvlUsd >= 10_000_000 ? '2' : tvlUsd > 0 ? '1' : '0';
+    const predictedClass =
+      tvlUsd >= 100_000_000
+        ? 'Stable/Up'
+        : tvlUsd >= 10_000_000
+          ? 'Stable'
+          : tvlUsd > 0
+            ? 'Down'
+            : 'Unstable';
+    const predictedProbability =
+      tvlUsd >= 100_000_000 ? 100 : tvlUsd >= 10_000_000 ? 75 : tvlUsd > 0 ? 50 : 25;
 
     pools.push({
       symbol: assetSymbol,
@@ -91,8 +101,8 @@ export async function getJupiterPools(): Promise<JupiterPool[]> {
       address: t.address || undefined,
       predictions: {
         binnedConfidence: confidence,
-        predictedClass: 'high',
-        predictedProbability: 100,
+        predictedClass,
+        predictedProbability,
       },
     });
   }
