@@ -304,6 +304,7 @@ export const SwapModalProvider: React.FC<{ children: React.ReactNode }> = ({ chi
             outputLabel={mode === 'buy' ? 'Buy' : 'Receive'}
             onSuccess={onSuccess}
             onError={onError}
+            onInputChange={() => setSwapError(null)}
             setSwapResult={setSwapResult}
           />
           {swapError && (

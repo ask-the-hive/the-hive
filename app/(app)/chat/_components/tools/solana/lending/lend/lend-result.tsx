@@ -184,7 +184,7 @@ const LendResult: React.FC<Props> = ({ tokenData, poolData, amount, tx }) => {
                 className="w-full"
                 onClick={() => window.open(`https://solscan.io/tx/${tx}`, '_blank')}
               >
-                <ExternalLink className="w-4 h-4 mr-2" />
+                <ExternalLink className="w-4 h-4" />
                 View Transaction
               </Button>
             )}
