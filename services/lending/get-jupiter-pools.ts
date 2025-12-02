@@ -72,6 +72,8 @@ export async function getJupiterPools(): Promise<JupiterPool[]> {
     const price = Number(t.asset?.price || 0);
     const tvlUsd =
       isFinite(totalAssets) && isFinite(price) ? (totalAssets / Math.pow(10, decimals)) * price : 0;
+    const confidence =
+      tvlUsd >= 100_000_000 ? 3 : tvlUsd >= 10_000_000 ? 2 : tvlUsd > 0 ? 1 : 0;
 
     pools.push({
       symbol: assetSymbol,
@@ -80,7 +82,7 @@ export async function getJupiterPools(): Promise<JupiterPool[]> {
       apyBase: apy,
       tvlUsd,
       project: 'jupiter-lend',
-      predictions: { binnedConfidence: 2 }, // medium confidence placeholder
+      predictions: { binnedConfidence: confidence },
     });
   }
 
