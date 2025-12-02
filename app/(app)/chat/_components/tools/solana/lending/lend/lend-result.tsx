@@ -5,7 +5,7 @@ import { Token } from '@/db/types';
 import { LendingYieldsPoolData } from '@/ai/solana/actions/lending/lending-yields/schema';
 import { usePrice } from '@/hooks';
 import { Button, Card, TokenIcon } from '@/components/ui';
-import { Loader2 } from 'lucide-react';
+import { Loader2, ExternalLink } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useChain } from '@/app/_contexts/chain-context';
 import { capitalizeWords } from '@/lib/string-utils';
@@ -174,7 +174,10 @@ const LendResult: React.FC<Props> = ({ tokenData, poolData, amount, tx }) => {
                     Loading...
                   </>
                 ) : (
-                  'View Portfolio'
+                  <>
+                    <ExternalLink className="w-4 h-4 mr-2" />
+                    View Portfolio
+                  </>
                 )}
               </Button>
             )}
@@ -184,6 +187,7 @@ const LendResult: React.FC<Props> = ({ tokenData, poolData, amount, tx }) => {
                 className="w-full"
                 onClick={() => window.open(`https://solscan.io/tx/${tx}`, '_blank')}
               >
+                <ExternalLink className="w-4 h-4 mr-2" />
                 View Transaction
               </Button>
             )}

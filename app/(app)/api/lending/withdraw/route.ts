@@ -1,9 +1,9 @@
 import {
   Connection,
   PublicKey,
-  TransactionMessage,
   VersionedTransaction,
   TransactionInstruction,
+  TransactionMessage,
 } from '@solana/web3.js';
 import BN from 'bn.js';
 import { NextRequest, NextResponse } from 'next/server';
@@ -253,7 +253,7 @@ export async function POST(req: NextRequest) {
 }
 
 async function buildJupiterWithdrawTx(
-  connection: Connection,
+  _connection: Connection,
   wallet: PublicKey,
   tokenMint: string,
   amount: number,
@@ -267,7 +267,8 @@ async function buildJupiterWithdrawTx(
   const decimals = (await getMintDecimals(tokenMint).catch(() => undefined)) ?? 6;
   const amountBase = Math.floor(amount * Math.pow(10, decimals));
 
-  const res = await fetch(`${JUPITER_LEND_BASE}/withdraw-instructions`, {
+  // Let Jupiter return a fully built transaction (includes compute budget/priority fees)
+  const res = await fetch(`${JUPITER_LEND_BASE}/withdraw`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -285,33 +286,11 @@ async function buildJupiterWithdrawTx(
     throw new Error(`Jupiter withdraw instructions failed: ${res.status} ${text}`);
   }
 
-  const json = (await res.json()) as { instructions: any[] };
-  const ixData = json?.instructions || [];
-  if (!Array.isArray(ixData) || ixData.length === 0) {
-    throw new Error('No withdraw instructions returned from Jupiter');
+  const json = (await res.json()) as { transaction?: string };
+  if (!json.transaction) {
+    throw new Error('No withdraw transaction returned from Jupiter');
   }
 
-  const instructions = ixData.map((ix) => {
-    if (!ix.programId || !ix.accounts || !ix.data) {
-      throw new Error('Invalid instruction format from Jupiter');
-    }
-    return new TransactionInstruction({
-      programId: new PublicKey(ix.programId),
-      keys: ix.accounts.map((k: any) => ({
-        pubkey: new PublicKey(k.pubkey),
-        isSigner: k.isSigner,
-        isWritable: k.isWritable,
-      })),
-      data: Buffer.from(ix.data, 'base64'),
-    });
-  });
-
-  const { blockhash } = await connection.getLatestBlockhash();
-  const messageV0 = new TransactionMessage({
-    payerKey: wallet,
-    recentBlockhash: blockhash,
-    instructions,
-  }).compileToV0Message();
-
-  return new VersionedTransaction(messageV0);
+  const txBytes = Buffer.from(json.transaction, 'base64');
+  return VersionedTransaction.deserialize(txBytes);
 }

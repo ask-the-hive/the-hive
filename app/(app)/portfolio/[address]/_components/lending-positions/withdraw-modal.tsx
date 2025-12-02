@@ -56,7 +56,7 @@ const WithdrawModal: React.FC<Props> = ({ position, isOpen, onClose, onSuccess }
         },
         body: JSON.stringify({
           protocol: position.protocol,
-          tokenMint: position.token.id,
+          tokenMint: position.poolData.tokenMintAddress || position.token.id,
           tokenSymbol: position.token.symbol,
           amount: Number(amount),
           walletAddress: wallet.address,

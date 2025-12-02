@@ -11,6 +11,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { KaminoMarket, KaminoAction, VanillaObligation } from '@kamino-finance/klend-sdk';
 import { createSolanaRpc, address as createAddress, Instruction } from '@solana/kit';
 import { getMintDecimals } from '@/services/solana/get-mint-decimals';
+import { BN } from '@project-serum/anchor';
 
 /**
  * Kamino Lending Market Configuration

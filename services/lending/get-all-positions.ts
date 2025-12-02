@@ -11,9 +11,11 @@ import { getKaminoPools, type KaminoPoolData } from './get-kamino-pools';
 import { getTokenBySymbol } from '@/db/services/tokens';
 import { Token } from '@/db/types/token';
 import { LendingYieldsPoolData } from '@/ai/solana/actions/lending/lending-yields/schema';
+import { getJupiterPools, type JupiterPool } from './get-jupiter-pools';
 
 const KAMINO_MAIN_MARKET = new PublicKey('7u3HeHxYDLhnCoErrtycNokbQYbWGzLs6JSDqGAv5PfF');
 const KAMINO_PROGRAM_ID = new PublicKey('KLend2g3cP87fffoy8q1mQqGKjrxjC8boSyAYavgmjD');
+const JUPITER_POSITIONS_URL = 'https://api.jup.ag/lend/v1/earn/positions';
 
 /**
  * Helper function to build a Token object from token data or reserve info
@@ -65,6 +67,7 @@ function buildPoolDataObject(
   mintAddress: string,
   token: Token,
 ): LendingYieldsPoolData {
+  // Kamino-specific pool data builder
   return {
     name: symbol,
     symbol: symbol,
@@ -79,6 +82,36 @@ function buildPoolDataObject(
     underlyingTokens: [mintAddress],
     tokenMintAddress: mintAddress,
     predictions: undefined,
+    tokenData: {
+      id: token.id,
+      symbol: token.symbol,
+      name: token.name,
+      decimals: token.decimals,
+      logoURI: token.logoURI || undefined,
+    },
+  };
+}
+
+function buildJupiterPoolDataObject(
+  poolData: JupiterPool,
+  symbol: string,
+  mintAddress: string,
+  token: Token,
+): LendingYieldsPoolData {
+  return {
+    name: symbol,
+    symbol,
+    yield: poolData.apy,
+    apyBase: poolData.apyBase,
+    apyReward: 0,
+    tvlUsd: poolData.tvlUsd,
+    project: poolData.project,
+    poolMeta: undefined,
+    url: undefined,
+    rewardTokens: [],
+    underlyingTokens: [mintAddress],
+    tokenMintAddress: mintAddress,
+    predictions: poolData.predictions,
     tokenData: {
       id: token.id,
       symbol: token.symbol,
@@ -218,6 +251,95 @@ async function getKaminoLendingPositions(
   }
 }
 
+type JupiterPositionResponse = Array<{
+  token: {
+    address: string;
+    symbol: string;
+    decimals: number;
+    assetAddress: string;
+    asset?: {
+      address: string;
+      symbol?: string;
+      decimals?: number;
+      logoUrl?: string;
+      price?: string | number;
+    };
+  };
+  ownerAddress: string;
+  underlyingAssets?: string | number;
+}>;
+
+async function getJupiterLendingPositions(
+  walletAddress: string,
+  chainId: string,
+): Promise<LendingPosition[]> {
+  const apiKey = process.env.JUPITER_LEND_API_KEY;
+  if (!apiKey) return [];
+
+  const [pools, positionsRes] = await Promise.all([
+    getJupiterPools(),
+    fetch(`${JUPITER_POSITIONS_URL}?users=${walletAddress}`, {
+      headers: { 'x-api-key': apiKey },
+    }),
+  ]);
+
+  if (!positionsRes.ok) {
+    console.error(
+      `❌ [SERVER] Jupiter positions fetch failed: ${positionsRes.status} ${await positionsRes.text()}`,
+    );
+    return [];
+  }
+
+  const positionsJson = (await positionsRes.json()) as JupiterPositionResponse;
+  if (!Array.isArray(positionsJson) || positionsJson.length === 0) return [];
+
+  const positions: LendingPosition[] = [];
+
+  for (const pos of positionsJson) {
+    const tokenInfo = pos.token;
+    const assetMint = tokenInfo?.assetAddress;
+    const assetSymbol = tokenInfo?.asset?.symbol || tokenInfo?.symbol?.replace(/^jl/i, '') || '';
+    if (!assetMint || !assetSymbol) continue;
+
+    const pool = pools.find((p) => p.mintAddress === assetMint);
+    if (!pool || !isFinite(pool.apy) || pool.apy <= 0) continue;
+
+    const decimals = tokenInfo?.asset?.decimals ?? tokenInfo?.decimals ?? 6;
+    const amountRaw = Number(pos.underlyingAssets || 0);
+    if (!isFinite(amountRaw) || amountRaw <= 0) continue;
+    const amount = amountRaw / Math.pow(10, decimals);
+    if (amount <= 0) continue;
+
+    const tokenData = await getTokenBySymbol(assetSymbol);
+    const token: Token = {
+      id: tokenData?.id || assetMint,
+      name: tokenData?.name || assetSymbol,
+      symbol: tokenData?.symbol || assetSymbol,
+      decimals: tokenData?.decimals ?? decimals,
+      tags: tokenData?.tags || [],
+      logoURI: tokenData?.logoURI || tokenInfo?.asset?.logoUrl || '',
+      freezeAuthority: tokenData?.freezeAuthority || null,
+      mintAuthority: tokenData?.mintAuthority || null,
+      permanentDelegate: tokenData?.permanentDelegate || null,
+      extensions: tokenData?.extensions || {},
+      contractAddress: assetMint,
+    };
+
+    const poolData = buildJupiterPoolDataObject(pool, assetSymbol, assetMint, token);
+
+    positions.push({
+      walletAddress,
+      chainId,
+      amount,
+      token,
+      poolData,
+      protocol: 'jupiter-lend',
+    });
+  }
+
+  return positions;
+}
+
 /**
  * Fetch all lending positions for a user across all supported protocols (SERVER-SIDE ONLY)
  * Aggregates results from protocol-specific fetching functions
@@ -233,15 +355,14 @@ export async function getAllLendingPositionsServer(
     }
 
     // Fetch positions from all supported protocols in parallel
-    const [kaminoPositions] = await Promise.all([
+    const [kaminoPositions, jupiterPositions] = await Promise.all([
       getKaminoLendingPositions(walletAddress, chainId),
-      // Add more protocol fetchers here as they're implemented:
-      // getJupiterLendPositions(walletAddress, chainId),
+      getJupiterLendingPositions(walletAddress, chainId),
       // getMarginfiPositions(walletAddress, chainId),
     ]);
 
     // Aggregate all positions
-    const allPositions = [...kaminoPositions];
+    const allPositions = [...kaminoPositions, ...jupiterPositions];
 
     return allPositions;
   } catch (error) {
