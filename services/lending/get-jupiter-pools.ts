@@ -8,7 +8,7 @@ export type JupiterPool = {
   apyBase: number;
   tvlUsd: number;
   project: string;
-  predictions?: { binnedConfidence: number };
+  predictions?: { binnedConfidence: string; predictedClass: string; predictedProbability: number };
 };
 
 type JupiterPoolResponse = Array<{
@@ -19,6 +19,7 @@ type JupiterPoolResponse = Array<{
   supplyRate?: string | number;
   rewardsRate?: string | number;
   totalAssets?: string;
+  address?: string;
   asset?: {
     address: string;
     symbol?: string;
@@ -75,7 +76,7 @@ export async function getJupiterPools(): Promise<JupiterPool[]> {
     const tvlUsd =
       isFinite(totalAssets) && isFinite(price) ? (totalAssets / Math.pow(10, decimals)) * price : 0;
     const confidence =
-      tvlUsd >= 100_000_000 ? 3 : tvlUsd >= 10_000_000 ? 2 : tvlUsd > 0 ? 1 : 0;
+      tvlUsd >= 100_000_000 ? '3' : tvlUsd >= 10_000_000 ? '2' : tvlUsd > 0 ? '1' : '0';
 
     pools.push({
       symbol: assetSymbol,
@@ -84,8 +85,12 @@ export async function getJupiterPools(): Promise<JupiterPool[]> {
       apyBase: apy,
       tvlUsd,
       project: 'jupiter-lend',
-      address: t.address,
-      predictions: { binnedConfidence: confidence },
+      address: t.address || undefined,
+      predictions: {
+        binnedConfidence: confidence,
+        predictedClass: 'high',
+        predictedProbability: 100,
+      },
     });
   }
 

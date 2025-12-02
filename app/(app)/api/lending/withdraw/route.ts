@@ -198,8 +198,8 @@ async function buildKaminoWithdrawTx(
  */
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
-    const { protocol, tokenMint, tokenSymbol, amount, walletAddress } = body;
+  const body = await req.json();
+    const { protocol, tokenMint, tokenSymbol, amount, walletAddress, shares } = body;
 
     if (!protocol || !tokenMint || !tokenSymbol || !amount || !walletAddress) {
       return NextResponse.json(
@@ -230,7 +230,7 @@ export async function POST(req: NextRequest) {
       case 'jupiter-lend':
       case 'jupiter-lend-earn':
       case 'jup-lend':
-        transaction = await buildJupiterWithdrawTx(connection, wallet, tokenMint, amount);
+        transaction = await buildJupiterWithdrawTx(connection, wallet, tokenMint, amount, shares);
         break;
       default:
         return NextResponse.json({ error: `Unsupported protocol: ${protocol}` }, { status: 400 });
@@ -257,33 +257,41 @@ async function buildJupiterWithdrawTx(
   wallet: PublicKey,
   tokenMint: string,
   amount: number,
+  shares?: number,
 ): Promise<VersionedTransaction> {
   const apiKey = process.env.JUPITER_LEND_API_KEY;
   if (!apiKey) {
     throw new Error('Missing JUPITER_LEND_API_KEY');
   }
 
-  // Determine base units from mint decimals
   const decimals = (await getMintDecimals(tokenMint).catch(() => undefined)) ?? 6;
   const amountBase = Math.floor(amount * Math.pow(10, decimals));
 
+  // If we have share balance, prefer redeem to burn all shares (avoids dust)
+  const endpoint = shares ? 'redeem' : 'withdraw';
+  const body: any = {
+    asset: tokenMint,
+    signer: wallet.toBase58(),
+  };
+  if (shares) {
+    body.shares = String(Math.floor(shares));
+  } else {
+    body.amount = amountBase.toString();
+  }
+
   // Let Jupiter return a fully built transaction (includes compute budget/priority fees)
-  const res = await fetch(`${JUPITER_LEND_BASE}/withdraw`, {
+  const res = await fetch(`${JUPITER_LEND_BASE}/${endpoint}`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'x-api-key': apiKey,
     },
-    body: JSON.stringify({
-      asset: tokenMint,
-      amount: amountBase.toString(),
-      signer: wallet.toBase58(),
-    }),
+    body: JSON.stringify(body),
   });
 
   if (!res.ok) {
     const text = await res.text();
-    throw new Error(`Jupiter withdraw instructions failed: ${res.status} ${text}`);
+    throw new Error(`Jupiter ${endpoint} failed: ${res.status} ${text}`);
   }
 
   const json = (await res.json()) as { transaction?: string };

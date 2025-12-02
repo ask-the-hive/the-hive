@@ -267,6 +267,7 @@ type JupiterPositionResponse = Array<{
   };
   ownerAddress: string;
   underlyingAssets?: string | number;
+  shares?: string | number;
 }>;
 
 async function getJupiterLendingPositions(
@@ -334,6 +335,7 @@ async function getJupiterLendingPositions(
       token,
       poolData,
       protocol: 'jupiter-lend',
+      sharesRaw: Number(pos.shares || 0) || undefined,
     });
   }
 

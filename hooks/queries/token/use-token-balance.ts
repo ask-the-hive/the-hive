@@ -35,7 +35,7 @@ export const useTokenBalance = (tokenAddress: string, walletAddress: string) => 
 
           // Try Token-2022 first, then fall back to regular SPL Token
           try {
-            let token_address = getAssociatedTokenAddressSync(
+            const token_address = getAssociatedTokenAddressSync(
               new PublicKey(tokenAddress),
               new PublicKey(walletAddress),
               false,

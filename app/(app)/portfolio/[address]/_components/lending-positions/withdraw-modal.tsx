@@ -60,6 +60,7 @@ const WithdrawModal: React.FC<Props> = ({ position, isOpen, onClose, onSuccess }
           tokenSymbol: position.token.symbol,
           amount: Number(amount),
           walletAddress: wallet.address,
+          shares: position.sharesRaw,
         }),
       });
 
