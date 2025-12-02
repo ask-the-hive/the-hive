@@ -31,9 +31,9 @@ const SwapSuccessModal: React.FC<SwapSuccessModalProps> = ({
     if (mode === 'withdraw') {
       return `${outputAmount} ${outputToken} successful!`;
     }
-    const action = mode === 'buy' ? 'Buy' : 'Sell';
+    const action = mode === 'buy' ? 'Bought' : 'Sold';
 
-    return `${action} ${inputToken} for ${outputToken} successful!`;
+    return `${action} ${outputToken} with ${inputToken} successfully!`;
   }, [mode, inputToken, outputToken, outputAmount]);
 
   const explorerUrl = useMemo(() => {

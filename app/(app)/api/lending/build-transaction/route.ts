@@ -5,19 +5,6 @@ import {
   VersionedTransaction,
   TransactionInstruction,
 } from '@solana/web3.js';
-import { getDepositIx } from '@jup-ag/lend/earn';
-// TODO: Solend SDK has unfixable Node.js dependency issues (jito-ts -> rpc-websockets)
-// The dependency chain is: @solendprotocol/solend-sdk -> @pythnetwork/pyth-solana-receiver
-// -> @pythnetwork/solana-utils -> jito-ts -> old @solana/web3.js -> rpc-websockets/dist/lib/client
-// This path doesn't exist in newer rpc-websockets versions and causes module resolution errors
-// even with package resolutions/overrides. Manual implementation needed.
-// import {
-//   SolendActionCore,
-//   MAIN_POOL_ADDRESS,
-//   getProgramId,
-//   getReservesOfPool,
-// } from '@solendprotocol/solend-sdk';
-import BN from 'bn.js';
 import { NextRequest, NextResponse } from 'next/server';
 
 // Kamino - Testing with WASM webpack config
@@ -143,32 +130,54 @@ async function buildJupiterLendTx(
   tokenSymbol: string,
   amount: number,
 ): Promise<VersionedTransaction> {
-  // Convert token mint string to PublicKey
-  const assetMint = new PublicKey(tokenMint);
+  const apiKey = process.env.JUPITER_LEND_API_KEY;
+  if (!apiKey) {
+    throw new Error('Missing JUPITER_LEND_API_KEY');
+  }
 
   // Convert amount using on-chain mint decimals
   const decimals =
     (await getMintDecimals(tokenMint).catch(() => undefined)) ??
     (tokenSymbol.toUpperCase() === 'SOL' ? 9 : 6);
-  const amountBN = new BN(Math.floor(amount * Math.pow(10, decimals)));
+  const amountBase = Math.floor(amount * Math.pow(10, decimals)).toString();
 
-  // Get deposit instruction from Jupiter Lend SDK
-  const depositIx = await getDepositIx({
-    amount: amountBN,
-    asset: assetMint,
-    signer: wallet,
-    connection,
+  const res = await fetch('https://api.jup.ag/lend/v1/earn/deposit-instructions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+    },
+    body: JSON.stringify({
+      asset: tokenMint,
+      amount: amountBase,
+      signer: wallet.toBase58(),
+    }),
   });
 
-  // Convert the raw instruction to TransactionInstruction
-  const instruction = new TransactionInstruction({
-    programId: new PublicKey(depositIx.programId),
-    keys: depositIx.keys.map((key) => ({
-      pubkey: new PublicKey(key.pubkey),
-      isSigner: key.isSigner,
-      isWritable: key.isWritable,
-    })),
-    data: Buffer.from(depositIx.data),
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Jupiter deposit instructions failed: ${res.status} ${text}`);
+  }
+
+  const json = (await res.json()) as { instructions: any[] };
+  const ixData = json?.instructions || [];
+  if (!Array.isArray(ixData) || ixData.length === 0) {
+    throw new Error('No deposit instructions returned from Jupiter');
+  }
+
+  const instructionSet = ixData.map((ix) => {
+    if (!ix.programId || !ix.accounts || !ix.data) {
+      throw new Error('Invalid instruction format from Jupiter');
+    }
+    return new TransactionInstruction({
+      programId: new PublicKey(ix.programId),
+      keys: ix.accounts.map((k: any) => ({
+        pubkey: new PublicKey(k.pubkey),
+        isSigner: k.isSigner,
+        isWritable: k.isWritable,
+      })),
+      data: Buffer.from(ix.data, 'base64'),
+    });
   });
 
   // Get latest blockhash
@@ -178,7 +187,7 @@ async function buildJupiterLendTx(
   const messageV0 = new TransactionMessage({
     payerKey: wallet,
     recentBlockhash: blockhash,
-    instructions: [instruction],
+    instructions: instructionSet,
   }).compileToV0Message();
 
   const versionedTx = new VersionedTransaction(messageV0);

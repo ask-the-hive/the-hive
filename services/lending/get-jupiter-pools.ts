@@ -3,10 +3,12 @@ const JUPITER_LEND_POOLS_URL = 'https://api.solana.fluid.io/v1/lending/tokens';
 export type JupiterPool = {
   symbol: string;
   mintAddress: string;
+  address?: string;
   apy: number;
   apyBase: number;
   tvlUsd: number;
   project: string;
+  predictions?: { binnedConfidence: number };
 };
 
 type JupiterPoolResponse = Array<{
@@ -82,6 +84,7 @@ export async function getJupiterPools(): Promise<JupiterPool[]> {
       apyBase: apy,
       tvlUsd,
       project: 'jupiter-lend',
+      address: t.address,
       predictions: { binnedConfidence: confidence },
     });
   }

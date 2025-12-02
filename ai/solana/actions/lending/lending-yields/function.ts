@@ -103,7 +103,7 @@ export async function getLendingYields(): Promise<SolanaActionResult<LendingYiel
           poolMeta: pool.address ?? null,
           url: null,
           underlyingTokens: [pool.mintAddress],
-          predictions: null,
+          predictions: pool.predictions || null,
         },
         mintAddress,
       );

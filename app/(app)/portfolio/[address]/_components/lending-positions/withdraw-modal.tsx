@@ -150,8 +150,8 @@ const WithdrawModal: React.FC<Props> = ({ position, isOpen, onClose, onSuccess }
             >
               {isWithdrawing ? (
                 <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Withdrawing...
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Processing...
                 </>
               ) : (
                 'Withdraw'

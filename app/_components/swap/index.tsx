@@ -40,7 +40,7 @@ interface Props {
   onOutputTokenChange?: (token: Token) => void;
   onInputTokenChange?: (token: Token) => void;
   className?: string;
-  setSwapResult?: (result: { outputAmount: string; outputToken: string }) => void;
+  setSwapResult?: (result: { outputAmount: string; outputToken: string; inputToken: string }) => void;
 }
 
 const Swap: React.FC<Props> = ({
@@ -194,10 +194,11 @@ const Swap: React.FC<Props> = ({
           handleOutputAmountChange(outputAmountStr);
 
           // Call setSwapResult if provided
-          if (setSwapResult) {
+          if (setSwapResult && inputToken) {
             setSwapResult({
               outputAmount: outputAmountStr,
               outputToken: outputToken.symbol,
+              inputToken: inputToken.symbol,
             });
           }
         } catch (error) {

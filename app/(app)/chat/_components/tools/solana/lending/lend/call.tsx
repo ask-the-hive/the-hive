@@ -344,8 +344,8 @@ const LendCallBody: React.FC<Props> = ({ toolCallId, args }) => {
               >
                 {isLending ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Lending...
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Processing...
                   </>
                 ) : (
                   'Lend'

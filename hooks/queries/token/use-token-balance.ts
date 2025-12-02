@@ -28,41 +28,33 @@ export const useTokenBalance = (tokenAddress: string, walletAddress: string) => 
             (await connection.getBalance(new PublicKey(walletAddress))) / LAMPORTS_PER_SOL;
           return balance;
         } else {
-          // Try Token-2022 first, then fall back to regular SPL Token
-          let token_address = getAssociatedTokenAddressSync(
-            new PublicKey(tokenAddress),
-            new PublicKey(walletAddress),
-            false,
-            TOKEN_2022_PROGRAM_ID,
-          );
+          // Basic validation: if tokenAddress is not a valid base58 pubkey length, return 0
+          if (tokenAddress.length < 32 || tokenAddress.length > 44) {
+            return 0;
+          }
 
+          // Try Token-2022 first, then fall back to regular SPL Token
           try {
-            const token_account = await connection.getTokenAccountBalance(token_address);
-            console.log(
-              '✅ Successfully fetched Token-2022 balance:',
-              token_account.value.uiAmount,
+            let token_address = getAssociatedTokenAddressSync(
+              new PublicKey(tokenAddress),
+              new PublicKey(walletAddress),
+              false,
+              TOKEN_2022_PROGRAM_ID,
             );
-            return token_account.value.uiAmount ?? 0;
+
+            const token_account_2022 = await connection.getTokenAccountBalance(token_address);
+            return token_account_2022.value.uiAmount ?? 0;
           } catch {
-            // Try regular SPL Token
             try {
-              token_address = getAssociatedTokenAddressSync(
+              const token_address = getAssociatedTokenAddressSync(
                 new PublicKey(tokenAddress),
                 new PublicKey(walletAddress),
                 false,
                 TOKEN_PROGRAM_ID,
               );
               const token_account = await connection.getTokenAccountBalance(token_address);
-              console.log(
-                '✅ Successfully fetched SPL Token balance:',
-                token_account.value.uiAmount,
-              );
               return token_account.value.uiAmount ?? 0;
-            } catch (error) {
-              console.error(
-                '❌ Error getting token account balance (tried both Token-2022 and SPL Token):',
-                error,
-              );
+            } catch {
               return 0;
             }
           }
