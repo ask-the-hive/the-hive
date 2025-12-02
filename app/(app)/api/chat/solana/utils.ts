@@ -4,6 +4,7 @@ import { generateObject, LanguageModelV1, Message } from 'ai';
 
 import { agents } from '@/ai/agents';
 import { Agent } from '@/ai/agent';
+import { LENDING_AGENT_NAME } from '@/ai/agents/lending/name';
 
 export const system = `You are the orchestrator of a swarm of blockchain agents that each have specialized tasks.
 
@@ -22,10 +23,10 @@ CRITICAL ROUTING RULES:
    - These should trigger the conversational fallback to help users discover features
    - 🚫 NEVER invent or quote specific APY percentages or protocol names when uncertain. Use categories only (e.g., "stablecoin lending", "liquid staking") and invite the user to open the strategy cards in the UI to see live APYs.
 
-2. **Lending Agent** - Use for specific lending requests:
-   🚨 CRITICAL: If the message contains the word "lend" or "lending", ALWAYS use Lending Agent, even for SOL
+2. **Lending Agent** - Use for specific lending requests or yield-shopping:
+   🚨 CRITICAL: If the message contains the word "lend", "lending", "yield", or "apy" for stablecoins/SOL, ALWAYS use Lending Agent, even for SOL
    - "Show me the best lending pools on Solana" ← LENDING AGENT
-   - "Best lending yields" ← LENDING AGENT
+   - "Best lending yields" / "best stablecoin yields" / "best USDC APY" ← LENDING AGENT
    - "Lending rates for USDC/USDT/SOL" ← LENDING AGENT
    - "Lend SOL to Kamino" ← LENDING AGENT (not Staking Agent!)
    - "I want to lend SOL" ← LENDING AGENT (not Staking Agent!)
@@ -33,7 +34,9 @@ CRITICAL ROUTING RULES:
    - Lending pools or protocols (Kamino Lend, Jupiter Lend, etc.)
    - "How much can I lend?" (checks token balance)
    - "Lend my USDT/USDC/SOL"
-   - Any query with "lend" keyword → Lending Agent (takes priority over token type)
+   - If the user already said they want lending and then replies "yes" or "sure", continue with Lending Agent (do not send to Knowledge Agent)
+   - If the previous assistant message offered lending and the user responds with a short confirmation ("yes", "yep", "sure", "ok"), route to the Lending Agent to return yields.
+   - Any query with "lend"/"lending"/"yield"/"apy" → Lending Agent (takes priority over token type)
 
 3. **Staking Agent** - Use for specific staking requests:
    🚨 CRITICAL: Only use Staking Agent when the message contains "stake"/"staking", NOT when it says "lend"
@@ -86,6 +89,23 @@ export const chooseAgent = async (
   model: LanguageModelV1,
   messages: Message[],
 ): Promise<Agent | null> => {
+  // Heuristic fast-path: if the user is asking for yields/lending or confirms a prior lending prompt, route directly to Lending Agent.
+  const lastUserMsg = [...messages].reverse().find((m) => m.role === 'user');
+  const lastAssistantMsg = [...messages].reverse().find((m) => m.role === 'assistant');
+  const userText = (lastUserMsg?.content as string | undefined)?.toLowerCase() || '';
+  const assistantText = (lastAssistantMsg?.content as string | undefined)?.toLowerCase() || '';
+  const affirmative = /^(yes|yep|yeah|sure|ok|okay|alright|continue|go ahead)\b/.test(
+    userText.trim(),
+  );
+  const wantsLending =
+    /\b(lend|lending|yield|apy)\b/.test(userText) ||
+    (affirmative && /\b(lend|lending|yield|apy|stablecoin)\b/.test(assistantText));
+
+  if (wantsLending) {
+    const lending = agents.find((a) => a.name === LENDING_AGENT_NAME);
+    if (lending) return lending;
+  }
+
   // Use last 5 messages for context (or all if fewer than 5)
   const contextMessages = messages.slice(-5);
 
