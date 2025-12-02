@@ -165,7 +165,7 @@ REFINED LENDING FLOW:
 2b. 🚨 SPECIAL CASE - When user sends "I have acquired [TOKEN] ([TOKEN_ADDRESS]) and I'm ready to lend. My wallet address is [WALLET_ADDRESS]. Please show me the lending interface now.":
    This message indicates the user has just completed a swap/funding and has the tokens ready. You MUST:
    - Extract the token symbol, token address, and wallet address from the message
-   - Look back in the message history to find which protocol they originally selected (e.g., "I want to lend USDG to Kamino Lend")
+   - Look back in the message history to find which protocol they originally selected (e.g., "I want to lend USDG to Jupiter Lend" or "…to Kamino Lend")
    - IMMEDIATELY call ${SOLANA_LEND_ACTION} with:
      * tokenAddress: from the user's message (in parentheses)
      * walletAddress: from the user's message

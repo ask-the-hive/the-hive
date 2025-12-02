@@ -1,12 +1,13 @@
 import {
   Connection,
   PublicKey,
-  TransactionMessage,
   VersionedTransaction,
   TransactionInstruction,
+  TransactionMessage,
 } from '@solana/web3.js';
 import BN from 'bn.js';
 import { NextRequest, NextResponse } from 'next/server';
+import { getMintDecimals } from '@/services/solana/get-mint-decimals';
 
 // Kamino SDK
 import {
@@ -21,9 +22,11 @@ import {
   type Address,
   type Rpc,
 } from '@solana/kit';
+import * as Sentry from '@sentry/nextjs';
 
 const KAMINO_MAIN_MARKET = new PublicKey('7u3HeHxYDLhnCoErrtycNokbQYbWGzLs6JSDqGAv5PfF');
 const KAMINO_PROGRAM_ID = new PublicKey('KLend2g3cP87fffoy8q1mQqGKjrxjC8boSyAYavgmjD');
+const JUPITER_LEND_BASE = 'https://api.jup.ag/lend/v1/earn';
 
 /**
  * Helper function to convert Kamino SDK instruction format to legacy TransactionInstruction
@@ -196,8 +199,8 @@ async function buildKaminoWithdrawTx(
  */
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
-    const { protocol, tokenMint, tokenSymbol, amount, walletAddress } = body;
+  const body = await req.json();
+    const { protocol, tokenMint, tokenSymbol, amount, walletAddress, shares } = body;
 
     if (!protocol || !tokenMint || !tokenSymbol || !amount || !walletAddress) {
       return NextResponse.json(
@@ -225,10 +228,11 @@ export async function POST(req: NextRequest) {
           amount,
         );
         break;
-      // Add more protocols here as they're implemented:
-      // case 'jupiter-lend':
-      //   transaction = await buildJupiterWithdrawTx(connection, wallet, tokenMint, tokenSymbol, amount);
-      //   break;
+      case 'jupiter-lend':
+      case 'jupiter-lend-earn':
+      case 'jup-lend':
+        transaction = await buildJupiterWithdrawTx(connection, wallet, tokenMint, amount, shares);
+        break;
       default:
         return NextResponse.json({ error: `Unsupported protocol: ${protocol}` }, { status: 400 });
     }
@@ -247,4 +251,67 @@ export async function POST(req: NextRequest) {
       { status: 500 },
     );
   }
+}
+
+async function buildJupiterWithdrawTx(
+  _connection: Connection,
+  wallet: PublicKey,
+  tokenMint: string,
+  amount: number,
+  shares?: number,
+): Promise<VersionedTransaction> {
+  const apiKey = process.env.JUPITER_LEND_API_KEY;
+  if (!apiKey) {
+    throw new Error('Missing JUPITER_LEND_API_KEY');
+  }
+
+  const decimals = (await getMintDecimals(tokenMint).catch(() => undefined)) ?? 6;
+  const amountBase = Math.floor(amount * Math.pow(10, decimals));
+
+  // If we have share balance, prefer redeem to burn all shares (avoids dust)
+  const endpoint = shares ? 'redeem' : 'withdraw';
+  const body: any = {
+    asset: tokenMint,
+    signer: wallet.toBase58(),
+  };
+  if (shares) {
+    body.shares = String(Math.floor(shares));
+  } else {
+    body.amount = amountBase.toString();
+  }
+
+  // Let Jupiter return a fully built transaction (includes compute budget/priority fees)
+  const res = await fetch(`${JUPITER_LEND_BASE}/${endpoint}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    Sentry.captureException(new Error(`Jupiter ${endpoint} failed: ${res.status} ${text}`), {
+      extra: {
+        status: res.status,
+        responseText: text,
+        endpoint,
+        tokenMint,
+        tokenSymbol: 'unknown',
+        amountBase,
+        wallet: wallet.toBase58(),
+        shares,
+      },
+    });
+    throw new Error(`Jupiter ${endpoint} failed: ${res.status} ${text}`);
+  }
+
+  const json = (await res.json()) as { transaction?: string };
+  if (!json.transaction) {
+    throw new Error('No withdraw transaction returned from Jupiter');
+  }
+
+  const txBytes = Buffer.from(json.transaction, 'base64');
+  return VersionedTransaction.deserialize(txBytes);
 }

@@ -43,9 +43,10 @@ const TokenFundingOptions: React.FC<TokenFundingOptionsProps> = ({
   logoURI,
   onComplete,
 }) => {
-  const { onOpen: openSwapModal } = useSwapModal();
+  const { onOpen: openSwapModal, isOpen: isSwapOpen } = useSwapModal();
   const { fundWallet } = useFundWallet({
     onUserExited: () => {
+      setIsBuyLoading(false);
       onComplete?.('fundWallet');
     },
   });
@@ -87,16 +88,24 @@ const TokenFundingOptions: React.FC<TokenFundingOptionsProps> = ({
 
   const handleSwap = () => {
     if (finalTokenAddress) {
-      openSwapModal('buy', finalTokenAddress, () => onComplete?.('swap'));
+      setIsSwapLoading(true);
+      openSwapModal('buy', finalTokenAddress, () => {
+        setIsSwapLoading(false);
+        onComplete?.('swap');
+      });
     }
   };
 
   const handleBuy = async () => {
     if (wallet?.address) {
+      setIsBuyLoading(true);
       try {
         await fundWallet(wallet.address, { amount: '1' });
       } catch {
         // no-op; user may cancel funding
+      } finally {
+        setIsBuyLoading(false);
+        onComplete?.('fundWallet');
       }
     }
   };
@@ -131,8 +140,16 @@ const TokenFundingOptions: React.FC<TokenFundingOptionsProps> = ({
               >
                 {isResolving || isLoadingMetadata ? 'Loading...' : `Swap for ${tokenSymbol}`}
               </Button>
-              <Button onClick={handleBuy} className="w-full" variant="brandOutline">
+              <Button
+                onClick={handleBuy}
+                className="w-full"
+                variant="brandOutline"
+                disabled={isBuyLoading}
+              >
                 <div className="flex items-center gap-2">
+                  {isBuyLoading && (
+                    <div className="h-4 w-4 border-2 border-white/60 border-t-white animate-spin rounded-full" />
+                  )}
                   Buy or Receive SOL
                   <TooltipProvider>
                     <Tooltip delayDuration={0}>
@@ -192,29 +209,21 @@ const GetBalance: React.FC<Props> = ({ tool, prevToolAgent }) => {
   // Handler for when user completes funding options
   const handleFundingComplete = useCallback(
     (type: 'fundWallet' | 'swap', completedTokenSymbol: string) => {
-      console.log('handleFundingComplete', type, completedTokenSymbol);
       if (type === 'fundWallet') {
-        // Different message based on flow context
-        if (isInLendingFlow) {
-          sendMessage(`I have closed the onramp in the lending flow.`);
-        } else if (isInStakingFlow) {
-          sendMessage(`I have closed the onramp in the staking flow.`);
-        } else {
-          sendMessage(`I have closed the onramp.`);
-        }
+        // User closed onramp without completing; do not send any message
+        return;
+      }
+      // User completed swap - include all context for agent to continue
+      if (isInLendingFlow) {
+        sendMessage(
+          `I have acquired ${completedTokenSymbol} (${tokenAddress}) and I'm ready to lend. My wallet address is ${walletAddress}. Please show me the lending interface now.`,
+        );
+      } else if (isInStakingFlow) {
+        sendMessage(
+          `I have acquired ${completedTokenSymbol} (${tokenAddress}) and I'm ready to stake. My wallet address is ${walletAddress}. Please show me the staking interface now.`,
+        );
       } else {
-        // User completed swap - include all context for agent to continue
-        if (isInLendingFlow) {
-          sendMessage(
-            `I have acquired ${completedTokenSymbol} (${tokenAddress}) and I'm ready to lend. My wallet address is ${walletAddress}. Please show me the lending interface now.`,
-          );
-        } else if (isInStakingFlow) {
-          sendMessage(
-            `I have acquired ${completedTokenSymbol} (${tokenAddress}) and I'm ready to stake. My wallet address is ${walletAddress}. Please show me the staking interface now.`,
-          );
-        } else {
-          sendMessage(`I have the required ${completedTokenSymbol}.`);
-        }
+        sendMessage(`I have the required ${completedTokenSymbol}.`);
       }
     },
     [sendMessage, isInLendingFlow, isInStakingFlow, tokenAddress, walletAddress],
@@ -244,49 +253,49 @@ const GetBalance: React.FC<Props> = ({ tool, prevToolAgent }) => {
           return `No balance found`;
         },
         body: (result: BalanceResultType) => {
-          const tokenSymbol = result.body?.token || '';
+          const tokenSymbol = result.body?.token || tool?.args?.tokenSymbol || '';
           const isInFlow = isInStakingOrLendingFlow;
           const hasZeroBalance =
             result.body?.balance !== undefined && result.body.balance <= 0.00001;
 
-          if (result.body) {
-            // If in staking/lending flow and balance is 0, show options
-            if (isInFlow && hasZeroBalance) {
-              // Prefer tokenAddress from result.body, fallback to tool.args
-              const tokenAddress = result.body?.tokenAddress || tool?.args?.tokenAddress;
-
-              return (
-                <TokenFundingOptions
-                  tokenSymbol={tokenSymbol}
-                  tokenAddress={tokenAddress}
-                  logoURI={result.body.logoURI}
-                  onComplete={(type) => handleFundingComplete(type, tokenSymbol)}
-                />
-              );
-            }
-
-            // If in flow but balance > 0, hide the balance display
-            if (isInFlow && !hasZeroBalance) {
-              return null;
-            }
-
+          if (!result.body) {
             return (
-              <div className="flex justify-center w-full">
-                <div className="w-full md:w-[70%]">
-                  <div className="flex flex-col gap-4">
-                    <TokenBalance
-                      token={result.body.token}
-                      balance={result.body.balance}
-                      logoURI={result.body.logoURI}
-                      name={result.body.name}
-                    />
-                  </div>
-                </div>
-              </div>
+              <p className="text-sm text-neutral-600 dark:text-neutral-400">No balance found</p>
             );
           }
 
-          return <p className="text-sm text-neutral-600 dark:text-neutral-400">No balance found</p>;
+          // Always show swap/onramp when balance is zero
+          if (hasZeroBalance) {
+            const tokenAddress = result.body?.tokenAddress || tool?.args?.tokenAddress;
+            return (
+              <TokenFundingOptions
+                tokenSymbol={tokenSymbol}
+                tokenAddress={tokenAddress}
+                logoURI={result.body.logoURI}
+                onComplete={(type) => handleFundingComplete(type, tokenSymbol)}
+              />
+            );
+          }
+
+          // If in flow but balance > 0, hide the balance display
+          if (isInFlow && !hasZeroBalance) {
+            return null;
+          }
+
+          return (
+            <div className="flex justify-center w-full">
+              <div className="w-full md:w-[70%]">
+                <div className="flex flex-col gap-4">
+                  <TokenBalance
+                    token={result.body.token}
+                    balance={result.body.balance}
+                    logoURI={result.body.logoURI}
+                    name={result.body.name}
+                  />
+                </div>
+              </div>
+            </div>
+          );
         },
       }}
       prevToolAgent={prevToolAgent}

@@ -12,4 +12,5 @@ export interface LendingPosition {
   token: Token; // Token being lent
   poolData: LendingYieldsPoolData; // Pool metadata (APY, TVL, etc.)
   protocol: string; // Protocol name (e.g., 'kamino-lend')
+  sharesRaw?: number; // Protocol-specific raw share amount (e.g., Jupiter lend jl tokens)
 }

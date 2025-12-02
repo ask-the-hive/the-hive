@@ -29,12 +29,12 @@ const SwapSuccessModal: React.FC<SwapSuccessModalProps> = ({
 
   const title = useMemo(() => {
     if (mode === 'withdraw') {
-      return `${outputAmount} ${outputToken} successful!`;
+      return 'Withdrawal complete';
     }
-    const action = mode === 'buy' ? 'Buy' : 'Sell';
+    const action = mode === 'buy' ? 'Bought' : 'Sold';
 
-    return `${action} ${inputToken} for ${outputToken} successful!`;
-  }, [mode, inputToken, outputToken, outputAmount]);
+    return `${action} ${outputToken} with ${inputToken} successfully!`;
+  }, [mode, inputToken, outputToken]);
 
   const explorerUrl = useMemo(() => {
     if (!txHash) return null;
@@ -73,7 +73,7 @@ const SwapSuccessModal: React.FC<SwapSuccessModalProps> = ({
                   <span className="font-medium text-foreground">
                     {outputAmount} {outputToken}
                   </span>{' '}
-                  from your lending position
+                  from your lending position.
                 </>
               ) : (
                 <>

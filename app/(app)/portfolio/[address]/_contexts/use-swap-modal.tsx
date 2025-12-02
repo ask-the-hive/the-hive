@@ -28,6 +28,7 @@ type SwapFailedData = {
 type SwapResult = {
   outputAmount: string;
   outputToken: string;
+  inputToken: string;
 };
 
 interface SwapModalContextType {
@@ -230,21 +231,20 @@ export const SwapModalProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const onSuccess = () => {
     // Create swap success data
     const inputToken =
-      mode === 'buy'
-        ? currentChain === 'solana'
-          ? 'SOL'
-          : currentChain === 'base'
-            ? 'ETH'
-            : 'BNB'
-        : token?.symbol || '';
+      swapResult?.inputToken ||
+      (mode === 'buy'
+        ? token?.symbol ||
+          (currentChain === 'solana' ? 'SOL' : currentChain === 'base' ? 'ETH' : 'BNB')
+        : token?.symbol || '');
     const outputToken =
-      mode === 'buy'
+      swapResult?.outputToken ||
+      (mode === 'buy'
         ? token?.symbol || ''
         : currentChain === 'solana'
           ? 'SOL'
           : currentChain === 'base'
             ? 'ETH'
-            : 'BNB';
+            : 'BNB');
 
     setSwapSuccessData({
       mode,

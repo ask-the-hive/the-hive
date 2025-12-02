@@ -5,24 +5,14 @@ import {
   VersionedTransaction,
   TransactionInstruction,
 } from '@solana/web3.js';
-import { getDepositIx } from '@jup-ag/lend/earn';
-// TODO: Solend SDK has unfixable Node.js dependency issues (jito-ts -> rpc-websockets)
-// The dependency chain is: @solendprotocol/solend-sdk -> @pythnetwork/pyth-solana-receiver
-// -> @pythnetwork/solana-utils -> jito-ts -> old @solana/web3.js -> rpc-websockets/dist/lib/client
-// This path doesn't exist in newer rpc-websockets versions and causes module resolution errors
-// even with package resolutions/overrides. Manual implementation needed.
-// import {
-//   SolendActionCore,
-//   MAIN_POOL_ADDRESS,
-//   getProgramId,
-//   getReservesOfPool,
-// } from '@solendprotocol/solend-sdk';
-import BN from 'bn.js';
+import * as Sentry from '@sentry/nextjs';
 import { NextRequest, NextResponse } from 'next/server';
 
 // Kamino - Testing with WASM webpack config
 import { KaminoMarket, KaminoAction, VanillaObligation } from '@kamino-finance/klend-sdk';
 import { createSolanaRpc, address as createAddress, Instruction } from '@solana/kit';
+import { getMintDecimals } from '@/services/solana/get-mint-decimals';
+import { BN } from '@project-serum/anchor';
 
 /**
  * Kamino Lending Market Configuration
@@ -142,30 +132,82 @@ async function buildJupiterLendTx(
   tokenSymbol: string,
   amount: number,
 ): Promise<VersionedTransaction> {
-  // Convert token mint string to PublicKey
-  const assetMint = new PublicKey(tokenMint);
+  const apiKey = process.env.JUPITER_LEND_API_KEY;
+  if (!apiKey) {
+    throw new Error('Missing JUPITER_LEND_API_KEY');
+  }
 
-  // Convert amount to proper decimals (6 for USDT/USDC, 9 for SOL)
-  const decimals = tokenSymbol.toUpperCase() === 'SOL' ? 9 : 6;
-  const amountBN = new BN(Math.floor(amount * Math.pow(10, decimals)));
+  // Convert amount using on-chain mint decimals
+  const decimals =
+    (await getMintDecimals(tokenMint).catch(() => undefined)) ??
+    (tokenSymbol.toUpperCase() === 'SOL' ? 9 : 6);
+  const amountBase = Math.floor(amount * Math.pow(10, decimals)).toString();
 
-  // Get deposit instruction from Jupiter Lend SDK
-  const depositIx = await getDepositIx({
-    amount: amountBN,
-    asset: assetMint,
-    signer: wallet,
-    connection,
+  const res = await fetch('https://api.jup.ag/lend/v1/earn/deposit-instructions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+    },
+    body: JSON.stringify({
+      asset: tokenMint,
+      amount: amountBase,
+      signer: wallet.toBase58(),
+    }),
   });
 
-  // Convert the raw instruction to TransactionInstruction
-  const instruction = new TransactionInstruction({
-    programId: new PublicKey(depositIx.programId),
-    keys: depositIx.keys.map((key) => ({
-      pubkey: new PublicKey(key.pubkey),
-      isSigner: key.isSigner,
-      isWritable: key.isWritable,
-    })),
-    data: Buffer.from(depositIx.data),
+  if (!res.ok) {
+    const text = await res.text();
+    Sentry.captureException(
+      new Error(`Jupiter deposit instructions failed: ${res.status} ${text}`),
+      {
+        extra: {
+          status: res.status,
+          responseText: text,
+          tokenMint,
+          tokenSymbol,
+          amountBase,
+        },
+      },
+    );
+    throw new Error(`Jupiter deposit instructions failed: ${res.status} ${text}`);
+  }
+
+  type JupiterInstructionAccount = {
+    pubkey: string;
+    isSigner: boolean;
+    isWritable: boolean;
+  };
+
+  type JupiterDepositInstruction = {
+    programId: string;
+    accounts: JupiterInstructionAccount[];
+    data: string; // base64 string per Jupiter API
+  };
+
+  type JupiterDepositInstructionsResponse = {
+    instructions: JupiterDepositInstruction[];
+  };
+
+  const json: JupiterDepositInstructionsResponse = await res.json();
+  const ixData = json?.instructions || [];
+  if (!Array.isArray(ixData) || ixData.length === 0) {
+    throw new Error('No deposit instructions returned from Jupiter');
+  }
+
+  const instructionSet = ixData.map((ix) => {
+    if (!ix.programId || !Array.isArray(ix.accounts) || !ix.data) {
+      throw new Error('Invalid instruction format from Jupiter');
+    }
+    return new TransactionInstruction({
+      programId: new PublicKey(ix.programId),
+      keys: ix.accounts.map((k) => ({
+        pubkey: new PublicKey(k.pubkey),
+        isSigner: k.isSigner,
+        isWritable: k.isWritable,
+      })),
+      data: Buffer.from(ix.data, 'base64'),
+    });
   });
 
   // Get latest blockhash
@@ -175,7 +217,7 @@ async function buildJupiterLendTx(
   const messageV0 = new TransactionMessage({
     payerKey: wallet,
     recentBlockhash: blockhash,
-    instructions: [instruction],
+    instructions: instructionSet,
   }).compileToV0Message();
 
   const versionedTx = new VersionedTransaction(messageV0);
