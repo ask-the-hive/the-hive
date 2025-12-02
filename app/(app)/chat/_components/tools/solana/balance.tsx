@@ -1,5 +1,4 @@
 import React, { useMemo, useCallback } from 'react';
-import Image from 'next/image';
 
 import ToolCard from '../tool-card';
 import { TokenBalance } from '../utils';
@@ -12,11 +11,13 @@ import {
   TooltipProvider,
   TooltipTrigger,
   Skeleton,
+  TokenIcon,
 } from '@/components/ui';
 import { useSwapModal } from '@/app/(app)/portfolio/[address]/_contexts/use-swap-modal';
 import { useFundWallet } from '@privy-io/react-auth/solana';
 import { useSendTransaction } from '@/hooks/privy/use-send-transaction';
 import { useResolveAssetSymbolToAddress } from '@/hooks/queries/token/use-resolve-asset-symbol-to-address';
+import { useTokenMetadata } from '@/hooks/queries/token/use-token-metadata';
 import { Info } from 'lucide-react';
 
 import type { ToolInvocation } from 'ai';
@@ -71,6 +72,19 @@ const TokenFundingOptions: React.FC<TokenFundingOptionsProps> = ({
     return resolvedAddress;
   }, [isTokenSOL, resolvedAddress, tokenAddress]);
 
+  // Fetch token metadata if we don't have a logoURI but have an address
+  const shouldFetchMetadata = !logoURI && !!finalTokenAddress;
+  const { data: tokenMetadata, isLoading: isLoadingMetadata } = useTokenMetadata(
+    shouldFetchMetadata ? finalTokenAddress : '',
+  );
+
+  // Determine the logo to use
+  const finalLogoURI = useMemo(() => {
+    if (logoURI) return logoURI;
+    if (tokenMetadata?.logo_uri) return tokenMetadata.logo_uri;
+    return undefined;
+  }, [logoURI, tokenMetadata]);
+
   const handleSwap = () => {
     if (finalTokenAddress) {
       openSwapModal('buy', finalTokenAddress, () => onComplete?.('swap'));
@@ -93,24 +107,14 @@ const TokenFundingOptions: React.FC<TokenFundingOptionsProps> = ({
         <Card className="mt-4 p-4 border rounded-lg bg-blue-50 dark:bg-neutral-800">
           <div className="p-4 pt-8">
             <div className="flex flex-col items-center gap-3 mb-4">
-              {logoURI ? (
-                <Image
-                  src={logoURI}
-                  alt={tokenSymbol}
-                  width={50}
-                  height={50}
-                  className="w-12 h-12 rounded-full"
-                  onError={(ev) => {
-                    ev.currentTarget.style.display = 'none';
-                  }}
-                />
-              ) : (
-                <div className="w-12 h-12 rounded-full bg-neutral-200 dark:bg-neutral-700 flex items-center justify-center">
-                  <span className="text-xs font-semibold text-neutral-600 dark:text-neutral-300">
-                    {tokenSymbol?.toUpperCase()}
-                  </span>
-                </div>
-              )}
+              <TokenIcon
+                src={finalLogoURI}
+                alt={tokenSymbol}
+                tokenSymbol={tokenSymbol}
+                width={48}
+                height={48}
+                className="w-12 h-12 rounded-full"
+              />
               <p className="text-sm text-blue-700 dark:text-blue-300">
                 You need {tokenSymbol} to continue
               </p>
@@ -123,9 +127,9 @@ const TokenFundingOptions: React.FC<TokenFundingOptionsProps> = ({
                 onClick={handleSwap}
                 className="w-full"
                 variant="brand"
-                disabled={!finalTokenAddress || isResolving}
+                disabled={!finalTokenAddress || isResolving || isLoadingMetadata}
               >
-                {isResolving ? 'Loading...' : `Swap for ${tokenSymbol}`}
+                {isResolving || isLoadingMetadata ? 'Loading...' : `Swap for ${tokenSymbol}`}
               </Button>
               <Button onClick={handleBuy} className="w-full" variant="brandOutline">
                 <div className="flex items-center gap-2">

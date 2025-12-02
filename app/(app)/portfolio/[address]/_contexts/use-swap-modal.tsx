@@ -66,6 +66,7 @@ export const SwapModalProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [isFailedModalOpen, setIsFailedModalOpen] = useState(false);
   const [swapFailedData, setSwapFailedData] = useState<SwapFailedData | null>(null);
   const [swapResult, setSwapResult] = useState<SwapResult | null>(null);
+  const [swapError, setSwapError] = useState<string | null>(null);
   const { currentChain } = useChain();
 
   // Define SOL token at component level for reuse
@@ -106,6 +107,7 @@ export const SwapModalProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     // First clear existing states
     setToken(null);
     setOutputToken(null);
+    setSwapError(null);
     // Wrap the function in another function to prevent React from treating it as an updater
     setHandleSuccess(() => newHandleSuccess);
 
@@ -222,6 +224,7 @@ export const SwapModalProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     setOutputToken(null);
     setTokenAddress('');
     setHandleSuccess(undefined);
+    setSwapError(null);
   };
 
   const onSuccess = () => {
@@ -250,6 +253,9 @@ export const SwapModalProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       outputAmount: swapResult?.outputAmount || 'N/A',
     });
 
+    // Clear any errors
+    setSwapError(null);
+
     // Close swap modal and show success modal
     onClose();
     setIsSuccessModalOpen(true);
@@ -268,34 +274,8 @@ export const SwapModalProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   };
 
   const onError = (error: string) => {
-    // Create swap failed data
-    const inputToken =
-      mode === 'buy'
-        ? currentChain === 'solana'
-          ? 'SOL'
-          : currentChain === 'base'
-            ? 'ETH'
-            : 'BNB'
-        : token?.symbol || '';
-    const outputToken =
-      mode === 'buy'
-        ? token?.symbol || ''
-        : currentChain === 'solana'
-          ? 'SOL'
-          : currentChain === 'base'
-            ? 'ETH'
-            : 'BNB';
-
-    setSwapFailedData({
-      mode,
-      inputToken,
-      outputToken,
-      error,
-    });
-
-    // Close swap modal and show failed modal
-    onClose();
-    setIsFailedModalOpen(true);
+    // Set the error message to display inline
+    setSwapError(error || 'An error occurred during the swap. Please try again.');
 
     console.error('Swap error:', error);
   };
@@ -326,6 +306,11 @@ export const SwapModalProvider: React.FC<{ children: React.ReactNode }> = ({ chi
             onError={onError}
             setSwapResult={setSwapResult}
           />
+          {swapError && (
+            <div className="mt-4 p-4 rounded-lg bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-900/20">
+              <p className="text-sm text-red-600 dark:text-red-400">{swapError}</p>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
 
