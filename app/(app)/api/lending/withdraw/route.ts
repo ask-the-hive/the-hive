@@ -7,6 +7,7 @@ import {
 } from '@solana/web3.js';
 import BN from 'bn.js';
 import { NextRequest, NextResponse } from 'next/server';
+import { getMintDecimals } from '@/services/solana/get-mint-decimals';
 
 // Kamino SDK
 import {
@@ -24,6 +25,7 @@ import {
 
 const KAMINO_MAIN_MARKET = new PublicKey('7u3HeHxYDLhnCoErrtycNokbQYbWGzLs6JSDqGAv5PfF');
 const KAMINO_PROGRAM_ID = new PublicKey('KLend2g3cP87fffoy8q1mQqGKjrxjC8boSyAYavgmjD');
+const JUPITER_LEND_BASE = 'https://api.jup.ag/lend/v1/earn';
 
 /**
  * Helper function to convert Kamino SDK instruction format to legacy TransactionInstruction
@@ -225,10 +227,11 @@ export async function POST(req: NextRequest) {
           amount,
         );
         break;
-      // Add more protocols here as they're implemented:
-      // case 'jupiter-lend':
-      //   transaction = await buildJupiterWithdrawTx(connection, wallet, tokenMint, tokenSymbol, amount);
-      //   break;
+      case 'jupiter-lend':
+      case 'jupiter-lend-earn':
+      case 'jup-lend':
+        transaction = await buildJupiterWithdrawTx(connection, wallet, tokenMint, amount);
+        break;
       default:
         return NextResponse.json({ error: `Unsupported protocol: ${protocol}` }, { status: 400 });
     }
@@ -247,4 +250,68 @@ export async function POST(req: NextRequest) {
       { status: 500 },
     );
   }
+}
+
+async function buildJupiterWithdrawTx(
+  connection: Connection,
+  wallet: PublicKey,
+  tokenMint: string,
+  amount: number,
+): Promise<VersionedTransaction> {
+  const apiKey = process.env.JUPITER_LEND_API_KEY;
+  if (!apiKey) {
+    throw new Error('Missing JUPITER_LEND_API_KEY');
+  }
+
+  // Determine base units from mint decimals
+  const decimals = (await getMintDecimals(tokenMint).catch(() => undefined)) ?? 6;
+  const amountBase = Math.floor(amount * Math.pow(10, decimals));
+
+  const res = await fetch(`${JUPITER_LEND_BASE}/withdraw-instructions`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+    },
+    body: JSON.stringify({
+      asset: tokenMint,
+      amount: amountBase.toString(),
+      signer: wallet.toBase58(),
+    }),
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Jupiter withdraw instructions failed: ${res.status} ${text}`);
+  }
+
+  const json = (await res.json()) as { instructions: any[] };
+  const ixData = json?.instructions || [];
+  if (!Array.isArray(ixData) || ixData.length === 0) {
+    throw new Error('No withdraw instructions returned from Jupiter');
+  }
+
+  const instructions = ixData.map((ix) => {
+    if (!ix.programId || !ix.accounts || !ix.data) {
+      throw new Error('Invalid instruction format from Jupiter');
+    }
+    return new TransactionInstruction({
+      programId: new PublicKey(ix.programId),
+      keys: ix.accounts.map((k: any) => ({
+        pubkey: new PublicKey(k.pubkey),
+        isSigner: k.isSigner,
+        isWritable: k.isWritable,
+      })),
+      data: Buffer.from(ix.data, 'base64'),
+    });
+  });
+
+  const { blockhash } = await connection.getLatestBlockhash();
+  const messageV0 = new TransactionMessage({
+    payerKey: wallet,
+    recentBlockhash: blockhash,
+    instructions,
+  }).compileToV0Message();
+
+  return new VersionedTransaction(messageV0);
 }

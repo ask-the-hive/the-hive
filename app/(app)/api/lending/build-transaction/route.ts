@@ -23,6 +23,7 @@ import { NextRequest, NextResponse } from 'next/server';
 // Kamino - Testing with WASM webpack config
 import { KaminoMarket, KaminoAction, VanillaObligation } from '@kamino-finance/klend-sdk';
 import { createSolanaRpc, address as createAddress, Instruction } from '@solana/kit';
+import { getMintDecimals } from '@/services/solana/get-mint-decimals';
 
 /**
  * Kamino Lending Market Configuration
@@ -145,8 +146,10 @@ async function buildJupiterLendTx(
   // Convert token mint string to PublicKey
   const assetMint = new PublicKey(tokenMint);
 
-  // Convert amount to proper decimals (6 for USDT/USDC, 9 for SOL)
-  const decimals = tokenSymbol.toUpperCase() === 'SOL' ? 9 : 6;
+  // Convert amount using on-chain mint decimals
+  const decimals =
+    (await getMintDecimals(tokenMint).catch(() => undefined)) ??
+    (tokenSymbol.toUpperCase() === 'SOL' ? 9 : 6);
   const amountBN = new BN(Math.floor(amount * Math.pow(10, decimals)));
 
   // Get deposit instruction from Jupiter Lend SDK

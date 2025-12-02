@@ -2,6 +2,13 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 ## Getting Started
 
+### Environment variables
+The app expects the following server-side env vars:
+- `HELIUS_API_KEY`
+- `BIRDEYE_API_KEY`
+- `BSCSCAN_API_KEY`
+- `JUPITER_LEND_API_KEY` (required for Jupiter Lend Earn API at https://api.jup.ag/lend)
+
 First, run the development server:
 
 ```bash
