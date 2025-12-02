@@ -120,7 +120,7 @@ const FollowUpSuggestions: React.FC = () => {
             variant="brandOutline"
             className={cn(
               'w-full text-sm py-0.5 h-[32px]',
-              'flex items-center justify-center',
+              'flex items-center justify-center overflow-hidden',
               index > 0 && 'hidden md:flex',
             )}
             onClick={() => {
@@ -128,8 +128,8 @@ const FollowUpSuggestions: React.FC = () => {
               setSuggestions([]);
             }}
           >
-            <Icon name="Plus" className="w-3 h-3 mr-1" />
-            <span>{suggestion.title}</span>
+            <Icon name="Plus" className="w-3 h-3 mr-1 flex-shrink-0" />
+            <span className="truncate">{suggestion.title}</span>
           </Button>
         ))
       )}

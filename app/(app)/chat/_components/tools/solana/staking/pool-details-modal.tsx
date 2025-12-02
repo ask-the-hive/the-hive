@@ -91,7 +91,7 @@ const PoolDetailsModal: React.FC<Props> = ({ pool, isOpen, onClose, variant = 's
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent
-        className="max-w-2xl max-h-[80vh] overflow-y-auto brand-scrollbar"
+        className="max-w-full md:max-w-2xl max-h-[100vh] md:max-h-[80vh] overflow-y-auto brand-scrollbar"
         style={{
           scrollbarWidth: 'thin',
           scrollbarColor: '#525252 transparent',
@@ -116,7 +116,7 @@ const PoolDetailsModal: React.FC<Props> = ({ pool, isOpen, onClose, variant = 's
           </div>
         </DialogHeader>
 
-        <div className="space-y-4 sm:space-y-6">
+        <div className="w-[calc(100vw-2rem)] md:w-full space-y-4 sm:space-y-6">
           {/* Key Metrics */}
           <div className="grid grid-cols-2 gap-4">
             <div className="flex items-center gap-3 p-3 rounded-lg bg-green-50 dark:bg-green-900/20">

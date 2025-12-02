@@ -11,6 +11,7 @@ interface BalanceTableCellProps {
   tokenId: string;
   decimals: number;
   portfolioPrice?: number;
+  className?: string;
 }
 
 /**
@@ -23,6 +24,7 @@ export const BalanceTableCell: React.FC<BalanceTableCellProps> = ({
   tokenId,
   decimals,
   portfolioPrice,
+  className,
 }) => {
   // Fetch price if not available from portfolio or if it's 0
   const shouldFetchPrice = !portfolioPrice || portfolioPrice === 0;
@@ -34,7 +36,7 @@ export const BalanceTableCell: React.FC<BalanceTableCellProps> = ({
     portfolioPrice && portfolioPrice > 0 ? portfolioPrice : fetchedPrice?.value || 0;
 
   return (
-    <TableCell>
+    <TableCell className={className}>
       <div className="flex flex-col">
         <p className="font-medium">{formatCrypto(displayBalanceRaw, tokenSymbol, decimals)}</p>
         {isPriceLoading ? (

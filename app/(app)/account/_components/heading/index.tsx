@@ -141,9 +141,9 @@ const AccountHeading: React.FC<Props> = ({ user }) => {
           Log out
         </Button>
       </div>
-      <Card className="flex flex-row gap-6 p-8">
+      <Card className="flex flex-col md:flex-row gap-4 md:gap-6 p-4 md:p-8">
         {/* Left Column - Avatar */}
-        <div className="flex flex-col items-center gap-2">
+        <div className="flex flex-col items-center gap-2 w-full md:w-auto">
           <div className="relative group">
             <Avatar className="w-24 h-24 dark:bg-neutral-700 cursor-pointer border border-neutral-200 dark:border-brand-700 rounded-full shadow-brand-500/50">
               <AvatarFallback className="dark:bg-neutral-700">

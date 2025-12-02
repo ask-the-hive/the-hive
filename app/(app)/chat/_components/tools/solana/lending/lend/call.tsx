@@ -153,7 +153,7 @@ const LendCallBody: React.FC<Props> = ({ toolCallId, args }) => {
       // Use poolData.project if available, otherwise use args.protocol
       const protocolName = poolData?.project || args.protocol;
 
-      // Build lending transaction via backend API (Francium SDK requires Node.js)
+      // Build lending transaction via backend API
       const response = await fetch('/api/lending/build-transaction', {
         method: 'POST',
         headers: {
