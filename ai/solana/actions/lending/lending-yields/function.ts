@@ -66,47 +66,58 @@ export async function getLendingYields(): Promise<SolanaActionResult<LendingYiel
     // Merge pools, preferring the highest APY per mint (project-agnostic)
     const poolsByMint = new Map<string, any>();
 
-    const mergePool = (pool: any, mintAddress?: string) => {
-      const mint = mintAddress || pool?.underlyingTokens?.[0];
+    const mergePool = (pool: any) => {
+      const mint = pool?.underlyingTokens?.[0];
       if (!mint) return;
       const existing = poolsByMint.get(mint);
+
       if (!existing) {
         poolsByMint.set(mint, pool);
         return;
       }
-      const existingApy = existing.apy || existing.apyBase || 0;
-      const incomingApy = pool.apy || pool.apyBase || 0;
-      if (incomingApy > existingApy) {
-        poolsByMint.set(mint, pool);
-      }
+
+      const existingApy = existing.apy ?? existing.apyBase ?? 0;
+      const incomingApy = pool.apy ?? pool.apyBase ?? 0;
+      const useIncoming = incomingApy > existingApy;
+
+      poolsByMint.set(mint, {
+        ...existing,
+        apy: useIncoming ? (pool.apy ?? existing.apy) : existing.apy,
+        apyBase: useIncoming ? (pool.apyBase ?? existing.apyBase) : existing.apyBase,
+        apyReward: useIncoming ? (pool.apyReward ?? existing.apyReward) : existing.apyReward,
+        tvlUsd: pool.tvlUsd ?? existing.tvlUsd,
+        rewardTokens: existing.rewardTokens?.length
+          ? existing.rewardTokens
+          : (pool.rewardTokens ?? existing.rewardTokens),
+        predictions: existing.predictions ?? pool.predictions,
+        poolMeta: existing.poolMeta ?? pool.poolMeta,
+        url: existing.url ?? pool.url,
+      });
     };
 
     // Add DefiLlama pools first (they have more metadata like predictions)
-    defiLlamaPools.forEach((p: any) => mergePool(p, p.underlyingTokens?.[0]));
+    defiLlamaPools.forEach((p: any) => mergePool(p));
 
     // Merge Kamino SDK pools (prefer higher APY)
-    kaminoPoolsFormatted.forEach((p) => mergePool(p, p.underlyingTokens?.[0]));
+    kaminoPoolsFormatted.forEach((p) => mergePool(p));
 
     // Merge Jupiter pools (stablecoin-only) - treat as primary source for these mints
     jupiterPools.forEach((pool) => {
       const mintAddress = pool.mintAddress;
       if (!mintAddress) return;
-      mergePool(
-        {
-          project: pool.project,
-          symbol: pool.symbol,
-          tvlUsd: pool.tvlUsd,
-          apyBase: pool.apyBase,
-          apyReward: null,
-          apy: pool.apy,
-          rewardTokens: [],
-          poolMeta: pool.address ?? null,
-          url: null,
-          underlyingTokens: [pool.mintAddress],
-          predictions: pool.predictions || null,
-        },
-        mintAddress,
-      );
+      mergePool({
+        project: pool.project,
+        symbol: pool.symbol,
+        tvlUsd: pool.tvlUsd,
+        apyBase: pool.apyBase,
+        apyReward: null,
+        apy: pool.apy,
+        rewardTokens: [],
+        poolMeta: pool.address ?? null,
+        url: null,
+        underlyingTokens: [pool.mintAddress],
+        predictions: pool.predictions || null,
+      });
     });
 
     const solLendingPools = Array.from(poolsByMint.values());

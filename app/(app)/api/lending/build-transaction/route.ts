@@ -160,19 +160,35 @@ async function buildJupiterLendTx(
     throw new Error(`Jupiter deposit instructions failed: ${res.status} ${text}`);
   }
 
-  const json = (await res.json()) as { instructions: any[] };
+  type JupiterInstructionAccount = {
+    pubkey: string;
+    isSigner: boolean;
+    isWritable: boolean;
+  };
+
+  type JupiterDepositInstruction = {
+    programId: string;
+    accounts: JupiterInstructionAccount[];
+    data: string; // base64 string per Jupiter API
+  };
+
+  type JupiterDepositInstructionsResponse = {
+    instructions: JupiterDepositInstruction[];
+  };
+
+  const json: JupiterDepositInstructionsResponse = await res.json();
   const ixData = json?.instructions || [];
   if (!Array.isArray(ixData) || ixData.length === 0) {
     throw new Error('No deposit instructions returned from Jupiter');
   }
 
   const instructionSet = ixData.map((ix) => {
-    if (!ix.programId || !ix.accounts || !ix.data) {
+    if (!ix.programId || !Array.isArray(ix.accounts) || !ix.data) {
       throw new Error('Invalid instruction format from Jupiter');
     }
     return new TransactionInstruction({
       programId: new PublicKey(ix.programId),
-      keys: ix.accounts.map((k: any) => ({
+      keys: ix.accounts.map((k) => ({
         pubkey: new PublicKey(k.pubkey),
         isSigner: k.isSigner,
         isWritable: k.isWritable,
