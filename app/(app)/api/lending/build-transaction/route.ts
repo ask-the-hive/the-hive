@@ -19,9 +19,8 @@ import { getDepositIx } from '@jup-ag/lend/earn';
 // } from '@solendprotocol/solend-sdk';
 import BN from 'bn.js';
 import { NextRequest, NextResponse } from 'next/server';
-
-// Kamino - Testing with WASM webpack config
 import { KaminoMarket, KaminoAction, VanillaObligation } from '@kamino-finance/klend-sdk';
+import { openLendingPositionAndDepositInstructions } from '@crypticdot/defituna-client';
 import { createSolanaRpc, address as createAddress, Instruction } from '@solana/kit';
 
 /**
@@ -75,13 +74,6 @@ export async function POST(req: NextRequest) {
           amount,
         );
         break;
-
-      // TODO: Solend SDK disabled due to unfixable dependency issues
-      // case 'save':
-      // case 'solend':
-      //   transaction = await buildSolendLendTx(connection, walletPubkey, tokenSymbol, amount);
-      //   break;
-
       case 'kamino-lend':
       case 'kamino':
         transaction = await buildKaminoLendTx(
@@ -92,6 +84,12 @@ export async function POST(req: NextRequest) {
           amount,
         );
         break;
+      case 'defituna':
+      case 'defi-tuna':
+      case 'defi_tuna':
+      case 'tuna':
+        transaction = await buildDefiTunaLendTx(connection, walletPubkey, tokenMint, amount);
+        break;
       case 'marginfi-lending':
       case 'marginfi-lend':
       case 'credix':
@@ -100,12 +98,10 @@ export async function POST(req: NextRequest) {
           { status: 501 },
         );
 
-      case 'save':
-      case 'solend':
       default:
         return NextResponse.json(
           {
-            error: `Protocol "${protocol}" not supported. Supported: Francium, Jupiter Lend, Solend`,
+            error: `Protocol "${protocol}" not supported. Supported: Kamino Lend, Jupiter Lend, DeFiTuna`,
           },
           { status: 400 },
         );
@@ -183,99 +179,67 @@ async function buildJupiterLendTx(
   return versionedTx;
 }
 
-/**
- * Solend (Save) - Lending Transaction
- * Program: So1endDq2YkqhipRh3WViPa8hdiSpxWy6z3Z6tMCpAo
- * Using Solend SDK with proper pool/reserve fetching
- */
-// async function buildSolendLendTx(
-//   connection: Connection,
-//   wallet: PublicKey,
-//   tokenSymbol: string,
-//   amount: number,
-// ): Promise<VersionedTransaction> {
-//   try {
-//     // Convert amount to base units (lamports/smallest unit)
-//     const decimals = tokenSymbol.toUpperCase() === 'SOL' ? 9 : 6;
-//     const amountBase = Math.floor(amount * Math.pow(10, decimals));
+async function buildDefiTunaLendTx(
+  _connection: Connection,
+  wallet: PublicKey,
+  tokenMint: string,
+  amount: number,
+): Promise<VersionedTransaction> {
+  const decimals = (await getMintDecimals(tokenMint).catch(() => undefined)) || 6;
+  const amountBase = BigInt(Math.floor(amount * Math.pow(10, decimals)));
 
-//     // Get program ID for production environment
-//     const programId = getProgramId('production');
+  // DefiTuna client uses @solana/kit Address and TransactionSigner shapes
+  const rpc = createSolanaRpc(process.env.NEXT_PUBLIC_SOLANA_RPC_URL!);
+  const authority = { address: createAddress(wallet.toBase58()) };
+  const mintAddress = createAddress(tokenMint);
 
-//     // Get current slot
-//     const currentSlot = await connection.getSlot();
+  let instructions: any[];
+  try {
+    instructions = await openLendingPositionAndDepositInstructions(
+      rpc as any,
+      authority as any,
+      mintAddress,
+      amountBase,
+    );
+  } catch (err: any) {
+    if (err?.code === 'ENOENT') {
+      throw new Error(
+        'DefiTuna client WASM not found at runtime. Ensure fusionamm_core_js_bindings_bg.wasm is bundled.',
+      );
+    }
+    throw err;
+  }
 
-//     // Fetch reserves from the main pool
-//     const reserves = await getReservesOfPool(
-//       MAIN_POOL_ADDRESS,
-//       connection,
-//       programId.toBase58(),
-//       currentSlot,
-//     );
+  const legacyInstructions = (instructions as any[]).map(convertKitInstructionToLegacy);
+  if (!legacyInstructions.length) {
+    throw new Error('No deposit instructions returned from DefiTuna client');
+  }
 
-//     // Find the reserve for the token symbol
-//     const reserve = reserves.find((r) => r.symbol.toUpperCase() === tokenSymbol.toUpperCase());
+  const connection = new Connection(process.env.NEXT_PUBLIC_SOLANA_RPC_URL!);
+  const { blockhash } = await connection.getLatestBlockhash();
+  const messageV0 = new TransactionMessage({
+    payerKey: wallet,
+    recentBlockhash: blockhash,
+    instructions: legacyInstructions,
+  }).compileToV0Message();
 
-//     if (!reserve) {
-//       throw new Error(`Reserve not found for token symbol: ${tokenSymbol}`);
-//     }
+  return new VersionedTransaction(messageV0);
+}
 
-//     // Construct pool object (InputPoolType)
-//     const pool = {
-//       address: MAIN_POOL_ADDRESS.toBase58(),
-//       owner: programId.toBase58(),
-//       name: 'Main Pool',
-//       authorityAddress: reserve.poolAddress, // Using from reserve data
-//       reserves: reserves.map((r) => ({
-//         address: r.address,
-//         pythOracle: r.pythOracle,
-//         switchboardOracle: r.switchboardOracle,
-//         mintAddress: r.mintAddress,
-//         liquidityFeeReceiverAddress: r.liquidityFeeReceiverAddress,
-//         extraOracle: r.extraOracle,
-//       })),
-//     };
-
-//     // Construct reserve object (InputReserveType)
-//     const reserveInput = {
-//       address: reserve.address,
-//       liquidityAddress: reserve.liquidityAddress,
-//       cTokenMint: reserve.cTokenMint,
-//       cTokenLiquidityAddress: reserve.cTokenLiquidityAddress,
-//       pythOracle: reserve.pythOracle,
-//       switchboardOracle: reserve.switchboardOracle,
-//       mintAddress: reserve.mintAddress,
-//       liquidityFeeReceiverAddress: reserve.liquidityFeeReceiverAddress,
-//     };
-
-//     // Build deposit transactions using Solend SDK
-//     const solendAction = await SolendActionCore.buildDepositTxns(
-//       pool,
-//       reserveInput,
-//       connection,
-//       amountBase.toString(),
-//       { publicKey: wallet },
-//       { environment: 'production' },
-//     );
-
-//     // Get blockhash for transaction
-
-//     const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
-
-//     // Get transactions from the action
-//     const txns = await solendAction.getTransactions({ blockhash, lastValidBlockHeight });
-
-//     // Use the lendingTxn (main transaction)
-//     if (!txns.lendingTxn) {
-//       throw new Error('No lending transaction generated');
-//     }
-
-//     return txns.lendingTxn;
-//   } catch (err) {
-//     console.log('ERROR Solend- ', err);
-//     throw new Error('ERror Solend');
-//   }
-// }
+function convertKitInstructionToLegacy(ix: any): TransactionInstruction {
+  if (!ix.programAddress || !ix.accounts || !ix.data) {
+    throw new Error('Invalid instruction shape from defituna client');
+  }
+  return new TransactionInstruction({
+    programId: new PublicKey(ix.programAddress),
+    keys: ix.accounts.map((account: any) => ({
+      pubkey: new PublicKey(account.address),
+      isSigner: !!account.isSigner,
+      isWritable: !!account.isWritable,
+    })),
+    data: Buffer.from(ix.data),
+  });
+}
 
 /**
  * Kamino - Lending Transaction

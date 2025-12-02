@@ -1,15 +1,19 @@
 import type { SolanaActionResult } from '@/ai/solana/actions/solana-action';
 import { getBestLendingYields } from '@/services/lending/get-best-lending-yields';
 import { getKaminoPools } from '@/services/lending/get-kamino-pools';
+import { getJupiterPools } from '@/services/lending/get-jupiter-pools';
+import { getDefiTunaPools } from '@/services/lending/get-defituna-pools';
 import { getTokenBySymbol } from '@/db/services/tokens';
 import { LendingYieldsResultBodyType } from './schema';
 
 export async function getLendingYields(): Promise<SolanaActionResult<LendingYieldsResultBodyType>> {
   try {
-    // Fetch from both DefiLlama and Kamino SDK
-    const [defiLlamaResponse, kaminoPools] = await Promise.all([
+    // Fetch from DefiLlama, Kamino SDK, and Jupiter Lend API
+    const [defiLlamaResponse, kaminoPools, jupiterPools, defiTunaPools] = await Promise.all([
       getBestLendingYields(),
       getKaminoPools(),
+      getJupiterPools(),
+      getDefiTunaPools(),
     ]);
 
     // Filter for Solana chains first
@@ -17,13 +21,10 @@ export async function getLendingYields(): Promise<SolanaActionResult<LendingYiel
 
     // Filter for the specific Solana lending protocols
     const lendingProtocols = [
-      'kamino-lend', // Kamino Finance - PRIMARY (best yields)
-      // 'jupiter-lend', // Jupiter Lend - no pools in DeFiLlama
-      // 'jup-lend', // Jupiter Lend - no pools in DeFiLlama
-      // 'marginfi-lending', // Marginfi - no pools in DeFiLlama
-      // 'credix', // Credix
-      // 'maple', // Maple Finance
-      // 'save', // Save Finance - SDK has dependency issues
+      'kamino-lend', // Kamino Finance
+      'jupiter-lend', // Jupiter Lend - fetched via Jupiter API
+      'jup-lend', // Jupiter Lend alias
+      'defituna', // DefiTuna vaults (API)
     ];
 
     const stableCoins = ['USDC', 'USDT', 'EURC', 'FDUSD', 'PYUSD', 'USDS', 'USDY', 'USDS', 'USDG'];
@@ -77,20 +78,47 @@ export async function getLendingYields(): Promise<SolanaActionResult<LendingYiel
       const mintAddress = pool.underlyingTokens[0];
       const existingPool = poolsByMint.get(mintAddress);
 
-      if (existingPool) {
-        // Merge: Keep DefiLlama metadata (predictions, etc.) but use the higher APY
-        const useKaminoAPY = pool.apy > existingPool.apy;
-        poolsByMint.set(mintAddress, {
-          ...existingPool, // Keep all DefiLlama metadata
-          apy: useKaminoAPY ? pool.apy : existingPool.apy,
-          apyBase: useKaminoAPY ? pool.apyBase : existingPool.apyBase,
-          tvlUsd: pool.tvlUsd, // Always use Kamino's on-chain TVL (most accurate)
-        });
-      } else {
-        // New pool only in Kamino SDK
-        poolsByMint.set(mintAddress, pool);
-      }
-    }
+    // Merge DefiTuna pools
+    defiTunaPools.forEach((pool) => {
+      mergePool(
+        {
+          project: pool.project,
+          symbol: pool.symbol,
+          tvlUsd: pool.tvlUsd,
+          apyBase: pool.apyBase,
+          apyReward: pool.apyReward,
+          apy: pool.yield,
+          rewardTokens: pool.rewardTokens || [],
+          poolMeta: pool.poolMeta,
+          url: pool.url,
+          underlyingTokens: pool.underlyingTokens,
+          predictions: pool.predictions || null,
+        },
+        pool.tokenMintAddress,
+      );
+    });
+
+    // Merge Jupiter pools (stablecoin-only) - treat as primary source for these mints
+    jupiterPools.forEach((pool) => {
+      const mintAddress = pool.mintAddress;
+      if (!mintAddress) return;
+      mergePool(
+        {
+          project: pool.project,
+          symbol: pool.symbol,
+          tvlUsd: pool.tvlUsd,
+          apyBase: pool.apyBase,
+          apyReward: null,
+          apy: pool.apy,
+          rewardTokens: [],
+          poolMeta: pool.address ?? null,
+          url: null,
+          underlyingTokens: [pool.mintAddress],
+          predictions: pool.predictions || null,
+        },
+        mintAddress,
+      );
+    });
 
     const solLendingPools = Array.from(poolsByMint.values());
 

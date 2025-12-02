@@ -27,6 +27,21 @@ interface PoolDetailsCardProps<T extends PoolData> {
   disabled?: boolean;
 }
 
+const protocolIcons: Record<string, string> = {
+  'kamino-lend': 'https://app.kamino.finance/favicon-32x32.png',
+  kamino: 'https://app.kamino.finance/favicon-32x32.png',
+  'jupiter-lend': 'https://jup.ag/favicon.ico',
+  jupiter: 'https://jup.ag/favicon.ico',
+  defituna: 'https://metadata.defituna.com/tuna.png',
+  'defi-tuna': 'https://metadata.defituna.com/tuna.png',
+};
+
+const getProtocolIcon = (project?: string) => {
+  if (!project) return undefined;
+  const key = project.toLowerCase();
+  return protocolIcons[key];
+};
+
 function PoolDetailsCard<T extends PoolData>({
   pool,
   index,
@@ -61,7 +76,19 @@ function PoolDetailsCard<T extends PoolData>({
           <h3 className="font-semibold text-lg">{pool.name}</h3>
         </div>
 
-        {pool.project && <p className="font-medium">{capitalizeWords(pool.project)}</p>}
+        {pool.project && (
+          <div className="flex items-center gap-2">
+            <TokenIcon
+              src={getProtocolIcon(pool.project)}
+              alt={pool.project}
+              tokenSymbol={pool.project}
+              width={18}
+              height={18}
+              className="w-4 h-4 rounded-full"
+            />
+            <p className="font-medium">{capitalizeWords(pool.project)}</p>
+          </div>
+        )}
       </div>
 
       <div className="items-end gap-1 relative hidden md:flex">
@@ -84,7 +111,19 @@ function PoolDetailsCard<T extends PoolData>({
           />
           <div className="items-center flex-col justify-between gap-2">
             <h3 className="font-semibold text-md">{pool.name}</h3>
-            {pool.project && <p className="text-xs font-medium">{capitalizeWords(pool.project)}</p>}
+            {pool.project && (
+              <div className="flex items-center gap-2">
+                <TokenIcon
+                  src={getProtocolIcon(pool.project)}
+                  alt={pool.project}
+                  tokenSymbol={pool.project}
+                  width={16}
+                  height={16}
+                  className="w-4 h-4 rounded-full"
+                />
+                <p className="text-xs font-medium">{capitalizeWords(pool.project)}</p>
+              </div>
+            )}
           </div>
         </div>
 

@@ -153,7 +153,7 @@ const LendCallBody: React.FC<Props> = ({ toolCallId, args }) => {
       // Use poolData.project if available, otherwise use args.protocol
       const protocolName = poolData?.project || args.protocol;
 
-      // Build lending transaction via backend API (Francium SDK requires Node.js)
+      // Build lending transaction via backend API
       const response = await fetch('/api/lending/build-transaction', {
         method: 'POST',
         headers: {
@@ -169,8 +169,9 @@ const LendCallBody: React.FC<Props> = ({ toolCallId, args }) => {
       });
 
       if (!response.ok) {
-        // const errorData = await response.json();
-        setErrorMessage('Failed to build transaction. Please try again.');
+        const errorData = await response.json().catch(() => ({}));
+        setErrorMessage(errorData?.error || 'Failed to build transaction. Please try again.');
+        setIsLending(false);
         return;
       }
 
@@ -223,7 +224,6 @@ const LendCallBody: React.FC<Props> = ({ toolCallId, args }) => {
         (error as any)?.code === 4001;
 
       if (isUserCancellation) {
-        setIsLending(false);
         addToolResult(toolCallId, {
           message: 'Transaction cancelled by user',
           body: {
@@ -237,8 +237,8 @@ const LendCallBody: React.FC<Props> = ({ toolCallId, args }) => {
       } else {
         Sentry.captureException(error);
         setErrorMessage('There was an issue submitting the transaction. Please try again.');
-        setIsLending(false);
       }
+      setIsLending(false);
     }
   };
 

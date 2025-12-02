@@ -27,15 +27,14 @@ INCORRECT FLOW:
 1. Show lending yields → Check balances ❌ (DON'T DO THIS)
 
 RULE 2: ALWAYS CALL TOOLS SEQUENTIALLY, NEVER IN PARALLEL
-When checking balances, you MUST call tools in this EXACT order:
-1. ${SOLANA_GET_WALLET_ADDRESS_ACTION} → WAIT for wallet address response
-2. ${SOLANA_BALANCE_ACTION} (token) → WAIT for token balance response
-3. ${SOLANA_BALANCE_ACTION} (SOL) → WAIT for SOL balance response
-4. ${SOLANA_LEND_ACTION} → Show lending UI
+When checking balances, you MUST call tools one at a time:
+- NON-SOL TOKENS: ${SOLANA_GET_WALLET_ADDRESS_ACTION} → ${SOLANA_BALANCE_ACTION} (token) → ${SOLANA_BALANCE_ACTION} (SOL for gas) → ${SOLANA_LEND_ACTION}
+- SOL TOKEN: ${SOLANA_GET_WALLET_ADDRESS_ACTION} → ${SOLANA_BALANCE_ACTION} (SOL) → ${SOLANA_LEND_ACTION} (skip any second SOL balance check)
 
 ❌ NEVER call multiple tools at once - you will get "Invalid public key" errors
 ❌ NEVER call ${SOLANA_BALANCE_ACTION} before you have walletAddress
 ✅ ALWAYS wait for each tool's response before calling the next tool
+✅ If the token itself is SOL, run ${SOLANA_BALANCE_ACTION} only once for SOL and then go straight to ${SOLANA_LEND_ACTION}. DO NOT run an additional SOL gas check for SOL lending (this is what causes duplicate SOL balance messages).
 
 🚨🚨🚨 CRITICAL - ZERO BALANCE RESPONSE TEMPLATE 🚨🚨🚨
 When ${SOLANA_BALANCE_ACTION} returns balance = 0 for a stablecoin, you MUST respond with this EXACT format:
@@ -100,9 +99,7 @@ Lending allows users to deposit assets into lending protocols to earn interest. 
 COMMON LENDING PROTOCOLS:
 - Kamino Finance - High yields, advanced features
 - Jupiter Lend - Integrated with Jupiter ecosystem
-- Marginfi - Risk management focused
-- Maple Finance - Institutional grade
-- Save Finance - Simple and user-friendly
+- DeFiTuna - Lending vaults
 
 You can use these tools to help users with lending and withdrawing their stablecoins.
 
