@@ -15,9 +15,6 @@ export const LENDING_PROGRAM_IDS = {
   'marginfi-lending': 'MFv2hWf31Z9kbCa1snEPYctwafyhdvnV7FZnsebVacA',
   'marginfi-lend': 'MFv2hWf31Z9kbCa1snEPYctwafyhdvnV7FZnsebVacA',
 
-  // Francium
-  francium: 'FC81tbGt6JWRXidaWYFXxGnTk4VgobhJHATvTRVMqgWj',
-
   // Credix
   credix: 'CRDx2YkdtYtGZXGHZ59wNv1EwKHQndnRc1gT4p8i2vPX',
 
