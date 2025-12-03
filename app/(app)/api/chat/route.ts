@@ -1,29 +1,29 @@
-import { NextRequest } from "next/server";
+import { NextRequest } from 'next/server';
 
-import { streamText } from "ai";
+import { streamText } from 'ai';
 
-import { Coinbase } from "@coinbase/coinbase-sdk";
+import { Coinbase } from '@coinbase/coinbase-sdk';
 
-import { openai } from "@ai-sdk/openai";
+import { openai } from '@ai-sdk/openai';
 
-import { CdpAgentkit, cdpTools } from "@/ai";
+import { CdpAgentkit, cdpTools } from '@/ai';
+import { withErrorHandling } from '@/lib/api-error-handler';
 
-export const POST = async (req: NextRequest) => {
+export const POST = withErrorHandling(async (req: NextRequest) => {
+  const { messages } = await req.json();
 
-    const { messages } = await req.json();
+  const agentkit = await CdpAgentkit.configureWithWallet({
+    networkId: Coinbase.networks.BaseSepolia,
+    cdpWalletData: process.env.WALLET_DETAILS,
+  });
 
-    const agentkit = await CdpAgentkit.configureWithWallet({
-        networkId: Coinbase.networks.BaseSepolia,
-        cdpWalletData: process.env.WALLET_DETAILS,
-    });
+  const result = streamText({
+    model: openai('gpt-4o-mini'),
+    tools: cdpTools(agentkit),
+    messages,
+  });
 
-    const result = streamText({
-        model: openai("gpt-4o-mini"),
-        tools: cdpTools(agentkit),
-        messages,
-    })
+  result.toDataStream();
 
-    result.toDataStream()
-
-    return result.toDataStreamResponse();
-}
+  return result.toDataStreamResponse();
+});

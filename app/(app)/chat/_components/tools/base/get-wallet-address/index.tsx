@@ -10,112 +10,104 @@ import ToolCard from '../../tool-card';
 import type { ToolInvocation } from 'ai';
 import type { GetWalletAddressResultType } from '@/ai/base/actions/wallet/get-wallet-address/types';
 import type { Wallet } from '@privy-io/react-auth';
+import WalletDisplay from '@/components/ui/wallet-display';
 
 interface Props {
-    tool: ToolInvocation,
-    prevToolAgent?: string,
+  tool: ToolInvocation;
+  prevToolAgent?: string;
 }
 
 const GetWalletAddress: React.FC<Props> = ({ tool, prevToolAgent }) => {
-    console.log("BASE GetWalletAddress component rendered", { tool, prevToolAgent });
-
-    return (
-        <ToolCard 
-            tool={tool}
-            loadingText={`Getting BASE Wallet Address...`}   
-            result={{
-                heading: (result: GetWalletAddressResultType) => result.body 
-                    ? `Fetched BASE Wallet Address`
-                    : "No BASE wallet address found",
-                body: (result: GetWalletAddressResultType) => result.body 
-                    ? `${result.body.address}` 
-                    :  "No BASE wallet address found"
-            }}
-            call={{
-                heading: "Connect BASE Wallet",
-                body: (toolCallId: string) => <GetWalletAddressAction toolCallId={toolCallId} />
-            }}
-            prevToolAgent={prevToolAgent}
-        />
-    )
-}
+  return (
+    <ToolCard
+      tool={tool}
+      loadingText={`Getting BASE Wallet Address...`}
+      result={{
+        heading: (result: GetWalletAddressResultType) =>
+          result.body ? `Fetched BASE Wallet Address` : 'No BASE wallet address found',
+        body: (result: GetWalletAddressResultType) =>
+          result.body ? (
+            <WalletDisplay address={result.body.address} />
+          ) : (
+            <p className="text-md font-medium text-muted-foreground">
+              No BASE wallet address found
+            </p>
+          ),
+      }}
+      call={{
+        heading: 'Connect BASE Wallet',
+        body: (toolCallId: string) => <GetWalletAddressAction toolCallId={toolCallId} />,
+      }}
+      prevToolAgent={prevToolAgent}
+    />
+  );
+};
 
 const GetWalletAddressAction = ({ toolCallId }: { toolCallId: string }) => {
-    console.log("BASE GetWalletAddressAction component mounted", { toolCallId });
-    
-    const { setCurrentChain } = useChain();
-    const { user } = usePrivy();
-    const { ready: walletsReady, wallets } = useWallets();
-    const { addToolResult, isLoading } = useChat();
+  const { setCurrentChain } = useChain();
+  const { user } = usePrivy();
+  const { ready: walletsReady, wallets } = useWallets();
+  const { addToolResult, isLoading } = useChat();
 
-    // Set the current chain to BASE
-    useEffect(() => {
-        console.log("Setting current chain to BASE");
-        setCurrentChain('base');
-    }, [setCurrentChain]);
+  // Set the current chain to BASE
+  useEffect(() => {
+    setCurrentChain('base');
+  }, [setCurrentChain]);
 
-    // Check for BASE wallets
-    useEffect(() => {
-        if (!isLoading && walletsReady) {
-            console.log("Checking for BASE wallet", {
-                userWallet: user?.wallet?.address,
-                wallets: wallets.map(w => ({ address: w.address, type: w.walletClientType }))
-            });
-            
-            // First try to find a BASE wallet from useWallets
-            const evmWallets = wallets.filter(wallet => wallet.address.startsWith('0x'));
-            if (evmWallets.length > 0) {
-                const baseWallet = evmWallets[0]; // Use the first EVM wallet
-                console.log("Found BASE wallet from useWallets:", baseWallet.address);
-                addToolResult(toolCallId, {
-                    message: "BASE Wallet connected",
-                    body: {
-                        address: baseWallet.address
-                    }
-                });
-                return;
-            }
-            
-            // Fallback to user's main wallet if it's an EVM wallet
-            if (user?.wallet?.address && user.wallet.address.startsWith('0x')) {
-                console.log("Using main wallet address for BASE:", user.wallet.address);
-                addToolResult(toolCallId, {
-                    message: "BASE Wallet connected",
-                    body: {
-                        address: user.wallet.address
-                    }
-                });
-                return;
-            }
-        }
-    }, [user, wallets, walletsReady, addToolResult, toolCallId, isLoading]);
+  // Check for BASE wallets
+  useEffect(() => {
+    if (!isLoading && walletsReady) {
+      // First try to find a BASE wallet from useWallets
+      const evmWallets = wallets.filter((wallet) => wallet.address.startsWith('0x'));
+      if (evmWallets.length > 0) {
+        const baseWallet = evmWallets[0]; // Use the first EVM wallet
+        addToolResult(toolCallId, {
+          message: 'BASE Wallet connected',
+          body: {
+            address: baseWallet.address,
+          },
+        });
+        return;
+      }
 
-    const onComplete = (wallet: Wallet) => {
-        console.log("Wallet connection completed:", wallet);
-        // Only use the wallet if it's an EVM wallet (BASE)
-        if (wallet.address.startsWith('0x')) {
-            addToolResult(toolCallId, {
-                message: "BASE Wallet connected",
-                body: {
-                    address: wallet.address
-                }
-            });
-        } else {
-            // If it's not a BASE wallet, show an error
-            addToolResult(toolCallId, {
-                message: "Please connect a BASE wallet (address starting with 0x)",
-                body: {
-                    address: ""
-                }
-            });
-        }
+      // Fallback to user's main wallet if it's an EVM wallet
+      if (user?.wallet?.address && user.wallet.address.startsWith('0x')) {
+        addToolResult(toolCallId, {
+          message: 'BASE Wallet connected',
+          body: {
+            address: user.wallet.address,
+          },
+        });
+        return;
+      }
     }
+  }, [user, wallets, walletsReady, addToolResult, toolCallId, isLoading]);
 
-    return (
-        <div className="flex flex-col items-center gap-2">
-            <LoginButton onComplete={onComplete} />
-        </div>
-    )
-}
+  const onComplete = (wallet: Wallet) => {
+    // Only use the wallet if it's an EVM wallet (BASE)
+    if (wallet.address.startsWith('0x')) {
+      addToolResult(toolCallId, {
+        message: 'BASE Wallet connected',
+        body: {
+          address: wallet.address,
+        },
+      });
+    } else {
+      // If it's not a BASE wallet, show an error
+      addToolResult(toolCallId, {
+        message: 'Please connect a BASE wallet (address starting with 0x)',
+        body: {
+          address: '',
+        },
+      });
+    }
+  };
 
-export default GetWalletAddress; 
+  return (
+    <div className="flex flex-col items-center gap-2">
+      <LoginButton onComplete={onComplete} />
+    </div>
+  );
+};
+
+export default GetWalletAddress;

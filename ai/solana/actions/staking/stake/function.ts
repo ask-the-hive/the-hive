@@ -1,8 +1,8 @@
-import { Connection } from "@solana/web3.js";
-import { getToken } from "@/db/services";
+import { Connection } from '@solana/web3.js';
+import { getToken } from '@/db/services';
 
-import type { StakeArgumentsType, StakeResultBodyType } from "./types";
-import type { SolanaActionResult } from "../../solana-action";
+import type { StakeArgumentsType, StakeResultBodyType } from './types';
+import type { SolanaActionResult } from '../../solana-action';
 
 /**
  * Prepare staking data for SOL to liquid staking tokens.
@@ -14,12 +14,12 @@ import type { SolanaActionResult } from "../../solana-action";
  */
 export async function stakeSol(
   connection: Connection,
-  args: StakeArgumentsType
+  args: StakeArgumentsType,
 ): Promise<SolanaActionResult<StakeResultBodyType>> {
   try {
     // SOL mint address
-    const SOL_MINT = "So11111111111111111111111111111111111111112";
-    
+    // const SOL_MINT = "So11111111111111111111111111111111111111112";
+
     // Get token data for the liquid staking token
     const outputToken = await getToken(args.contractAddress);
     if (!outputToken) {
@@ -34,16 +34,16 @@ export async function stakeSol(
     return {
       message: `Ready to stake ${amount} SOL for ${outputToken.symbol}. The Swap component will handle getting quotes and executing the transaction.`,
       body: {
-        tx: "", // Will be filled by the UI component after transaction execution
+        status: 'pending',
+        tx: '', // Will be filled by the UI component after transaction execution
         symbol: outputToken.symbol,
-        amount: amount
-      }
+        amount: amount,
+      },
     };
-
   } catch (error) {
-    console.error("Error in stakeSol:", error);
+    console.error('Error in stakeSol:', error);
     return {
-      message: `Error preparing staking: ${error instanceof Error ? error.message : "Unknown error"}`,
+      message: `Error preparing staking: ${error instanceof Error ? error.message : 'Unknown error'}`,
     };
   }
 }

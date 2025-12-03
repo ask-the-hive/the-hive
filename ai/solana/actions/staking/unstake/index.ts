@@ -1,12 +1,16 @@
-import { SOLANA_UNSTAKE_NAME } from "./name";
-import { SOLANA_UNSTAKE_PROMPT } from "./prompt";
-import { UnstakeInputSchema } from "./input-schema";
+import { SOLANA_UNSTAKE_ACTION } from './name';
+import { SOLANA_UNSTAKE_PROMPT } from './prompt';
+import { UnstakeInputSchema } from './input-schema';
+import { unstakeSol } from './function';
 
-import type { UnstakeResultBodyType } from "./types";
-import type { SolanaAction } from "../../solana-action";
+import type { UnstakeResultBodyType } from './types';
+import type { SolanaAction } from '../../solana-action';
 
-export class SolanaUnstakeAction implements SolanaAction<typeof UnstakeInputSchema, UnstakeResultBodyType> {
-  public name = SOLANA_UNSTAKE_NAME;
+export class SolanaUnstakeAction
+  implements SolanaAction<typeof UnstakeInputSchema, UnstakeResultBodyType>
+{
+  public name = SOLANA_UNSTAKE_ACTION;
   public description = SOLANA_UNSTAKE_PROMPT;
   public argsSchema = UnstakeInputSchema;
-} 
+  public func = unstakeSol;
+}

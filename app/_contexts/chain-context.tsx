@@ -1,8 +1,41 @@
 'use client';
 
-import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback, useRef } from 'react';
-import { usePrivy, useWallets } from '@privy-io/react-auth';
-import { useSolanaWallets } from '@privy-io/react-auth/solana';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  ReactNode,
+  useEffect,
+  useCallback,
+  useRef,
+} from 'react';
+import { usePrivy, useConnectWallet, useLinkAccount } from '@privy-io/react-auth';
+import { useRouter } from 'next/navigation';
+import * as Sentry from '@sentry/nextjs';
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  Button,
+} from '@/components/ui';
+import { PublicKey } from '@solana/web3.js';
+import { clearUserDataCache } from '@/lib/swr-cache';
+
+// Extend Window interface for Phantom wallet
+declare global {
+  interface Window {
+    solana?: {
+      publicKey: PublicKey | null;
+      isConnected: boolean;
+      on: (event: string, callback: (publicKey: PublicKey | null) => void) => void;
+      removeListener?: (event: string, callback: (publicKey: PublicKey | null) => void) => void;
+      isPhantom?: boolean;
+    };
+  }
+}
 
 export type ChainType = 'solana' | 'bsc' | 'base';
 
@@ -18,6 +51,7 @@ interface ChainContextType {
   walletAddresses: WalletAddresses;
   setWalletAddress: (chain: ChainType, address: string) => void;
   currentWalletAddress: string | undefined;
+  setLastVerifiedSolanaWallet: () => void;
 }
 
 const ChainContext = createContext<ChainContextType | undefined>(undefined);
@@ -29,40 +63,82 @@ export const ChainProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   // Initialize with the persisted chain
   const [currentChain, setCurrentChainState] = useState<ChainType>(persistedChain);
   const [walletAddresses, setWalletAddresses] = useState<WalletAddresses>({});
-  const { user } = usePrivy();
-  const { wallets: solanaWallets } = useSolanaWallets();
-  const { wallets, ready: walletsReady } = useWallets();
-  
+  const [showEvmWarningModal, setShowEvmWarningModal] = useState(false);
+  const { user, logout } = usePrivy();
+  const router = useRouter();
+
   // Use refs to prevent infinite loops
   const processedWallets = useRef<Set<string>>(new Set());
 
-  // Debug logging
-  useEffect(() => {
-    console.log("Chain context state:", {
-      currentChain,
-      walletAddresses,
-      solanaWallets: solanaWallets.map(w => ({ address: w.address })),
-      evmWallets: wallets.filter(w => w.address.startsWith('0x')).map(w => ({ address: w.address }))
-    });
-  }, [currentChain, walletAddresses, solanaWallets, wallets]);
+  // Track wallet connections via the useConnectWallet hook - this gives us the exact wallet that was connected
+  useConnectWallet({
+    onSuccess: (wallet) => {
+      console.log('Wallet connected:', wallet.address);
+      // Update the wallet address based on the wallet type
+      if (wallet.type === 'solana') {
+        setWalletAddresses((prev) => ({
+          ...prev,
+          solana: wallet.address,
+        }));
+        setCurrentChainState('solana');
+      } else if (wallet.type === 'ethereum') {
+        console.log('EVM wallet connected, but app is Solana-only:', wallet.address);
+        setShowEvmWarningModal(true);
+      }
+    },
+    onError: (error) => {
+      // Ignore user cancellation errors
+      const errorStr = String(error);
+      if (errorStr.includes('exited')) return;
+
+      console.error('Error connecting wallet:', error);
+      Sentry.captureException(error);
+    },
+  });
+
+  // Track wallet linking (when user adds a wallet to their existing account)
+  useLinkAccount({
+    onSuccess: (user, linkMethod, linkedAccount) => {
+      // Check if the linked account is a wallet
+      if (linkedAccount.type === 'wallet') {
+        const walletAccount = linkedAccount as any;
+        console.log('Wallet linked to account:', walletAccount.address);
+
+        // Update wallet address if it's a Solana wallet
+        if (walletAccount.chainType === 'solana' || !walletAccount.address?.startsWith('0x')) {
+          setWalletAddresses((prev) => ({
+            ...prev,
+            solana: walletAccount.address,
+          }));
+          setCurrentChainState('solana');
+        } else {
+          console.log('EVM wallet linked, but app is Solana-only:', walletAccount.address);
+          setShowEvmWarningModal(true);
+        }
+      }
+    },
+    onError: (error) => {
+      // Ignore user cancellation errors (e.g. "exited_link_flow")
+      const errorStr = String(error);
+      if (errorStr.includes('exited')) return;
+
+      console.error('Error linking account:', error);
+      Sentry.captureException(error);
+    },
+  });
 
   // Set wallet address for a specific chain
   const setWalletAddress = useCallback((chain: ChainType, address: string) => {
-    // Check if we've already processed this address to prevent loops
-    const key = `${chain}:${address}`;
-    if (processedWallets.current.has(key)) {
-      return;
-    }
-    
-    processedWallets.current.add(key);
-    
-    setWalletAddresses(prev => {
+    setWalletAddresses((prev) => {
       // Only update if the address is different
       if (prev[chain] !== address) {
-        console.log(`Setting ${chain} address:`, address);
+        // Track that we've processed this address
+        const key = `${chain}:${address}`;
+        processedWallets.current.add(key);
+
         return {
           ...prev,
-          [chain]: address
+          [chain]: address,
         };
       }
       return prev;
@@ -73,119 +149,150 @@ export const ChainProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const setCurrentChain = useCallback((chain: ChainType) => {
     // Update the module-level variable to persist across renders
     persistedChain = chain;
-    console.log("Setting current chain to:", chain);
+    console.log('Setting current chain to:', chain);
     setCurrentChainState(chain);
   }, []);
 
   // Get the current wallet address based on the selected chain
   const currentWalletAddress = walletAddresses[currentChain];
 
-  // Check for Solana wallets from the hook - only run once per wallet
-  useEffect(() => {
-    if (solanaWallets.length > 0) {
-      console.log("Processing Solana wallets:", solanaWallets.length);
-      solanaWallets.forEach(wallet => {
-        if (wallet.address) {
-          const key = `solana:${wallet.address}`;
-          if (!processedWallets.current.has(key)) {
-            console.log("Setting Solana address from useSolanaWallets:", wallet.address);
-            setWalletAddress('solana', wallet.address);
-          }
-        }
-      });
-    }
-  }, [solanaWallets, setWalletAddress]);
+  const setLastVerifiedSolanaWallet = useCallback(() => {
+    // First, check if solana has a currently connected wallet
+    if (typeof window !== 'undefined' && window.solana?.publicKey && window.solana?.isConnected) {
+      const currentPhantomAddress = window.solana.publicKey.toString();
+      console.log('Using current Phantom wallet:', currentPhantomAddress);
 
-  // Check for EVM wallets from the useWallets hook
-  useEffect(() => {
-    if (walletsReady && wallets.length > 0) {
-      console.log("Processing wallets from useWallets:", wallets.length);
-      
-      // Filter for EVM wallets (BSC and Base)
-      const evmWallets = wallets.filter(wallet => 
-        wallet.address.startsWith('0x')
-      );
-      
-      console.log("EVM wallets found:", evmWallets.length);
-      
-      evmWallets.forEach(wallet => {
-        if (wallet.address) {
-          // Set both BSC and Base addresses for EVM wallets
-          const bscKey = `bsc:${wallet.address}`;
-          const baseKey = `base:${wallet.address}`;
-          if (!processedWallets.current.has(bscKey)) {
-            console.log("Setting BSC address from useWallets:", wallet.address);
-            setWalletAddress('bsc', wallet.address);
-          }
-          if (!processedWallets.current.has(baseKey)) {
-            console.log("Setting Base address from useWallets:", wallet.address);
-            setWalletAddress('base', wallet.address);
-          }
-        }
-      });
+      setWalletAddresses((prev) => ({
+        ...prev,
+        solana: currentPhantomAddress,
+      }));
+      return;
     }
-  }, [wallets, walletsReady, setWalletAddress]);
 
-  // Initialize wallet addresses when user connects or links new wallets
+    // Fallback: If wallet provider doesn't have an active wallet, use Privy's linked accounts
+    const solanaWalletAccounts = user?.linkedAccounts
+      ?.filter((account: any) => account.type === 'wallet' && account.chainType === 'solana')
+      .sort((a: any, b: any) => {
+        const dateA = new Date(a.latestVerifiedAt).getTime();
+        const dateB = new Date(b.latestVerifiedAt).getTime();
+        return dateB - dateA; // Sort descending (most recent first)
+      });
+
+    if (solanaWalletAccounts && solanaWalletAccounts.length > 0) {
+      // Use the most recently verified Solana wallet as fallback
+      const fallbackWallet = solanaWalletAccounts[0] as any;
+
+      setWalletAddresses((prev) => ({
+        ...prev,
+        solana: fallbackWallet.address,
+      }));
+    }
+  }, [user]);
+
+  // Initialize wallet address from user's linked accounts on app load/refresh
+  // Prioritize window.solana.publicKey as the most reliable source of truth
   useEffect(() => {
     if (!user) return;
-    
-    console.log("Chain context: Processing user wallet info", {
-      mainWallet: user.wallet?.address,
-      walletType: user.wallet?.walletClientType,
-      linkedAccounts: user.linkedAccounts?.length
-    });
-    
-    // Process main wallet
-    if (user.wallet?.address) {
-      // Determine if the address is a Solana address (base58) or EVM address (0x...)
-      const isSolanaAddress = user.wallet.walletClientType === 'solana' || 
-                             !user.wallet.address.startsWith('0x');
-      
-      if (isSolanaAddress) {
-        console.log("Setting Solana address from main wallet:", user.wallet.address);
-        setWalletAddress('solana', user.wallet.address);
+    if (walletAddresses.solana) return;
+
+    setLastVerifiedSolanaWallet();
+  }, [user, walletAddresses.solana, setLastVerifiedSolanaWallet]);
+
+  const handleDisconnect = useCallback(async () => {
+    // Check if user has other authentication methods (email, social, etc.)
+    const hasNonWalletAuth = user?.linkedAccounts?.some(
+      (account: any) => account.type !== 'wallet',
+    );
+
+    if (hasNonWalletAuth) {
+      // User logged in with email/social - just clear the wallet address
+      setWalletAddresses((prev) => ({
+        ...prev,
+        solana: undefined,
+      }));
+    } else {
+      // wallet provider is their only auth method - log them out completely
+      clearUserDataCache();
+      await logout();
+      router.push('/chat');
+    }
+  }, [user, logout, router]);
+
+  // Handle wallet provider account switching
+  // When a user switches accounts in wallet provider, update our wallet address
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window?.solana?.on) return;
+
+    const handleAccountChanged = async (publicKey: PublicKey | null) => {
+      if (publicKey) {
+        const newAddress = publicKey.toString();
+        console.log('wallet provider account changed to:', newAddress);
+
+        // Update the wallet address in our context
+        setWalletAddresses((prev) => ({
+          ...prev,
+          solana: newAddress,
+        }));
       } else {
-        // For EVM addresses, set both BSC and Base
-        console.log("Setting BSC and Base addresses from main wallet:", user.wallet.address);
-        setWalletAddress('bsc', user.wallet.address);
-        setWalletAddress('base', user.wallet.address);
+        await handleDisconnect();
       }
-    }
-    
-    // Check for linked accounts
-    if (user.linkedAccounts && user.linkedAccounts.length > 0) {
-      user.linkedAccounts.forEach(account => {
-        if (account.type === 'wallet') {
-          const walletAccount = account as any; // Type assertion to access address
-          if (walletAccount.address) {
-            const isSolanaWallet = walletAccount.walletClientType === 'solana' || 
-                                  !walletAccount.address.startsWith('0x');
-            
-            if (isSolanaWallet) {
-              console.log("Setting Solana address from linked account:", walletAccount.address);
-              setWalletAddress('solana', walletAccount.address);
-            } else {
-              // For EVM addresses, set both BSC and Base
-              console.log("Setting BSC and Base addresses from linked account:", walletAccount.address);
-              setWalletAddress('bsc', walletAccount.address);
-              setWalletAddress('base', walletAccount.address);
-            }
-          }
-        }
-      });
-    }
-  }, [user, setWalletAddress]);
+    };
+
+    window.solana.on('accountChanged', handleAccountChanged);
+
+    return () => {
+      if (window?.solana?.removeListener) {
+        window.solana.removeListener('accountChanged', handleAccountChanged);
+      }
+    };
+  }, [handleDisconnect]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window?.solana?.on) return;
+
+    window.solana.on('disconnect', handleDisconnect);
+
+    return () => {
+      if (window?.solana?.removeListener) {
+        window.solana.removeListener('disconnect', handleDisconnect);
+      }
+    };
+  }, [handleDisconnect]);
 
   return (
-    <ChainContext.Provider value={{ 
-      currentChain, 
-      setCurrentChain, 
-      walletAddresses, 
-      setWalletAddress,
-      currentWalletAddress
-    }}>
+    <ChainContext.Provider
+      value={{
+        currentChain,
+        setCurrentChain,
+        walletAddresses,
+        setWalletAddress,
+        currentWalletAddress,
+        setLastVerifiedSolanaWallet,
+      }}
+    >
       {children}
+
+      {/* EVM Wallet Warning Modal */}
+      <AlertDialog open={showEvmWarningModal} onOpenChange={setShowEvmWarningModal}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>EVM Wallets Not Supported</AlertDialogTitle>
+            <AlertDialogDescription>
+              This application currently only supports Solana wallets. Please connect a Solana
+              wallet (such as Phantom, Solflare, or Backpack) to continue.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <Button
+              className="w-full"
+              variant="outline"
+              onClick={() => setShowEvmWarningModal(false)}
+            >
+              Close
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </ChainContext.Provider>
   );
 };
@@ -196,4 +303,4 @@ export const useChain = (): ChainContextType => {
     throw new Error('useChain must be used within a ChainProvider');
   }
   return context;
-}; 
+};

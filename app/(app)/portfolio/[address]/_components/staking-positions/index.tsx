@@ -1,0 +1,211 @@
+import React from 'react';
+import { Droplet, Info } from 'lucide-react';
+
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+  Skeleton,
+  Button,
+  TokenIcon,
+  BalanceTableCell,
+} from '@/components/ui';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { useChain } from '@/app/_contexts/chain-context';
+import { LiquidStakingPosition } from '@/db/types';
+import { formatCompactNumber, formatUSD } from '@/lib/format';
+import { capitalizeWords, getConfidenceLabel } from '@/lib/string-utils';
+import { Card } from '@/components/ui/card';
+import { useSwapModal } from '../../_contexts/use-swap-modal';
+import { cn } from '@/lib/utils';
+import { Portfolio } from '@/services/birdeye/types';
+
+interface Props {
+  stakingPositions: LiquidStakingPosition[] | null;
+  portfolio: Portfolio | undefined;
+  portfolioLoading: boolean;
+  onRefresh: () => void;
+}
+
+interface PoolTooltipProps {
+  poolData: any;
+}
+
+const PoolTooltip: React.FC<PoolTooltipProps> = ({ poolData }) => {
+  return (
+    <TooltipContent className="max-w-xs">
+      <div className="grid grid-cols-2 gap-2 text-xs">
+        <div className="font-medium">APY:</div>
+        <div className="text-green-600">{`${poolData.yield?.toFixed(2) || '0.00'}%`}</div>
+        <div className="font-medium">TVL:</div>
+        <div>{formatCompactNumber(poolData.tvlUsd || 0)}</div>
+
+        {poolData.predictions && (
+          <>
+            <div className="font-medium">APY Confidence:</div>
+            <div className="text-green-600">
+              {getConfidenceLabel(poolData.predictions.binnedConfidence)}
+            </div>
+
+            <div className="font-medium">Prediction:</div>
+            <div>
+              {`${poolData.predictions.predictedClass} (${poolData.predictions.predictedProbability}%)`}
+            </div>
+          </>
+        )}
+
+        {poolData.url && (
+          <>
+            <div className="font-medium">URL:</div>
+            <div className="truncate">
+              <a
+                href={poolData.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-500 hover:text-blue-700"
+              >
+                {poolData.url.replace(/^https?:\/\//, '')}
+              </a>
+            </div>
+          </>
+        )}
+      </div>
+    </TooltipContent>
+  );
+};
+
+const StakingPositions: React.FC<Props> = ({
+  stakingPositions,
+  portfolio,
+  portfolioLoading,
+  onRefresh,
+}) => {
+  const { currentChain } = useChain();
+
+  const { onOpen } = useSwapModal();
+
+  const openSell = (tokenAddress: string) => onOpen('sell', tokenAddress, onRefresh, true);
+
+  if (currentChain !== 'solana') return null;
+
+  // Show skeleton while loading
+  if (stakingPositions === null || portfolioLoading) {
+    return <Skeleton className="h-64 w-full" />;
+  }
+
+  if (!stakingPositions?.length) {
+    return null; // Don't show anything if no positions
+  }
+
+  // Calculate total value of liquid staking positions
+  const totalValue = stakingPositions.reduce((sum, pos) => {
+    const portfolioToken = portfolio?.items?.find(
+      (item) => item.address === pos.lstToken.id || item.symbol === pos.lstToken.symbol,
+    );
+    if (portfolioToken && portfolioToken.valueUsd) {
+      return sum + portfolioToken.valueUsd;
+    }
+    return sum;
+  }, 0);
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Droplet className="w-6 h-6" />
+          <h2 className="text-xl font-bold">Staking</h2>
+        </div>
+        {totalValue > 0 && <p className="text-lg font-bold">{formatUSD(totalValue)}</p>}
+      </div>
+      <Card>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-[120px]">Token</TableHead>
+              <TableHead className="w-[160px]">Balance</TableHead>
+              <TableHead className="w-[100px]">APY</TableHead>
+              <TableHead className="w-[180px] hidden md:table-cell">Protocol</TableHead>
+              <TableHead className="w-[140px]">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody className="max-h-96 overflow-y-auto">
+            {stakingPositions.map((position) => {
+              // Find current balance from portfolio
+              const portfolioToken = portfolio?.items?.find(
+                (item) =>
+                  item.address === position.lstToken.id || item.symbol === position.lstToken.symbol,
+              );
+
+              const rawBalance = portfolioToken?.balance || '0';
+              const price = portfolioToken?.priceUsd || 0;
+              const decimals = portfolioToken?.decimals || position.lstToken.decimals || 9;
+
+              return (
+                <TableRow key={position.id}>
+                  <TableCell className="w-[120px]">
+                    <div className="font-medium flex gap-2 items-center">
+                      <TokenIcon
+                        src={position.lstToken.logoURI}
+                        alt={position.lstToken.name}
+                        tokenSymbol={position.lstToken.symbol}
+                        width={16}
+                        height={16}
+                        className="w-4 h-4 rounded-full"
+                      />
+                      <p>{position.lstToken.symbol}</p>
+                    </div>
+                  </TableCell>
+                  <BalanceTableCell
+                    displayBalanceRaw={rawBalance.toString()}
+                    tokenSymbol={position.lstToken.symbol}
+                    tokenId={position.lstToken.id}
+                    decimals={decimals}
+                    portfolioPrice={price}
+                    className="w-[160px]"
+                  />
+                  <TableCell className="w-[100px]">
+                    <span className="text-green-600 font-medium">
+                      {`${position.poolData.yield.toFixed(2)}%`}
+                    </span>
+                  </TableCell>
+                  <TableCell className="w-[180px] hidden md:table-cell">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-muted-foreground">
+                        {capitalizeWords(position.poolData.project || 'Unknown')}
+                      </span>
+                      <TooltipProvider>
+                        <Tooltip delayDuration={100}>
+                          <TooltipTrigger asChild>
+                            <Info className="w-3 h-3 text-muted-foreground cursor-help" />
+                          </TooltipTrigger>
+                          <PoolTooltip poolData={position.poolData} />
+                        </Tooltip>
+                      </TooltipProvider>
+                    </div>
+                  </TableCell>
+                  <TableCell className="w-[140px]">
+                    <Button
+                      size="sm"
+                      onClick={() => openSell(position.lstToken.id)}
+                      className={cn(
+                        '-m-5 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 border border-emerald-200',
+                        'dark:bg-emerald-950/30 dark:hover:bg-emerald-900/50 dark:text-emerald-300 dark:border-emerald-800/50',
+                      )}
+                    >
+                      Claim SOL
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </Card>
+    </div>
+  );
+};
+
+export default StakingPositions;

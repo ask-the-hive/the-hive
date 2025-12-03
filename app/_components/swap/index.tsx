@@ -1,217 +1,362 @@
-'use client'
+'use client';
 
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 
 import { ChevronDown } from 'lucide-react';
 
-import { VersionedTransaction } from '@solana/web3.js';
+import { VersionedTransaction, Connection } from '@solana/web3.js';
 
 import Decimal from 'decimal.js';
 
-import { Button, Separator } from '@/components/ui';
+import { Button } from '@/components/ui';
+import { cn } from '@/lib/utils';
 
 import LogInButton from '@/app/(app)/_components/log-in-button';
 
 import TokenInput from './token-input';
 
-import { useSendTransaction, useTokenBalance } from '@/hooks';
+import { useSendTransaction, useTokenBalance, useTokenDataByAddress } from '@/hooks';
 
 import { getSwapObj, getQuote } from '@/services/jupiter';
 
-import { cn } from '@/lib/utils';
-
-import { useChain } from '@/app/_contexts/chain-context';
-
+// QuoteResponse type for Jupiter lite API
+type QuoteResponse = any;
 import type { Token } from '@/db/types';
-
+import * as Sentry from '@sentry/nextjs';
 interface Props {
-    initialInputToken: Token | null,    
-    initialOutputToken: Token | null,
-    inputLabel: string,
-    outputLabel: string,
-    initialInputAmount?: string,
-    swapText?: string,
-    swappingText?: string,
-    onSuccess?: (txHash: string) => void,
-    onError?: (error: string) => void,
-    onCancel?: () => void,
-    className?: string,
-    priorityTokens?: string[]
+  initialInputToken: Token | null;
+  initialOutputToken: Token | null;
+  inputLabel: string;
+  outputLabel: string;
+  initialInputAmount?: string;
+  swapText?: string;
+  swappingText?: string;
+  receiveTooltip?: string | React.ReactNode;
+  onSuccess?: (txHash: string) => void;
+  onError?: (error: string) => void;
+  onCancel?: () => void;
+  onInputChange?: (amount: number) => void;
+  onOutputChange?: (amount: number) => void;
+  onOutputTokenChange?: (token: Token) => void;
+  onInputTokenChange?: (token: Token) => void;
+  className?: string;
+  setSwapResult?: (result: {
+    outputAmount: string;
+    outputToken: string;
+    inputToken: string;
+  }) => void;
 }
 
-const Swap: React.FC<Props> = ({ 
-    initialInputToken, 
-    initialOutputToken, 
-    initialInputAmount, 
-    swapText, 
-    swappingText,
-    onSuccess, 
-    onError, 
-    onCancel,
-    className,
-    inputLabel,
-    outputLabel,
-    priorityTokens
+const Swap: React.FC<Props> = ({
+  initialInputToken,
+  initialOutputToken,
+  inputLabel,
+  outputLabel,
+  initialInputAmount,
+  swapText,
+  swappingText,
+  onSuccess,
+  onError,
+  onCancel,
+  onInputChange,
+  onOutputChange,
+  onOutputTokenChange,
+  onInputTokenChange,
+  receiveTooltip,
+  className,
+  setSwapResult,
 }) => {
-    const { currentChain } = useChain();
-    const [inputAmount, setInputAmount] = useState<string>(initialInputAmount || "");
-    const [inputToken, setInputToken] = useState<Token | null>(initialInputToken);
-    const [outputAmount, setOutputAmount] = useState<string>("");
-    const [outputToken, setOutputToken] = useState<Token | null>(initialOutputToken);
+  const [inputAmount, setInputAmount] = useState<string>(initialInputAmount || '');
+  const [inputToken, setInputToken] = useState<Token | null>(initialInputToken);
 
-    const [isQuoteLoading, setIsQuoteLoading] = useState<boolean>(false);
-    const [quoteResponse, setQuoteResponse] = useState<any | null>(null);
-    const [isSwapping, setIsSwapping] = useState<boolean>(false);
+  const handleInputAmountChange = (amount: string) => {
+    setInputAmount(amount);
+    const numericAmount = parseFloat(amount) || 0;
+    onInputChange?.(numericAmount);
+  };
 
-    const { sendTransaction, wallet } = useSendTransaction();
-    const { balance: inputBalance, isLoading: inputBalanceLoading } = useTokenBalance(inputToken?.id || "", wallet?.address || "");
+  const onOutputChangeRef = useRef(onOutputChange);
+  onOutputChangeRef.current = onOutputChange;
 
-    const onChangeInputOutput = () => {
-        const tempInputToken = inputToken;
-        const tempInputAmount = inputAmount;
-        setInputToken(outputToken);
-        setInputAmount(outputAmount);
-        setOutputToken(tempInputToken);
-        setOutputAmount(tempInputAmount);
+  const handleOutputAmountChange = useCallback((amount: string) => {
+    setOutputAmount(amount);
+    const numericAmount = parseFloat(amount) || 0;
+    onOutputChangeRef.current?.(numericAmount);
+  }, []);
+
+  const [outputAmount, setOutputAmount] = useState<string>('');
+  const [outputToken, setOutputToken] = useState<Token | null>(initialOutputToken);
+  // Fetch complete token data if decimals is missing
+  const { data: completeOutputTokenData } = useTokenDataByAddress(
+    outputToken?.id && outputToken.decimals === undefined ? outputToken.id : '',
+  );
+
+  // Effect to update outputToken with complete data when decimals is missing
+  useEffect(() => {
+    if (outputToken && outputToken.decimals === undefined && completeOutputTokenData) {
+      setOutputToken(completeOutputTokenData);
+    }
+  }, [outputToken, completeOutputTokenData]);
+
+  useEffect(() => {
+    if (outputToken) {
+      onOutputTokenChange?.(outputToken);
+    }
+  }, [outputToken, onOutputTokenChange]);
+
+  useEffect(() => {
+    if (inputToken) {
+      onInputTokenChange?.(inputToken);
+    }
+  }, [inputToken, onInputTokenChange]);
+
+  // Check if tokens have complete data needed for calculations
+  const hasCompleteTokenData =
+    inputToken &&
+    outputToken &&
+    inputToken.decimals !== undefined &&
+    outputToken.decimals !== undefined;
+
+  const [isQuoteLoading, setIsQuoteLoading] = useState<boolean>(false);
+  const [quoteResponse, setQuoteResponse] = useState<QuoteResponse | null>(null);
+
+  const [isSwapping, setIsSwapping] = useState<boolean>(false);
+
+  // Refs for callbacks to avoid triggering useEffect
+  const onErrorRef = useRef(onError);
+  onErrorRef.current = onError;
+  const setSwapResultRef = useRef(setSwapResult);
+  setSwapResultRef.current = setSwapResult;
+
+  // Track the last fetched quote params to avoid duplicate calls
+  const lastQuoteParamsRef = useRef<string | null>(null);
+
+  const { sendTransaction, wallet } = useSendTransaction();
+
+  const { balance: inputBalance, isLoading: inputBalanceLoading } = useTokenBalance(
+    inputToken?.id || '',
+    wallet?.address || '',
+  );
+
+  const onChangeInputOutput = () => {
+    const tempInputToken = inputToken;
+    const tempInputAmount = inputAmount;
+    setInputToken(outputToken);
+    handleInputAmountChange(outputAmount);
+    setOutputToken(tempInputToken);
+    handleOutputAmountChange(tempInputAmount);
+    // Reset quote tracking to allow new fetch after swap
+    lastQuoteParamsRef.current = null;
+  };
+
+  const onSwap = async () => {
+    if (!wallet || !quoteResponse) return;
+    setIsSwapping(true);
+    try {
+      const swapResponse = await getSwapObj(wallet.address, quoteResponse);
+      const transactionBase64 = swapResponse.swapTransaction;
+      const transaction = VersionedTransaction.deserialize(
+        Buffer.from(transactionBase64, 'base64'),
+      );
+
+      // Don't sign here - let the wallet handle signing when sending
+      const txHash = await sendTransaction(transaction);
+
+      // Wait for confirmation and check if it succeeded
+      // Note: We need to verify the transaction actually succeeded on-chain
+      // Privy's sendTransaction returns a signature even if the transaction fails
+      const connection = new Connection(
+        process.env.NEXT_PUBLIC_SOLANA_RPC_URL || 'https://api.mainnet-beta.solana.com',
+      );
+
+      const confirmation = await connection.confirmTransaction(txHash, 'confirmed');
+      if (confirmation.value.err) {
+        onError?.('Transaction failed on-chain. Please try again.');
+        return;
+      }
+
+      onSuccess?.(txHash);
+    } catch (error) {
+      Sentry.captureException(error);
+      onError?.('There was an issue submitting the transaction. Please try again.');
+    } finally {
+      setIsSwapping(false);
+    }
+  };
+
+  // Extract stable primitive values for the quote effect
+  const inputTokenId = inputToken?.id;
+  const inputTokenDecimals = inputToken?.decimals;
+  const inputTokenSymbol = inputToken?.symbol;
+  const outputTokenId = outputToken?.id;
+  const outputTokenDecimals = outputToken?.decimals;
+  const outputTokenSymbol = outputToken?.symbol;
+
+  // Quote fetching - only fetch when params actually change
+  useEffect(() => {
+    // Early exit if no complete token data or no valid input amount
+    if (
+      !hasCompleteTokenData ||
+      !inputAmount ||
+      Number(inputAmount) <= 0 ||
+      inputTokenId === undefined ||
+      inputTokenDecimals === undefined ||
+      outputTokenId === undefined ||
+      outputTokenDecimals === undefined
+    ) {
+      setQuoteResponse(null);
+      handleOutputAmountChange('');
+      lastQuoteParamsRef.current = null;
+      return;
     }
 
-    const onSwap = async () => {
-        if(!wallet || !quoteResponse) return;
-        setIsSwapping(true);
-        try {
-            if (currentChain === 'solana') {
-                const swapResponse = await getSwapObj(wallet.address, quoteResponse);
-                const transactionBase64 = swapResponse.swapTransaction;
-                const transaction = VersionedTransaction.deserialize(Buffer.from(transactionBase64, 'base64'));
-                console.log('Deserialized transaction:', transaction);
-                
-                // Don't sign here - let the wallet handle signing when sending
-                const txHash = await sendTransaction(transaction);
-                onSuccess?.(txHash);
-            } else {
-                // For BSC, we'll use the 0x swap quote
-                const txHash = await sendTransaction(quoteResponse);
-                onSuccess?.(txHash);
-            }
-        } catch (error) {
-            onError?.(error instanceof Error ? error.message : "Unknown error");
-        } finally {
-            setIsSwapping(false);
-        }
+    // Create a unique key for the current quote params
+    const quoteParamsKey = `${inputTokenId}-${outputTokenId}-${inputAmount}`;
+
+    // Skip if we've already fetched this exact quote
+    if (lastQuoteParamsRef.current === quoteParamsKey) {
+      return;
     }
 
-    useEffect(() => {
-        if (inputToken && outputToken) {
-            const fetchQuoteAndUpdate = async () => {
-                setIsQuoteLoading(true);
-                setOutputAmount("");
-                try {
-                    if (currentChain === 'solana') {
-                        const quote = await getQuote(inputToken.id, outputToken.id, parseFloat(inputAmount) * (10 ** inputToken.decimals));
-                        setQuoteResponse(quote);
-                        setOutputAmount(new Decimal(quote.outAmount).div(new Decimal(10).pow(outputToken.decimals)).toString());
-                    } else {
-                        // For BSC, use 0x API
-                        const response = await fetch(`/api/swap/bsc/quote?sellToken=${inputToken.id}&buyToken=${outputToken.id}&sellAmount=${parseFloat(inputAmount) * (10 ** inputToken.decimals)}`);
-                        const quote = await response.json();
-                        setQuoteResponse(quote);
-                        setOutputAmount(new Decimal(quote.buyAmount).div(new Decimal(10).pow(outputToken.decimals)).toString());
-                    }
-                } catch (error) {
-                    console.error('Error fetching quote:', error);
-                } finally {
-                    setIsQuoteLoading(false);
-                }
-            }
+    const fetchQuote = async () => {
+      setIsQuoteLoading(true);
+      setOutputAmount('');
 
-            if (inputAmount && Number(inputAmount) > 0) {
-                fetchQuoteAndUpdate();
-            } else {
-                setQuoteResponse(null);
-                setOutputAmount("");
-            }
+      try {
+        const inputAmountWei = new Decimal(inputAmount || '0')
+          .mul(new Decimal(10).pow(inputTokenDecimals))
+          .toFixed(0, Decimal.ROUND_DOWN);
+
+        // Check if the output token address looks valid (should be 32-44 characters)
+        if (!outputTokenId || outputTokenId.length < 32) {
+          throw new Error(`Invalid output token address: ${outputTokenId}`);
         }
-    }, [inputToken, outputToken, inputAmount, currentChain]);
 
-    const defaultPriorityTokens = currentChain === 'solana' 
-        ? [
-            'So11111111111111111111111111111111111111112', // SOL
-            'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v', // USDC
-            'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB', // USDT
-        ]
-        : currentChain === 'base'
-            ? [
-                '0x4200000000000000000000000000000000000006', // WETH
-                '0xd9aAEc86B65D86f6A7B5B1b0c42FFA531710b6CA', // USDC
-                '0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb', // DAI
-            ]
-            : [
-                '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c', // WBNB
-                '0x55d398326f99059fF775485246999027B3197955', // USDT
-                '0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d', // USDC
-            ];
+        const quote = await getQuote(inputTokenId, outputTokenId, inputAmountWei);
 
+        // Mark this quote as fetched
+        lastQuoteParamsRef.current = quoteParamsKey;
+
+        setQuoteResponse(quote);
+
+        const outputAmountStr = new Decimal(quote.outAmount)
+          .div(new Decimal(10).pow(outputTokenDecimals))
+          .toString();
+
+        handleOutputAmountChange(outputAmountStr);
+
+        // Call setSwapResult if provided
+        if (setSwapResultRef.current && inputTokenSymbol && outputTokenSymbol) {
+          setSwapResultRef.current({
+            outputAmount: outputAmountStr,
+            outputToken: outputTokenSymbol,
+            inputToken: inputTokenSymbol,
+          });
+        }
+      } catch (error) {
+        onErrorRef.current?.('There was an issue fetching the quote. Please try again.');
+        Sentry.captureException(error);
+      } finally {
+        setIsQuoteLoading(false);
+      }
+    };
+
+    fetchQuote();
+  }, [
+    hasCompleteTokenData,
+    inputTokenId,
+    inputTokenDecimals,
+    inputTokenSymbol,
+    outputTokenId,
+    outputTokenDecimals,
+    outputTokenSymbol,
+    inputAmount,
+    handleOutputAmountChange,
+  ]);
+
+  const isSwapDisabled = useMemo(() => {
     return (
-        <div className={cn("flex flex-col gap-4 w-96 max-w-full", className)}>
-            <div className="flex flex-col gap-2 items-center w-full">
-                <TokenInput
-                    label={inputLabel}
-                    amount={inputAmount}
-                    onChange={setInputAmount}
-                    token={inputToken}
-                    onChangeToken={setInputToken}
-                    address={wallet?.address}
-                    priorityTokens={priorityTokens || defaultPriorityTokens}
-                />
-                <Button 
-                    variant="ghost" 
-                    size="icon"
-                    className="group h-fit w-fit p-1"
-                    onClick={onChangeInputOutput}
-                >
-                    <ChevronDown className="h-4 w-4 transition-transform group-hover:rotate-180" />
-                </Button>
-                <TokenInput
-                    label={outputLabel}
-                    amount={outputAmount}
-                    token={outputToken}
-                    onChangeToken={setOutputToken}
-                    address={wallet?.address}
-                    priorityTokens={priorityTokens || defaultPriorityTokens}
-                />
-            </div>
-            <Separator />
-            <div className="flex flex-col gap-2">
-                {
-                    wallet ? (
-                        <Button 
-                            variant="brand" 
-                            className="w-full"
-                            onClick={onSwap}
-                            disabled={isSwapping || isQuoteLoading || !quoteResponse || !inputToken || !outputToken || !inputAmount || !outputAmount || !inputBalance || inputBalanceLoading || Number(inputAmount) > Number(inputBalance)}
-                        >
-                            {
-                                isQuoteLoading 
-                                    ? "Loading..." 
-                                    : Number(inputAmount) > Number(inputBalance)
-                                        ? "Insufficient balance"
-                                        : isSwapping
-                                            ? swappingText || "Swapping..."
-                                            : swapText || "Swap"
-                            }
-                        </Button>
-                    ) : (
-                        <LogInButton />
-                    )
-                }
-                {
-                    onCancel && (
-                        <Button variant="ghost" className="w-full" onClick={onCancel}>Cancel</Button>
-                    )
-                }
-            </div>
+      isSwapping ||
+      isQuoteLoading ||
+      !quoteResponse ||
+      !inputToken ||
+      !outputToken ||
+      !inputAmount ||
+      !outputAmount ||
+      !inputBalance ||
+      inputBalanceLoading ||
+      Number(inputAmount) > Number(inputBalance)
+    );
+  }, [
+    isSwapping,
+    isQuoteLoading,
+    quoteResponse,
+    inputToken,
+    outputToken,
+    inputAmount,
+    outputAmount,
+    inputBalance,
+    inputBalanceLoading,
+  ]);
+
+  const buttonText = useMemo(() => {
+    if (isQuoteLoading) return 'Loading...';
+    if (Number(inputAmount) > Number(inputBalance)) return 'Insufficient balance';
+    if (isSwapping) return swappingText || 'Swapping...';
+    return swapText || 'Swap';
+  }, [isQuoteLoading, inputAmount, inputBalance, isSwapping, swappingText, swapText]);
+
+  return (
+    <div className={cn('flex flex-col gap-4 max-w-full', className)}>
+      <div className="flex flex-col gap-2 items-center w-full">
+        <TokenInput
+          label={inputLabel}
+          amount={inputAmount}
+          onChange={handleInputAmountChange}
+          token={inputToken}
+          onChangeToken={setInputToken}
+          address={wallet?.address}
+        />
+        <div className="relative flex items-center justify-center -my-5 z-10">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-10 w-10 rounded-full bg-white dark:bg-neutral-500 border-2 border-neutral-50 dark:border-neutral-400 hover:bg-neutral-50 dark:hover:bg-brand-600 dark:hover:border-neutral-50 shadow-sm"
+            onClick={onChangeInputOutput}
+          >
+            <ChevronDown className="h-5 w-5 text-neutral-600 dark:text-neutral-400 hover:text-neutral-50" />
+          </Button>
         </div>
-    )
-}
+        <TokenInput
+          label={outputLabel}
+          amount={outputAmount}
+          token={outputToken}
+          onChangeToken={setOutputToken}
+          address={wallet?.address}
+          tooltip={receiveTooltip}
+        />
+      </div>
+      <div className="flex flex-col gap-2 items-center pt-2">
+        {wallet ? (
+          <Button
+            variant="brand"
+            className="w-full h-12 text-base"
+            onClick={onSwap}
+            disabled={isSwapDisabled}
+          >
+            {buttonText}
+          </Button>
+        ) : (
+          <LogInButton />
+        )}
+        {onCancel && (
+          <Button variant="ghost" className="w-full" onClick={onCancel}>
+            Cancel
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+};
 
 export default Swap;
