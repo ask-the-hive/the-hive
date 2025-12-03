@@ -13,7 +13,6 @@ import { useChat } from '@/app/(app)/chat/_contexts/chat';
 import { useChain } from '@/app/_contexts/chain-context';
 
 import { UnstakeResultBodyType, type UnstakeArgumentsType } from '@/ai';
-import posthog from 'posthog-js';
 
 interface Props {
   toolCallId: string;
@@ -51,11 +50,6 @@ const UnstakeCallBody: React.FC<Props> = ({ toolCallId, args }) => {
           swappingText="Unstaking..."
           eventName="unstake"
           onSuccess={(tx) => {
-            posthog.capture('unstake_confirmed', {
-              amount: args.amount || 0,
-              inputToken: inputTokenData?.symbol,
-              outputToken: outputTokenData?.symbol,
-            });
             addToolResult<UnstakeResultBodyType>(toolCallId, {
               message: `Unstake successful!`,
               body: {
