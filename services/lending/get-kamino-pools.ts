@@ -1,6 +1,7 @@
 import { KaminoMarket, DEFAULT_RECENT_SLOT_DURATION_MS } from '@kamino-finance/klend-sdk';
 import { createSolanaRpc, address as createAddress } from '@solana/kit';
 import { Connection, PublicKey } from '@solana/web3.js';
+import { normalizeApy } from './apy-utils';
 
 const KAMINO_MAIN_MARKET = new PublicKey('7u3HeHxYDLhnCoErrtycNokbQYbWGzLs6JSDqGAv5PfF');
 const KAMINO_PROGRAM_ID = new PublicKey('KLend2g3cP87fffoy8q1mQqGKjrxjC8boSyAYavgmjD');
@@ -42,7 +43,7 @@ export async function getKaminoPools(): Promise<KaminoPoolData[]> {
         const symbol = reserve.symbol;
         const mintAddress = reserve.state.liquidity.mintPubkey.toString();
         const supplyAPYDecimal = reserve.totalSupplyAPY(currentSlot);
-        const supplyAPYPercent = supplyAPYDecimal * 100;
+        const supplyAPYPercent = normalizeApy(supplyAPYDecimal);
 
         const totalSupplyLamports = reserve.getTotalSupply();
         const priceUSD = reserve.getOracleMarketPrice().toNumber();
