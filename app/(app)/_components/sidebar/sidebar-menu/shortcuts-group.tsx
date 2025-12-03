@@ -1,6 +1,6 @@
 'use client';
 
-import { Droplet, ChartLine, ChartCandlestick, Brain, Zap } from 'lucide-react';
+import { Droplet, ChartLine, ChartCandlestick, Zap } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 import {
@@ -11,25 +11,29 @@ import {
   SidebarMenuSubButton,
   useSidebar,
 } from '@/components/ui';
-//
+import posthog from 'posthog-js';
+
 const shortcuts = [
   {
     title: 'Stake',
     description: 'Earn the highest yields with liquid staking',
     icon: Droplet,
     prompt: 'Find me the best staking yields on Solana',
+    eventName: 'stake_strategy_clicked',
   },
   {
     title: 'Lend',
     description: 'Lend stablecoins to earn interest',
     icon: ChartLine,
     prompt: 'Show me the best lending pools on Solana',
+    eventName: 'lend_strategy_clicked',
   },
   {
     title: 'Swap',
     description: 'Swap on Jupiter',
     icon: ChartCandlestick,
     prompt: "Let's trade some tokens",
+    eventName: 'trade_strategy_clicked',
   },
 ] as const;
 
@@ -59,7 +63,10 @@ const ShortcutsGroup = () => {
           return (
             <SidebarMenuSubItem key={shortcut.title}>
               <SidebarMenuSubButton
-                onClick={() => handleShortcutClick(shortcut.prompt)}
+                onClick={() => {
+                  handleShortcutClick(shortcut.prompt);
+                  posthog.capture(shortcut.eventName);
+                }}
                 className="cursor-pointer"
               >
                 <div className="flex items-center gap-2 w-full">

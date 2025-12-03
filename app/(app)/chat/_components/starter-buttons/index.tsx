@@ -9,18 +9,21 @@ const solanaButtons = [
     description: 'Compare liquid staking yields',
     icon: 'Droplet' as const,
     prompt: 'Find me the best staking yields on Solana',
+    eventName: 'stake_strategy_clicked',
   },
   {
     title: 'Lend Stablecoins',
     description: 'Find top lending markets',
     icon: 'ChartLine' as const,
     prompt: 'Show me the best lending pools on Solana',
+    eventName: 'lend_strategy_clicked',
   },
   {
     title: 'Trade',
     description: 'Swap instantly with Jupiter',
     icon: 'ChartCandlestick' as const,
     prompt: "Let's trade some tokens",
+    eventName: 'trade_strategy_clicked',
   },
 ] as const;
 
@@ -30,24 +33,28 @@ const bscButtons = [
     description: 'Search the trending tokens',
     icon: 'ChartLine' as const,
     prompt: 'Show me the trending tokens',
+    eventName: 'trending_clicked',
   },
   {
     title: 'Liquidity',
     description: 'Get liquidity pools',
     icon: 'Droplet' as const,
     prompt: "Let's get some liquidity pools",
+    eventName: 'liquidity_clicked',
   },
   {
     title: 'Trade',
     description: 'Swap using 0x Protocol',
     icon: 'ChartCandlestick' as const,
     prompt: "Let's trade some tokens",
+    eventName: 'trade_strategy_clicked',
   },
   {
     title: 'Knowledge',
     description: 'Get developer docs for protocols',
     icon: 'Brain' as const,
     prompt: 'Get me developer docs for BSC Protocols',
+    eventName: 'knowledge_clicked',
   },
 ] as const;
 
@@ -57,24 +64,28 @@ const baseButtons = [
     description: 'Search the trending tokens',
     icon: 'ChartLine' as const,
     prompt: 'Show me the trending tokens',
+    eventName: 'trending_clicked',
   },
   {
     title: 'Liquidity',
     description: 'Get liquidity pools',
     icon: 'Droplet' as const,
     prompt: "Let's get some liquidity pools",
+    eventName: 'liquidity_clicked',
   },
   {
     title: 'Trade',
     description: 'Swap using 0x Protocol',
     icon: 'ChartCandlestick' as const,
     prompt: "Let's trade some tokens",
+    eventName: 'trade_strategy_clicked',
   },
   {
     title: 'Knowledge',
     description: 'Get developer docs for protocols',
     icon: 'Brain' as const,
     prompt: 'Get me developer docs for Base Protocols',
+    eventName: 'knowledge_clicked',
   },
 ] as const;
 

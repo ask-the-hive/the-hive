@@ -23,6 +23,7 @@ import { getSwapObj, getQuote } from '@/services/jupiter';
 type QuoteResponse = any;
 import type { Token } from '@/db/types';
 import * as Sentry from '@sentry/nextjs';
+import posthog from 'posthog-js';
 interface Props {
   initialInputToken: Token | null;
   initialOutputToken: Token | null;
@@ -31,6 +32,7 @@ interface Props {
   initialInputAmount?: string;
   swapText?: string;
   swappingText?: string;
+  eventName: 'swap' | 'unstake' | 'stake';
   receiveTooltip?: string | React.ReactNode;
   onSuccess?: (txHash: string) => void;
   onError?: (error: string) => void;
@@ -65,6 +67,7 @@ const Swap: React.FC<Props> = ({
   receiveTooltip,
   className,
   setSwapResult,
+  eventName,
 }) => {
   const [inputAmount, setInputAmount] = useState<string>(initialInputAmount || '');
   const [inputToken, setInputToken] = useState<Token | null>(initialInputToken);
@@ -151,6 +154,12 @@ const Swap: React.FC<Props> = ({
 
   const onSwap = async () => {
     if (!wallet || !quoteResponse) return;
+
+    posthog.capture(`${eventName}_initiated`, {
+      inputToken: inputToken?.symbol,
+      outputToken: outputToken?.symbol,
+    });
+
     setIsSwapping(true);
     try {
       const swapResponse = await getSwapObj(wallet.address, quoteResponse);
@@ -174,6 +183,12 @@ const Swap: React.FC<Props> = ({
         onError?.('Transaction failed on-chain. Please try again.');
         return;
       }
+
+      posthog.capture(`${eventName}_confirmed`, {
+        amount: Number(inputAmount),
+        inputToken: inputToken?.symbol,
+        outputToken: outputToken?.symbol,
+      });
 
       onSuccess?.(txHash);
     } catch (error) {
