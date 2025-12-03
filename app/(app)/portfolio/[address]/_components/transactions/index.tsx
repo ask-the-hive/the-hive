@@ -28,11 +28,56 @@ interface Props {
 // Custom formatting for special sources
 const formatSource = (source: string): string => {
   if (source === 'PANCAKESWAP') return 'PancakeSwap';
+  if (source === 'JUPITER_LEND') return 'Jupiter Lend';
+  if (source === 'JUPITER' || source === 'JUPITER_SWAP') return 'Jupiter Swap';
 
   // Default formatting for other sources
   return source
     .split('_')
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ');
+};
+
+const isJupiterLendTx = (tx: any) =>
+  tx?.instructions?.some(
+    (ix: any) => ix?.programId === 'jup3YeL8QhtSx1e253b2FDvsMNC87fDrgQZivbrndc9',
+  );
+const isKaminoLendTx = (tx: any) =>
+  tx?.source?.toUpperCase?.().includes('KAMINO') || tx?.type === 'REFRESH_OBLIGATION';
+
+const getDisplayType = (tx: any, address: string) => {
+  if (isJupiterLendTx(tx)) {
+    const hasInflow = tx?.tokenTransfers?.some(
+      (t: any) => t?.toUserAccount && t.toUserAccount === address,
+    );
+    const hasOutflow = tx?.tokenTransfers?.some(
+      (t: any) => t?.toUserAccount && t.toUserAccount !== address,
+    );
+    if (hasInflow && !hasOutflow) return 'Lend Withdraw';
+    if (hasOutflow && !hasInflow) return 'Lend Deposit';
+    return 'Lend';
+  }
+
+  if (isKaminoLendTx(tx)) {
+    const hasInflow = tx?.tokenTransfers?.some(
+      (t: any) => t?.toUserAccount && t.toUserAccount === address,
+    );
+    const hasOutflow = tx?.tokenTransfers?.some(
+      (t: any) => t?.toUserAccount && t.toUserAccount !== address,
+    );
+    if (hasInflow && !hasOutflow) return 'Lend Withdraw';
+    if (hasOutflow && !hasInflow) return 'Lend Deposit';
+    return 'Lend';
+  }
+
+  // Heuristic for Jupiter swap: source marks JUPITER and unknown type
+  if (tx?.source === 'JUPITER' && tx?.type === 'UNKNOWN') {
+    return 'Swap';
+  }
+
+  return tx.type
+    .split('_')
+    .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
     .join(' ');
 };
 
@@ -78,13 +123,14 @@ const Transactions: React.FC<Props> = ({ address }) => {
                       chain={currentChain}
                     />
                   </TableCell>
+                  <TableCell>{getDisplayType(transaction, chainAddress)}</TableCell>
                   <TableCell>
-                    {transaction.type
-                      .split('_')
-                      .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-                      .join(' ')}
+                    {isJupiterLendTx(transaction)
+                      ? 'Jupiter Lend'
+                      : isKaminoLendTx(transaction)
+                        ? 'Kamino Lend'
+                        : formatSource(transaction.source)}
                   </TableCell>
-                  <TableCell>{formatSource(transaction.source)}</TableCell>
                   <TableCell>
                     {transaction.tokenTransfers?.map((tokenTransfer, index) => (
                       <TokenTransfer

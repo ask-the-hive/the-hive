@@ -1,15 +1,17 @@
 import type { SolanaActionResult } from '@/ai/solana/actions/solana-action';
 import { getBestLendingYields } from '@/services/lending/get-best-lending-yields';
 import { getKaminoPools } from '@/services/lending/get-kamino-pools';
+import { getJupiterPools } from '@/services/lending/get-jupiter-pools';
 import { getTokenBySymbol } from '@/db/services/tokens';
 import { LendingYieldsResultBodyType } from './schema';
 
 export async function getLendingYields(): Promise<SolanaActionResult<LendingYieldsResultBodyType>> {
   try {
-    // Fetch from both DefiLlama and Kamino SDK
-    const [defiLlamaResponse, kaminoPools] = await Promise.all([
+    // Fetch from DefiLlama, Kamino SDK, and Jupiter Lend API
+    const [defiLlamaResponse, kaminoPools, jupiterPools] = await Promise.all([
       getBestLendingYields(),
       getKaminoPools(),
+      getJupiterPools(),
     ]);
 
     // Filter for Solana chains first
@@ -18,8 +20,8 @@ export async function getLendingYields(): Promise<SolanaActionResult<LendingYiel
     // Filter for the specific Solana lending protocols
     const lendingProtocols = [
       'kamino-lend', // Kamino Finance - PRIMARY (best yields)
-      // 'jupiter-lend', // Jupiter Lend - no pools in DeFiLlama
-      // 'jup-lend', // Jupiter Lend - no pools in DeFiLlama
+      'jupiter-lend', // Jupiter Lend - fetched via Jupiter API
+      'jup-lend', // Jupiter Lend alias
       // 'marginfi-lending', // Marginfi - no pools in DeFiLlama
       // 'credix', // Credix
       // 'maple', // Maple Finance
@@ -40,59 +42,104 @@ export async function getLendingYields(): Promise<SolanaActionResult<LendingYiel
       return isLendingProtocol && !isLPPair && hasAPY && hasUnderlyingToken && isStableCoin;
     });
 
-    // Convert Kamino SDK pools to DefiLlama format
-    const kaminoPoolsFormatted = kaminoPools
+    // Split DefiLlama pools by project
+    const defiLlamaKaminoPools = defiLlamaPools.filter((p: any) => p.project === 'kamino-lend');
+    const defiLlamaJupiterPools = defiLlamaPools.filter(
+      (p: any) => p.project === 'jupiter-lend' || p.project === 'jup-lend',
+    );
+
+    // Create maps for each protocol (keyed by mint address)
+    const kaminoPoolsByMint = new Map<string, any>();
+    const jupiterPoolsByMint = new Map<string, any>();
+
+    // Helper to enrich a pool with DefiLlama metadata
+    const enrichPool = (basePool: any, defiLlamaPool: any) => ({
+      ...basePool,
+      // Prefer DefiLlama predictions/metadata, keep base pool's APY data
+      predictions: defiLlamaPool?.predictions ?? basePool.predictions,
+      rewardTokens: defiLlamaPool?.rewardTokens?.length
+        ? defiLlamaPool.rewardTokens
+        : basePool.rewardTokens,
+      url: defiLlamaPool?.url ?? basePool.url,
+    });
+
+    // Process Kamino SDK pools
+    kaminoPools
       .filter((pool) => {
         const isStableCoin = stableCoins.includes(pool.symbol);
         const isLPPair = pool.symbol.includes('-') || pool.symbol.includes('/');
         return pool.apy > 0 && !isLPPair && isStableCoin;
       })
-      .map((pool) => ({
-        project: 'kamino-lend',
+      .forEach((pool) => {
+        const mint = pool.mintAddress;
+        if (!mint) return;
+
+        const basePool = {
+          project: 'kamino-lend',
+          symbol: pool.symbol,
+          tvlUsd: pool.tvlUsd,
+          apyBase: pool.apyBase,
+          apyReward: null,
+          apy: pool.apy,
+          rewardTokens: [],
+          poolMeta: null,
+          url: null,
+          underlyingTokens: [pool.mintAddress],
+          predictions: null,
+        };
+
+        // Find matching DefiLlama pool for enrichment
+        const matchingDefiLlama = defiLlamaKaminoPools.find(
+          (p: any) => p.underlyingTokens?.[0] === mint,
+        );
+
+        let enrichedKaminoPool = basePool;
+
+        if (matchingDefiLlama) {
+          enrichedKaminoPool = enrichPool(basePool, matchingDefiLlama);
+        }
+
+        kaminoPoolsByMint.set(mint, enrichedKaminoPool);
+      });
+
+    // Process Jupiter pools
+    jupiterPools.forEach((pool) => {
+      const mint = pool.mintAddress;
+      if (!mint) return;
+
+      const basePool = {
+        project: 'jupiter-lend',
         symbol: pool.symbol,
         tvlUsd: pool.tvlUsd,
         apyBase: pool.apyBase,
         apyReward: null,
         apy: pool.apy,
         rewardTokens: [],
-        poolMeta: null,
+        poolMeta: pool.address ?? null,
         url: null,
         underlyingTokens: [pool.mintAddress],
-        predictions: null,
-      }));
+        predictions: pool.predictions || null,
+      };
 
-    // Merge pools, preferring Kamino SDK data when there are duplicates (fresher on-chain APY)
-    const poolsByMint = new Map<string, any>();
+      // Find matching DefiLlama pool for enrichment
+      const matchingDefiLlama = defiLlamaJupiterPools.find(
+        (p: any) => p.underlyingTokens?.[0] === mint,
+      );
 
-    // Add DefiLlama pools first (they have more metadata like predictions)
-    for (const pool of defiLlamaPools) {
-      const mintAddress = pool.underlyingTokens?.[0];
-      if (mintAddress) {
-        poolsByMint.set(mintAddress, pool);
+      let enrichedJupiterPool = basePool;
+
+      if (matchingDefiLlama) {
+        enrichedJupiterPool = enrichPool(basePool, matchingDefiLlama);
       }
-    }
 
-    // Merge with Kamino SDK pools to get the best of both sources
-    for (const pool of kaminoPoolsFormatted) {
-      const mintAddress = pool.underlyingTokens[0];
-      const existingPool = poolsByMint.get(mintAddress);
+      jupiterPoolsByMint.set(mint, enrichedJupiterPool);
+    });
 
-      if (existingPool) {
-        // Merge: Keep DefiLlama metadata (predictions, etc.) but use the higher APY
-        const useKaminoAPY = pool.apy > existingPool.apy;
-        poolsByMint.set(mintAddress, {
-          ...existingPool, // Keep all DefiLlama metadata
-          apy: useKaminoAPY ? pool.apy : existingPool.apy,
-          apyBase: useKaminoAPY ? pool.apyBase : existingPool.apyBase,
-          tvlUsd: pool.tvlUsd, // Always use Kamino's on-chain TVL (most accurate)
-        });
-      } else {
-        // New pool only in Kamino SDK
-        poolsByMint.set(mintAddress, pool);
-      }
-    }
-
-    const solLendingPools = Array.from(poolsByMint.values());
+    // Combine all pools (Kamino + Jupiter as separate entries)
+    const solLendingPools = [
+      ...Array.from(kaminoPoolsByMint.values()),
+      ...Array.from(jupiterPoolsByMint.values()),
+    ];
 
     if (solLendingPools.length === 0) {
       return {
@@ -100,16 +147,15 @@ export async function getLendingYields(): Promise<SolanaActionResult<LendingYiel
       };
     }
 
-    // Sort by APY (highest first) and take top 3
+    // Sort by APY (highest first) and take top 6
     let topSolanaPools = solLendingPools.sort((a: any, b: any) => (b.apy || 0) - (a.apy || 0));
-
-    topSolanaPools = topSolanaPools.slice(0, 3);
-    // Reorder so highest APY is in the center (index 1)
-    if (topSolanaPools.length === 3) {
+    topSolanaPools = topSolanaPools.slice(0, 6);
+    // Reorder only when showing exactly 3 cards; otherwise leave sorted
+    if (topSolanaPools.length >= 3) {
       const [highest, second, third] = topSolanaPools;
-      topSolanaPools[0] = second; // Second highest on left
-      topSolanaPools[1] = highest; // Highest APY in center
-      topSolanaPools[2] = third; // Third highest on right
+      topSolanaPools[0] = second;
+      topSolanaPools[1] = highest;
+      topSolanaPools[2] = third;
     }
 
     // Transform to the expected format

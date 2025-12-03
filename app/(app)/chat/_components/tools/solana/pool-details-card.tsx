@@ -97,7 +97,12 @@ function PoolDetailsCard<T extends PoolData>({
         </div>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-2 gap-2 text-sm mt-4">
+      <div
+        className={cn(
+          'gap-2 text-sm mt-4',
+          pool.predictions ? 'grid grid-cols-2' : 'flex justify-center',
+        )}
+      >
         {pool.predictions && (
           <div className="flex flex-col items-center">
             <p className="font-semibold text-md">

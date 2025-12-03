@@ -40,7 +40,11 @@ interface Props {
   onOutputTokenChange?: (token: Token) => void;
   onInputTokenChange?: (token: Token) => void;
   className?: string;
-  setSwapResult?: (result: { outputAmount: string; outputToken: string }) => void;
+  setSwapResult?: (result: {
+    outputAmount: string;
+    outputToken: string;
+    inputToken: string;
+  }) => void;
 }
 
 const Swap: React.FC<Props> = ({
@@ -82,7 +86,6 @@ const Swap: React.FC<Props> = ({
 
   const [outputAmount, setOutputAmount] = useState<string>('');
   const [outputToken, setOutputToken] = useState<Token | null>(initialOutputToken);
-
   // Fetch complete token data if decimals is missing
   const { data: completeOutputTokenData } = useTokenDataByAddress(
     outputToken?.id && outputToken.decimals === undefined ? outputToken.id : '',
@@ -119,6 +122,15 @@ const Swap: React.FC<Props> = ({
 
   const [isSwapping, setIsSwapping] = useState<boolean>(false);
 
+  // Refs for callbacks to avoid triggering useEffect
+  const onErrorRef = useRef(onError);
+  onErrorRef.current = onError;
+  const setSwapResultRef = useRef(setSwapResult);
+  setSwapResultRef.current = setSwapResult;
+
+  // Track the last fetched quote params to avoid duplicate calls
+  const lastQuoteParamsRef = useRef<string | null>(null);
+
   const { sendTransaction, wallet } = useSendTransaction();
 
   const { balance: inputBalance, isLoading: inputBalanceLoading } = useTokenBalance(
@@ -133,6 +145,8 @@ const Swap: React.FC<Props> = ({
     handleInputAmountChange(outputAmount);
     setOutputToken(tempInputToken);
     handleOutputAmountChange(tempInputAmount);
+    // Reset quote tracking to allow new fetch after swap
+    lastQuoteParamsRef.current = null;
   };
 
   const onSwap = async () => {
@@ -170,60 +184,94 @@ const Swap: React.FC<Props> = ({
     }
   };
 
+  // Extract stable primitive values for the quote effect
+  const inputTokenId = inputToken?.id;
+  const inputTokenDecimals = inputToken?.decimals;
+  const inputTokenSymbol = inputToken?.symbol;
+  const outputTokenId = outputToken?.id;
+  const outputTokenDecimals = outputToken?.decimals;
+  const outputTokenSymbol = outputToken?.symbol;
+
+  // Quote fetching - only fetch when params actually change
   useEffect(() => {
-    if (hasCompleteTokenData) {
-      const fetchQuoteAndUpdate = async () => {
-        setIsQuoteLoading(true);
-        setOutputAmount('');
-        try {
-          const inputAmountWei = new Decimal(inputAmount || '0')
-            .mul(new Decimal(10).pow(inputToken.decimals))
-            .toFixed(0, Decimal.ROUND_DOWN);
-
-          // Check if the output token address looks valid (should be 32-44 characters)
-          if (!outputToken.id || outputToken.id.length < 32) {
-            throw new Error(`Invalid output token address: ${outputToken.id}`);
-          }
-
-          const quote = await getQuote(inputToken.id, outputToken.id, inputAmountWei);
-          setQuoteResponse(quote);
-
-          const outputAmountStr = new Decimal(quote.outAmount)
-            .div(new Decimal(10).pow(outputToken.decimals))
-            .toString();
-
-          handleOutputAmountChange(outputAmountStr);
-
-          // Call setSwapResult if provided
-          if (setSwapResult) {
-            setSwapResult({
-              outputAmount: outputAmountStr,
-              outputToken: outputToken.symbol,
-            });
-          }
-        } catch (error) {
-          onError?.('There was an issue fetching the quote. Please try again.');
-          Sentry.captureException(error);
-        } finally {
-          setIsQuoteLoading(false);
-        }
-      };
-
-      if (inputAmount && Number(inputAmount) > 0) {
-        fetchQuoteAndUpdate();
-      } else {
-        setQuoteResponse(null);
-        handleOutputAmountChange('');
-      }
+    // Early exit if no complete token data or no valid input amount
+    if (
+      !hasCompleteTokenData ||
+      !inputAmount ||
+      Number(inputAmount) <= 0 ||
+      inputTokenId === undefined ||
+      inputTokenDecimals === undefined ||
+      outputTokenId === undefined ||
+      outputTokenDecimals === undefined
+    ) {
+      setQuoteResponse(null);
+      handleOutputAmountChange('');
+      lastQuoteParamsRef.current = null;
+      return;
     }
+
+    // Create a unique key for the current quote params
+    const quoteParamsKey = `${inputTokenId}-${outputTokenId}-${inputAmount}`;
+
+    // Skip if we've already fetched this exact quote
+    if (lastQuoteParamsRef.current === quoteParamsKey) {
+      return;
+    }
+
+    const fetchQuote = async () => {
+      setIsQuoteLoading(true);
+      setOutputAmount('');
+
+      try {
+        const inputAmountWei = new Decimal(inputAmount || '0')
+          .mul(new Decimal(10).pow(inputTokenDecimals))
+          .toFixed(0, Decimal.ROUND_DOWN);
+
+        // Check if the output token address looks valid (should be 32-44 characters)
+        if (!outputTokenId || outputTokenId.length < 32) {
+          throw new Error(`Invalid output token address: ${outputTokenId}`);
+        }
+
+        const quote = await getQuote(inputTokenId, outputTokenId, inputAmountWei);
+
+        // Mark this quote as fetched
+        lastQuoteParamsRef.current = quoteParamsKey;
+
+        setQuoteResponse(quote);
+
+        const outputAmountStr = new Decimal(quote.outAmount)
+          .div(new Decimal(10).pow(outputTokenDecimals))
+          .toString();
+
+        handleOutputAmountChange(outputAmountStr);
+
+        // Call setSwapResult if provided
+        if (setSwapResultRef.current && inputTokenSymbol && outputTokenSymbol) {
+          setSwapResultRef.current({
+            outputAmount: outputAmountStr,
+            outputToken: outputTokenSymbol,
+            inputToken: inputTokenSymbol,
+          });
+        }
+      } catch (error) {
+        onErrorRef.current?.('There was an issue fetching the quote. Please try again.');
+        Sentry.captureException(error);
+      } finally {
+        setIsQuoteLoading(false);
+      }
+    };
+
+    fetchQuote();
   }, [
     hasCompleteTokenData,
-    inputToken,
-    onError,
-    outputToken,
+    inputTokenId,
+    inputTokenDecimals,
+    inputTokenSymbol,
+    outputTokenId,
+    outputTokenDecimals,
+    outputTokenSymbol,
     inputAmount,
     handleOutputAmountChange,
-    setSwapResult,
   ]);
 
   const isSwapDisabled = useMemo(() => {

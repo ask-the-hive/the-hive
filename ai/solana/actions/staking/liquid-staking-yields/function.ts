@@ -104,7 +104,7 @@ export async function getLiquidStakingYields(): Promise<
     );
 
     return {
-      message: `Found the ${body.length} top Solana liquid staking pools. The user has been shown the options in the UI, ask them which they want to use. DO NOT REITERATE THE OPTIONS IN TEXT.`,
+      message: `Top pools are displayed as cards above. Do NOT list or repeat them in text—ask the user to pick a provider card to continue staking.`,
       body,
     };
   } catch (error) {

@@ -44,8 +44,7 @@ IMPORTANT - Understanding user intent and proper flow:
 REFINED STAKING FLOW:
 1. When user says "stake SOL" (no provider specified):
    - Use ${SOLANA_LIQUID_STAKING_YIELDS_ACTION} to show available providers
-   - After showing the providers, provide a helpful response that encourages learning
-   - Let them choose from the list or ask educational questions
+   - After showing the providers, DO NOT restate or enumerate the pools, APY, or TVL in text. The cards already show this. Simply prompt them to pick a provider card or ask a question.
 
 2. When user clicks on a liquid staking pool option:
    - First use ${SOLANA_GET_WALLET_ADDRESS_ACTION} to check if user has a Solana wallet connected

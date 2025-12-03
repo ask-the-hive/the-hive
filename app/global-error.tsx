@@ -1,10 +1,15 @@
-"use client";
+'use client';
 
-import * as Sentry from "@sentry/nextjs";
-import NextError from "next/error";
-import { useEffect } from "react";
+import * as Sentry from '@sentry/nextjs';
+import { useEffect } from 'react';
 
-export default function GlobalError({ error }: { error: Error & { digest?: string } }) {
+export default function GlobalError({
+  error,
+  reset,
+}: {
+  error: Error & { digest?: string };
+  reset?: () => void;
+}) {
   useEffect(() => {
     Sentry.captureException(error);
   }, [error]);
@@ -12,11 +17,38 @@ export default function GlobalError({ error }: { error: Error & { digest?: strin
   return (
     <html>
       <body>
-        {/* `NextError` is the default Next.js error page component. Its type
-        definition requires a `statusCode` prop. However, since the App Router
-        does not expose status codes for errors, we simply pass 0 to render a
-        generic error message. */}
-        <NextError statusCode={0} />
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            minHeight: '100vh',
+            padding: '20px',
+            fontFamily: 'system-ui, sans-serif',
+            backgroundColor: '#0a0a0a',
+            color: '#ffffff',
+          }}
+        >
+          <h1 style={{ fontSize: '24px', marginBottom: '16px' }}>Something went wrong</h1>
+          <p style={{ color: '#888', marginBottom: '24px' }}>
+            An unexpected error occurred. Our team has been notified.
+          </p>
+          <button
+            onClick={() => reset?.()}
+            style={{
+              padding: '12px 24px',
+              backgroundColor: '#333',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              fontSize: '16px',
+            }}
+          >
+            Try again
+          </button>
+        </div>
       </body>
     </html>
   );
