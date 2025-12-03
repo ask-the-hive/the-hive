@@ -1,3 +1,5 @@
+import { normalizeApy } from './apy-utils';
+
 const JUPITER_LEND_POOLS_URL = 'https://api.solana.fluid.io/v1/lending/tokens';
 
 export type JupiterPool = {
@@ -42,15 +44,6 @@ const STABLES = new Set([
   'EURC',
   'EUROE',
 ]);
-
-/** @notice Normalize APY values that may be provided as decimals, percents, or basis points. */
-const normalizeApy = (raw: number): number => {
-  if (!isFinite(raw) || raw <= 0) return 0;
-  if (raw > 100) return raw / 100;
-  if (raw > 10) return raw;
-  if (raw > 1) return raw;
-  return raw * 100;
-};
 
 export async function getJupiterPools(): Promise<JupiterPool[]> {
   const res = await fetch(JUPITER_LEND_POOLS_URL, {
