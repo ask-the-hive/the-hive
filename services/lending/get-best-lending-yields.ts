@@ -1,22 +1,27 @@
 import { StakingRewardsResponse } from '../staking-rewards/types';
 
+const CACHE_TTL_MS = 5 * 60 * 1000;
+let cachedResponse: StakingRewardsResponse | null = null;
+let cachedAt = 0;
+
+/**
+ * Fetches DefiLlama lending pools with a short-lived cache to reduce upstream latency.
+ */
 export const getBestLendingYields = async (): Promise<StakingRewardsResponse> => {
-  try {
-    const response = await fetch('https://yields.llama.fi/pools', {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
+  const now = Date.now();
+  if (cachedResponse && now - cachedAt < CACHE_TTL_MS) return cachedResponse;
 
-    if (!response || !response.ok || response.status !== 200) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
+  const response = await fetch('https://yields.llama.fi/pools', {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
 
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    console.error('Error fetching lending yields data:', error);
-    throw error;
-  }
+  if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+
+  const data = (await response.json()) as StakingRewardsResponse;
+  cachedResponse = data;
+  cachedAt = now;
+  return data;
 };

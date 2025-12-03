@@ -14,11 +14,17 @@ export interface KaminoPoolData {
   project: string;
 }
 
+const CACHE_TTL_MS = 5 * 60 * 1000;
+let cachedKaminoPools: KaminoPoolData[] | null = null;
+let cachedAt = 0;
+
 /**
- * Fetch all Kamino lending pools directly from on-chain data
- * This supplements DefiLlama data with any pools they might be missing
+ * Fetches Kamino lending pools from on-chain data with a short-lived cache.
  */
 export async function getKaminoPools(): Promise<KaminoPoolData[]> {
+  const now = Date.now();
+  if (cachedKaminoPools && now - cachedAt < CACHE_TTL_MS) return cachedKaminoPools;
+
   try {
     const kaminoRpc = createSolanaRpc(process.env.NEXT_PUBLIC_SOLANA_RPC_URL!) as any;
     const marketAddress = createAddress(KAMINO_MAIN_MARKET.toBase58()) as any;
@@ -29,9 +35,7 @@ export async function getKaminoPools(): Promise<KaminoPoolData[]> {
       DEFAULT_RECENT_SLOT_DURATION_MS,
       programId,
     );
-    if (!market) {
-      throw new Error('Failed to load Kamino market');
-    }
+    if (!market) throw new Error('Failed to load Kamino market');
 
     const connection = new Connection(process.env.NEXT_PUBLIC_SOLANA_RPC_URL!);
     const currentSlot = BigInt(await connection.getSlot());
@@ -61,6 +65,8 @@ export async function getKaminoPools(): Promise<KaminoPoolData[]> {
         console.warn(`⚠️ Failed to process Kamino reserve ${reserve.symbol}:`, err);
       }
     }
+    cachedKaminoPools = pools;
+    cachedAt = now;
     return pools;
   } catch (error) {
     console.error('❌ Error fetching Kamino pools:', error);
