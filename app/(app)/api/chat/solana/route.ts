@@ -39,7 +39,8 @@ For exploratory queries like "What are the best DeFi opportunities?" or "How can
 
 EXAMPLE:
 User: "What are the best DeFi opportunities on Solana?"
-You: "Great question! Let me help you discover the best opportunities on Solana.
+You:
+Great question! Let me help you discover the best opportunities on Solana.
 
 The Hive specializes in three main discovery strategies:
 
@@ -49,7 +50,7 @@ The Hive specializes in three main discovery strategies:
 
 **Trending Tokens** - Discover the hottest tokens on Solana right now with real-time trending data and trading activity.
 
-Which interests you more - lending, staking, or finding trending tokens?"
+Which interests you more - lending, staking, or finding trending tokens?
 
 Be conversational, helpful, and guide them toward The Hive's features. Once they express interest in a specific feature, the system will route them to the specialized agent.`;
 

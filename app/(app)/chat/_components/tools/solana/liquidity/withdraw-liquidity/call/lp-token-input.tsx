@@ -1,11 +1,9 @@
 'use client';
 
 import React from 'react';
-
+import Image from 'next/image';
 import { ApiV3PoolInfoItem } from '@raydium-io/raydium-sdk-v2';
-
 import TokenBalance from '@/app/_components/swap/token-balance';
-
 import { cn } from '@/lib/utils';
 
 interface Props {
@@ -53,8 +51,22 @@ const LpTokenInput: React.FC<Props> = ({ label, amount, onChange, pool, lpMint, 
           />
         </div>
         <div className="w-fit shrink-0 flex items-center rounded-md px-2 py-1 gap-2">
-          <img src={pool.mintA.logoURI} alt={pool.mintA.name} className="w-6 h-6 rounded-full" />
-          <img src={pool.mintB.logoURI} alt={pool.mintB.name} className="w-6 h-6 rounded-full" />
+          <Image
+            src={pool.mintA.logoURI}
+            alt={pool.mintA.name}
+            width={24}
+            height={24}
+            className="w-6 h-6 rounded-full object-cover"
+            unoptimized
+          />
+          <Image
+            src={pool.mintB.logoURI}
+            alt={pool.mintB.name}
+            width={24}
+            height={24}
+            className="w-6 h-6 rounded-full object-cover"
+            unoptimized
+          />
           <p className={cn('text-xs font-bold', 'opacity-100')}>
             {`${pool.mintA.symbol}/${pool.mintB.symbol}`}
           </p>

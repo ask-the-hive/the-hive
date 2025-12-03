@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import Image from 'next/image';
 import { useColorMode, ColorMode } from '@/app/_contexts';
 
 import { Card } from '@/components/ui/card';
@@ -55,10 +56,13 @@ const PriceChartBody: React.FC<PriceChartBodyProps> = ({
             {tokenName && tokenSymbol && (
                 <div className="w-full flex items-center gap-2">
                     {tokenLogo && (
-                        <img 
+                        <Image 
                             src={tokenLogo} 
-                            alt={tokenName} 
-                            className="rounded-full h-8 w-8"
+                            alt={tokenName || tokenSymbol || 'Token'} 
+                            width={32}
+                            height={32}
+                            className="rounded-full h-8 w-8 object-cover"
+                            unoptimized
                         />
                     )}
                     <h3 className="text-xl font-bold">

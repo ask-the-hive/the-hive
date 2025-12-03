@@ -183,14 +183,6 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
     setMessages,
   } = useAiChat({
     maxSteps: 20,
-    onResponse: () => {
-      setIsResponseLoading(false);
-      // Update global state when response is complete
-      updateChatThreadState(chatId, {
-        isLoading: false,
-        isResponseLoading: false,
-      });
-    },
     api: `/api/chat/${chain}`,
     body: {
       model,
@@ -213,13 +205,11 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
 
   // Handle isLoading state changes from useAiChat hook
   useEffect(() => {
-    if (isLoading) {
-      // AI is actively processing, update global state
-      updateChatThreadState(chatId, {
-        isLoading: true,
-        isResponseLoading: true,
-      });
-    }
+    setIsResponseLoading(isLoading);
+    updateChatThreadState(chatId, {
+      isLoading,
+      isResponseLoading: isLoading,
+    });
   }, [isLoading, chatId, updateChatThreadState]);
 
   const addToolResult = <T,>(toolCallId: string, result: ToolResult<T>) => {

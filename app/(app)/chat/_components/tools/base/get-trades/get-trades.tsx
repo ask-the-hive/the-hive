@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import Image from 'next/image';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -32,15 +33,17 @@ export function GetTrades({ tokensTraded }: Props) {
                         <TableRow key={address}>
                             <TableCell>
                                 <div className="flex flex-row items-center justify-center gap-2">
-                                    <img
+                                    <Image
                                         src={trade.token.logoURI || UNKNOWN_TOKEN_ICON}
                                         alt={trade.token.symbol}
                                         width={24}
                                         height={24}
-                                        className="rounded-full"
+                                        className="rounded-full object-cover"
                                         onError={(e) => {
-                                            (e.target as HTMLImageElement).src = UNKNOWN_TOKEN_ICON;
+                                            const target = e.target as HTMLImageElement;
+                                            target.src = UNKNOWN_TOKEN_ICON;
                                         }}
+                                        unoptimized
                                     />
                                     <span className="font-medium">{trade.token.symbol}</span>
                                 </div>
