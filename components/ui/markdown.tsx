@@ -1,7 +1,6 @@
 import React, { useMemo } from 'react';
-
+import Image from 'next/image';
 import ReactMarkdown, { Components } from 'react-markdown';
-
 import { cn } from '@/lib/utils';
 import { CodeBlock } from './codeblock';
 
@@ -127,7 +126,17 @@ export const Markdown: React.FC<Props> = ({
             return <li className="pl-0 ml-4 text-sm md:text-base space-y-2">{children}</li>;
           },
           img({ src, alt }) {
-            return <img src={src} alt={alt} className="h-16 w-16" />;
+            if (!src) return null;
+            return (
+              <Image
+                src={src}
+                alt={alt || 'image'}
+                width={64}
+                height={64}
+                className="h-16 w-16 object-contain"
+                unoptimized
+              />
+            );
           },
           ...components,
         }}
