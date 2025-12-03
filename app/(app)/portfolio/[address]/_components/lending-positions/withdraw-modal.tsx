@@ -6,6 +6,7 @@ import TokenInput from '@/app/_components/swap/token-input';
 import { LendingPosition } from '@/types/lending-position';
 import { VersionedTransaction, Connection } from '@solana/web3.js';
 import { Loader2 } from 'lucide-react';
+import posthog from 'posthog-js';
 
 // nadiatadz9015629159-0
 // kayeee8709047508-2
@@ -44,6 +45,12 @@ const WithdrawModal: React.FC<Props> = ({ position, isOpen, onClose, onSuccess }
   const handleWithdraw = async () => {
     if (!wallet?.address || !amount || Number(amount) <= 0) return;
 
+    posthog.capture('lend_withdraw_initiated', {
+      amount: Number(amount),
+      tokenSymbol: position.token.symbol,
+      protocolName: position.protocol,
+    });
+
     setIsWithdrawing(true);
     setErrorMessage(null);
 
@@ -73,15 +80,18 @@ const WithdrawModal: React.FC<Props> = ({ position, isOpen, onClose, onSuccess }
 
       // Deserialize transaction
       const transaction = VersionedTransaction.deserialize(Buffer.from(serializedTx, 'base64'));
-      console.log(transaction);
       // Send transaction
       const tx = await sendTransaction(transaction);
-      console.log(tx);
 
       // Confirm transaction on-chain
       const connection = new Connection(process.env.NEXT_PUBLIC_SOLANA_RPC_URL!);
       await connection.confirmTransaction(tx, 'confirmed');
-      console.log('confirmed');
+
+      posthog.capture('lend_withdraw_confirmed', {
+        amount: Number(amount),
+        tokenSymbol: position.token.symbol,
+        protocolName: position.protocol,
+      });
 
       // Success - close modal and pass success data
       onSuccess({

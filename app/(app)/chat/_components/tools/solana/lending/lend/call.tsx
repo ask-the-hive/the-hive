@@ -16,6 +16,7 @@ import { Loader2 } from 'lucide-react';
 import type { LendArgumentsType, LendResultBodyType } from '@/ai/solana/actions/lending/lend/types';
 import VarApyTooltip from '@/components/var-apy-tooltip';
 import * as Sentry from '@sentry/nextjs';
+import posthog from 'posthog-js';
 
 interface Props {
   toolCallId: string;
@@ -137,6 +138,14 @@ const LendCallBody: React.FC<Props> = ({ toolCallId, args }) => {
 
   const handleLend = async () => {
     if (!wallet || !tokenData || !amount) return;
+    // Use poolData.project if available, otherwise use args.protocol
+    const protocolName = poolData?.project || args.protocol;
+
+    posthog.capture('lend_initiated', {
+      amount: Number(amount),
+      tokenSymbol: args.tokenSymbol,
+      protocol: protocolName,
+    });
 
     setIsLending(true);
     setErrorMessage(null); // Clear any previous errors
@@ -149,9 +158,6 @@ const LendCallBody: React.FC<Props> = ({ toolCallId, args }) => {
         });
         return;
       }
-
-      // Use poolData.project if available, otherwise use args.protocol
-      const protocolName = poolData?.project || args.protocol;
 
       // Build lending transaction via backend API
       const response = await fetch('/api/lending/build-transaction', {
@@ -200,6 +206,12 @@ const LendCallBody: React.FC<Props> = ({ toolCallId, args }) => {
       // Set success state immediately for UI feedback
       setIsSuccess(true);
       setTxSignature(tx);
+
+      posthog.capture('lend_confirmed', {
+        amount: Number(amount),
+        tokenSymbol: args.tokenSymbol,
+        protocol: protocolName,
+      });
 
       // Also notify the chat system
       addToolResult<LendResultBodyType>(toolCallId, {

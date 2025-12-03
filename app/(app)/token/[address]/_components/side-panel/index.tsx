@@ -227,6 +227,7 @@ const SidePanel: React.FC<Props> = ({ address }) => {
             inputLabel="Sell"
             outputLabel="Buy"
             className="w-full"
+            eventName="swap"
             onSuccess={handleSwapSuccess}
             onError={handleSwapError}
             onCancel={handleSwapCancel}

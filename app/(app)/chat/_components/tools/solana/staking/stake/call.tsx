@@ -12,6 +12,7 @@ import StakeResult from './stake-result';
 import VarApyTooltip from '@/components/var-apy-tooltip';
 import { capitalizeWords } from '@/lib/string-utils';
 import * as Sentry from '@sentry/nextjs';
+import posthog from 'posthog-js';
 
 const ReceiveTooltip = () => {
   return (
@@ -90,6 +91,12 @@ const StakeCallBody: React.FC<Props> = ({ toolCallId, args }) => {
     setIsSuccess(true);
     setTxSignature(tx);
     setErrorMessage(null); // Clear any previous errors
+
+    posthog.capture('stake_deposit_confirmed', {
+      amount: outputAmount,
+      tokenSymbol: outputTokenData?.symbol,
+      protocol: poolData?.project,
+    });
 
     try {
       await saveLiquidStakingPosition({
@@ -198,6 +205,7 @@ const StakeCallBody: React.FC<Props> = ({ toolCallId, args }) => {
                 initialInputAmount={args.amount?.toString()}
                 swapText="Stake"
                 swappingText="Staking..."
+                eventName="stake"
                 receiveTooltip={<ReceiveTooltip />}
                 onOutputChange={(amount) => {
                   setOutputAmount(amount);
