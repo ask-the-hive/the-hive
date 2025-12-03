@@ -19,7 +19,11 @@ import { cn } from '@/lib/utils';
 import { usePrivy } from '@privy-io/react-auth';
 import FollowUpSuggestions from './follow-up-suggestions';
 
-const ChatInput: React.FC = () => {
+type ChatInputProps = {
+  placeholderText?: string;
+};
+
+const ChatInput: React.FC<ChatInputProps> = ({ placeholderText }) => {
   const { user } = usePrivy();
 
   const {
@@ -72,7 +76,7 @@ const ChatInput: React.FC = () => {
               ref={inputRef}
               tabIndex={0}
               onKeyDown={onKeyDown}
-              placeholder="Ask the hive anything..."
+              placeholder={placeholderText || 'Ask the hive anything...'}
               className={cn(
                 'w-full max-h-40 resize-none bg-transparent px-5 pt-5 pb-5 pr-14 text-[17px] file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-neutral-600 dark:placeholder:text-neutral-400 disabled:cursor-not-allowed disabled:opacity-50',
                 'focus-visible:outline-none',
