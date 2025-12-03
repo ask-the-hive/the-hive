@@ -19,6 +19,7 @@ import { useUserChats } from '@/hooks';
 import { ChainType } from '@/app/_contexts/chain-context';
 import { useGlobalChatManager } from './global-chat-manager';
 import { useRouter, usePathname } from 'next/navigation';
+import posthog from 'posthog-js';
 
 import {
   SOLANA_GET_WALLET_ADDRESS_ACTION,
@@ -313,6 +314,9 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
     // Clear input immediately after validation
     const userInput = input;
     setInput('');
+    posthog.capture('agent_queried', {
+      message: userInput,
+    });
 
     // If this is the first message in a new chat, create the chat entry immediately
     if (messages.length === 0) {
@@ -361,6 +365,9 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
   };
 
   const sendMessage = async (message: string) => {
+    posthog.capture('agent_queried', {
+      message,
+    });
     setIsResponseLoading(true);
 
     // Update global state immediately when starting a new message
