@@ -1,4 +1,7 @@
 const JUPITER_LEND_POOLS_URL = 'https://api.solana.fluid.io/v1/lending/tokens';
+const CACHE_TTL_MS = 2 * 60 * 1000;
+let cachedPools: JupiterPool[] | null = null;
+let cachedAt = 0;
 
 export type JupiterPool = {
   symbol: string;
@@ -43,7 +46,13 @@ const STABLES = new Set([
   'EUROE',
 ]);
 
+/**
+ * Fetches Jupiter lend pools and caches stablecoin entries for faster repeated access.
+ */
 export async function getJupiterPools(): Promise<JupiterPool[]> {
+  const now = Date.now();
+  if (cachedPools && now - cachedAt < CACHE_TTL_MS) return cachedPools;
+
   const res = await fetch(JUPITER_LEND_POOLS_URL, {
     headers: {
       'Content-Type': 'application/json',
@@ -62,15 +71,19 @@ export async function getJupiterPools(): Promise<JupiterPool[]> {
 
   for (const t of poolsJson) {
     const assetSymbol = (t.asset?.symbol || '').toUpperCase();
-    if (!STABLES.has(assetSymbol)) continue;
+    if (!STABLES.has(assetSymbol)) {
+      continue;
+    }
     const mint = t.assetAddress || t.asset?.address;
-    if (!mint) continue;
+    if (!mint) {
+      continue;
+    }
 
     const apyRaw = Number(t.totalRate ?? t.supplyRate);
-    if (!isFinite(apyRaw) || apyRaw <= 0) continue;
+    if (!isFinite(apyRaw) || apyRaw <= 0) {
+      continue;
+    }
 
-    // Rates may come in as a percentage (e.g., 850 for 8.5%) or decimal (0.085).
-    // Normalize anything > 1 by dividing by 100; leave decimal-form as-is.
     const apy = apyRaw > 1 ? apyRaw / 100 : apyRaw;
 
     const decimals = t.asset?.decimals ?? t.decimals ?? 6;
@@ -107,5 +120,7 @@ export async function getJupiterPools(): Promise<JupiterPool[]> {
     });
   }
 
+  cachedPools = pools;
+  cachedAt = now;
   return pools;
 }

@@ -1,25 +1,16 @@
 'use client';
 
 import React, { useEffect, useState, useCallback, useRef, useMemo } from 'react';
-
 import { ChevronDown } from 'lucide-react';
-
 import { VersionedTransaction, Connection } from '@solana/web3.js';
-
 import Decimal from 'decimal.js';
-
 import { Button } from '@/components/ui';
 import { cn } from '@/lib/utils';
-
 import LogInButton from '@/app/(app)/_components/log-in-button';
-
 import TokenInput from './token-input';
-
 import { useSendTransaction, useTokenBalance, useTokenDataByAddress } from '@/hooks';
-
 import { getSwapObj, getQuote } from '@/services/jupiter';
 
-// QuoteResponse type for Jupiter lite API
 type QuoteResponse = any;
 import type { Token } from '@/db/types';
 import * as Sentry from '@sentry/nextjs';
@@ -86,12 +77,10 @@ const Swap: React.FC<Props> = ({
 
   const [outputAmount, setOutputAmount] = useState<string>('');
   const [outputToken, setOutputToken] = useState<Token | null>(initialOutputToken);
-  // Fetch complete token data if decimals is missing
   const { data: completeOutputTokenData } = useTokenDataByAddress(
     outputToken?.id && outputToken.decimals === undefined ? outputToken.id : '',
   );
 
-  // Effect to update outputToken with complete data when decimals is missing
   useEffect(() => {
     if (outputToken && outputToken.decimals === undefined && completeOutputTokenData) {
       setOutputToken(completeOutputTokenData);
@@ -110,7 +99,6 @@ const Swap: React.FC<Props> = ({
     }
   }, [inputToken, onInputTokenChange]);
 
-  // Check if tokens have complete data needed for calculations
   const hasCompleteTokenData =
     inputToken &&
     outputToken &&
@@ -122,13 +110,11 @@ const Swap: React.FC<Props> = ({
 
   const [isSwapping, setIsSwapping] = useState<boolean>(false);
 
-  // Refs for callbacks to avoid triggering useEffect
   const onErrorRef = useRef(onError);
   onErrorRef.current = onError;
   const setSwapResultRef = useRef(setSwapResult);
   setSwapResultRef.current = setSwapResult;
 
-  // Track the last fetched quote params to avoid duplicate calls
   const lastQuoteParamsRef = useRef<string | null>(null);
 
   const { sendTransaction, wallet } = useSendTransaction();
@@ -145,10 +131,12 @@ const Swap: React.FC<Props> = ({
     handleInputAmountChange(outputAmount);
     setOutputToken(tempInputToken);
     handleOutputAmountChange(tempInputAmount);
-    // Reset quote tracking to allow new fetch after swap
     lastQuoteParamsRef.current = null;
   };
 
+  /**
+   * Executes the Jupiter swap using the current quote and handles wallet cancellation gracefully.
+   */
   const onSwap = async () => {
     if (!wallet || !quoteResponse) return;
     setIsSwapping(true);
@@ -159,12 +147,8 @@ const Swap: React.FC<Props> = ({
         Buffer.from(transactionBase64, 'base64'),
       );
 
-      // Don't sign here - let the wallet handle signing when sending
       const txHash = await sendTransaction(transaction);
 
-      // Wait for confirmation and check if it succeeded
-      // Note: We need to verify the transaction actually succeeded on-chain
-      // Privy's sendTransaction returns a signature even if the transaction fails
       const connection = new Connection(
         process.env.NEXT_PUBLIC_SOLANA_RPC_URL || 'https://api.mainnet-beta.solana.com',
       );
@@ -177,6 +161,12 @@ const Swap: React.FC<Props> = ({
 
       onSuccess?.(txHash);
     } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      const rejected = /reject|denied|declined|cancel/i.test(message);
+      if (rejected) {
+        onCancel?.();
+        return;
+      }
       Sentry.captureException(error);
       onError?.('There was an issue submitting the transaction. Please try again.');
     } finally {

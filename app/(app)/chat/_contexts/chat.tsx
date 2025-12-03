@@ -9,7 +9,6 @@ import React, {
   useMemo,
   useRef,
 } from 'react';
-
 import { Message } from 'ai/react';
 import { useChat as useAiChat } from '@ai-sdk/react';
 import { Models } from '@/types/models';
@@ -19,7 +18,6 @@ import { useUserChats } from '@/hooks';
 import { ChainType } from '@/app/_contexts/chain-context';
 import { useGlobalChatManager } from './global-chat-manager';
 import { useRouter, usePathname } from 'next/navigation';
-
 import {
   SOLANA_GET_WALLET_ADDRESS_ACTION,
   SOLANA_TRADE_ACTION,
@@ -113,6 +111,9 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
 
   // Track if we're currently resetting to prevent state conflicts
   const isResettingRef = useRef(false);
+  const isHydratingRef = useRef(false);
+  const saveDebounceRef = useRef<NodeJS.Timeout | null>(null);
+  const lastSavedPayloadRef = useRef<string | null>(null);
 
   const { mutate } = useUserChats();
 
@@ -259,6 +260,7 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
     if (chatId && !isResettingRef.current) {
       // Check if this is an existing chat by trying to load it
       const loadExistingChat = async () => {
+        isHydratingRef.current = true;
         try {
           const chat = await fetch(`/api/chats/${chatId}`, {
             headers: {
@@ -277,6 +279,8 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
         } catch {
           // Chat doesn't exist yet, this is fine for new chats
           console.log('New chat or chat not found:', chatId);
+        } finally {
+          isHydratingRef.current = false;
         }
       };
 
@@ -285,27 +289,50 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
   }, [chatId, getAccessToken, setMessages, setChain]);
 
   useEffect(() => {
-    const updateChat = async () => {
-      if (messages.length > 0) {
+    if (!chatId || messages.length === 0) return;
+    if (isResettingRef.current) return;
+    if (isHydratingRef.current) return;
+    if (status !== 'ready') return;
+
+    const payload = JSON.stringify({ messages, chain });
+    if (payload === lastSavedPayloadRef.current) return;
+
+    if (saveDebounceRef.current) {
+      clearTimeout(saveDebounceRef.current);
+    }
+
+    saveDebounceRef.current = setTimeout(async () => {
+      try {
         const response = await fetch(`/api/chats/${chatId}`, {
           method: 'POST',
           headers: {
             Authorization: `Bearer ${await getAccessToken()}`,
           },
-          body: JSON.stringify({
-            messages,
-            chain, // Include chain in saved chat data
-          }),
+          body: payload,
         });
-        const data = await response.json();
-        if (typeof data === 'object') {
-          mutate();
+        if (response.ok) {
+          const data = await response.json();
+          if (typeof data === 'object') {
+            lastSavedPayloadRef.current = payload;
+            mutate();
+          }
         }
+      } catch (error) {
+        Sentry.captureException(error, {
+          tags: {
+            component: 'ChatProvider',
+            action: 'saveChat',
+          },
+        });
+      }
+    }, 700); // debounce to avoid spamming save during streaming
+
+    return () => {
+      if (saveDebounceRef.current) {
+        clearTimeout(saveDebounceRef.current);
       }
     };
-
-    updateChat();
-  }, [messages, chatId, chain, getAccessToken, mutate]);
+  }, [messages, chatId, chain, status, getAccessToken, mutate]);
 
   const onSubmit = async () => {
     if (!input.trim()) return;
