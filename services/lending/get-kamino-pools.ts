@@ -5,6 +5,15 @@ import { Connection, PublicKey } from '@solana/web3.js';
 const KAMINO_MAIN_MARKET = new PublicKey('7u3HeHxYDLhnCoErrtycNokbQYbWGzLs6JSDqGAv5PfF');
 const KAMINO_PROGRAM_ID = new PublicKey('KLend2g3cP87fffoy8q1mQqGKjrxjC8boSyAYavgmjD');
 
+/** @notice Normalize APY values that may be provided as decimals, percents, or basis points. */
+const normalizeApy = (raw: number): number => {
+  if (!isFinite(raw) || raw <= 0) return 0;
+  if (raw > 100) return raw / 100;
+  if (raw > 10) return raw;
+  if (raw > 1) return raw;
+  return raw * 100;
+};
+
 export interface KaminoPoolData {
   symbol: string;
   mintAddress: string;
@@ -42,7 +51,7 @@ export async function getKaminoPools(): Promise<KaminoPoolData[]> {
         const symbol = reserve.symbol;
         const mintAddress = reserve.state.liquidity.mintPubkey.toString();
         const supplyAPYDecimal = reserve.totalSupplyAPY(currentSlot);
-        const supplyAPYPercent = supplyAPYDecimal * 100;
+        const supplyAPYPercent = normalizeApy(supplyAPYDecimal);
 
         const totalSupplyLamports = reserve.getTotalSupply();
         const priceUSD = reserve.getOracleMarketPrice().toNumber();

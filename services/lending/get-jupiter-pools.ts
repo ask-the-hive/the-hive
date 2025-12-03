@@ -43,6 +43,15 @@ const STABLES = new Set([
   'EUROE',
 ]);
 
+/** @notice Normalize APY values that may be provided as decimals, percents, or basis points. */
+const normalizeApy = (raw: number): number => {
+  if (!isFinite(raw) || raw <= 0) return 0;
+  if (raw > 100) return raw / 100;
+  if (raw > 10) return raw;
+  if (raw > 1) return raw;
+  return raw * 100;
+};
+
 export async function getJupiterPools(): Promise<JupiterPool[]> {
   const res = await fetch(JUPITER_LEND_POOLS_URL, {
     headers: {
@@ -67,11 +76,8 @@ export async function getJupiterPools(): Promise<JupiterPool[]> {
     if (!mint) continue;
 
     const apyRaw = Number(t.totalRate ?? t.supplyRate);
-    if (!isFinite(apyRaw) || apyRaw <= 0) continue;
-
-    // Rates may come in as a percentage (e.g., 850 for 8.5%) or decimal (0.085).
-    // Normalize anything > 1 by dividing by 100; leave decimal-form as-is.
-    const apy = apyRaw > 1 ? apyRaw / 100 : apyRaw;
+    const apy = normalizeApy(apyRaw);
+    if (apy <= 0) continue;
 
     const decimals = t.asset?.decimals ?? t.decimals ?? 6;
     const totalAssets = Number(t.totalAssets || 0);
