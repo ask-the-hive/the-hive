@@ -41,8 +41,6 @@ const nextConfig: NextConfig = {
         'thread-stream': false,
         '@kamino-finance/klend-sdk': false,
       };
-
-      // Replace child_process with an empty module on the client side
       config.resolve.fallback = {
         ...config.resolve.fallback,
         fs: false,
@@ -63,12 +61,9 @@ const nextConfig: NextConfig = {
 
     return config;
   },
-  turbo: {
+  turbopack: {
     resolveAlias: {
       pino: 'pino/browser',
-      'thread-stream': false,
-      '@kamino-finance/klend-sdk': false,
-      fs: false,
     },
   },
 };
