@@ -126,10 +126,11 @@ export const Markdown: React.FC<Props> = ({
             return <li className="pl-0 ml-4 text-sm md:text-base space-y-2">{children}</li>;
           },
           img({ src, alt }) {
-            if (!src) return null;
+            const url = typeof src === 'string' ? src : '';
+            if (!url) return null;
             return (
               <Image
-                src={src}
+                src={url}
                 alt={alt || 'image'}
                 width={64}
                 height={64}
