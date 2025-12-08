@@ -302,6 +302,7 @@ export const SwapModalProvider: React.FC<{ children: React.ReactNode }> = ({ chi
             initialOutputToken={mode === 'buy' ? token : outputToken}
             inputLabel={mode === 'buy' ? 'Pay with' : 'Sell'}
             outputLabel={mode === 'buy' ? 'Buy' : 'Receive'}
+            eventName="swap"
             onSuccess={onSuccess}
             onError={onError}
             onInputChange={() => setSwapError(null)}

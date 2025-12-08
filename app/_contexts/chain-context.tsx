@@ -9,6 +9,7 @@ import React, {
   useCallback,
   useRef,
 } from 'react';
+import posthog from 'posthog-js';
 import { usePrivy, useConnectWallet, useLinkAccount } from '@privy-io/react-auth';
 import { useRouter } from 'next/navigation';
 import * as Sentry from '@sentry/nextjs';
@@ -22,7 +23,7 @@ import {
   Button,
 } from '@/components/ui';
 import { PublicKey } from '@solana/web3.js';
-import { clearUserDataCache } from '@/lib/swr-cache';
+import { clearUserDataCache, disconnectExternalWallets } from '@/lib/swr-cache';
 
 // Extend Window interface for Phantom wallet
 declare global {
@@ -73,7 +74,11 @@ export const ChainProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   // Track wallet connections via the useConnectWallet hook - this gives us the exact wallet that was connected
   useConnectWallet({
     onSuccess: (wallet) => {
-      console.log('Wallet connected:', wallet.address);
+      posthog.identify(wallet.address);
+      posthog.capture('wallet_connected', {
+        wallet_address: wallet.address,
+      });
+
       // Update the wallet address based on the wallet type
       if (wallet.type === 'solana') {
         setWalletAddresses((prev) => ({
@@ -99,6 +104,11 @@ export const ChainProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   // Track wallet linking (when user adds a wallet to their existing account)
   useLinkAccount({
     onSuccess: (user, linkMethod, linkedAccount) => {
+      posthog.capture('account_linked', {
+        user_id: user?.id,
+        linked_account_type: linkedAccount.type,
+        link_method: linkMethod,
+      });
       // Check if the linked account is a wallet
       if (linkedAccount.type === 'wallet') {
         const walletAccount = linkedAccount as any;
@@ -199,6 +209,9 @@ export const ChainProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   }, [user, walletAddresses.solana, setLastVerifiedSolanaWallet]);
 
   const handleDisconnect = useCallback(async () => {
+    posthog.capture('wallet_disconnected', {
+      user_id: user?.id,
+    });
     // Check if user has other authentication methods (email, social, etc.)
     const hasNonWalletAuth = user?.linkedAccounts?.some(
       (account: any) => account.type !== 'wallet',
@@ -213,6 +226,10 @@ export const ChainProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     } else {
       // wallet provider is their only auth method - log them out completely
       clearUserDataCache();
+      disconnectExternalWallets();
+      posthog.capture('user_logged_out', {
+        user_id: user?.id,
+      });
       await logout();
       router.push('/chat');
     }

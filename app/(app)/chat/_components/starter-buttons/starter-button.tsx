@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils';
 
 import { IconName } from '@/types';
 import { Loader2 } from 'lucide-react';
+import posthog from 'posthog-js';
 
 interface Props {
   icon: IconName;
@@ -17,9 +18,17 @@ interface Props {
   description: string;
   prompt: string;
   className?: string;
+  eventName: string;
 }
 
-const StarterButton: React.FC<Props> = ({ icon, title, description, prompt, className }) => {
+const StarterButton: React.FC<Props> = ({
+  icon,
+  title,
+  description,
+  prompt,
+  className,
+  eventName,
+}) => {
   const { sendMessage, isResponseLoading, isLoading } = useChat();
 
   return (
@@ -33,7 +42,10 @@ const StarterButton: React.FC<Props> = ({ icon, title, description, prompt, clas
       )}
       variant="outline"
       disabled={isResponseLoading || isLoading}
-      onClick={() => sendMessage(prompt)}
+      onClick={() => {
+        sendMessage(prompt);
+        posthog.capture(eventName);
+      }}
     >
       <div className="flex items-center justify-between gap-2 w-full">
         <div

@@ -12,6 +12,7 @@ import { useChain } from '@/app/_contexts/chain-context';
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { clearUserDataCache, disconnectExternalWallets } from '@/lib/swr-cache';
+import posthog from 'posthog-js';
 
 export const useLogin = ({
   onComplete,
@@ -22,13 +23,8 @@ export const useLogin = ({
 } = {}) => {
   const router = useRouter();
   const { user, ready, logout, linkWallet: privyLinkWallet } = usePrivy();
-  const {
-    walletAddresses,
-    currentChain,
-    setCurrentChain,
-    setWalletAddress,
-    setLastVerifiedSolanaWallet,
-  } = useChain();
+  const { walletAddresses, currentChain, setCurrentChain, setLastVerifiedSolanaWallet } =
+    useChain();
   const { wallets } = useWallets();
   const { wallets: solanaWallets } = useSolanaWallets();
 
@@ -55,6 +51,10 @@ export const useLogin = ({
   const { login } = usePrivyLogin({
     onComplete: async (user) => {
       setLastVerifiedSolanaWallet();
+      posthog.identify(user.id);
+      posthog.capture('user_logged_in', {
+        user_id: user.id,
+      });
       if (user.wallet) {
         onComplete?.(user.wallet);
       }
@@ -114,7 +114,14 @@ export const useLogin = ({
     window.open(`https://bridge.base.org/deposit?destinationAddress=${address}`, '_blank');
   };
 
-  const { connectWallet } = useConnectWallet();
+  const { connectWallet } = useConnectWallet({
+    onSuccess: (wallet) => {
+      posthog.identify(wallet.address);
+      posthog.capture('wallet_connected', {
+        wallet_address: wallet.address,
+      });
+    },
+  });
 
   const { fundWallet } = useFundWallet();
 
@@ -124,6 +131,9 @@ export const useLogin = ({
     clearUserDataCache();
     // Disconnect external wallets (Phantom, Solflare, etc.)
     disconnectExternalWallets();
+    posthog.capture('user_logged_out', {
+      user_id: user?.id,
+    });
     await logout();
     router.push('/chat');
   };
