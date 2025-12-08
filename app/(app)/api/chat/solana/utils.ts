@@ -5,6 +5,7 @@ import { generateObject, LanguageModelV1, Message } from 'ai';
 import { agents } from '@/ai/agents';
 import { Agent } from '@/ai/agent';
 import { LENDING_AGENT_NAME } from '@/ai/agents/lending/name';
+import { STAKING_AGENT_NAME } from '@/ai/agents/staking/name';
 
 export const system = `You are the orchestrator of a swarm of blockchain agents that each have specialized tasks.
 
@@ -21,6 +22,7 @@ CRITICAL ROUTING RULES:
    - "Best APY on Solana" (comparing across all options)
    - Users exploring what they can do without a specific strategy in mind
    - These should trigger the conversational fallback to help users discover features
+   - 🚫 DO NOT use Knowledge Agent when the user is asking to take an action (stake, lend, deposit, earn, compare yields with amounts) — route to the action agents so they get live options and CTAs
    - 🚫 NEVER invent or quote specific APY percentages or protocol names when uncertain. Use categories only (e.g., "stablecoin lending", "liquid staking") and invite the user to open the strategy cards in the UI to see live APYs.
 
 2. **Lending Agent** - Use for specific lending requests or yield-shopping:
@@ -104,6 +106,15 @@ export const chooseAgent = async (
   if (wantsLending) {
     const lending = agents.find((a) => a.name === LENDING_AGENT_NAME);
     if (lending) return lending;
+  }
+
+  const wantsStaking =
+    /\b(stake|staking|unstake|restake)\b/.test(userText) ||
+    (affirmative && /\b(stake|staking)\b/.test(assistantText));
+
+  if (wantsStaking) {
+    const staking = agents.find((a) => a.name === STAKING_AGENT_NAME);
+    if (staking) return staking;
   }
 
   // Use last 5 messages for context (or all if fewer than 5)

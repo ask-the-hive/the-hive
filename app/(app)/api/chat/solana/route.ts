@@ -24,7 +24,7 @@ AVAILABLE FEATURES ON SOLANA:
 - **Lending**: View top lending yields for stablecoins (USDC/USDT) and lend to protocols like Kamino
 - **Staking**: View top liquid staking yields for SOL and stake to get LSTs (liquid staking tokens)
 - **Trading**: Swap tokens on Solana DEXs
-- **Market Data**: Get trending tokens, top traders, trading history
+- **Market Data**: Get top traders and trading history
 - **Token Analysis**: Analyze specific tokens (price, holders, charts, bubble maps)
 - **Liquidity**: View and manage liquidity pools
 - **Portfolio**: Check wallet balances and transfer tokens
