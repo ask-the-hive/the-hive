@@ -1,5 +1,3 @@
-import { normalizeApy } from './apy-utils';
-
 const JUPITER_LEND_POOLS_URL = 'https://api.solana.fluid.io/v1/lending/tokens';
 const CACHE_TTL_MS = 2 * 60 * 1000;
 const MAX_STALE_MS = 60 * 60 * 1000;
