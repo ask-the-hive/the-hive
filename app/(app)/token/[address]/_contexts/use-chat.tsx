@@ -19,6 +19,7 @@ import {
 } from '@/ai/action-names';
 
 import type { TokenChatData } from '@/types';
+import posthog from 'posthog-js';
 
 export enum ColorMode {
   LIGHT = 'light',
@@ -121,6 +122,9 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ token, children }) =
   };
 
   const sendMessage = async (message: string) => {
+    posthog.capture('agent_queried', {
+      message,
+    });
     setIsResponseLoading(true);
     await append({
       role: 'user',

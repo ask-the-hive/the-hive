@@ -1,15 +1,10 @@
 'use client';
 
 import React, { useEffect, useRef } from 'react';
-
 import { Message, LoadingMessage } from '@/app/(app)/_components/chat';
-
 import ToolInvocation from './tools';
-
 import { useScrollAnchor } from '@/app/(app)/chat/_hooks';
-
 import { useChat } from '../_contexts/chat';
-
 import type { Message as MessageType } from 'ai';
 
 interface Props {
@@ -54,9 +49,12 @@ const Messages: React.FC<Props> = ({ messages, messageClassName }) => {
             ToolComponent={ToolInvocation}
             previousMessage={index > 0 ? messages[index - 1] : undefined}
             nextMessage={index < messages.length - 1 ? messages[index + 1] : undefined}
+            isLatestAssistant={index === messages.length - 1 && message.role === 'assistant'}
           />
         ))}
-        {isResponseLoading && <LoadingMessage />}
+        {isResponseLoading && messages[messages.length - 1]?.role !== 'assistant' && (
+          <LoadingMessage />
+        )}
       </div>
     </div>
   );

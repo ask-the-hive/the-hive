@@ -48,6 +48,7 @@ const UnstakeCallBody: React.FC<Props> = ({ toolCallId, args }) => {
           initialInputAmount={args.amount?.toString()}
           swapText="Unstake"
           swappingText="Unstaking..."
+          eventName="unstake"
           onSuccess={(tx) => {
             addToolResult<UnstakeResultBodyType>(toolCallId, {
               message: `Unstake successful!`,

@@ -3,6 +3,7 @@ import { Card, Button, TokenIcon } from '@/components/ui';
 import { cn } from '@/lib/utils';
 import { capitalizeWords, getConfidenceLabel } from '@/lib/string-utils';
 import VarApyTooltip from '@/components/var-apy-tooltip';
+import posthog from 'posthog-js';
 
 interface PoolData {
   name: string;
@@ -34,6 +35,14 @@ function PoolDetailsCard<T extends PoolData>({
   onMoreDetailsClick,
   disabled = false,
 }: PoolDetailsCardProps<T>) {
+  const handleClick = (event: React.MouseEvent) => {
+    event.stopPropagation();
+    posthog.capture('pool_details_card_clicked', {
+      pool_name: pool.name,
+      pool_project: pool.project,
+    });
+    onClick(pool);
+  };
   return (
     <Card
       key={`${pool.name}-${pool.project}-${index}`}
@@ -46,7 +55,7 @@ function PoolDetailsCard<T extends PoolData>({
           index === 1 &&
           'hover:border-brand-600 dark:hover:border-brand-600 !shadow-[0_0_10px_rgba(234,179,8,0.5)] dark:!shadow-[0_0_10px_rgba(234,179,8,0.5)]',
       )}
-      onClick={() => !disabled && onClick(pool)}
+      onClick={(e) => !disabled && handleClick(e)}
     >
       <div className="items-center flex-col justify-between gap-2 mb-2 hidden md:flex">
         <div className="flex items-center gap-2">

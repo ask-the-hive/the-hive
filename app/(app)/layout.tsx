@@ -4,7 +4,6 @@ import { SpeedInsights } from '@vercel/speed-insights/next';
 import { SidebarProvider } from '@/components/ui';
 
 import Sidebar from './_components/sidebar';
-import ExperimentalAlertDialog from './_components/experimental-alert-dialog';
 import { MoreMenu } from './_components/more-menu';
 
 import { GlobalChatManagerProvider } from './chat/_contexts/global-chat-manager';
@@ -16,7 +15,6 @@ interface Props {
 const Layout: React.FC<Props> = ({ children }) => {
   return (
     <SidebarProvider>
-      <ExperimentalAlertDialog />
       <GlobalChatManagerProvider>
         <Sidebar>{children}</Sidebar>
         <MoreMenu />

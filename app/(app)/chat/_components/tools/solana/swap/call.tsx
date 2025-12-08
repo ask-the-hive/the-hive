@@ -136,6 +136,7 @@ const SwapCallBody: React.FC<Props> = ({ toolCallId, args }) => {
             initialInputAmount={args.inputAmount?.toString()}
             swapText="Swap"
             swappingText="Swapping..."
+            eventName="swap"
             onInputChange={(amount) => {
               setInputAmount(amount.toString());
               if (errorMessage) {
