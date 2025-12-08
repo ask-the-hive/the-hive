@@ -1,6 +1,7 @@
 import { KaminoMarket, DEFAULT_RECENT_SLOT_DURATION_MS } from '@kamino-finance/klend-sdk';
 import { createSolanaRpc, address as createAddress } from '@solana/kit';
 import { Connection, PublicKey } from '@solana/web3.js';
+import { normalizeApy } from './apy-utils';
 
 const KAMINO_MAIN_MARKET = new PublicKey('7u3HeHxYDLhnCoErrtycNokbQYbWGzLs6JSDqGAv5PfF');
 const KAMINO_PROGRAM_ID = new PublicKey('KLend2g3cP87fffoy8q1mQqGKjrxjC8boSyAYavgmjD');

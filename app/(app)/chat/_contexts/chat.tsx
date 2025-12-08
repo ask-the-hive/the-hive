@@ -16,8 +16,8 @@ import { usePrivy } from '@privy-io/react-auth';
 import { generateId } from 'ai';
 import { useUserChats } from '@/hooks';
 import { ChainType } from '@/app/_contexts/chain-context';
-import { useGlobalChatManager } from './global-chat-manager';
 import { useRouter, usePathname } from 'next/navigation';
+import { useGlobalChatManager } from './global-chat-manager';
 import {
   SOLANA_GET_WALLET_ADDRESS_ACTION,
   SOLANA_TRADE_ACTION,
@@ -37,7 +37,6 @@ export enum ColorMode {
   DARK = 'dark',
 }
 
-// Define a type for tool results
 type ToolResult<T> = {
   message: string;
   body?: T;
@@ -94,13 +93,28 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
   const router = useRouter();
   const pathname = usePathname();
 
-  // Extract chatId from URL or generate new one
+  const parseJsonSafely = async (response: Response) => {
+    const text = await response.text();
+    if (!text) return null;
+    try {
+      return JSON.parse(text);
+    } catch (error) {
+      Sentry.captureException(error, {
+        tags: {
+          component: 'ChatProvider',
+          action: 'parseJsonSafely',
+          status: response.status,
+        },
+      });
+      return null;
+    }
+  };
+
   const [chatId, setChatId] = useState<string>(() => {
     const urlChatId = pathname.split('/').pop();
     return urlChatId || generateId();
   });
 
-  // Update chatId when URL changes
   useEffect(() => {
     const urlChatId = pathname.split('/').pop();
     if (urlChatId && urlChatId !== chatId) {
@@ -112,7 +126,6 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
   const [model, setModel] = useState<Models>(Models.OpenAI);
   const [chain, setChain] = useState<ChainType>('solana');
 
-  // Track if we're currently resetting to prevent state conflicts
   const isResettingRef = useRef(false);
   const isHydratingRef = useRef(false);
   const saveDebounceRef = useRef<NodeJS.Timeout | null>(null);
@@ -177,29 +190,28 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
           },
         });
       });
+    });
+    const chatData = await parseJsonSafely(chat);
+    if (chatData) {
+      setMessages(chatData.messages);
+      setChain(chatData.chain || 'solana');
+    }
   };
 
   const resetChat = async () => {
-    // Set resetting flag to prevent state conflicts
     isResettingRef.current = true;
 
-    // Remove the current chat from global tracking
     removeChatThread(chatId);
 
     const newChatId = generateId();
 
-    // Navigate to the new chat URL
     router.push(`/chat/${newChatId}`);
 
-    // Update local state
     setChatId(newChatId);
-
-    // Clear all chat state
     setMessages([]);
     setInput('');
     setIsResponseLoading(false);
 
-    // Initialize the new chat in global tracking
     updateChatThreadState(newChatId, {
       chatId: newChatId,
       isLoading: false,
@@ -207,7 +219,6 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
       chain,
     });
 
-    // Clear resetting flag after a short delay to ensure state is stable
     setTimeout(() => {
       isResettingRef.current = false;
     }, 100);
@@ -234,7 +245,6 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
     maxSteps: 20,
     onResponse: () => {
       setIsResponseLoading(false);
-      // Update global state when response is complete
       updateChatThreadState(chatId, {
         isLoading: false,
         isResponseLoading: false,
@@ -260,10 +270,8 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
 
   const isLoading = status === 'submitted' || status === 'streaming';
 
-  // Handle isLoading state changes from useAiChat hook
   useEffect(() => {
     if (isLoading) {
-      // AI is actively processing, update global state
       updateChatThreadState(chatId, {
         isLoading: true,
         isResponseLoading: true,
@@ -278,7 +286,6 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
     });
   };
 
-  // Initialize chat thread in global manager and update when loading states change
   useEffect(() => {
     updateChatThreadState(chatId, {
       chatId,
@@ -288,14 +295,12 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
     });
   }, [chatId, isLoading, isResponseLoading, chain, updateChatThreadState]);
 
-  // Clean up when component unmounts
   useEffect(() => {
     return () => {
       removeChatThread(chatId);
     };
   }, [chatId, removeChatThread]);
 
-  // Clear input and loading states when chatId changes (new chat)
   useEffect(() => {
     if (!isResettingRef.current) {
       setInput('');
@@ -303,10 +308,8 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
     }
   }, [chatId, setInput]);
 
-  // Load chat data when chatId changes (for existing chats)
   useEffect(() => {
     if (chatId && !isResettingRef.current) {
-      // Check if this is an existing chat by trying to load it
       const loadExistingChat = async () => {
         isHydratingRef.current = true;
         const cached = loadCachedChat(chatId);
@@ -322,9 +325,8 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
           });
 
           if (chat.ok) {
-            const chatData = await chat.json();
+            const chatData = await parseJsonSafely(chat);
             if (chatData && chatData.messages && chatData.messages.length > 0) {
-              // This is an existing chat, load its data
               setMessages(chatData.messages);
               setChain(chatData.chain || 'solana');
               persistCachedChat(chatId, {
@@ -334,7 +336,6 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
             }
           }
         } catch {
-          // Chat doesn't exist yet, this is fine for new chats
           console.log('New chat or chat not found:', chatId);
         } finally {
           isHydratingRef.current = false;
@@ -379,6 +380,14 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
             persistCachedChat(chatId, { messages, chain });
             mutate();
           }
+          body: JSON.stringify({
+            messages,
+            chain,
+          }),
+        });
+        const data = await parseJsonSafely(response);
+        if (typeof data === 'object') {
+          mutate();
         }
       } catch (error) {
         Sentry.captureException(error, {
@@ -400,11 +409,9 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
   const onSubmit = async () => {
     if (!input.trim()) return;
 
-    // Clear input immediately after validation
     const userInput = input;
     setInput('');
 
-    // If this is the first message in a new chat, create the chat entry immediately
     if (messages.length === 0) {
       try {
         const response = await fetch(`/api/chats/${chatId}`, {
@@ -424,7 +431,6 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
         });
 
         if (response.ok) {
-          // Refresh the chats list to show the new chat immediately
           mutate();
         }
       } catch (error) {
@@ -439,7 +445,6 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
     }
 
     setIsResponseLoading(true);
-    // Update global state when starting a new message
     updateChatThreadState(chatId, {
       isLoading: true,
       isResponseLoading: true,
@@ -453,20 +458,17 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
   const sendMessage = async (message: string) => {
     setIsResponseLoading(true);
 
-    // Update global state immediately when starting a new message
     updateChatThreadState(chatId, {
       isLoading: true,
       isResponseLoading: true,
     });
 
-    // Optimistically add the user message to trigger UI transition immediately
     const userMessage: Message = {
       id: generateId(),
       role: 'user',
       content: message,
     };
 
-    // If this is the first message in a new chat, create the chat entry in parallel
     const chatCreationPromise =
       messages.length === 0
         ? (async () => {
@@ -498,15 +500,12 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
         })()
         : Promise.resolve();
 
-    // Start the AI response in parallel with chat creation
-    // append() will add the user message, so we need to remove our optimistic one first
     const aiResponsePromise = (async () =>
       await append({
         role: 'user',
         content: message,
       }))();
 
-    // Wait for both operations to complete
     await Promise.all([chatCreationPromise, aiResponsePromise]);
   };
 
@@ -546,7 +545,6 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
     return message || '';
   }, [messages]);
 
-  // Users can always start new chats, regardless of loading state
   const canStartNewChat = true;
 
   return (
