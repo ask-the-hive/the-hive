@@ -198,6 +198,7 @@ const StakeCallBody: React.FC<Props> = ({ toolCallId, args }) => {
                 initialInputAmount={args.amount?.toString()}
                 swapText="Stake"
                 swappingText="Staking..."
+                eventName="stake"
                 receiveTooltip={<ReceiveTooltip />}
                 onOutputChange={(amount) => {
                   setOutputAmount(amount);
