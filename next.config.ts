@@ -47,9 +47,18 @@ const nextConfig: NextConfig = {
   },
   webpack: (config, { isServer }) => {
     if (!isServer) {
+      // Prevent server-only deps from being bundled client-side
+      config.resolve.alias = {
+        ...config.resolve.alias,
+        pino: 'pino/browser',
+        'thread-stream': false,
+        '@kamino-finance/klend-sdk': false,
+      };
+
       // Replace child_process with an empty module on the client side
       config.resolve.fallback = {
         ...config.resolve.fallback,
+        fs: false,
         child_process: false,
       };
     }
@@ -67,6 +76,14 @@ const nextConfig: NextConfig = {
     });
 
     return config;
+  },
+  turbo: {
+    resolveAlias: {
+      pino: 'pino/browser',
+      'thread-stream': false,
+      '@kamino-finance/klend-sdk': false,
+      fs: false,
+    },
   },
 };
 

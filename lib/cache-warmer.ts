@@ -6,8 +6,7 @@ import { getBestLiquidStaking } from '@/services/staking-rewards';
 const WARM_INTERVAL_MS = 4 * 60 * 1000;
 
 declare global {
-  // eslint-disable-next-line no-var
-  var __cacheWarmersStarted?: boolean;
+  var __cacheWarmersStarted: boolean | undefined;
 }
 
 async function warmCaches() {
