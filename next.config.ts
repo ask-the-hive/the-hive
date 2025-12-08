@@ -1,8 +1,7 @@
-import {withSentryConfig} from '@sentry/nextjs';
+import { withSentryConfig } from '@sentry/nextjs';
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
-  /* config options here */
   serverExternalPackages: [
     'twitter-api-v2',
     'ai',
@@ -12,8 +11,9 @@ const nextConfig: NextConfig = {
     '@ai-sdk/google',
     '@ai-sdk/deepseek',
     '@kamino-finance/klend-sdk',
+    'thread-stream',
+    'pino',
   ],
-  // Remove console logs in production (but keep errors/warnings for debugging)
   compiler: {
     removeConsole:
       process.env.NODE_ENV === 'production'
@@ -23,31 +23,18 @@ const nextConfig: NextConfig = {
         : false,
   },
   images: {
-    // More permissive image configuration
-    domains: [
-      'logo.moralis.io',
-      'cdn.moralis.io',
-      'avatars.githubusercontent.com',
-      'raw.githubusercontent.com',
-      'assets.coingecko.com',
-      'storage.googleapis.com',
-      'static.jup.ag',
-    ],
-    // Allow remote patterns for dynamic image sources
     remotePatterns: [
       {
         protocol: 'https',
         hostname: '**',
       },
     ],
-    // Disable image optimization warnings in development
     dangerouslyAllowSVG: true,
     contentDispositionType: 'attachment',
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },
   webpack: (config, { isServer }) => {
     if (!isServer) {
-      // Prevent server-only deps from being bundled client-side
       config.resolve.alias = {
         ...config.resolve.alias,
         pino: 'pino/browser',
@@ -63,7 +50,6 @@ const nextConfig: NextConfig = {
       };
     }
 
-    // Handle WASM files for Orca/Kamino
     config.experiments = {
       ...config.experiments,
       asyncWebAssembly: true,
@@ -91,9 +77,9 @@ export default withSentryConfig(nextConfig, {
   // For all available options, see:
   // https://www.npmjs.com/package/@sentry/webpack-plugin#options
 
-  org: "the-hive-mc",
+  org: 'the-hive-mc',
 
-  project: "javascript-nextjs",
+  project: 'javascript-nextjs',
 
   // Only print logs for uploading source maps in CI
   silent: !process.env.CI,
@@ -108,7 +94,7 @@ export default withSentryConfig(nextConfig, {
   // This can increase your server load as well as your hosting bill.
   // Note: Check that the configured route will not match with your Next.js middleware, otherwise reporting of client-
   // side errors will fail.
-  tunnelRoute: "/monitoring",
+  tunnelRoute: '/monitoring',
 
   // Automatically tree-shake Sentry logger statements to reduce bundle size
   disableLogger: true,
