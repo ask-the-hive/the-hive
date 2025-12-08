@@ -22,6 +22,7 @@ const LiquidStakingYieldsTool: React.FC<Props> = ({ tool, prevToolAgent }) => {
     <ToolCard
       tool={tool}
       loadingText={`Getting best liquid staking yields...`}
+      disableCollapseAnimation
       result={{
         heading: (result: LiquidStakingYieldsResultType) =>
           result.body ? `Fetched best liquid staking yields` : 'No staking yields found',
@@ -68,9 +69,7 @@ const LiquidStakingYields: React.FC<{
 
   useEffect(() => {
     if (!isResponseLoading) {
-      setTimeout(() => {
-        setIsDisabled(false);
-      }, 2000);
+      setIsDisabled(false);
     }
   }, [isResponseLoading]);
 

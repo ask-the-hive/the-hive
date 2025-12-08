@@ -29,6 +29,9 @@ import {
 } from '@/ai/action-names';
 import * as Sentry from '@sentry/nextjs';
 
+const CHAT_CACHE_PREFIX = 'hive-chat-cache:';
+const CHAT_CACHE_TTL_MS = 60 * 60 * 1000;
+
 export enum ColorMode {
   LIGHT = 'light',
   DARK = 'dark',
@@ -64,18 +67,18 @@ interface ChatContextType {
 const ChatContext = createContext<ChatContextType>({
   messages: [],
   input: '',
-  setInput: () => {},
-  onSubmit: async () => {},
+  setInput: () => { },
+  onSubmit: async () => { },
   isLoading: false,
-  sendMessage: () => {},
+  sendMessage: () => { },
   isResponseLoading: false,
-  addToolResult: () => {},
+  addToolResult: () => { },
   model: Models.OpenAI,
-  setModel: () => {},
+  setModel: () => { },
   chain: 'solana',
-  setChain: () => {},
-  setChat: () => {},
-  resetChat: () => {},
+  setChain: () => { },
+  setChat: () => { },
+  resetChat: () => { },
   chatId: '',
   inputDisabledMessage: '',
   canStartNewChat: true,
@@ -114,21 +117,66 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
   const isHydratingRef = useRef(false);
   const saveDebounceRef = useRef<NodeJS.Timeout | null>(null);
   const lastSavedPayloadRef = useRef<string | null>(null);
+  const lastHydratedCacheRef = useRef<string | null>(null);
 
   const { mutate } = useUserChats();
 
+  const loadCachedChat = (id: string) => {
+    if (typeof window === 'undefined') return null;
+    try {
+      const raw = window.localStorage.getItem(`${CHAT_CACHE_PREFIX}${id}`);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw) as { messages: Message[]; chain?: ChainType; cachedAt: number };
+      if (!parsed || !Array.isArray(parsed.messages)) return null;
+      if (Date.now() - parsed.cachedAt > CHAT_CACHE_TTL_MS) return null;
+      lastHydratedCacheRef.current = JSON.stringify(parsed.messages);
+      return parsed;
+    } catch {
+      return null;
+    }
+  };
+
+  const persistCachedChat = (id: string, payload: { messages: Message[]; chain: ChainType }) => {
+    if (typeof window === 'undefined') return;
+    try {
+      window.localStorage.setItem(
+        `${CHAT_CACHE_PREFIX}${id}`,
+        JSON.stringify({ ...payload, cachedAt: Date.now() }),
+      );
+    } catch (error) {
+      console.warn('Unable to cache chat locally:', error);
+    }
+  };
+
   const setChat = async (chatId: string) => {
     setChatId(chatId);
-    const chat = await fetch(`/api/chats/${chatId}`, {
+    const cached = loadCachedChat(chatId);
+    if (cached) {
+      setMessages(cached.messages);
+      setChain(cached.chain || 'solana');
+    }
+    // Always revalidate in background to avoid stale data
+    fetch(`/api/chats/${chatId}`, {
       headers: {
         Authorization: `Bearer ${await getAccessToken()}`,
       },
-    });
-    const chatData = await chat.json();
-    if (chatData) {
-      setMessages(chatData.messages);
-      setChain(chatData.chain || 'solana'); // Set the chain from saved chat data
-    }
+    })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((chatData) => {
+        if (chatData) {
+          setMessages(chatData.messages);
+          setChain(chatData.chain || 'solana'); // Set the chain from saved chat data
+          persistCachedChat(chatId, { messages: chatData.messages, chain: chatData.chain || 'solana' });
+        }
+      })
+      .catch((error) => {
+        Sentry.captureException(error, {
+          tags: {
+            component: 'ChatProvider',
+            action: 'hydrateSetChat',
+          },
+        });
+      });
   };
 
   const resetChat = async () => {
@@ -261,6 +309,11 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
       // Check if this is an existing chat by trying to load it
       const loadExistingChat = async () => {
         isHydratingRef.current = true;
+        const cached = loadCachedChat(chatId);
+        if (cached) {
+          setMessages(cached.messages);
+          setChain(cached.chain || 'solana');
+        }
         try {
           const chat = await fetch(`/api/chats/${chatId}`, {
             headers: {
@@ -274,6 +327,10 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
               // This is an existing chat, load its data
               setMessages(chatData.messages);
               setChain(chatData.chain || 'solana');
+              persistCachedChat(chatId, {
+                messages: chatData.messages,
+                chain: chatData.chain || 'solana',
+              });
             }
           }
         } catch {
@@ -296,6 +353,11 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
 
     const payload = JSON.stringify({ messages, chain });
     if (payload === lastSavedPayloadRef.current) return;
+    if (payload === lastHydratedCacheRef.current) {
+      // Already hydrated from cache; still persist for freshness
+      persistCachedChat(chatId, { messages, chain });
+      return;
+    }
 
     if (saveDebounceRef.current) {
       clearTimeout(saveDebounceRef.current);
@@ -314,6 +376,7 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
           const data = await response.json();
           if (typeof data === 'object') {
             lastSavedPayloadRef.current = payload;
+            persistCachedChat(chatId, { messages, chain });
             mutate();
           }
         }
@@ -407,32 +470,32 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
     const chatCreationPromise =
       messages.length === 0
         ? (async () => {
-            try {
-              const response = await fetch(`/api/chats/${chatId}`, {
-                method: 'POST',
-                headers: {
-                  Authorization: `Bearer ${await getAccessToken()}`,
-                },
-                body: JSON.stringify({
-                  messages: [userMessage],
-                  chain,
-                }),
-              });
+          try {
+            const response = await fetch(`/api/chats/${chatId}`, {
+              method: 'POST',
+              headers: {
+                Authorization: `Bearer ${await getAccessToken()}`,
+              },
+              body: JSON.stringify({
+                messages: [userMessage],
+                chain,
+              }),
+            });
 
-              if (response.ok) {
-                // Refresh the chats list to show the new chat immediately
-                mutate();
-              } else if (response.status === 409) {
-                // Chat already exists, this is fine - just refresh the list
-                console.log('Chat already exists, refreshing list');
-                mutate();
-              } else {
-                console.error('Error creating new chat:', response.status, response.statusText);
-              }
-            } catch (error) {
-              console.error('Error creating new chat:', error);
+            if (response.ok) {
+              // Refresh the chats list to show the new chat immediately
+              mutate();
+            } else if (response.status === 409) {
+              // Chat already exists, this is fine - just refresh the list
+              console.log('Chat already exists, refreshing list');
+              mutate();
+            } else {
+              console.error('Error creating new chat:', response.status, response.statusText);
             }
-          })()
+          } catch (error) {
+            console.error('Error creating new chat:', error);
+          }
+        })()
         : Promise.resolve();
 
     // Start the AI response in parallel with chat creation
