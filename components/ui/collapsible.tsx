@@ -28,14 +28,19 @@ const CollapsibleContent = React.forwardRef<
   React.ElementRef<typeof CollapsiblePrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof CollapsiblePrimitive.Content> & {
     withMaxHeight?: boolean;
+    disableAnimation?: boolean;
   }
->(({ className, children, withMaxHeight = true, ...props }, ref) => (
+>(({ className, children, withMaxHeight = true, disableAnimation = false, ...props }, ref) => (
   <CollapsiblePrimitive.Content
     ref={ref}
     className={cn(
-      'overflow-hidden transition-all duration-300 max-h-0',
-      withMaxHeight && 'data-[state=open]:max-h-max',
       'mb-6',
+      disableAnimation
+        ? 'data-[state=closed]:hidden'
+        : [
+            'overflow-hidden transition-all duration-300 max-h-0',
+            withMaxHeight && 'data-[state=open]:max-h-max',
+          ],
       className,
     )}
     {...props}

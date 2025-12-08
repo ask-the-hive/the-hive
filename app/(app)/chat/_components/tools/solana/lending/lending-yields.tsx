@@ -33,6 +33,7 @@ const LendingYieldsTool: React.FC<Props> = ({ tool, prevToolAgent }) => {
     <ToolCard
       tool={tool}
       loadingText={`Getting best lending yields...`}
+      disableCollapseAnimation
       result={{
         heading: (result: LendingYieldsResultType) => getHeading(result),
         body: (result: LendingYieldsResultType) =>
@@ -82,9 +83,7 @@ const LendingYields: React.FC<{
 
   useEffect(() => {
     if (!isResponseLoading) {
-      setTimeout(() => {
-        setIsDisabled(false);
-      }, 2000);
+      setIsDisabled(false);
     }
   }, [isResponseLoading]);
 

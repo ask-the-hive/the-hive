@@ -1,5 +1,4 @@
-import React, { useMemo, useCallback } from 'react';
-
+import React, { useMemo, useCallback, useState } from 'react';
 import ToolCard from '../tool-card';
 import { TokenBalance } from '../utils';
 import { useChat } from '@/app/(app)/chat/_contexts/chat';
@@ -18,8 +17,8 @@ import { useFundWallet } from '@privy-io/react-auth/solana';
 import { useSendTransaction } from '@/hooks/privy/use-send-transaction';
 import { useResolveAssetSymbolToAddress } from '@/hooks/queries/token/use-resolve-asset-symbol-to-address';
 import { useTokenMetadata } from '@/hooks/queries/token/use-token-metadata';
-import { Info } from 'lucide-react';
-
+import { Info, Loader2 } from 'lucide-react';
+import { SOL_MINT } from '@/lib/constants';
 import type { ToolInvocation } from 'ai';
 import type { BalanceResultType } from '@/ai';
 
@@ -27,8 +26,6 @@ interface Props {
   tool: ToolInvocation;
   prevToolAgent?: string;
 }
-
-const SOL_MINT = 'So11111111111111111111111111111111111111112';
 
 interface TokenFundingOptionsProps {
   tokenSymbol: string;
@@ -43,6 +40,7 @@ const TokenFundingOptions: React.FC<TokenFundingOptionsProps> = ({
   logoURI,
   onComplete,
 }) => {
+  const [isFunding, setIsFunding] = useState(false);
   const { onOpen: openSwapModal } = useSwapModal();
   const { fundWallet } = useFundWallet({
     onUserExited: () => {
@@ -51,6 +49,7 @@ const TokenFundingOptions: React.FC<TokenFundingOptionsProps> = ({
   });
   const { wallet } = useSendTransaction();
 
+  const [isOpeningSwap, setIsOpeningSwap] = useState(false);
   const isTokenSOL = tokenSymbol === 'SOL';
 
   // Use the resolve hook to get token address from symbol
@@ -85,23 +84,30 @@ const TokenFundingOptions: React.FC<TokenFundingOptionsProps> = ({
     return undefined;
   }, [logoURI, tokenMetadata]);
 
-  const handleSwap = () => {
+  const handleSwap = async () => {
     if (finalTokenAddress) {
-      openSwapModal('buy', finalTokenAddress, () => {
-        onComplete?.('swap');
-      });
+      setIsOpeningSwap(true);
+      try {
+        await openSwapModal('buy', finalTokenAddress, () => {
+          onComplete?.('swap');
+        });
+      } finally {
+        setIsOpeningSwap(false);
+      }
     }
   };
 
   const handleBuy = async () => {
-    if (wallet?.address) {
-      try {
+    setIsFunding(true);
+    try {
+      if (wallet?.address) {
         await fundWallet(wallet.address, { amount: '1' });
-      } catch {
-        // no-op; user may cancel funding
-      } finally {
-        onComplete?.('fundWallet');
       }
+    } catch {
+      // no-op; user may cancel funding
+    } finally {
+      setIsFunding(false);
+      onComplete?.('fundWallet');
     }
   };
 
@@ -131,37 +137,56 @@ const TokenFundingOptions: React.FC<TokenFundingOptionsProps> = ({
                 onClick={handleSwap}
                 className="w-full"
                 variant="brand"
-                disabled={!finalTokenAddress || isResolving || isLoadingMetadata}
+                disabled={!finalTokenAddress || isResolving || isLoadingMetadata || isOpeningSwap}
               >
-                {isResolving || isLoadingMetadata ? 'Loading...' : `Swap for ${tokenSymbol}`}
+                {isResolving || isLoadingMetadata || isOpeningSwap ? (
+                  <div className="flex items-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span>Loading...</span>
+                  </div>
+                ) : (
+                  `Swap for ${tokenSymbol}`
+                )}
               </Button>
-              <Button onClick={handleBuy} className="w-full" variant="brandOutline">
-                <div className="flex items-center gap-2">
-                  Buy or Receive SOL
-                  <TooltipProvider>
-                    <Tooltip delayDuration={0}>
-                      <TooltipTrigger asChild>
-                        <div
-                          className="inline-flex items-center"
-                          onClick={(e) => e.stopPropagation()}
-                          onMouseDown={(e) => e.stopPropagation()}
-                        >
-                          <Info className="h-3 w-3 text-brand-600 cursor-help" />
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <div className="p-2 flex flex-col">
-                          <p className="text-sm">
-                            We currently only support buying SOL with fiat on-ramps.
-                          </p>
-                          <p className="text-sm">
-                            Buy or receive SOL then swap for the token needed for your action.
-                          </p>
-                        </div>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </div>
+              <Button
+                onClick={handleBuy}
+                className="w-full"
+                variant="brandOutline"
+                disabled={isFunding}
+              >
+                {isFunding ? (
+                  <div className="flex items-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span>Starting on-ramp...</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    Buy or Receive SOL
+                    <TooltipProvider>
+                      <Tooltip delayDuration={0}>
+                        <TooltipTrigger asChild>
+                          <div
+                            className="inline-flex items-center"
+                            onClick={(e) => e.stopPropagation()}
+                            onMouseDown={(e) => e.stopPropagation()}
+                          >
+                            <Info className="h-3 w-3 text-brand-600 cursor-help" />
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <div className="p-2 flex flex-col">
+                            <p className="text-sm">
+                              We currently only support buying SOL with fiat on-ramps.
+                            </p>
+                            <p className="text-sm">
+                              Buy or receive SOL then swap for the token needed for your action.
+                            </p>
+                          </div>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
+                )}
               </Button>
             </div>
           </div>
