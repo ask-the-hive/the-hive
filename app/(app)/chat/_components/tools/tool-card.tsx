@@ -24,6 +24,7 @@ interface Props<ActionResultBodyType, ActionArgsType> {
     body: (toolCallId: string, args: ActionArgsType) => React.ReactNode;
   };
   defaultOpen?: boolean;
+  disableCollapseAnimation?: boolean;
   className?: string;
   prevToolAgent?: string;
   hideCollapsible?: boolean;
@@ -37,6 +38,7 @@ const ToolCard = <ActionResultBodyType, ActionArgsType>({
   defaultOpen = true,
   className,
   prevToolAgent,
+  disableCollapseAnimation = false,
 }: Props<ActionResultBodyType, ActionArgsType>) => {
   const agentName = getAgentName(tool);
 
@@ -86,7 +88,12 @@ const ToolCard = <ActionResultBodyType, ActionArgsType>({
                     )}
                   </CollapsibleTrigger>
                   {hasBodyContent && (
-                    <CollapsibleContent className="text-sm pt-2">{bodyResult}</CollapsibleContent>
+                    <CollapsibleContent
+                      className="text-sm pt-2"
+                      disableAnimation={disableCollapseAnimation}
+                    >
+                      {bodyResult}
+                    </CollapsibleContent>
                   )}
                 </Collapsible>
               )

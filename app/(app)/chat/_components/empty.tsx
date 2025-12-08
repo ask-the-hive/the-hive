@@ -1,23 +1,13 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React from 'react';
 
 import ChatInput from './input';
 import StarterButtons from './starter-buttons';
 
 import Logo from '@/components/ui/logo';
 
-const promptPool = [
-  'Help me stake SOL',
-  'How to earn in DeFi',
-  'Compare lending options',
-  'Best staking yields',
-  'Where to deposit stablecoins',
-];
-
 const EmptyChat: React.FC = () => {
-  const tip = useMemo(() => promptPool[Math.floor(Math.random() * promptPool.length)], []);
-
   return (
     <div className="flex flex-col items-center justify-start md:justify-center w-full h-full px-4 pt-0 relative overflow-y-auto">
       <div className="flex flex-col items-center justify-center w-full max-w-2xl gap-4 md:gap-8 relative z-10 pb-8">
@@ -32,9 +22,7 @@ const EmptyChat: React.FC = () => {
             </p>
           </div>
         </div>
-        <div className="w-full transition-opacity duration-300">
-          <ChatInput placeholderText={`Tip: ${tip}`} />
-        </div>
+        <ChatInput />
 
         <StarterButtons />
       </div>

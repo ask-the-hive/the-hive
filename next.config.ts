@@ -39,10 +39,11 @@ const nextConfig: NextConfig = {
         ...config.resolve.alias,
         pino: 'pino/browser',
         'thread-stream': false,
+        '@kamino-finance/klend-sdk': false,
       };
-
       config.resolve.fallback = {
         ...config.resolve.fallback,
+        fs: false,
         child_process: false,
       };
     }

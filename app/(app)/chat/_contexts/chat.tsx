@@ -63,18 +63,18 @@ interface ChatContextType {
 const ChatContext = createContext<ChatContextType>({
   messages: [],
   input: '',
-  setInput: () => { },
-  onSubmit: async () => { },
+  setInput: () => {},
+  onSubmit: async () => {},
   isLoading: false,
-  sendMessage: () => { },
+  sendMessage: () => {},
   isResponseLoading: false,
-  addToolResult: () => { },
+  addToolResult: () => {},
   model: Models.OpenAI,
-  setModel: () => { },
+  setModel: () => {},
   chain: 'solana',
-  setChain: () => { },
-  setChat: () => { },
-  resetChat: () => { },
+  setChain: () => {},
+  setChat: () => {},
+  resetChat: () => {},
   chatId: '',
   inputDisabledMessage: '',
   canStartNewChat: true,
@@ -366,30 +366,30 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
     const chatCreationPromise =
       messages.length === 0
         ? (async () => {
-          try {
-            const response = await fetch(`/api/chats/${chatId}`, {
-              method: 'POST',
-              headers: {
-                Authorization: `Bearer ${await getAccessToken()}`,
-              },
-              body: JSON.stringify({
-                messages: [userMessage],
-                chain,
-              }),
-            });
+            try {
+              const response = await fetch(`/api/chats/${chatId}`, {
+                method: 'POST',
+                headers: {
+                  Authorization: `Bearer ${await getAccessToken()}`,
+                },
+                body: JSON.stringify({
+                  messages: [userMessage],
+                  chain,
+                }),
+              });
 
-            if (response.ok) {
-              mutate();
-            } else if (response.status === 409) {
-              console.log('Chat already exists, refreshing list');
-              mutate();
-            } else {
-              console.error('Error creating new chat:', response.status, response.statusText);
+              if (response.ok) {
+                mutate();
+              } else if (response.status === 409) {
+                console.log('Chat already exists, refreshing list');
+                mutate();
+              } else {
+                console.error('Error creating new chat:', response.status, response.statusText);
+              }
+            } catch (error) {
+              console.error('Error creating new chat:', error);
             }
-          } catch (error) {
-            console.error('Error creating new chat:', error);
-          }
-        })()
+          })()
         : Promise.resolve();
 
     const aiResponsePromise = (async () =>

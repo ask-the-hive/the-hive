@@ -1,6 +1,10 @@
-import { normalizeApy } from './apy-utils';
-
 const JUPITER_LEND_POOLS_URL = 'https://api.solana.fluid.io/v1/lending/tokens';
+const CACHE_TTL_MS = 2 * 60 * 1000;
+const MAX_STALE_MS = 60 * 60 * 1000;
+
+let cachedPools: JupiterPool[] | null = null;
+let cachedAt = 0;
+let inFlight: Promise<JupiterPool[]> | null = null;
 
 export type JupiterPool = {
   symbol: string;
@@ -45,11 +49,16 @@ const STABLES = new Set([
   'EUROE',
 ]);
 
-export async function getJupiterPools(): Promise<JupiterPool[]> {
+type Options = {
+  forceRefresh?: boolean;
+};
+
+async function fetchAndCache(): Promise<JupiterPool[]> {
   const res = await fetch(JUPITER_LEND_POOLS_URL, {
     headers: {
       'Content-Type': 'application/json',
     },
+    cache: 'no-store',
   });
 
   if (!res.ok) {
@@ -58,19 +67,30 @@ export async function getJupiterPools(): Promise<JupiterPool[]> {
   }
 
   const poolsJson = (await res.json()) as JupiterPoolResponse;
-  if (!Array.isArray(poolsJson) || poolsJson.length === 0) return [];
+  if (!Array.isArray(poolsJson) || poolsJson.length === 0) {
+    cachedPools = [];
+    cachedAt = Date.now();
+    return [];
+  }
 
   const pools: JupiterPool[] = [];
 
   for (const t of poolsJson) {
     const assetSymbol = (t.asset?.symbol || '').toUpperCase();
-    if (!STABLES.has(assetSymbol)) continue;
+    if (!STABLES.has(assetSymbol)) {
+      continue;
+    }
     const mint = t.assetAddress || t.asset?.address;
-    if (!mint) continue;
+    if (!mint) {
+      continue;
+    }
 
     const apyRaw = Number(t.totalRate ?? t.supplyRate);
-    const apy = normalizeApy(apyRaw);
-    if (apy <= 0) continue;
+    if (!isFinite(apyRaw) || apyRaw <= 0) {
+      continue;
+    }
+
+    const apy = apyRaw > 1 ? apyRaw / 100 : apyRaw;
 
     const decimals = t.asset?.decimals ?? t.decimals ?? 6;
     const totalAssets = Number(t.totalAssets || 0);
@@ -106,5 +126,44 @@ export async function getJupiterPools(): Promise<JupiterPool[]> {
     });
   }
 
+  cachedPools = pools;
+  cachedAt = Date.now();
   return pools;
+}
+
+async function refreshCache(forceRefresh = false) {
+  if (inFlight && !forceRefresh) return inFlight;
+
+  inFlight = fetchAndCache()
+    .catch((error) => {
+      console.error('Failed to refresh Jupiter pools cache:', error);
+      throw error;
+    })
+    .finally(() => {
+      inFlight = null;
+    });
+
+  return inFlight;
+}
+
+/**
+ * Fetches Jupiter lend pools and caches stablecoin entries for faster repeated access.
+ * Uses stale-while-revalidate semantics to avoid blocking users on upstream latency.
+ */
+export async function getJupiterPools(options: Options = {}): Promise<JupiterPool[]> {
+  const now = Date.now();
+  const hasCache = Boolean(cachedPools);
+  const isFresh = hasCache && now - cachedAt < CACHE_TTL_MS;
+  const isUsable = hasCache && now - cachedAt < MAX_STALE_MS;
+
+  if (!options.forceRefresh && isFresh) return cachedPools as JupiterPool[];
+
+  if (options.forceRefresh || !isUsable) {
+    return refreshCache(options.forceRefresh);
+  }
+
+  refreshCache().catch((error) =>
+    console.error('Background Jupiter pools refresh failed:', error),
+  );
+  return cachedPools as JupiterPool[];
 }
