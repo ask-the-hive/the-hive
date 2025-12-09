@@ -8,8 +8,10 @@ import { Button } from '@/components/ui';
 import { cn } from '@/lib/utils';
 import LogInButton from '@/app/(app)/_components/log-in-button';
 import TokenInput from './token-input';
+import { useChain } from '@/app/_contexts/chain-context';
 import { useSendTransaction, useTokenBalance, useTokenDataByAddress } from '@/hooks';
 import { getSwapObj, getQuote } from '@/services/jupiter';
+import { useSWRConfig } from 'swr';
 
 type QuoteResponse = any;
 import type { Token } from '@/db/types';
@@ -60,6 +62,8 @@ const Swap: React.FC<Props> = ({
   setSwapResult,
   eventName,
 }) => {
+  const { mutate } = useSWRConfig();
+  const { currentChain } = useChain();
   const [inputAmount, setInputAmount] = useState<string>(initialInputAmount || '');
   const [inputToken, setInputToken] = useState<Token | null>(initialInputToken);
 
@@ -127,6 +131,26 @@ const Swap: React.FC<Props> = ({
     wallet?.address || '',
   );
 
+  const refreshBalances = useCallback(
+    async (tokenIds: Array<string | null | undefined>) => {
+      if (!wallet?.address) return;
+
+      const keys = tokenIds
+        .filter((id): id is string => !!id)
+        .flatMap((id) => [
+          // Solana balance hook key
+          `token-balance-${id}-${wallet.address}`,
+          // Generic token hook key (includes chain)
+          `token-balance-${currentChain}-${id}-${wallet.address}`,
+        ]);
+
+      if (!keys.length) return;
+
+      await Promise.all(keys.map((key) => mutate(key, undefined, { revalidate: true })));
+    },
+    [wallet?.address, currentChain, mutate],
+  );
+
   const onChangeInputOutput = () => {
     const tempInputToken = inputToken;
     const tempInputAmount = inputAmount;
@@ -173,6 +197,9 @@ const Swap: React.FC<Props> = ({
         inputToken: inputToken?.symbol,
         outputToken: outputToken?.symbol,
       });
+
+      // Immediately refresh cached balances so lending/staking flows unlock without manual reload
+      void refreshBalances([inputToken?.id, outputToken?.id]);
 
       onSuccess?.(txHash);
     } catch (error) {
