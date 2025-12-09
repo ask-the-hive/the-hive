@@ -61,6 +61,7 @@ const FollowUpSuggestions: React.FC = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const requestTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastFetchedKeyRef = useRef<string | null>(null);
 
   const generateSuggestions = useCallback(async () => {
     if (isResponseLoading || isLoading || !messages.length) return;
@@ -71,9 +72,13 @@ const FollowUpSuggestions: React.FC = () => {
 
     if (hasIncompleteTools) return;
 
-    if (requestTimeoutRef.current) {
-      clearTimeout(requestTimeoutRef.current);
+    // Only fetch once per latest message set to avoid duplicate requests
+    const lastMessage = messages[messages.length - 1];
+    const latestKey = lastMessage ? `${lastMessage.id}-${lastMessage.role}` : null;
+    if (latestKey && lastFetchedKeyRef.current === latestKey) {
+      return;
     }
+    lastFetchedKeyRef.current = latestKey;
 
     setIsGenerating(true);
     try {
@@ -90,13 +95,6 @@ const FollowUpSuggestions: React.FC = () => {
 
   useEffect(() => {
     generateSuggestions();
-
-    const timeoutId = requestTimeoutRef.current;
-    return () => {
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-      }
-    };
   }, [generateSuggestions]);
 
   if (isLoading) return null;

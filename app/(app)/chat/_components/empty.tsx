@@ -1,10 +1,8 @@
 'use client';
 
 import React from 'react';
-
 import ChatInput from './input';
 import StarterButtons from './starter-buttons';
-
 import Logo from '@/components/ui/logo';
 
 const EmptyChat: React.FC = () => {

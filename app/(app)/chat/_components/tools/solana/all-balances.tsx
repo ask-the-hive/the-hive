@@ -12,8 +12,6 @@ interface Props {
 }
 
 const AllBalances: React.FC<Props> = ({ tool, prevToolAgent }) => {
-    
-
     return (
         <ToolCard 
             tool={tool}
@@ -22,9 +20,9 @@ const AllBalances: React.FC<Props> = ({ tool, prevToolAgent }) => {
                 heading: (result: AllBalancesResultType) => result.body 
                     ? `Fetched All Balances`
                     : `Failed to fetch balances`,
-                body: (result: AllBalancesResultType) => result.body 
-                    ? (
-                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                body: (result: AllBalancesResultType) =>
+                    result.body ? (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3">
                             {result.body.balances.map((balance) => (
                                 <TokenBalance
                                     key={balance.token}
@@ -35,8 +33,9 @@ const AllBalances: React.FC<Props> = ({ tool, prevToolAgent }) => {
                                 />
                             ))}
                         </div>
+                    ) : (
+                        "No balance found"
                     )
-                    :  "No balance found"
             }}
             prevToolAgent={prevToolAgent}
         />

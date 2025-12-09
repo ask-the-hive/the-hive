@@ -20,7 +20,7 @@ const PROMPT_POOL = [
 
 const ChatInput: React.FC = () => {
   const { user } = usePrivy();
-  const { input, setInput, onSubmit, inputDisabledMessage, isLoading } = useChat();
+  const { input, setInput, onSubmit, inputDisabledMessage, isLoading, messages } = useChat();
   const { onKeyDown } = useEnterSubmit({ onSubmit: onSubmit });
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const [rotatedPrompts, setRotatedPrompts] = useState(PROMPT_POOL);
@@ -41,6 +41,8 @@ const ChatInput: React.FC = () => {
   }, []);
 
   const tipPrompt = rotatedPrompts[0] || 'Ask the hive anything...';
+  const hasMessages = (messages || []).length > 0;
+  const placeholder = hasMessages ? 'Ask the hive anything...' : `Tip: ${tipPrompt}`;
 
   useEffect(() => {
     if (!isLoading && inputRef.current) {
@@ -68,7 +70,7 @@ const ChatInput: React.FC = () => {
               ref={inputRef}
               tabIndex={0}
               onKeyDown={onKeyDown}
-              placeholder={`Tip: ${tipPrompt}`}
+              placeholder={placeholder}
               className={cn(
                 'w-full max-h-40 resize-none bg-transparent px-5 pt-5 pb-5 pr-14 text-[17px] file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-neutral-600 dark:placeholder:text-neutral-400 disabled:cursor-not-allowed disabled:opacity-50',
                 'focus-visible:outline-none',

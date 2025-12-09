@@ -114,18 +114,15 @@ const Swap: React.FC<Props> = ({
 
   const [isQuoteLoading, setIsQuoteLoading] = useState<boolean>(false);
   const [quoteResponse, setQuoteResponse] = useState<QuoteResponse | null>(null);
-
   const [isSwapping, setIsSwapping] = useState<boolean>(false);
 
   const onErrorRef = useRef(onError);
   onErrorRef.current = onError;
   const setSwapResultRef = useRef(setSwapResult);
   setSwapResultRef.current = setSwapResult;
-
   const lastQuoteParamsRef = useRef<string | null>(null);
 
   const { sendTransaction, wallet } = useSendTransaction();
-
   const { balance: inputBalance, isLoading: inputBalanceLoading } = useTokenBalance(
     inputToken?.id || '',
     wallet?.address || '',
@@ -138,9 +135,7 @@ const Swap: React.FC<Props> = ({
       const keys = tokenIds
         .filter((id): id is string => !!id)
         .flatMap((id) => [
-          // Solana balance hook key
           `token-balance-${id}-${wallet.address}`,
-          // Generic token hook key (includes chain)
           `token-balance-${currentChain}-${id}-${wallet.address}`,
         ]);
 
@@ -198,7 +193,6 @@ const Swap: React.FC<Props> = ({
         outputToken: outputToken?.symbol,
       });
 
-      // Immediately refresh cached balances so lending/staking flows unlock without manual reload
       void refreshBalances([inputToken?.id, outputToken?.id]);
 
       onSuccess?.(txHash);
@@ -216,7 +210,6 @@ const Swap: React.FC<Props> = ({
     }
   };
 
-  // Extract stable primitive values for the quote effect
   const inputTokenId = inputToken?.id;
   const inputTokenDecimals = inputToken?.decimals;
   const inputTokenSymbol = inputToken?.symbol;
@@ -224,9 +217,7 @@ const Swap: React.FC<Props> = ({
   const outputTokenDecimals = outputToken?.decimals;
   const outputTokenSymbol = outputToken?.symbol;
 
-  // Quote fetching - only fetch when params actually change
   useEffect(() => {
-    // Early exit if no complete token data or no valid input amount
     if (
       !hasCompleteTokenData ||
       !inputAmount ||
@@ -242,10 +233,8 @@ const Swap: React.FC<Props> = ({
       return;
     }
 
-    // Create a unique key for the current quote params
     const quoteParamsKey = `${inputTokenId}-${outputTokenId}-${inputAmount}`;
 
-    // Skip if we've already fetched this exact quote
     if (lastQuoteParamsRef.current === quoteParamsKey) {
       return;
     }
@@ -259,14 +248,12 @@ const Swap: React.FC<Props> = ({
           .mul(new Decimal(10).pow(inputTokenDecimals))
           .toFixed(0, Decimal.ROUND_DOWN);
 
-        // Check if the output token address looks valid (should be 32-44 characters)
         if (!outputTokenId || outputTokenId.length < 32) {
           throw new Error(`Invalid output token address: ${outputTokenId}`);
         }
 
         const quote = await getQuote(inputTokenId, outputTokenId, inputAmountWei);
 
-        // Mark this quote as fetched
         lastQuoteParamsRef.current = quoteParamsKey;
 
         setQuoteResponse(quote);
@@ -277,7 +264,6 @@ const Swap: React.FC<Props> = ({
 
         handleOutputAmountChange(outputAmountStr);
 
-        // Call setSwapResult if provided
         if (setSwapResultRef.current && inputTokenSymbol && outputTokenSymbol) {
           setSwapResultRef.current({
             outputAmount: outputAmountStr,
