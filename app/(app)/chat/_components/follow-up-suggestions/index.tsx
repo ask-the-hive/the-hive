@@ -33,7 +33,6 @@ const generateFollowUpSuggestions = async (messages: Message[], model: Models) =
       },
     });
 
-    // Check if response is ok and has content
     if (!response.ok) {
       console.warn('Failed to fetch suggestions:', response.status, response.statusText);
       return [];
@@ -66,7 +65,6 @@ const FollowUpSuggestions: React.FC = () => {
   const generateSuggestions = useCallback(async () => {
     if (isResponseLoading || isLoading || !messages.length) return;
 
-    // Check if any messages have incomplete tool invocations
     const hasIncompleteTools = messages.some((message) =>
       message.toolInvocations?.some((tool) => tool.state !== 'result'),
     );
@@ -93,9 +91,10 @@ const FollowUpSuggestions: React.FC = () => {
   useEffect(() => {
     generateSuggestions();
 
+    const timeoutId = requestTimeoutRef.current;
     return () => {
-      if (requestTimeoutRef.current) {
-        clearTimeout(requestTimeoutRef.current);
+      if (timeoutId) {
+        clearTimeout(timeoutId);
       }
     };
   }, [generateSuggestions]);
@@ -103,12 +102,10 @@ const FollowUpSuggestions: React.FC = () => {
   if (isLoading) return null;
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mt-4 mb-2 px-4">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mb-2 px-4">
       {isGenerating ? (
         <>
-          {/* Mobile: Show only 1 skeleton */}
           <Skeleton className="w-full h-[22px] md:hidden" />
-          {/* Desktop: Show all 3 skeletons */}
           {Array.from({ length: 3 }).map((_, index) => (
             <Skeleton key={index} className="w-full h-[32px] hidden md:block rounded-full" />
           ))}

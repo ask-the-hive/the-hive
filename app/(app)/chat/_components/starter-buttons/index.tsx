@@ -94,13 +94,9 @@ const StarterButtons = () => {
   const buttons = chain === 'solana' ? solanaButtons : chain === 'bsc' ? bscButtons : baseButtons;
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 w-full mt-4">
-      {buttons.map((button, index) => (
-        <StarterButton
-          key={button.title}
-          {...button}
-          className={index === 2 ? 'md:col-span-2 md:w-[calc(50%-0.25rem)] md:mx-auto' : ''}
-        />
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 md:gap-3 w-full mt-3 md:mt-4">
+      {buttons.map((button) => (
+        <StarterButton key={button.title} {...button} className="w-full max-w-[320px] mx-auto" />
       ))}
     </div>
   );
