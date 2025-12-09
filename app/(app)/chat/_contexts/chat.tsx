@@ -277,28 +277,40 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
     }
   }, [chatId, getAccessToken, setMessages, setChain]);
 
+  const persistTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   useEffect(() => {
-    const updateChat = async () => {
-      if (messages.length > 0) {
-        const response = await fetch(`/api/chats/${chatId}`, {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${await getAccessToken()}`,
-          },
-          body: JSON.stringify({
-            messages,
-            chain,
-          }),
-        });
-        const data = await parseJsonSafely(response);
-        if (typeof data === 'object') {
-          mutate();
-        }
+    if (persistTimerRef.current) {
+      clearTimeout(persistTimerRef.current);
+    }
+
+    persistTimerRef.current = setTimeout(async () => {
+      if (isResettingRef.current) return;
+      if (messages.length === 0) return;
+      if (status !== 'ready') return;
+
+      const response = await fetch(`/api/chats/${chatId}`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${await getAccessToken()}`,
+        },
+        body: JSON.stringify({
+          messages,
+          chain,
+        }),
+      });
+      const data = await parseJsonSafely(response);
+      if (typeof data === 'object') {
+        mutate();
+      }
+    }, 500); // debounce persistence to reduce repeated calls
+
+    return () => {
+      if (persistTimerRef.current) {
+        clearTimeout(persistTimerRef.current);
       }
     };
-
-    updateChat();
-  }, [messages, chatId, chain, getAccessToken, mutate]);
+  }, [messages, chatId, chain, getAccessToken, mutate, status]);
 
   const onSubmit = async () => {
     if (!input.trim()) return;

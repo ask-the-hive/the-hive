@@ -1,16 +1,14 @@
 'use client';
 
 import React from 'react';
-
 import ChatInput from './input';
 import StarterButtons from './starter-buttons';
-
 import Logo from '@/components/ui/logo';
 
 const EmptyChat: React.FC = () => {
   return (
     <div className="flex flex-col items-center justify-start md:justify-center w-full h-full px-4 pt-0 relative overflow-y-auto">
-      <div className="flex flex-col items-center justify-center w-full max-w-2xl gap-4 md:gap-8 relative z-10 pb-8">
+      <div className="flex flex-col items-center justify-center w-full max-w-2xl gap-4 md:gap-6 relative z-10 pb-8">
         <div className="flex flex-col gap-4 items-center justify-center">
           <Logo className="w-20 h-20" />
           <div className="flex flex-col gap-1">
@@ -23,7 +21,6 @@ const EmptyChat: React.FC = () => {
           </div>
         </div>
         <ChatInput />
-
         <StarterButtons />
       </div>
     </div>

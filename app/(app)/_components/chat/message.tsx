@@ -148,11 +148,46 @@ const Message: React.FC<Props> = ({
             ))}
           </div>
         )}
-        {message.content && <MessageMarkdown content={message.content} compressed={compressed} />}
+        {getDisplayContent(message, previousMessage) && (
+          <MessageMarkdown
+            content={getDisplayContent(message, previousMessage) as string}
+            compressed={compressed}
+          />
+        )}
       </div>
     </div>
   );
 };
+
+// Normalize assistant content when balance cards are shown
+function getDisplayContent(message: MessageType, previousMessage?: MessageType): string | null {
+  if (message.role !== 'assistant') return message.content || null;
+
+  const lower = (message.content || '').toLowerCase();
+  const mentionsBalances =
+    lower.includes('wallet balances') ||
+    lower.includes('your wallet balances') ||
+    lower.includes('your token balances') ||
+    lower.includes('here are your') ||
+    lower.includes('balance:');
+
+  const hasAllBalances = message.toolInvocations?.some((tool) =>
+    tool.toolName.includes('all-balances'),
+  );
+  const prevHadAllBalances = previousMessage?.toolInvocations?.some((tool) =>
+    tool.toolName.includes('all-balances'),
+  );
+
+  if (hasAllBalances || prevHadAllBalances) {
+    return null;
+  }
+
+  if (mentionsBalances) {
+    return 'Balances shown above. Pick a token to swap, lend, stake, or explore next.';
+  }
+
+  return message.content || null;
+}
 
 const MessageMarkdown = React.memo(
   ({ content, compressed }: { content: string; compressed?: boolean }) => {

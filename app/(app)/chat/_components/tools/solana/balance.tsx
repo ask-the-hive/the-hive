@@ -88,7 +88,7 @@ const TokenFundingOptions: React.FC<TokenFundingOptionsProps> = ({
     if (finalTokenAddress) {
       setIsOpeningSwap(true);
       try {
-        await openSwapModal('buy', finalTokenAddress, () => {
+        openSwapModal('buy', finalTokenAddress, () => {
           onComplete?.('swap');
         });
       } finally {
@@ -255,7 +255,6 @@ const GetBalance: React.FC<Props> = ({ tool, prevToolAgent }) => {
       }}
       result={{
         heading: (result: BalanceResultType) => {
-          console.log('result in balance heading', result);
           if (result.body?.token) {
             if (isInStakingOrLendingFlow && result.body?.balance > 0.00001) {
               return `${result.body.balance} ${result.body.token} balance`;
@@ -295,17 +294,13 @@ const GetBalance: React.FC<Props> = ({ tool, prevToolAgent }) => {
           }
 
           return (
-            <div className="flex justify-center w-full">
-              <div className="w-full md:w-[70%]">
-                <div className="flex flex-col gap-4">
-                  <TokenBalance
-                    token={result.body.token}
-                    balance={result.body.balance}
-                    logoURI={result.body.logoURI}
-                    name={result.body.name}
-                  />
-                </div>
-              </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 w-full">
+              <TokenBalance
+                token={result.body.token}
+                balance={result.body.balance}
+                logoURI={result.body.logoURI}
+                name={result.body.name}
+              />
             </div>
           );
         },

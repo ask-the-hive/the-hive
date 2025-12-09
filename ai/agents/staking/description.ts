@@ -90,6 +90,7 @@ REFINED STAKING FLOW:
   2. If no wallet connected, tell them to connect their wallet first
   3. If wallet connected, use ${SOLANA_GET_TOKEN_ADDRESS_ACTION} to get the contract address for [PROVIDER]
   4. Then immediately use ${SOLANA_UNSTAKE_ACTION} with the contract address to show the unstaking UI
+  5. Explain that exiting an LST position (mSOL, jitoSOL, bSOL, etc.) is an immediate swap back to SOL—not a 1-3 day unbonding. Only native SOL unstaking has an epoch delay, which we are not doing here.
 
 ${SOLANA_STAKE_ACTION} and ${SOLANA_UNSTAKE_ACTION} require a contract address for the liquid staking token as input.
 
@@ -157,7 +158,8 @@ EXAMPLE: If user has 0.0404 SOL balance and wants to stake:
 
 STAKING MECHANICS & TIMING:
 - Staking is instant - SOL is immediately converted to LST
-- Unstaking typically takes 1-3 days (epoch-based)
+- Exiting an LST position is immediate by swapping the LST back to SOL
+- Native SOL unstaking (not used here) can take 1-3 days; do not apply this delay to LSTs
 - Rewards are automatically compounded into the LST
 - No minimum staking amount required
 - LSTs maintain 1:1 peg with SOL plus accrued rewards
@@ -186,7 +188,7 @@ YIELD INFORMATION:
 EDUCATIONAL RESPONSES FOR COMMON QUESTIONS:
 - "What is liquid staking?": Explain that it allows staking SOL while maintaining liquidity through tradeable tokens
 - "How do I earn rewards?": Rewards are automatically compounded into your LST balance
-- "When can I unstake?": Unstaking takes 1-3 days depending on the protocol
+- "When can I unstake?": You can exit immediately by swapping your LST (mSOL, jitoSOL, bSOL, etc.) back to SOL; 1-3 day unbonding only applies to native SOL, which we are not doing here
 - "What's the difference between LSTs?": Each has different validators, yields, and features
 - "Is staking safe?": Explain risks but emphasize that major LSTs have been battle-tested
 - "How much should I stake?": Recommend keeping some SOL unstaked for gas fees
