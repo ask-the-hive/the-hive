@@ -14,7 +14,7 @@ import { AreaChart, Area, YAxis } from 'recharts';
 import { capitalizeWords } from '@/lib/string-utils';
 import { useChat } from '../_contexts/chat';
 import { cn } from '@/lib/utils';
-import { ArrowUp } from 'lucide-react';
+import LockedStakingPreview from './locked-staking-preview';
 
 type BestPool = {
   symbol: string;
@@ -55,11 +55,34 @@ async function fetchBestLendingPool(): Promise<BestPool | null> {
 }
 
 const EmptyChat: React.FC = () => {
-  const { currentChain } = useChain();
+  const { currentChain, walletAddresses } = useChain();
   const { sendMessage, isLoading: chatIsLoading, isResponseLoading } = useChat();
 
   const [staking, setStaking] = React.useState<BestPool | null>(null);
   const [lending, setLending] = React.useState<BestPool | null>(null);
+  const [showLockedPreview, setShowLockedPreview] = React.useState(false);
+  const [previewPool, setPreviewPool] = React.useState<BestPool | null>(null);
+  const [walletJustConnected, setWalletJustConnected] = React.useState(false);
+
+  // Check if wallet is connected
+  const isWalletConnected = !!walletAddresses.solana;
+
+  // Detect wallet connection
+  React.useEffect(() => {
+    if (isWalletConnected && showLockedPreview) {
+      setWalletJustConnected(true);
+      // Hide preview after unlock animation
+      setTimeout(() => {
+        setShowLockedPreview(false);
+        setPreviewPool(null);
+        setWalletJustConnected(false);
+        // Trigger the actual staking flow
+        if (previewPool) {
+          sendMessage(`I want to stake SOL for ${previewPool.symbol}`);
+        }
+      }, 1500);
+    }
+  }, [isWalletConnected, showLockedPreview, previewPool, sendMessage]);
 
   React.useEffect(() => {
     if (currentChain !== 'solana') return;
@@ -185,8 +208,13 @@ const EmptyChat: React.FC = () => {
               onClick={
                 staking && !chatIsLoading && !isResponseLoading
                   ? () => {
-                      const symbol = staking.symbol;
-                      sendMessage(`I want to stake SOL for ${symbol}`);
+                      if (!isWalletConnected) {
+                        setPreviewPool(staking);
+                        setShowLockedPreview(true);
+                      } else {
+                        const symbol = staking.symbol;
+                        sendMessage(`I want to stake SOL for ${symbol}`);
+                      }
                     }
                   : undefined
               }
@@ -218,6 +246,18 @@ const EmptyChat: React.FC = () => {
               }
             />
           </div>
+        )}
+
+        {/* Locked Preview Modal */}
+        {showLockedPreview && previewPool && (
+          <LockedStakingPreview
+            pool={previewPool}
+            isUnlocking={walletJustConnected}
+            onClose={() => {
+              setShowLockedPreview(false);
+              setPreviewPool(null);
+            }}
+          />
         )}
       </div>
     </div>
@@ -345,19 +385,11 @@ const HeroApyCard: React.FC<{
             </div>
             <span
               className={cn(
-                'text-lg font-semibold text-emerald-400 transition-all duration-300 inline-flex items-center gap-1',
+                'text-lg font-semibold text-emerald-400 transition-all duration-300',
                 isComplete && 'apy-complete-flash',
               )}
             >
               {animatedApy.toFixed(2)}% APY
-              {isComplete && (
-                <ArrowUp
-                  className="w-3 h-3 text-emerald-400 animate-in fade-in-0 zoom-in-50 duration-300"
-                  style={{
-                    animation: 'sparkle-burst 0.6s ease-out',
-                  }}
-                />
-              )}
             </span>
           </div>
           <div className="flex items-center justify-between text-xs text-neutral-500 mt-1">
