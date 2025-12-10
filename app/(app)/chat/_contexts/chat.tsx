@@ -348,47 +348,52 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
     const userInput = input;
     setInput('');
 
-    if (messages.length === 0) {
-      try {
-        const response = await fetch(`/api/chats/${chatId}`, {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${await getAccessToken()}`,
-          },
-          body: JSON.stringify({
-            messages: [
-              {
-                role: 'user',
-                content: userInput,
-              },
-            ],
-            chain,
-          }),
-        });
-
-        if (response.ok) {
-          mutate();
-        }
-      } catch (error) {
-        console.error('Error creating new chat:', error);
-        Sentry.captureException(error, {
-          tags: {
-            component: 'ChatProvider',
-            action: 'createNewChat',
-          },
-        });
-      }
-    }
-
     setIsResponseLoading(true);
     updateChatThreadState(chatId, {
       isLoading: true,
       isResponseLoading: true,
     });
-    await append({
+
+    const appendPromise = append({
       role: 'user',
       content: userInput,
     });
+
+    if (messages.length === 0) {
+      (async () => {
+        try {
+          const response = await fetch(`/api/chats/${chatId}`, {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${await getAccessToken()}`,
+            },
+            body: JSON.stringify({
+              messages: [
+                {
+                  role: 'user',
+                  content: userInput,
+                },
+              ],
+              chain,
+            }),
+          });
+
+          if (response.ok) {
+            mutate();
+          }
+        } catch (error) {
+          console.error('Error creating new chat:', error);
+          Sentry.captureException(error, {
+            tags: {
+              component: 'ChatProvider',
+              action: 'createNewChat',
+            },
+          });
+        }
+      })();
+    }
+
+    await appendPromise;
   };
 
   const sendMessage = async (message: string) => {
