@@ -33,29 +33,20 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onClose }) =>
       title: 'Find Your Yield',
       description: 'Discover the best staking and lending opportunities with real-time APY data',
       icon: Search,
-      iconColor: 'text-blue-500',
-      borderColor: 'border-blue-500',
     },
     {
       number: 2,
       title: 'Connect Wallet',
       description: 'Securely connect your Solana wallet to start earning',
       icon: Wallet,
-      iconColor: 'text-purple-500',
-      borderColor: 'border-purple-500',
     },
     {
       number: 3,
       title: 'Earn Yield',
       description: 'Stake or lend your assets and watch your rewards grow',
       icon: TrendingUp,
-      iconColor: 'text-green-500',
-      borderColor: 'border-green-500',
     },
   ];
-
-  const currentStepData = steps[currentStep - 1];
-  const Icon = currentStepData.icon;
 
   const handleNext = () => {
     if (currentStep < 3) {
@@ -68,102 +59,109 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onClose }) =>
   return (
     <Dialog open={isOpen} onOpenChange={() => {}}>
       <DialogContent
-        className="max-w-2xl [&>button]:hidden bg-gradient-to-br from-white via-white to-neutral-50 dark:from-neutral-800 dark:via-neutral-800 dark:to-neutral-900 shadow-[inset_0_2px_8px_rgba(0,0,0,0.05),0_20px_60px_rgba(0,0,0,0.3)] dark:shadow-[inset_0_2px_8px_rgba(0,0,0,0.2),0_20px_60px_rgba(0,0,0,0.5)]"
+        className="max-w-5xl [&>button]:hidden bg-black border border-neutral-800 p-0"
+        style={{ fontFamily: "var(--font-space-mono), 'Consolas', 'Monaco', monospace" }}
         onInteractOutside={(e) => e.preventDefault()}
       >
-        <DialogHeader className="text-center">
-          <DialogTitle className="text-3xl font-bold mb-2">
-            Welcome to <span className="text-brand-600">The Hive</span>
-          </DialogTitle>
-          <DialogDescription className="text-base">
-            Your journey to earning yield starts here
-          </DialogDescription>
-        </DialogHeader>
-
-        {/* Progress Indicator */}
-        <div className="flex flex-col items-center gap-4 py-4">
-          <div className="text-sm font-medium text-neutral-600 dark:text-neutral-400">
-            Step {currentStep} of 3
+        <div className="flex flex-col h-auto min-h-[280px]">
+          {/* Header */}
+          <div className="px-6 pt-6 pb-4 border-b border-neutral-800">
+            <DialogHeader className="mb-0">
+              <DialogTitle className="text-xl font-bold text-white mb-1">
+                Welcome to <span className="text-[#FFD700]">The Hive</span>
+              </DialogTitle>
+              <DialogDescription className="text-sm text-neutral-400">
+                Step {currentStep} of 3
+              </DialogDescription>
+            </DialogHeader>
           </div>
-          <div className="flex items-center gap-3">
-            {steps.map((step, index) => {
-              const isCompleted = step.number < currentStep;
-              const isCurrent = step.number === currentStep;
-              return (
-                <React.Fragment key={step.number}>
-                  <button
-                    onClick={() => setCurrentStep(step.number)}
-                    className={cn(
-                      'w-12 h-12 rounded-full flex items-center justify-center border-2 transition-all duration-300',
-                      isCompleted
-                        ? 'bg-[#FFD700] border-[#FFD700] text-neutral-900 shadow-lg shadow-[#FFD700]/30'
-                        : isCurrent
-                          ? 'bg-neutral-100 dark:bg-neutral-700 border-neutral-300 dark:border-neutral-600 text-neutral-700 dark:text-neutral-300'
-                          : 'bg-neutral-100 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700 text-neutral-400',
-                    )}
-                    disabled={step.number > currentStep}
-                  >
-                    {isCompleted ? (
-                      <svg
-                        className="w-6 h-6"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={3}
-                          d="M5 13l4 4L19 7"
-                        />
-                      </svg>
-                    ) : (
-                      <step.icon className={cn('w-6 h-6', isCurrent && step.iconColor)} />
-                    )}
-                  </button>
-                  {index < steps.length - 1 && (
+
+          {/* Horizontal Steps Layout */}
+          <div className="flex-1 px-6 py-6">
+            <div className="flex items-start gap-6">
+              {steps.map((step, index) => {
+                const isCompleted = step.number < currentStep;
+                const isCurrent = step.number === currentStep;
+                const isUpcoming = step.number > currentStep;
+                const Icon = step.icon;
+
+                return (
+                  <React.Fragment key={step.number}>
                     <div
                       className={cn(
-                        'w-8 h-0.5 transition-all duration-300',
-                        isCompleted
-                          ? 'bg-[#FFD700]'
-                          : 'bg-neutral-200 dark:bg-neutral-700',
+                        'flex-1 flex flex-col items-start transition-all duration-300',
+                        isCurrent ? 'opacity-100' : isUpcoming ? 'opacity-40' : 'opacity-60',
                       )}
-                    />
-                  )}
-                </React.Fragment>
-              );
-            })}
-          </div>
-        </div>
+                    >
+                      {/* Step Icon & Progress Indicator */}
+                      <div className="flex items-center gap-3 mb-4 w-full">
+                        <div
+                          className={cn(
+                            'flex-shrink-0 w-10 h-10 rounded border-2 flex items-center justify-center transition-all duration-300',
+                            isCompleted
+                              ? 'bg-[#FFD700] border-[#FFD700] text-black'
+                              : isCurrent
+                                ? 'bg-transparent border-[#FFD700] text-[#FFD700]'
+                                : 'bg-transparent border-neutral-700 text-neutral-500',
+                          )}
+                        >
+                          {isCompleted ? (
+                            <svg
+                              className="w-5 h-5"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={3}
+                                d="M5 13l4 4L19 7"
+                              />
+                            </svg>
+                          ) : (
+                            <Icon className="w-5 h-5" />
+                          )}
+                        </div>
+                        {/* Progress Line */}
+                        {index < steps.length - 1 && (
+                          <div
+                            className={cn(
+                              'flex-1 h-0.5 transition-all duration-300',
+                              isCompleted ? 'bg-[#FFD700]' : 'bg-neutral-800',
+                            )}
+                          />
+                        )}
+                      </div>
 
-        <div className="space-y-8 py-6">
-          {/* Current Step Content */}
-          <div className="flex flex-col items-center text-center space-y-6 min-h-[300px] justify-center">
-            <div
-              className={cn(
-                'w-24 h-24 rounded-full bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center border-4 transition-all duration-300',
-                currentStepData.borderColor,
-              )}
-            >
-              <Icon className={cn('w-12 h-12', currentStepData.iconColor)} />
+                      {/* Step Content */}
+                      <div className="w-full">
+                        <h3
+                          className={cn(
+                            'text-base font-bold mb-2 transition-colors duration-300',
+                            isCurrent ? 'text-[#FFD700]' : isCompleted ? 'text-neutral-300' : 'text-neutral-500',
+                          )}
+                        >
+                          {step.title}
+                        </h3>
+                        <p className="text-xs text-neutral-400 leading-relaxed">
+                          {step.description}
+                        </p>
+                      </div>
+                    </div>
+                  </React.Fragment>
+                );
+              })}
             </div>
 
-            <div className="space-y-3">
-              <h3 className="text-3xl font-bold">{currentStepData.title}</h3>
-              <p className="text-lg text-neutral-600 dark:text-neutral-400 max-w-md mx-auto">
-                {currentStepData.description}
-              </p>
-            </div>
-
-            {/* Special Agent Message - Show on all steps */}
-            <div className="bg-brand-50 dark:bg-brand-950/20 border border-brand-200 dark:border-brand-800 rounded-lg p-4 flex items-start gap-3 max-w-md">
-              <MessageCircle className="w-5 h-5 text-brand-600 flex-shrink-0 mt-0.5" />
+            {/* Special Agent Message */}
+            <div className="mt-6 bg-neutral-900 border border-neutral-800 rounded px-4 py-3 flex items-start gap-3">
+              <MessageCircle className="w-4 h-4 text-[#FFD700] flex-shrink-0 mt-0.5" />
               <div>
-                <p className="text-sm font-medium text-brand-900 dark:text-brand-100 mb-1">
+                <p className="text-xs font-semibold text-neutral-200 mb-1">
                   Need help along the way?
                 </p>
-                <p className="text-sm text-brand-700 dark:text-brand-300">
+                <p className="text-xs text-neutral-400 leading-relaxed">
                   Ask our specialized Agents using the chat input. They can help you find the best
                   yields, connect your wallet, and guide you through every step.
                 </p>
@@ -171,21 +169,23 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onClose }) =>
             </div>
           </div>
 
-          {/* Navigation Button */}
-          <Button
-            onClick={handleNext}
-            className="w-full h-12 text-lg font-semibold bg-brand-600 hover:bg-brand-700 text-white transition-all duration-200"
-            size="lg"
-          >
-            {currentStep === 3 ? (
-              'Start Earning Now'
-            ) : (
-              <>
-                Next
-                <ChevronRight className="w-5 h-5 ml-2" />
-              </>
-            )}
-          </Button>
+          {/* Navigation Footer */}
+          <div className="px-6 py-4 border-t border-neutral-800">
+            <Button
+              onClick={handleNext}
+              className="w-full h-10 text-sm font-semibold bg-[#FFD700] hover:bg-[#FFED4E] text-black transition-all duration-200"
+              style={{ fontFamily: "var(--font-space-mono), 'Consolas', 'Monaco', monospace" }}
+            >
+              {currentStep === 3 ? (
+                'Start Earning Now'
+              ) : (
+                <>
+                  Next
+                  <ChevronRight className="w-4 h-4 ml-2" />
+                </>
+              )}
+            </Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
