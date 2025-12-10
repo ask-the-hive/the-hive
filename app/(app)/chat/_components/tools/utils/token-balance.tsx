@@ -17,20 +17,22 @@ interface Props {
 }
 
 const TokenBalance: React.FC<Props> = ({ balance, logoURI, symbol, token, name }) => {
-  const displaySymbol = symbol || token || 'Unknown';
-  const altText = `${displaySymbol || name || 'Unknown'} token logo`;
+  const rawSymbol = symbol || token || 'Unknown';
+  const formattedSymbol =
+    rawSymbol.length > 18 ? `${rawSymbol.slice(0, 6)}…${rawSymbol.slice(-4)}` : rawSymbol;
+  const altText = `${rawSymbol || name || 'Unknown'} token logo`;
   const [logoError, setLogoError] = useState(false);
 
   // Skip extra lookups when a logo is already provided and we don't need price data
   const shouldResolve = !logoURI;
-  const { data: tokenAddress } = useResolveAssetSymbolToAddress(shouldResolve ? displaySymbol : '');
+  const { data: tokenAddress } = useResolveAssetSymbolToAddress(shouldResolve ? rawSymbol : '');
   const { data: tokenData, isLoading: isTokenLoading } = useTokenDataByAddress(tokenAddress || '');
   const { data: price, isLoading: isPriceLoading } = usePrice(tokenData?.id || '');
 
   const resolvedLogoURI = logoURI || tokenData?.logoURI || (tokenData as any)?.logo_uri || '';
 
   return (
-    <Card className="flex items-center justify-between gap-3 p-3 md:p-4 w-full min-w-[210px] md:min-w-[240px]">
+    <Card className="flex items-center justify-between gap-3 p-3 md:p-4 w-full min-w-[210px] md:min-w-[240px] overflow-hidden">
       <div className="flex flex-row items-center gap-2 min-w-0">
         {resolvedLogoURI && !logoError ? (
           <Image
@@ -48,7 +50,7 @@ const TokenBalance: React.FC<Props> = ({ balance, logoURI, symbol, token, name }
         )}
 
         <span className="text-sm md:text-base font-semibold text-neutral-100 truncate">
-          {displaySymbol}
+          {formattedSymbol}
         </span>
       </div>
       <div className="flex flex-col items-end gap-1 min-w-0">
@@ -61,7 +63,9 @@ const TokenBalance: React.FC<Props> = ({ balance, logoURI, symbol, token, name }
                   minimumFractionDigits: balance === 0 ? 0 : 2,
                 })}
           </p>
-          <p className="text-xs md:text-sm text-muted-foreground">{displaySymbol}</p>
+          <p className="text-xs md:text-sm text-muted-foreground whitespace-nowrap">
+            {formattedSymbol}
+          </p>
         </div>
         {isTokenLoading || isPriceLoading ? (
           <Skeleton className="w-16 h-3" />
