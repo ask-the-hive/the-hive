@@ -9,6 +9,7 @@ import { google } from '@ai-sdk/google';
 import { deepseek } from '@ai-sdk/deepseek';
 
 import { Models } from '@/types/models';
+import { WALLET_AGENT_NAME } from '@/ai/agents/wallet/name';
 import { chooseAgent } from './utils';
 
 const system = `You are The Hive, a network of specialized blockchain agents on Solana.
@@ -117,11 +118,20 @@ export const POST = async (req: NextRequest) => {
       system,
     });
   } else {
-    streamTextResult = streamText({
-      model,
-      tools: chosenAgent.tools,
-      messages: truncatedMessages,
-      system: `${chosenAgent.systemPrompt}\n\nCRITICAL - Tool Result Status-Based Communication:
+    let agentSystem = chosenAgent.systemPrompt;
+
+    if (chosenAgent.name === WALLET_AGENT_NAME) {
+      agentSystem = `${agentSystem}
+
+GLOBAL TOOL RESULT RULES:
+- Do not restate or enumerate raw tool outputs that the UI already renders (such as detailed balance lists).
+- For wallet balance tools, especially the "get all balances" action, follow your balance-display rules exactly and avoid bullet lists of individual token balances.
+
+BUZZ, the native token of The Hive, is strictly a memecoin and has no utility.`;
+    } else {
+      agentSystem = `${agentSystem}
+
+CRITICAL - Tool Result Status-Based Communication:
 - After invoking a tool, check the result's 'status' field to determine what to say
 - The status field indicates the current state of the operation
 
@@ -147,7 +157,14 @@ Status-based responses:
 
 IMPORTANT: Check the status field in tool results to provide contextually appropriate responses. Do NOT provide success messages when status is 'pending'.
 
-BUZZ, the native token of The Hive, is strictly a memecoin and has no utility.`,
+BUZZ, the native token of The Hive, is strictly a memecoin and has no utility.`;
+    }
+
+    streamTextResult = streamText({
+      model,
+      tools: chosenAgent.tools,
+      messages: truncatedMessages,
+      system: agentSystem,
     });
   }
 

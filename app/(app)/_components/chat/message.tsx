@@ -9,8 +9,7 @@ import { cn } from '@/lib/utils';
 import { getAgentName } from '../../chat/_components/tools/tool-to-agent';
 import { pfpURL } from '@/lib/pfp';
 import { useChat } from '@/app/(app)/chat/_contexts/chat';
-import { SOLANA_LEND_ACTION, SOLANA_ALL_BALANCES_NAME, BASE_ALL_BALANCES_NAME } from '@/ai/action-names';
-import { BSC_ALL_BALANCES_NAME } from '@/ai/bsc/actions/wallet/all-balances/name';
+import { SOLANA_LEND_ACTION, SOLANA_ALL_BALANCES_NAME } from '@/ai/action-names';
 import type { Message as MessageType, ToolInvocation as ToolInvocationType } from 'ai';
 
 interface Props {
@@ -192,41 +191,25 @@ function getDisplayContent(
 ): string | null {
   if (message.role !== 'assistant') return message.content || null;
 
-  const lower = (message.content || '').toLowerCase();
-  const mentionsBalances =
-    lower.includes('wallet balances') ||
-    lower.includes('your wallet balances') ||
-    lower.includes('your token balances') ||
-    lower.includes('here are your') ||
-    lower.includes('balance:');
-
   const toolInvocations = getMessageToolInvocations(message);
-  const previousToolInvocations = getMessageToolInvocations(previousMessage);
 
-  const isAllBalancesToolName = (toolName: string) => {
-    return (
-      toolName === SOLANA_ALL_BALANCES_NAME ||
-      toolName === BASE_ALL_BALANCES_NAME ||
-      toolName === BSC_ALL_BALANCES_NAME ||
-      toolName.includes('all-balances') ||
-      toolName.includes('all_balances')
-    );
+  // If this assistant message is associated with the Solana Wallet Agent's
+  // "all balances" tool, force a short summary instead of whatever text
+  // the model generated. The detailed balances are already rendered as cards.
+  const isSolanaWalletAllBalances = (toolName: string) => {
+    const parts = toolName.split('-');
+    const toolAgent = parts[0];
+    const actionName = parts.slice(1).join('-');
+
+    return toolAgent === 'wallet' && actionName === SOLANA_ALL_BALANCES_NAME;
   };
 
-  const hasAllBalances = toolInvocations.some((tool) => isAllBalancesToolName(tool.toolName));
-  const prevHadAllBalances = previousToolInvocations.some((tool) =>
-    isAllBalancesToolName(tool.toolName),
+  const hasAllBalancesResult = toolInvocations.some(
+    (tool) => isSolanaWalletAllBalances(tool.toolName) && tool.state === 'result',
   );
 
-  const balancesSummary =
-    'Balances shown above. Pick a token to swap, lend, stake, or explore next.';
-
-  if (hasAllBalances || prevHadAllBalances) {
-    return balancesSummary;
-  }
-
-  if (mentionsBalances) {
-    return balancesSummary;
+  if (hasAllBalancesResult) {
+    return 'Balances shown above. Pick a token to swap, lend, stake, or explore next.';
   }
 
   const completedIds = completedLendToolCallIds ?? [];

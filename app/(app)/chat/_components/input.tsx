@@ -20,7 +20,12 @@ const PROMPT_POOL = [
 const ChatInput: React.FC = () => {
   const { user } = usePrivy();
   const { input, setInput, onSubmit, inputDisabledMessage, isLoading, messages } = useChat();
-  const { onKeyDown } = useEnterSubmit({ onSubmit: onSubmit });
+  const { onKeyDown } = useEnterSubmit({
+    onSubmit: () => {
+      if (isLoading || inputDisabledMessage !== '') return;
+      onSubmit();
+    },
+  });
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const [rotatedPrompts, setRotatedPrompts] = useState(PROMPT_POOL);
 
@@ -78,7 +83,7 @@ const ChatInput: React.FC = () => {
               onChange={(e) => {
                 setInput(e.target.value);
               }}
-              disabled={inputDisabledMessage !== '' || isLoading}
+              disabled={inputDisabledMessage !== ''}
               autoFocus
             />
           </OptionalTooltip>
