@@ -1,13 +1,9 @@
 'use client';
 
 import React, { createContext, useContext, ReactNode, useState, useMemo } from 'react';
-
 import { usePrivy } from '@privy-io/react-auth';
-
 import { Message, useChat as useAiChat } from 'ai/react';
-
 import { Models } from '@/types/models';
-
 import {
   SOLANA_GET_WALLET_ADDRESS_ACTION,
   SOLANA_TRADE_ACTION,
@@ -18,7 +14,6 @@ import {
   SOLANA_WITHDRAW_LIQUIDITY_NAME,
   SOLANA_LEND_ACTION,
 } from '@/ai/action-names';
-
 import type { TokenChatData } from '@/types';
 import posthog from 'posthog-js';
 
@@ -27,7 +22,6 @@ export enum ColorMode {
   DARK = 'dark',
 }
 
-// Define a type for tool results
 type ToolResult<T> = {
   message: string;
   body?: T;

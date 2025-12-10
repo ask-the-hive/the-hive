@@ -47,6 +47,7 @@ interface ChatContextType {
   onSubmit: () => Promise<void>;
   isLoading: boolean;
   sendMessage: (message: string) => void;
+   sendInternalMessage: (message: string) => void;
   addToolResult: <T>(toolCallId: string, result: ToolResult<T>) => void;
   isResponseLoading: boolean;
   model: Models;
@@ -57,7 +58,6 @@ interface ChatContextType {
   resetChat: () => void;
   chatId: string;
   inputDisabledMessage: string;
-  // New property to check if we can start a new chat
   canStartNewChat: boolean;
   completedLendToolCallIds: string[];
 }
@@ -69,6 +69,7 @@ const ChatContext = createContext<ChatContextType>({
   onSubmit: async () => {},
   isLoading: false,
   sendMessage: () => {},
+  sendInternalMessage: () => {},
   isResponseLoading: false,
   addToolResult: () => {},
   model: Models.OpenAI,
@@ -140,9 +141,7 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
   const [isResponseLoading, setIsResponseLoading] = useState(false);
   const [model, setModel] = useState<Models>(Models.OpenAI);
   const [chain, setChain] = useState<ChainType>('solana');
-
   const isResettingRef = useRef(false);
-
   const { mutate } = useUserChats();
 
   const setChat = async (chatId: string) => {
@@ -333,7 +332,7 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
       if (typeof data === 'object') {
         mutate();
       }
-    }, 500); // debounce persistence to reduce repeated calls
+    }, 500);
 
     return () => {
       if (persistTimerRef.current) {
@@ -396,7 +395,7 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
     await appendPromise;
   };
 
-  const sendMessage = async (message: string) => {
+  const sendMessageBase = async (message: string, annotations?: any[]) => {
     setIsResponseLoading(true);
 
     updateChatThreadState(chatId, {
@@ -408,6 +407,7 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
       id: generateId(),
       role: 'user',
       content: message,
+      ...(annotations ? { annotations } : {}),
     };
 
     const chatCreationPromise =
@@ -443,9 +443,18 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
       await append({
         role: 'user',
         content: message,
+        ...(annotations ? { annotations } : {}),
       }))();
 
     await Promise.all([chatCreationPromise, aiResponsePromise]);
+  };
+
+  const sendMessage = async (message: string) => {
+    await sendMessageBase(message);
+  };
+
+  const sendInternalMessage = async (message: string) => {
+    await sendMessageBase(message, [{ internal: true }]);
   };
 
   const inputDisabledMessage = useMemo(() => {
@@ -497,6 +506,7 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
         onSubmit,
         isLoading,
         sendMessage,
+        sendInternalMessage,
         isResponseLoading,
         addToolResult,
         model,

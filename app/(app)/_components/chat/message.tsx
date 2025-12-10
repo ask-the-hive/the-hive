@@ -36,7 +36,6 @@ const Message: React.FC<Props> = ({
 }) => {
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      // Preload the loader gif so it appears instantly when needed
       const img = new window.Image();
       img.src = '/hive-thinking.gif';
     }
@@ -57,11 +56,8 @@ const Message: React.FC<Props> = ({
   return (
     <div
       className={cn(
-        // base styles
         'flex w-full px-2 py-4 max-w-full last:border-b-0 h-fit',
-        // mobile styles
         'flex-col gap-2',
-        // desktop styles
         'md:flex-row md:gap-4 md:px-4',
         compressed && 'md:px-2 md:flex-col gap-0 md:gap-1',
         nextMessageSameRole && 'pb-0',
@@ -154,11 +150,9 @@ const Message: React.FC<Props> = ({
         )}
         {getDisplayContent(message, previousMessage, completedLendToolCallIds) && (
           <MessageMarkdown
-            content={getDisplayContent(
-              message,
-              previousMessage,
-              completedLendToolCallIds,
-            ) as string}
+            content={
+              getDisplayContent(message, previousMessage, completedLendToolCallIds) as string
+            }
             compressed={compressed}
           />
         )}
@@ -183,7 +177,6 @@ function getMessageToolInvocations(message?: MessageType): ToolInvocationType[] 
   return legacyToolInvocations ?? [];
 }
 
-// Normalize assistant content when balance cards are shown
 function getDisplayContent(
   message: MessageType,
   previousMessage?: MessageType,
@@ -193,9 +186,6 @@ function getDisplayContent(
 
   const toolInvocations = getMessageToolInvocations(message);
 
-  // If this assistant message is associated with the Solana Wallet Agent's
-  // "all balances" tool, force a short summary instead of whatever text
-  // the model generated. The detailed balances are already rendered as cards.
   const isSolanaWalletAllBalances = (toolName: string) => {
     const parts = toolName.split('-');
     const toolAgent = parts[0];
@@ -262,7 +252,6 @@ const MessageMarkdown = React.memo(
                 },
                 p({ children, node }) {
                   const hasBlockElements = node?.children?.some((child: any) => {
-                    // child can be Text | Element | other ElementContent variants; guard for elements
                     const tag = (child as any)?.tagName as string | undefined;
                     return (
                       (child as any)?.type === 'element' &&

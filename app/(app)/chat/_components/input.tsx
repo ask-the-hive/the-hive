@@ -7,7 +7,6 @@ import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider, Button } from
 import { useEnterSubmit } from '../_hooks';
 import { useChat } from '../_contexts/chat';
 import { cn } from '@/lib/utils';
-import { usePrivy } from '@privy-io/react-auth';
 
 const PROMPT_POOL = [
   'Help me stake SOL',
@@ -18,7 +17,6 @@ const PROMPT_POOL = [
 ];
 
 const ChatInput: React.FC = () => {
-  const { user } = usePrivy();
   const { input, setInput, onSubmit, inputDisabledMessage, isLoading, messages } = useChat();
   const { onKeyDown } = useEnterSubmit({
     onSubmit: () => {
@@ -75,10 +73,12 @@ const ChatInput: React.FC = () => {
               onKeyDown={onKeyDown}
               placeholder={placeholder}
               className={cn(
-                'w-full max-h-40 resize-none bg-transparent px-5 pt-5 pb-5 pr-14 text-[17px] file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-neutral-600 dark:placeholder:text-neutral-400 disabled:cursor-not-allowed disabled:opacity-50',
+                'w-full resize-none bg-transparent px-5 pt-5 pb-5 pr-14 text-[17px] file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-neutral-600 dark:placeholder:text-neutral-400 disabled:cursor-not-allowed disabled:opacity-50 no-scrollbar',
                 'focus-visible:outline-none',
                 'dark:placeholder:text-neutral-400',
               )}
+              minRows={1}
+              maxRows={3}
               value={input}
               onChange={(e) => {
                 setInput(e.target.value);
@@ -94,9 +94,7 @@ const ChatInput: React.FC = () => {
                   <Button
                     type="submit"
                     size="icon"
-                    disabled={
-                      input.trim() === '' || inputDisabledMessage !== '' || isLoading
-                    }
+                    disabled={input.trim() === '' || inputDisabledMessage !== '' || isLoading}
                     variant="ghost"
                     className="h-8 w-8"
                   >

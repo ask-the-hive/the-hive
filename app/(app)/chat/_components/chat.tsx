@@ -13,11 +13,9 @@ const Chat: React.FC = () => {
   const { messages, sendMessage, isResponseLoading } = useChat();
   const hasProcessedInitialMessage = useRef(false);
 
-  // Handle initial message from query params
   useEffect(() => {
     const initialMessage = searchParams.get('message');
 
-    // Only process if we haven't already and there's a message to send
     if (initialMessage && messages.length === 0 && !hasProcessedInitialMessage.current) {
       hasProcessedInitialMessage.current = true;
       sendMessage(decodeURIComponent(initialMessage));

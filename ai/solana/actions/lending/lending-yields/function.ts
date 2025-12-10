@@ -5,8 +5,24 @@ import { getJupiterPools } from '@/services/lending/get-jupiter-pools';
 import { getTokenBySymbol } from '@/db/services/tokens';
 import { LendingYieldsResultBodyType } from './schema';
 
+// Simple in-memory cache so that hero cards and the lending agent
+// can share the same lending-yields response without repeatedly
+// calling external APIs within a short window.
+let cachedLendingYields:
+  | {
+      timestamp: number;
+      result: SolanaActionResult<LendingYieldsResultBodyType>;
+    }
+  | null = null;
+
+const LENDING_YIELDS_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
 export async function getLendingYields(): Promise<SolanaActionResult<LendingYieldsResultBodyType>> {
   try {
+    if (cachedLendingYields && Date.now() - cachedLendingYields.timestamp < LENDING_YIELDS_CACHE_TTL_MS) {
+      return cachedLendingYields.result;
+    }
+
     // Fetch from DefiLlama, Kamino SDK, and Jupiter Lend API
     const [defiLlamaResponse, kaminoPools, jupiterPools] = await Promise.all([
       getBestLendingYields(),
@@ -190,10 +206,17 @@ export async function getLendingYields(): Promise<SolanaActionResult<LendingYiel
       }),
     );
 
-    return {
+    const result: SolanaActionResult<LendingYieldsResultBodyType> = {
       message: `Found the ${body.length} top Solana lending pools. The user has been shown the options in the UI. Tell them to "select a lending pool in the UI to continue". DO NOT REITERATE THE OPTIONS IN TEXT. DO NOT CHECK BALANCES YET - wait for the user to select a specific pool first.`,
       body,
     };
+
+    cachedLendingYields = {
+      timestamp: Date.now(),
+      result,
+    };
+
+    return result;
   } catch (error) {
     console.error(error);
     return {
