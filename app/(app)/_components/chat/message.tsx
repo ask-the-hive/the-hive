@@ -9,7 +9,8 @@ import { cn } from '@/lib/utils';
 import { getAgentName } from '../../chat/_components/tools/tool-to-agent';
 import { pfpURL } from '@/lib/pfp';
 import { useChat } from '@/app/(app)/chat/_contexts/chat';
-import { SOLANA_LEND_ACTION } from '@/ai/action-names';
+import { SOLANA_LEND_ACTION, SOLANA_ALL_BALANCES_NAME, BASE_ALL_BALANCES_NAME } from '@/ai/action-names';
+import { BSC_ALL_BALANCES_NAME } from '@/ai/bsc/actions/wallet/all-balances/name';
 import type { Message as MessageType, ToolInvocation as ToolInvocationType } from 'ai';
 
 interface Props {
@@ -202,17 +203,30 @@ function getDisplayContent(
   const toolInvocations = getMessageToolInvocations(message);
   const previousToolInvocations = getMessageToolInvocations(previousMessage);
 
-  const hasAllBalances = toolInvocations.some((tool) => tool.toolName.includes('all-balances'));
+  const isAllBalancesToolName = (toolName: string) => {
+    return (
+      toolName === SOLANA_ALL_BALANCES_NAME ||
+      toolName === BASE_ALL_BALANCES_NAME ||
+      toolName === BSC_ALL_BALANCES_NAME ||
+      toolName.includes('all-balances') ||
+      toolName.includes('all_balances')
+    );
+  };
+
+  const hasAllBalances = toolInvocations.some((tool) => isAllBalancesToolName(tool.toolName));
   const prevHadAllBalances = previousToolInvocations.some((tool) =>
-    tool.toolName.includes('all-balances'),
+    isAllBalancesToolName(tool.toolName),
   );
 
+  const balancesSummary =
+    'Balances shown above. Pick a token to swap, lend, stake, or explore next.';
+
   if (hasAllBalances || prevHadAllBalances) {
-    return null;
+    return balancesSummary;
   }
 
   if (mentionsBalances) {
-    return 'Balances shown above. Pick a token to swap, lend, stake, or explore next.';
+    return balancesSummary;
   }
 
   const completedIds = completedLendToolCallIds ?? [];
