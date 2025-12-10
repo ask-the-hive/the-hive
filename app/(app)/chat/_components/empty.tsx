@@ -180,7 +180,7 @@ const EmptyChat: React.FC = () => {
         </div>
       </div>
 
-      <div className="flex flex-col items-center justify-center w-full max-w-2xl gap-4 md:gap-6 relative z-10 pb-8 mt-20 md:mt-0 shadow-[0_4px_12px_rgba(0,0,0,0.08),0_8px_24px_rgba(0,0,0,0.06),0_16px_48px_rgba(0,0,0,0.04)] dark:shadow-[0_4px_12px_rgba(0,0,0,0.3),0_8px_24px_rgba(0,0,0,0.25),0_16px_48px_rgba(0,0,0,0.2)]">
+      <div className="flex flex-col items-center justify-center w-full max-w-2xl gap-4 md:gap-6 relative z-10 pb-8 mt-20 md:mt-0">
         <div className="flex flex-col gap-4 items-center justify-center">
           <Logo className="w-20 h-20" />
           <div className="flex flex-col gap-1">
