@@ -69,7 +69,6 @@ export const getTokenBySymbol = async (
 ): Promise<Token | null> => {
   const tokens = await findTokensBySymbol(symbol);
   const resolvedAddress = await resolveAssetSymbolToAddress(symbol, chain);
-  console.log('Resolved address:', resolvedAddress);
   if (!tokens || tokens.length === 0) {
     return null;
   }
@@ -87,7 +86,6 @@ export const getTokenBySymbol = async (
     }
   }
 
-  // Combine DB token with resolved address
   return {
     ...selected,
     contractAddress: resolvedAddress || selected.contractAddress || selected.id,

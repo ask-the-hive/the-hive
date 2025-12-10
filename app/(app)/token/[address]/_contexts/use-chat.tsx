@@ -16,6 +16,7 @@ import {
   SOLANA_TRANSFER_NAME,
   SOLANA_DEPOSIT_LIQUIDITY_NAME,
   SOLANA_WITHDRAW_LIQUIDITY_NAME,
+  SOLANA_LEND_ACTION,
 } from '@/ai/action-names';
 
 import type { TokenChatData } from '@/types';
@@ -45,6 +46,7 @@ interface ChatContextType {
   setModel: (model: Models) => void;
   resetChat: () => void;
   inputDisabledMessage: string;
+  completedLendToolCallIds: string[];
 }
 
 const ChatContext = createContext<ChatContextType>({
@@ -60,6 +62,7 @@ const ChatContext = createContext<ChatContextType>({
   setModel: () => {},
   resetChat: () => {},
   inputDisabledMessage: '',
+  completedLendToolCallIds: [],
 });
 
 interface ChatProviderProps {
@@ -72,6 +75,7 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ token, children }) =
 
   const [isResponseLoading, setIsResponseLoading] = useState(false);
   const [model, setModel] = useState<Models>(Models.OpenAI);
+  const [completedLendToolCallIds, setCompletedLendToolCallIds] = useState<string[]>([]);
 
   const resetChat = () => {
     setMessages([]);
@@ -105,6 +109,18 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ token, children }) =
   });
 
   const addToolResult = <T,>(toolCallId: string, result: ToolResult<T>) => {
+    const lastMessage = messages[messages.length - 1];
+    const toolInvocations = getMessageToolInvocations(lastMessage);
+    const lendInvocation = toolInvocations.find((toolInvocation) =>
+      toolInvocation.toolName.includes(SOLANA_LEND_ACTION),
+    );
+
+    if (lendInvocation && (result as any)?.body?.status === 'complete') {
+      setCompletedLendToolCallIds((prev) =>
+        prev.includes(toolCallId) ? prev : [...prev, toolCallId],
+      );
+    }
+
     addToolResultBase({
       toolCallId,
       result,
@@ -132,11 +148,27 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ token, children }) =
     });
   };
 
+  const getMessageToolInvocations = (message: any): any[] => {
+    if (!message) return [];
+
+    if (message.parts && message.parts.length > 0) {
+      return (message.parts as any[])
+        .filter((part: any) => part && part.type === 'tool-invocation' && part.toolInvocation)
+        .map((part: any) => part.toolInvocation);
+    }
+
+    const legacyToolInvocations = (message as any).toolInvocations as any[] | undefined;
+
+    return legacyToolInvocations ?? [];
+  };
+
   const inputDisabledMessage = useMemo(() => {
     if (messages.length === 0) return '';
     const lastMessage = messages[messages.length - 1];
-    let message = lastMessage.toolInvocations
-      ?.map((toolInvocation) => {
+    const toolInvocations = getMessageToolInvocations(lastMessage);
+
+    let message = toolInvocations
+      .map((toolInvocation) => {
         if (toolInvocation.state === 'result') return '';
         const toolName = toolInvocation.toolName.slice(toolInvocation.toolName.indexOf('-') + 1);
         switch (toolName) {
@@ -181,6 +213,7 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ token, children }) =
         setModel,
         resetChat,
         inputDisabledMessage,
+        completedLendToolCallIds,
       }}
     >
       {children}
