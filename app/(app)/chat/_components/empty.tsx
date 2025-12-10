@@ -226,11 +226,12 @@ const EmptyChat: React.FC = () => {
 /**
  * Custom hook to animate a number from 0 to target value
  * @param target - The target value to animate to
- * @param duration - Duration of animation in milliseconds (default: 1500ms)
- * @returns The current animated value
+ * @param duration - Duration of animation in milliseconds (default: 2000ms)
+ * @returns Object with current animated value and completion state
  */
-function useCountUp(target: number, duration: number = 1500): number {
+function useCountUp(target: number, duration: number = 2000): { count: number; isComplete: boolean } {
   const [count, setCount] = useState(0);
+  const [isComplete, setIsComplete] = useState(false);
   const startTimeRef = useRef<number | null>(null);
   const animationFrameRef = useRef<number | null>(null);
   const targetRef = useRef(target);
@@ -238,6 +239,7 @@ function useCountUp(target: number, duration: number = 1500): number {
   useEffect(() => {
     targetRef.current = target;
     setCount(0);
+    setIsComplete(false);
     startTimeRef.current = null;
 
     const animate = (currentTime: number) => {
@@ -258,6 +260,7 @@ function useCountUp(target: number, duration: number = 1500): number {
         animationFrameRef.current = requestAnimationFrame(animate);
       } else {
         setCount(targetRef.current);
+        setIsComplete(true);
       }
     };
 
@@ -270,7 +273,7 @@ function useCountUp(target: number, duration: number = 1500): number {
     };
   }, [target, duration]);
 
-  return count;
+  return { count, isComplete };
 }
 
 const HeroApyCard: React.FC<{
@@ -281,7 +284,7 @@ const HeroApyCard: React.FC<{
   onClick?: () => void;
   disabled?: boolean;
 }> = ({ label, pool, fallbackText, isLoading, onClick, disabled }) => {
-  const animatedApy = useCountUp(pool?.apy ?? 0, 1500);
+  const { count: animatedApy, isComplete } = useCountUp(pool?.apy ?? 0, 2000);
   if (isLoading) {
     return (
       <Card className="bg-neutral-900/70 border border-neutral-800 rounded-2xl px-4 py-3 flex flex-col gap-2 shadow-md min-h-[88px]">
@@ -339,7 +342,12 @@ const HeroApyCard: React.FC<{
                 {pool.symbol}
               </span>
             </div>
-            <span className="text-lg font-semibold text-emerald-400">
+            <span
+              className={cn(
+                'text-lg font-semibold text-emerald-400 transition-all duration-300',
+                isComplete && 'apy-complete-flash',
+              )}
+            >
               {animatedApy.toFixed(2)}% APY
             </span>
           </div>
