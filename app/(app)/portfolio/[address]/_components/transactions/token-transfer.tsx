@@ -45,7 +45,20 @@ const TokenTransfer: React.FC<Props> = ({ tokenTransfer, address }) => {
 
   // For Solana transfers
   if (isSolana && tokenTransfer.mint) {
-    if (isSolanaTokenLoading) return <Skeleton className="w-8 h-4 rounded-full" />;
+    if (isSolanaTokenLoading) {
+      return (
+        <div className="flex items-center gap-2">
+          <Skeleton className="w-6 h-6 rounded-full" />
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center gap-1">
+              <Skeleton className="w-10 h-3 rounded-full" />
+              <Skeleton className="w-16 h-3 rounded-full" />
+            </div>
+            <Skeleton className="w-24 h-3 rounded-full" />
+          </div>
+        </div>
+      );
+    }
 
     const amount = tokenTransfer.tokenAmount || 0;
     const isOutgoing = tokenTransfer.toUserAccount !== address;
@@ -63,7 +76,7 @@ const TokenTransfer: React.FC<Props> = ({ tokenTransfer, address }) => {
           tokenSymbol={solanaTokenData?.symbol}
           width={24}
           height={24}
-          className="w-6 h-6"
+          className="w-6 h-6 rounded-full"
         />
         <div className="flex flex-col">
           <div className="flex items-center gap-1">
@@ -100,7 +113,7 @@ const TokenTransfer: React.FC<Props> = ({ tokenTransfer, address }) => {
           tokenSymbol={tokenTransfer.token.symbol}
           width={24}
           height={24}
-          className="w-6 h-6"
+          className="w-6 h-6 rounded-full"
         />
         <div className="flex flex-col">
           <div className="flex items-center gap-1">

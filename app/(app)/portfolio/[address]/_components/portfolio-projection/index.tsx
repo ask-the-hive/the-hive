@@ -377,13 +377,59 @@ const PortfolioProjection: React.FC<Props> = ({
     return combined;
   }, [data, days, hasStakingPositions, hasLendingPositions, historicalData, totalStakingValue]);
 
+  const smoothedChartData = React.useMemo(() => {
+    if (!chartData || chartData.length === 0) {
+      return chartData;
+    }
+
+    const smoothSeries = (
+      data: Array<Record<string, any>>,
+      key: 'netWorth' | 'projectedNetWorth',
+      windowSize = 3,
+    ) => {
+      const halfWindow = Math.floor(windowSize / 2);
+      const result = data.map((item) => ({ ...item }));
+
+      for (let i = 0; i < data.length; i++) {
+        const value = data[i][key];
+        if (value === null || value === undefined || typeof value !== 'number') continue;
+
+        let sum = 0;
+        let count = 0;
+
+        for (let j = i - halfWindow; j <= i + halfWindow; j++) {
+          if (j < 0 || j >= data.length) continue;
+          const neighbor = data[j][key];
+          if (neighbor === null || neighbor === undefined || typeof neighbor !== 'number') {
+            continue;
+          }
+          sum += neighbor;
+          count += 1;
+        }
+
+        if (count > 0) {
+          result[i][key] = sum / count;
+        }
+      }
+
+      return result;
+    };
+
+    let smoothed = chartData.map((item: any) => ({ ...item }));
+    smoothed = smoothSeries(smoothed, 'netWorth');
+    smoothed = smoothSeries(smoothed, 'projectedNetWorth');
+
+    return smoothed;
+  }, [chartData]);
+
   // Calculate Y-axis domain with padding to center the chart line
   const yAxisDomain = React.useMemo(() => {
-    if (!chartData || chartData.length === 0) {
+    const source = smoothedChartData || chartData;
+    if (!source || source.length === 0) {
       return ['auto', 'auto'];
     }
 
-    const allValues = chartData.flatMap((item: any) => {
+    const allValues = source.flatMap((item: any) => {
       const values = [];
       if (item.netWorth !== null && item.netWorth !== undefined) {
         values.push(item.netWorth);
@@ -400,15 +446,21 @@ const PortfolioProjection: React.FC<Props> = ({
 
     const minValue = Math.min(...allValues);
     const maxValue = Math.max(...allValues);
-    const range = maxValue - minValue;
+    const rawRange = maxValue - minValue;
+    const base = Math.max(maxValue, 1);
 
-    // Add 20% padding above and below
-    const padding = range * 0.8;
+    // Ensure the chart doesn't over-emphasize tiny fluctuations by enforcing
+    // a minimum visual range relative to the portfolio size.
+    const minVisualRange = base * 0.1; // 10% of portfolio value
+    const range = Math.max(rawRange, minVisualRange);
+
+    // Add gentle padding above and below for breathing room
+    const padding = range * 0.25;
     const yMin = Math.max(0, minValue - padding);
     const yMax = maxValue + padding;
 
     return [yMin, yMax];
-  }, [chartData]);
+  }, [chartData, smoothedChartData]);
 
   const CustomTooltip = ({ active, payload, label, earningAmount }: any) => {
     if (active && payload && payload.length) {
@@ -680,8 +732,15 @@ const PortfolioProjection: React.FC<Props> = ({
             ) : (
               <div className="h-80">
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={chartData} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+                  <LineChart
+                    data={smoothedChartData || chartData}
+                    margin={{ top: 0, right: 0, left: 0, bottom: 0 }}
+                  >
+                    <CartesianGrid
+                      stroke="rgba(148, 163, 184, 0.25)"
+                      strokeDasharray="3 3"
+                      vertical={false}
+                    />
                     <XAxis
                       dataKey="date"
                       tick={{ fontSize: 12 }}
@@ -700,8 +759,13 @@ const PortfolioProjection: React.FC<Props> = ({
                       type="monotone"
                       dataKey="netWorth"
                       stroke="#D19900"
-                      strokeWidth={2}
+                      strokeWidth={2.4}
                       dot={false}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      isAnimationActive
+                      animationDuration={700}
+                      animationEasing="ease-out"
                       name="Historical Portfolio Value"
                     />
                     {((data.liquidStakingPositions && data.liquidStakingPositions.length > 0) ||
@@ -710,8 +774,13 @@ const PortfolioProjection: React.FC<Props> = ({
                         type="monotone"
                         dataKey="projectedNetWorth"
                         stroke="#D19900"
-                        strokeWidth={2}
-                        strokeDasharray="5 5"
+                        strokeWidth={2.4}
+                        strokeDasharray="4 4"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        isAnimationActive
+                        animationDuration={700}
+                        animationEasing="ease-out"
                         dot={false}
                         name={
                           hasStakingPositions && hasLendingPositions

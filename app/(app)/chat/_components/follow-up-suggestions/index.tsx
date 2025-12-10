@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useChat } from '@/app/(app)/chat/_contexts/chat';
 import { Models } from '@/types/models';
 import { Button, Skeleton, Icon } from '@/components/ui';
-import { Message } from 'ai';
+import { Message, ToolInvocation } from 'ai';
 import { cn } from '@/lib/utils';
 import { determineSuggestionsPrompt } from './utils';
 
@@ -56,6 +56,20 @@ const generateFollowUpSuggestions = async (messages: Message[], model: Models) =
   }
 };
 
+const getMessageToolInvocations = (message: Message): ToolInvocation[] => {
+  if (!message) return [];
+
+  if (message.parts && message.parts.length > 0) {
+    return (message.parts as any[])
+      .filter((part) => part && part.type === 'tool-invocation' && (part as any).toolInvocation)
+      .map((part) => (part as any).toolInvocation as ToolInvocation);
+  }
+
+  const legacyToolInvocations = (message as any).toolInvocations as ToolInvocation[] | undefined;
+
+  return legacyToolInvocations ?? [];
+};
+
 const FollowUpSuggestions: React.FC = () => {
   const { model, sendMessage, isResponseLoading, messages, chatId, isLoading } = useChat();
   const [isGenerating, setIsGenerating] = useState(false);
@@ -67,7 +81,7 @@ const FollowUpSuggestions: React.FC = () => {
     if (isResponseLoading || isLoading || !messages.length) return;
 
     const hasIncompleteTools = messages.some((message) =>
-      message.toolInvocations?.some((tool) => tool.state !== 'result'),
+      getMessageToolInvocations(message).some((tool) => tool.state !== 'result'),
     );
 
     if (hasIncompleteTools) return;

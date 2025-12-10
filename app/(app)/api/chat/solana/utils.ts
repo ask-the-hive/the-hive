@@ -30,6 +30,7 @@ CRITICAL ROUTING RULES:
    - "Show me the best lending pools on Solana" ← LENDING AGENT
    - "Best lending yields" / "best stablecoin yields" / "best USDC APY" ← LENDING AGENT
    - "Lending rates for USDC/USDT/SOL" ← LENDING AGENT
+   - "Where to deposit stablecoins?" / "Where should I park USDC?" / "Best place to deposit USDT" ← LENDING AGENT (these should always show the stablecoin lending list UI)
    - "Lend SOL to Kamino" ← LENDING AGENT (not Staking Agent!)
    - "I want to lend SOL" ← LENDING AGENT (not Staking Agent!)
    - Stablecoin lending (USDC/USDT) operations
@@ -99,8 +100,19 @@ export const chooseAgent = async (
   const affirmative = /^(yes|yep|yeah|sure|ok|okay|alright|continue|go ahead)\b/.test(
     userText.trim(),
   );
+
+  const mentionsStablecoin = /\b(stablecoin|stablecoins|usdc|usdt|usdg|eurc|fdusd|pyusd|usds)\b/.test(
+    userText,
+  );
+
+  const depositOrYieldIntent =
+    /\b(lend|lending|yield|apy|deposit|deposits|earn|earning|park|parking|place|put)\b/.test(
+      userText,
+    );
+
   const wantsLending =
     /\b(lend|lending|yield|apy)\b/.test(userText) ||
+    (mentionsStablecoin && depositOrYieldIntent) ||
     (affirmative && /\b(lend|lending|yield|apy|stablecoin)\b/.test(assistantText));
 
   if (wantsLending) {

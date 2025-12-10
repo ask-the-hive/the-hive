@@ -8,7 +8,6 @@ import { useEnterSubmit } from '../_hooks';
 import { useChat } from '../_contexts/chat';
 import { cn } from '@/lib/utils';
 import { usePrivy } from '@privy-io/react-auth';
-import FollowUpSuggestions from './follow-up-suggestions';
 
 const PROMPT_POOL = [
   'Help me stake SOL',
@@ -21,7 +20,12 @@ const PROMPT_POOL = [
 const ChatInput: React.FC = () => {
   const { user } = usePrivy();
   const { input, setInput, onSubmit, inputDisabledMessage, isLoading, messages } = useChat();
-  const { onKeyDown } = useEnterSubmit({ onSubmit: onSubmit });
+  const { onKeyDown } = useEnterSubmit({
+    onSubmit: () => {
+      if (isLoading || inputDisabledMessage !== '') return;
+      onSubmit();
+    },
+  });
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const [rotatedPrompts, setRotatedPrompts] = useState(PROMPT_POOL);
 
@@ -52,7 +56,6 @@ const ChatInput: React.FC = () => {
 
   return (
     <div className="flex flex-col gap-1 w-full">
-      <FollowUpSuggestions />
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -80,7 +83,7 @@ const ChatInput: React.FC = () => {
               onChange={(e) => {
                 setInput(e.target.value);
               }}
-              disabled={inputDisabledMessage !== '' || isLoading}
+              disabled={inputDisabledMessage !== ''}
               autoFocus
             />
           </OptionalTooltip>
@@ -92,7 +95,7 @@ const ChatInput: React.FC = () => {
                     type="submit"
                     size="icon"
                     disabled={
-                      input.trim() === '' || inputDisabledMessage !== '' || !user || isLoading
+                      input.trim() === '' || inputDisabledMessage !== '' || isLoading
                     }
                     variant="ghost"
                     className="h-8 w-8"

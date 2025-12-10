@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils';
 import { getAgentName } from '../../chat/_components/tools/tool-to-agent';
 import { pfpURL } from '@/lib/pfp';
 import { useChat } from '@/app/(app)/chat/_contexts/chat';
+import { SOLANA_LEND_ACTION, SOLANA_ALL_BALANCES_NAME } from '@/ai/action-names';
 import type { Message as MessageType, ToolInvocation as ToolInvocationType } from 'ai';
 
 interface Props {
@@ -42,9 +43,12 @@ const Message: React.FC<Props> = ({
   }, []);
 
   const { user } = usePrivy();
-  const { isResponseLoading } = useChat();
+  const { isResponseLoading, completedLendToolCallIds } = useChat();
 
   const isUser = message.role === 'user';
+
+  const currentToolInvocations = getMessageToolInvocations(message);
+  const previousToolInvocations = getMessageToolInvocations(previousMessage);
 
   const nextMessageSameRole = nextMessage?.role === message.role;
   const previousMessageSameRole = previousMessage?.role === message.role;
@@ -129,28 +133,32 @@ const Message: React.FC<Props> = ({
           compressed && 'gap-0 md:w-full pt-0',
         )}
       >
-        {message.toolInvocations && message.toolInvocations.length > 0 && (
+        {currentToolInvocations.length > 0 && (
           <div className="flex flex-col gap-2">
-            {message.toolInvocations.map((tool, index) => (
+            {currentToolInvocations.map((tool, index) => (
               <ToolComponent
                 key={tool.toolCallId}
                 tool={tool}
                 prevToolAgent={
                   index === 0
-                    ? previousMessage?.toolInvocations?.[0]
-                      ? getAgentName(previousMessage?.toolInvocations?.[0])
+                    ? previousToolInvocations[0]
+                      ? getAgentName(previousToolInvocations[0])
                       : undefined
-                    : message.toolInvocations![index - 1]
-                      ? getAgentName(message.toolInvocations![index - 1])
+                    : currentToolInvocations[index - 1]
+                      ? getAgentName(currentToolInvocations[index - 1])
                       : undefined
                 }
               />
             ))}
           </div>
         )}
-        {getDisplayContent(message, previousMessage) && (
+        {getDisplayContent(message, previousMessage, completedLendToolCallIds) && (
           <MessageMarkdown
-            content={getDisplayContent(message, previousMessage) as string}
+            content={getDisplayContent(
+              message,
+              previousMessage,
+              completedLendToolCallIds,
+            ) as string}
             compressed={compressed}
           />
         )}
@@ -159,31 +167,62 @@ const Message: React.FC<Props> = ({
   );
 };
 
-// Normalize assistant content when balance cards are shown
-function getDisplayContent(message: MessageType, previousMessage?: MessageType): string | null {
-  if (message.role !== 'assistant') return message.content || null;
+function getMessageToolInvocations(message?: MessageType): ToolInvocationType[] {
+  if (!message) return [];
 
-  const lower = (message.content || '').toLowerCase();
-  const mentionsBalances =
-    lower.includes('wallet balances') ||
-    lower.includes('your wallet balances') ||
-    lower.includes('your token balances') ||
-    lower.includes('here are your') ||
-    lower.includes('balance:');
-
-  const hasAllBalances = message.toolInvocations?.some((tool) =>
-    tool.toolName.includes('all-balances'),
-  );
-  const prevHadAllBalances = previousMessage?.toolInvocations?.some((tool) =>
-    tool.toolName.includes('all-balances'),
-  );
-
-  if (hasAllBalances || prevHadAllBalances) {
-    return null;
+  if (message.parts && message.parts.length > 0) {
+    return (message.parts as any[])
+      .filter((part) => part && part.type === 'tool-invocation' && (part as any).toolInvocation)
+      .map((part) => (part as any).toolInvocation as ToolInvocationType);
   }
 
-  if (mentionsBalances) {
+  const legacyToolInvocations = (message as any).toolInvocations as
+    | ToolInvocationType[]
+    | undefined;
+
+  return legacyToolInvocations ?? [];
+}
+
+// Normalize assistant content when balance cards are shown
+function getDisplayContent(
+  message: MessageType,
+  previousMessage?: MessageType,
+  completedLendToolCallIds?: string[],
+): string | null {
+  if (message.role !== 'assistant') return message.content || null;
+
+  const toolInvocations = getMessageToolInvocations(message);
+
+  // If this assistant message is associated with the Solana Wallet Agent's
+  // "all balances" tool, force a short summary instead of whatever text
+  // the model generated. The detailed balances are already rendered as cards.
+  const isSolanaWalletAllBalances = (toolName: string) => {
+    const parts = toolName.split('-');
+    const toolAgent = parts[0];
+    const actionName = parts.slice(1).join('-');
+
+    return toolAgent === 'wallet' && actionName === SOLANA_ALL_BALANCES_NAME;
+  };
+
+  const hasAllBalancesResult = toolInvocations.some(
+    (tool) => isSolanaWalletAllBalances(tool.toolName) && tool.state === 'result',
+  );
+
+  if (hasAllBalancesResult) {
     return 'Balances shown above. Pick a token to swap, lend, stake, or explore next.';
+  }
+
+  const completedIds = completedLendToolCallIds ?? [];
+
+  const hasCompletedLend = toolInvocations.some((tool) => {
+    if (!tool.toolName.includes(SOLANA_LEND_ACTION)) return false;
+    if (tool.state !== 'result') return false;
+    if (!completedIds.includes(tool.toolCallId)) return false;
+    return true;
+  });
+
+  if (hasCompletedLend) {
+    return "You're all set — your lending deposit is complete and now earning yield automatically. You can view or manage it using the card above.";
   }
 
   return message.content || null;

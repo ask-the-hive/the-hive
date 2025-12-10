@@ -26,6 +26,7 @@ import {
   SOLANA_TRANSFER_NAME,
   SOLANA_DEPOSIT_LIQUIDITY_NAME,
   SOLANA_WITHDRAW_LIQUIDITY_NAME,
+  SOLANA_LEND_ACTION,
 } from '@/ai/action-names';
 import * as Sentry from '@sentry/nextjs';
 
@@ -58,6 +59,7 @@ interface ChatContextType {
   inputDisabledMessage: string;
   // New property to check if we can start a new chat
   canStartNewChat: boolean;
+  completedLendToolCallIds: string[];
 }
 
 const ChatContext = createContext<ChatContextType>({
@@ -78,17 +80,33 @@ const ChatContext = createContext<ChatContextType>({
   chatId: '',
   inputDisabledMessage: '',
   canStartNewChat: true,
+  completedLendToolCallIds: [],
 });
 
 interface ChatProviderProps {
   children: ReactNode;
 }
 
+const getMessageToolInvocations = (message: Message | undefined): any[] => {
+  if (!message) return [];
+
+  if (message.parts && message.parts.length > 0) {
+    return (message.parts as any[])
+      .filter((part) => part && part.type === 'tool-invocation' && (part as any).toolInvocation)
+      .map((part) => (part as any).toolInvocation);
+  }
+
+  const legacyToolInvocations = (message as any).toolInvocations as any[] | undefined;
+
+  return legacyToolInvocations ?? [];
+};
+
 export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
   const { user, getAccessToken } = usePrivy();
   const { updateChatThreadState, removeChatThread } = useGlobalChatManager();
   const router = useRouter();
   const pathname = usePathname();
+  const [completedLendToolCallIds, setCompletedLendToolCallIds] = useState<string[]>([]);
 
   const parseJsonSafely = async (response: Response) => {
     const text = await response.text();
@@ -223,6 +241,18 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
   }, [isLoading, chatId, updateChatThreadState]);
 
   const addToolResult = <T,>(toolCallId: string, result: ToolResult<T>) => {
+    const lastMessage = messages[messages.length - 1];
+    const toolInvocations = getMessageToolInvocations(lastMessage);
+    const lendInvocation = toolInvocations.find((toolInvocation) =>
+      toolInvocation.toolName.includes(SOLANA_LEND_ACTION),
+    );
+
+    if (lendInvocation && (result as any)?.body?.status === 'complete') {
+      setCompletedLendToolCallIds((prev) =>
+        prev.includes(toolCallId) ? prev : [...prev, toolCallId],
+      );
+    }
+
     addToolResultBase({
       toolCallId,
       result,
@@ -318,47 +348,52 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
     const userInput = input;
     setInput('');
 
-    if (messages.length === 0) {
-      try {
-        const response = await fetch(`/api/chats/${chatId}`, {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${await getAccessToken()}`,
-          },
-          body: JSON.stringify({
-            messages: [
-              {
-                role: 'user',
-                content: userInput,
-              },
-            ],
-            chain,
-          }),
-        });
-
-        if (response.ok) {
-          mutate();
-        }
-      } catch (error) {
-        console.error('Error creating new chat:', error);
-        Sentry.captureException(error, {
-          tags: {
-            component: 'ChatProvider',
-            action: 'createNewChat',
-          },
-        });
-      }
-    }
-
     setIsResponseLoading(true);
     updateChatThreadState(chatId, {
       isLoading: true,
       isResponseLoading: true,
     });
-    await append({
+
+    const appendPromise = append({
       role: 'user',
       content: userInput,
     });
+
+    if (messages.length === 0) {
+      (async () => {
+        try {
+          const response = await fetch(`/api/chats/${chatId}`, {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${await getAccessToken()}`,
+            },
+            body: JSON.stringify({
+              messages: [
+                {
+                  role: 'user',
+                  content: userInput,
+                },
+              ],
+              chain,
+            }),
+          });
+
+          if (response.ok) {
+            mutate();
+          }
+        } catch (error) {
+          console.error('Error creating new chat:', error);
+          Sentry.captureException(error, {
+            tags: {
+              component: 'ChatProvider',
+              action: 'createNewChat',
+            },
+          });
+        }
+      })();
+    }
+
+    await appendPromise;
   };
 
   const sendMessage = async (message: string) => {
@@ -416,8 +451,10 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
   const inputDisabledMessage = useMemo(() => {
     if (messages.length === 0) return '';
     const lastMessage = messages[messages.length - 1];
-    let message = lastMessage.toolInvocations
-      ?.map((toolInvocation) => {
+    const toolInvocations = getMessageToolInvocations(lastMessage);
+
+    let message = toolInvocations
+      .map((toolInvocation) => {
         if (toolInvocation.state === 'result') return '';
         const toolName = toolInvocation.toolName.slice(toolInvocation.toolName.indexOf('-') + 1);
         switch (toolName) {
@@ -471,6 +508,7 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
         chatId,
         inputDisabledMessage,
         canStartNewChat,
+        completedLendToolCallIds,
       }}
     >
       {children}
