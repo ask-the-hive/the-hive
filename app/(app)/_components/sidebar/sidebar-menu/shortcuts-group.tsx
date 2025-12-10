@@ -15,14 +15,14 @@ import posthog from 'posthog-js';
 
 const shortcuts = [
   {
-    title: 'Stake',
+    title: 'Stake SOL',
     description: 'Earn the highest yields with liquid staking',
     icon: Droplet,
     prompt: 'Find me the best staking yields on Solana',
     eventName: 'stake_strategy_clicked',
   },
   {
-    title: 'Lend',
+    title: 'Lend Stablecoins',
     description: 'Lend stablecoins to earn interest',
     icon: HandCoins,
     prompt: 'Show me the best lending pools on Solana',
