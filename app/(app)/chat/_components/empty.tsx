@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
 import ChatInput from './input';
 import Logo from '@/components/ui/logo';
 import { Card, TokenIcon, Skeleton } from '@/components/ui';
@@ -223,6 +223,56 @@ const EmptyChat: React.FC = () => {
   );
 };
 
+/**
+ * Custom hook to animate a number from 0 to target value
+ * @param target - The target value to animate to
+ * @param duration - Duration of animation in milliseconds (default: 1500ms)
+ * @returns The current animated value
+ */
+function useCountUp(target: number, duration: number = 1500): number {
+  const [count, setCount] = useState(0);
+  const startTimeRef = useRef<number | null>(null);
+  const animationFrameRef = useRef<number | null>(null);
+  const targetRef = useRef(target);
+
+  useEffect(() => {
+    targetRef.current = target;
+    setCount(0);
+    startTimeRef.current = null;
+
+    const animate = (currentTime: number) => {
+      if (startTimeRef.current === null) {
+        startTimeRef.current = currentTime;
+      }
+
+      const elapsed = currentTime - startTimeRef.current;
+      const progress = Math.min(elapsed / duration, 1);
+
+      // Easing function for smooth animation (ease-out)
+      const easeOut = 1 - Math.pow(1 - progress, 3);
+      const currentValue = targetRef.current * easeOut;
+
+      setCount(currentValue);
+
+      if (progress < 1) {
+        animationFrameRef.current = requestAnimationFrame(animate);
+      } else {
+        setCount(targetRef.current);
+      }
+    };
+
+    animationFrameRef.current = requestAnimationFrame(animate);
+
+    return () => {
+      if (animationFrameRef.current !== null) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    };
+  }, [target, duration]);
+
+  return count;
+}
+
 const HeroApyCard: React.FC<{
   label: string;
   pool: BestPool | null;
@@ -231,6 +281,7 @@ const HeroApyCard: React.FC<{
   onClick?: () => void;
   disabled?: boolean;
 }> = ({ label, pool, fallbackText, isLoading, onClick, disabled }) => {
+  const animatedApy = useCountUp(pool?.apy ?? 0, 1500);
   if (isLoading) {
     return (
       <Card className="bg-neutral-900/70 border border-neutral-800 rounded-2xl px-4 py-3 flex flex-col gap-2 shadow-md min-h-[88px]">
@@ -289,7 +340,7 @@ const HeroApyCard: React.FC<{
               </span>
             </div>
             <span className="text-lg font-semibold text-emerald-400">
-              {pool.apy.toFixed(2)}% APY
+              {animatedApy.toFixed(2)}% APY
             </span>
           </div>
           <div className="flex items-center justify-between text-xs text-neutral-500 mt-1">
