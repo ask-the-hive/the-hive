@@ -43,22 +43,17 @@ function PoolDetailsCard<T extends PoolData>({
     });
     onClick(pool);
   };
-  const isBestYield = index === 0 || index === 1;
-
   return (
     <Card
       key={`${pool.name}-${pool.project}-${index}`}
       className={cn(
-        'group relative flex flex-col gap-2 items-center p-4 overflow-hidden',
+        'group relative flex flex-col gap-2 items-center p-4 transition-all duration-300 overflow-hidden',
         disabled
           ? 'opacity-50 cursor-not-allowed'
-          : 'cursor-pointer',
-        !disabled && !isBestYield && 'transition-all duration-300 hover:border-brand-600/50 dark:hover:border-brand-600/50',
+          : 'cursor-pointer hover:border-brand-600/50 dark:hover:border-brand-600/50',
         !disabled &&
           index === 1 &&
-          !isBestYield &&
           'hover:border-brand-600 dark:hover:border-brand-600 !shadow-[0_0_10px_rgba(234,179,8,0.5)] dark:!shadow-[0_0_10px_rgba(234,179,8,0.5)]',
-        !disabled && isBestYield && 'premium-glow',
       )}
       onClick={(e) => !disabled && handleClick(e)}
     >

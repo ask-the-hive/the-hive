@@ -252,10 +252,10 @@ const HeroApyCard: React.FC<{
   return (
     <Card
       className={cn(
-        'bg-neutral-900/70 border border-neutral-700 rounded-2xl px-4 py-3 flex flex-col gap-2 shadow-md transition-colors duration-150 min-h-[88px]',
+        'bg-neutral-900/70 border border-neutral-700 rounded-2xl px-4 py-3 flex flex-col gap-2 shadow-md min-h-[88px]',
         pool && onClick && !disabled
-          ? 'cursor-pointer hover:bg-neutral-800/80 hover:border-neutral-500'
-          : 'cursor-default',
+          ? 'cursor-pointer premium-glow'
+          : 'cursor-default transition-colors duration-150 hover:bg-neutral-800/80 hover:border-neutral-500',
       )}
       role={pool && onClick && !disabled ? 'button' : undefined}
       tabIndex={pool && onClick && !disabled ? 0 : undefined}
