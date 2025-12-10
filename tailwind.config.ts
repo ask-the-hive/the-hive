@@ -71,7 +71,7 @@ export default {
       animation: {
         'shiny-text': 'shiny-text 8s infinite',
         'border-beam': 'border-beam calc(var(--duration)*1s) infinite linear',
-        'honeycomb-shine': 'honeycomb-shine 1.5s ease-in-out',
+        'honeycomb-shine': 'honeycomb-shine 0.8s ease-in-out',
       },
       keyframes: {
         'shiny-text': {

@@ -105,18 +105,22 @@ const LogInButton: React.FC<Props> = ({ onComplete, className }) => {
       }}
       className={cn(
         'w-full relative overflow-hidden',
-        '!bg-gradient-to-r !from-amber-500 !via-yellow-500 !to-amber-600',
-        'dark:!from-amber-600 dark:!via-yellow-600 dark:!to-amber-700',
-        '!text-neutral-50',
-        '!border-2 !border-amber-400/60 dark:!border-amber-400/60',
-        'shadow-[0_0_20px_rgba(251,191,36,0.4),0_0_40px_rgba(245,158,11,0.2)]',
-        'dark:shadow-[0_0_20px_rgba(251,191,36,0.5),0_0_40px_rgba(245,158,11,0.3)]',
-        'hover:shadow-[0_0_30px_rgba(251,191,36,0.6),0_0_50px_rgba(245,158,11,0.4)]',
-        'dark:hover:shadow-[0_0_30px_rgba(251,191,36,0.7),0_0_50px_rgba(245,158,11,0.5)]',
-        'before:absolute before:inset-0 before:pointer-events-none',
-        'before:bg-gradient-to-r before:from-transparent before:via-white/30 before:to-transparent',
+        '!bg-gradient-to-r !from-amber-500 !via-yellow-400 !to-yellow-500',
+        'dark:!from-amber-600 dark:!via-yellow-500 dark:!to-yellow-600',
+        '!text-neutral-50 !font-medium',
+        '!border !border-amber-300/50 dark:!border-amber-400/50',
+        'shadow-[0_0_6px_rgba(251,191,36,0.25),0_0_12px_rgba(245,158,11,0.15),inset_0_1px_0_rgba(255,255,255,0.15),inset_0_0_20px_rgba(251,191,36,0.2)]',
+        'dark:shadow-[0_0_8px_rgba(251,191,36,0.3),0_0_16px_rgba(245,158,11,0.2),inset_0_1px_0_rgba(255,255,255,0.2),inset_0_0_24px_rgba(251,191,36,0.25)]',
+        'hover:shadow-[0_0_8px_rgba(251,191,36,0.3),0_0_16px_rgba(245,158,11,0.2),inset_0_1px_0_rgba(255,255,255,0.2),inset_0_0_24px_rgba(251,191,36,0.3)]',
+        'dark:hover:shadow-[0_0_10px_rgba(251,191,36,0.35),0_0_20px_rgba(245,158,11,0.25),inset_0_1px_0_rgba(255,255,255,0.25),inset_0_0_28px_rgba(251,191,36,0.35)]',
+        'before:absolute before:inset-0 before:pointer-events-none before:z-0 before:rounded-full',
+        'before:bg-[linear-gradient(90deg,transparent_0%,transparent_45%,rgba(255,255,255,0.6)_48%,rgba(255,255,255,0.7)_50%,rgba(255,255,255,0.6)_52%,transparent_55%,transparent_100%)]',
         'before:translate-x-[-100%] before:translate-y-[-100%] before:rotate-45',
         'hover:before:animate-honeycomb-shine',
+        'after:absolute after:inset-[2px] after:pointer-events-none after:z-0 after:rounded-full',
+        'after:bg-gradient-to-b after:from-amber-400/30 after:via-transparent after:to-amber-600/20',
+        'dark:after:from-amber-500/40 dark:after:via-transparent dark:after:to-amber-700/30',
+        '[&>*]:relative [&>*]:z-10',
         className
       )}
     >
