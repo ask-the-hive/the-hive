@@ -14,7 +14,6 @@ import { AreaChart, Area, YAxis } from 'recharts';
 import { capitalizeWords } from '@/lib/string-utils';
 import { useChat } from '../_contexts/chat';
 import { cn } from '@/lib/utils';
-import LockedStakingPreview from './locked-staking-preview';
 
 type BestPool = {
   symbol: string;
@@ -55,34 +54,11 @@ async function fetchBestLendingPool(): Promise<BestPool | null> {
 }
 
 const EmptyChat: React.FC = () => {
-  const { currentChain, walletAddresses } = useChain();
+  const { currentChain } = useChain();
   const { sendMessage, isLoading: chatIsLoading, isResponseLoading } = useChat();
 
   const [staking, setStaking] = React.useState<BestPool | null>(null);
   const [lending, setLending] = React.useState<BestPool | null>(null);
-  const [showLockedPreview, setShowLockedPreview] = React.useState(false);
-  const [previewPool, setPreviewPool] = React.useState<BestPool | null>(null);
-  const [walletJustConnected, setWalletJustConnected] = React.useState(false);
-
-  // Check if wallet is connected
-  const isWalletConnected = !!walletAddresses.solana;
-
-  // Detect wallet connection
-  React.useEffect(() => {
-    if (isWalletConnected && showLockedPreview) {
-      setWalletJustConnected(true);
-      // Hide preview after unlock animation
-      setTimeout(() => {
-        setShowLockedPreview(false);
-        setPreviewPool(null);
-        setWalletJustConnected(false);
-        // Trigger the actual staking flow
-        if (previewPool) {
-          sendMessage(`I want to stake SOL for ${previewPool.symbol}`);
-        }
-      }, 1500);
-    }
-  }, [isWalletConnected, showLockedPreview, previewPool, sendMessage]);
 
   React.useEffect(() => {
     if (currentChain !== 'solana') return;
@@ -208,13 +184,8 @@ const EmptyChat: React.FC = () => {
               onClick={
                 staking && !chatIsLoading && !isResponseLoading
                   ? () => {
-                      if (!isWalletConnected) {
-                        setPreviewPool(staking);
-                        setShowLockedPreview(true);
-                      } else {
-                        const symbol = staking.symbol;
-                        sendMessage(`I want to stake SOL for ${symbol}`);
-                      }
+                      const symbol = staking.symbol;
+                      sendMessage(`I want to stake SOL for ${symbol}`);
                     }
                   : undefined
               }
@@ -246,18 +217,6 @@ const EmptyChat: React.FC = () => {
               }
             />
           </div>
-        )}
-
-        {/* Locked Preview Modal */}
-        {showLockedPreview && previewPool && (
-          <LockedStakingPreview
-            pool={previewPool}
-            isUnlocking={walletJustConnected}
-            onClose={() => {
-              setShowLockedPreview(false);
-              setPreviewPool(null);
-            }}
-          />
         )}
       </div>
     </div>

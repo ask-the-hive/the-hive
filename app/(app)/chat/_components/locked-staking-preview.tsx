@@ -40,27 +40,26 @@ const LockedStakingPreview: React.FC<LockedStakingPreviewProps> = ({
   }, [isUnlocking]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-      <div className="relative w-full max-w-2xl">
-        <Card
-          className={cn(
-            'p-4 max-w-full locked-preview-container',
-            isUnlocking && 'unlocking',
-          )}
-        >
-          {/* Particle Burst */}
-          {particles.map((particle) => (
-            <div
-              key={particle.id}
-              className="particle"
-              style={{
-                left: '50%',
-                top: '50%',
-                '--tx': `${particle.x}px`,
-                '--ty': `${particle.y}px`,
-              } as React.CSSProperties}
-            />
-          ))}
+    <div className="relative w-full max-w-2xl mx-auto">
+      <Card
+        className={cn(
+          'p-4 max-w-full locked-preview-container',
+          isUnlocking && 'unlocking',
+        )}
+      >
+        {/* Particle Burst */}
+        {particles.map((particle) => (
+          <div
+            key={particle.id}
+            className="particle"
+            style={{
+              left: '50%',
+              top: '50%',
+              '--tx': `${particle.x}px`,
+              '--ty': `${particle.y}px`,
+            } as React.CSSProperties}
+          />
+        ))}
           <div className="w-full">
             <div className="text-center space-y-2 mb-4">
               <h3 className="font-semibold text-lg">
@@ -150,16 +149,9 @@ const LockedStakingPreview: React.FC<LockedStakingPreviewProps> = ({
               <p className="text-lg font-semibold text-neutral-200">
                 Connect Wallet to Unlock
               </p>
-              <button
-                onClick={onClose}
-                className="px-4 py-2 text-sm text-neutral-400 hover:text-neutral-200 transition-colors"
-              >
-                Close Preview
-              </button>
             </div>
           </div>
         </Card>
-      </div>
     </div>
   );
 };
