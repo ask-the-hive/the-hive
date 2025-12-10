@@ -38,7 +38,23 @@ const LogInButton: React.FC<Props> = ({ onComplete, className }) => {
           login();
         }
       }}
-      className={cn('w-full', className)}
+      className={cn(
+        'w-full relative overflow-hidden',
+        '!bg-gradient-to-r !from-[#d3a32d] !to-[#b67617]',
+        'dark:!from-[#d3a32d] dark:!to-[#b67617]',
+        '!text-neutral-50 !font-medium',
+        '!border-0',
+        'shadow-[0_2px_4px_rgba(0,0,0,0.1),inset_0_1px_0_rgba(255,255,255,0.12)]',
+        'dark:shadow-[0_2px_4px_rgba(0,0,0,0.2),inset_0_1px_0_rgba(255,255,255,0.15)]',
+        'hover:shadow-[0_3px_6px_rgba(0,0,0,0.12),inset_0_1px_0_rgba(255,255,255,0.15)]',
+        'dark:hover:shadow-[0_3px_6px_rgba(0,0,0,0.25),inset_0_1px_0_rgba(255,255,255,0.18)]',
+        'before:absolute before:inset-0 before:pointer-events-none before:z-0 before:rounded-full',
+        'before:bg-[linear-gradient(135deg,transparent_0%,transparent_40%,rgba(255,255,255,0.12)_48%,rgba(255,255,255,0.14)_50%,rgba(255,255,255,0.12)_52%,transparent_60%,transparent_100%)]',
+        'before:translate-x-[-100%] before:translate-y-[-100%] before:rotate-45',
+        'hover:before:animate-premium-shimmer',
+        '[&>*]:relative [&>*]:z-10',
+        className
+      )}
     >
       Connect Wallet
     </Button>
