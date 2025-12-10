@@ -8,7 +8,6 @@ import { useEnterSubmit } from '../_hooks';
 import { useChat } from '../_contexts/chat';
 import { cn } from '@/lib/utils';
 import { usePrivy } from '@privy-io/react-auth';
-import FollowUpSuggestions from './follow-up-suggestions';
 
 const PROMPT_POOL = [
   'Help me stake SOL',
@@ -52,7 +51,6 @@ const ChatInput: React.FC = () => {
 
   return (
     <div className="flex flex-col gap-1 w-full">
-      <FollowUpSuggestions />
       <form
         onSubmit={(e) => {
           e.preventDefault();
