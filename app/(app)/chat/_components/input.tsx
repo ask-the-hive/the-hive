@@ -90,7 +90,7 @@ const ChatInput: React.FC = () => {
                     type="submit"
                     size="icon"
                     disabled={
-                      input.trim() === '' || inputDisabledMessage !== '' || !user || isLoading
+                      input.trim() === '' || inputDisabledMessage !== '' || isLoading
                     }
                     variant="ghost"
                     className="h-8 w-8"
