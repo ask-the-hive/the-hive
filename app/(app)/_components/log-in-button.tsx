@@ -103,7 +103,22 @@ const LogInButton: React.FC<Props> = ({ onComplete, className }) => {
           login();
         }
       }}
-      className={cn('w-full', className)}
+      className={cn(
+        'w-full relative overflow-hidden',
+        '!bg-gradient-to-r !from-amber-500 !via-yellow-500 !to-amber-600',
+        'dark:!from-amber-600 dark:!via-yellow-600 dark:!to-amber-700',
+        '!text-neutral-50',
+        '!border-2 !border-amber-400/60 dark:!border-amber-400/60',
+        'shadow-[0_0_20px_rgba(251,191,36,0.4),0_0_40px_rgba(245,158,11,0.2)]',
+        'dark:shadow-[0_0_20px_rgba(251,191,36,0.5),0_0_40px_rgba(245,158,11,0.3)]',
+        'hover:shadow-[0_0_30px_rgba(251,191,36,0.6),0_0_50px_rgba(245,158,11,0.4)]',
+        'dark:hover:shadow-[0_0_30px_rgba(251,191,36,0.7),0_0_50px_rgba(245,158,11,0.5)]',
+        'before:absolute before:inset-0 before:pointer-events-none',
+        'before:bg-gradient-to-r before:from-transparent before:via-white/30 before:to-transparent',
+        'before:translate-x-[-100%] before:translate-y-[-100%] before:rotate-45',
+        'hover:before:animate-honeycomb-shine',
+        className
+      )}
     >
       Connect Wallet
     </Button>

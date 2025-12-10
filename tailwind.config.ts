@@ -71,6 +71,7 @@ export default {
       animation: {
         'shiny-text': 'shiny-text 8s infinite',
         'border-beam': 'border-beam calc(var(--duration)*1s) infinite linear',
+        'honeycomb-shine': 'honeycomb-shine 1.5s ease-in-out',
       },
       keyframes: {
         'shiny-text': {
@@ -84,6 +85,14 @@ export default {
         'border-beam': {
           '100%': {
             'offset-distance': '100%',
+          },
+        },
+        'honeycomb-shine': {
+          '0%': {
+            transform: 'translateX(-100%) translateY(-100%) rotate(45deg)',
+          },
+          '100%': {
+            transform: 'translateX(100%) translateY(100%) rotate(45deg)',
           },
         },
       },
