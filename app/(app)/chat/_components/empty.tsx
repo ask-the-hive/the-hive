@@ -14,6 +14,7 @@ import { AreaChart, Area, YAxis } from 'recharts';
 import { capitalizeWords } from '@/lib/string-utils';
 import { useChat } from '../_contexts/chat';
 import { cn } from '@/lib/utils';
+import OnboardingModal from './onboarding-modal';
 
 type BestPool = {
   symbol: string;
@@ -53,12 +54,32 @@ async function fetchBestLendingPool(): Promise<BestPool | null> {
   };
 }
 
+const ONBOARDING_STORAGE_KEY = 'the-hive-onboarded';
+
 const EmptyChat: React.FC = () => {
   const { currentChain } = useChain();
   const { sendMessage, isLoading: chatIsLoading, isResponseLoading } = useChat();
 
   const [staking, setStaking] = React.useState<BestPool | null>(null);
   const [lending, setLending] = React.useState<BestPool | null>(null);
+  const [showOnboarding, setShowOnboarding] = React.useState(false);
+
+  // Check onboarding status on mount
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const hasBeenOnboarded = localStorage.getItem(ONBOARDING_STORAGE_KEY);
+      if (!hasBeenOnboarded) {
+        setShowOnboarding(true);
+      }
+    }
+  }, []);
+
+  const handleOnboardingComplete = () => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(ONBOARDING_STORAGE_KEY, 'true');
+    }
+    setShowOnboarding(false);
+  };
 
   React.useEffect(() => {
     if (currentChain !== 'solana') return;
@@ -219,6 +240,9 @@ const EmptyChat: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Onboarding Modal */}
+      <OnboardingModal isOpen={showOnboarding} onClose={handleOnboardingComplete} />
     </div>
   );
 };
