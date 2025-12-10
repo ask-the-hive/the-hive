@@ -14,6 +14,7 @@ import { AreaChart, Area, YAxis } from 'recharts';
 import { capitalizeWords } from '@/lib/string-utils';
 import { useChat } from '../_contexts/chat';
 import { cn } from '@/lib/utils';
+import { ArrowUp } from 'lucide-react';
 
 type BestPool = {
   symbol: string;
@@ -344,11 +345,19 @@ const HeroApyCard: React.FC<{
             </div>
             <span
               className={cn(
-                'text-lg font-semibold text-emerald-400 transition-all duration-300',
+                'text-lg font-semibold text-emerald-400 transition-all duration-300 inline-flex items-center gap-1',
                 isComplete && 'apy-complete-flash',
               )}
             >
               {animatedApy.toFixed(2)}% APY
+              {isComplete && (
+                <ArrowUp
+                  className="w-3 h-3 text-emerald-400 animate-in fade-in-0 zoom-in-50 duration-300"
+                  style={{
+                    animation: 'sparkle-burst 0.6s ease-out',
+                  }}
+                />
+              )}
             </span>
           </div>
           <div className="flex items-center justify-between text-xs text-neutral-500 mt-1">

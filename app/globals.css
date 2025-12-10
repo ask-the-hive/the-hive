@@ -127,6 +127,16 @@ body {
     border-color: rgba(255, 215, 0, 0.8) !important;
   }
 
+  .premium-glow:active {
+    transform: translateY(-6px) scale(0.98) !important;
+    transition: transform 0.1s ease-out !important;
+  }
+
+  .premium-glow:not(:hover):active {
+    transform: scale(0.98) !important;
+    transition: transform 0.1s ease-out !important;
+  }
+
   .premium-glow::before {
     content: '';
     position: absolute;
@@ -199,15 +209,5 @@ body {
   .apy-complete-flash {
     animation: apy-flash 0.6s ease-out;
     position: relative;
-  }
-
-  .apy-complete-flash::after {
-    content: '✨';
-    position: absolute;
-    top: -8px;
-    right: -12px;
-    font-size: 0.75rem;
-    animation: sparkle-burst 0.6s ease-out;
-    pointer-events: none;
   }
 }
