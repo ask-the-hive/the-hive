@@ -1,14 +1,10 @@
 import 'server-only';
 
 import { add, del, find, get } from './base';
-
 import { getTokensContainer } from '../containers';
-
 import { Token } from '../types';
 import { resolveAssetSymbolToAddress } from '@/services/tokens/resolve-asset-symbol-to-address';
 import { ChainType } from '@/app/_contexts/chain-context';
-
-// CREATE
 
 /**
  * **DATABASE SERVICE**
@@ -21,8 +17,6 @@ import { ChainType } from '@/app/_contexts/chain-context';
 export const addToken = async (token: Token): Promise<Token | null> => {
   return add<Token, Token>(await getTokensContainer(), token);
 };
-
-// READ
 
 /**
  * **DATABASE SERVICE**
@@ -91,8 +85,6 @@ export const getTokenBySymbol = async (
     contractAddress: resolvedAddress || selected.contractAddress || selected.id,
   };
 };
-
-// DELETE
 
 /**
  * **DATABASE SERVICE**

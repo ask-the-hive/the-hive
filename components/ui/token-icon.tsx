@@ -49,44 +49,29 @@ export const TokenIcon: React.FC<TokenIconProps> = ({
   className = 'w-6 h-6 rounded-full',
 }) => {
   const localIcon = getLocalTokenIcon(tokenSymbol);
-
-  // Determine initial source and what we're starting with
   const hasValidSrc = src !== null && src !== undefined && src !== '';
   const startingWithSrc = hasValidSrc;
   const startingWithLocalIcon = !hasValidSrc && !!localIcon;
-
   const initialSrc = hasValidSrc ? src : localIcon || FALLBACK_TOKEN_ICON_URL;
-
   const [imgSrc, setImgSrc] = useState(initialSrc);
   const [triedSrc, setTriedSrc] = useState(startingWithSrc);
   const [triedLocalIcon, setTriedLocalIcon] = useState(startingWithLocalIcon);
 
-  // Update image source when src or tokenSymbol changes
   useEffect(() => {
     const newLocalIcon = getLocalTokenIcon(tokenSymbol);
     const newHasValidSrc = src !== null && src !== undefined && src !== '';
     const newSrc = newHasValidSrc ? src : newLocalIcon || FALLBACK_TOKEN_ICON_URL;
 
-    // Reset to new source when props change
     setImgSrc(newSrc);
     setTriedSrc(newHasValidSrc);
     setTriedLocalIcon(!newHasValidSrc && !!newLocalIcon);
   }, [src, tokenSymbol]);
 
-  // Handle image load error - automatically fallback to next available icon
-  // Fallback order: original src -> local token icon -> generic fallback
-  // This catches:
-  // - 404 errors (image doesn't exist)
-  // - Invalid image data (corrupted files)
-  // - CORS issues
-  // - Network errors
   const handleError = () => {
-    // If we started with src and haven't tried local icon yet, try it
     if (triedSrc && !triedLocalIcon && localIcon) {
       setTriedLocalIcon(true);
       setImgSrc(localIcon);
     } else if (imgSrc !== FALLBACK_TOKEN_ICON_URL) {
-      // Fall back to generic icon
       setImgSrc(FALLBACK_TOKEN_ICON_URL);
     }
   };

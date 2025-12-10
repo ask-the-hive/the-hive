@@ -264,6 +264,13 @@ ALWAYS check the token address from the user's message when they select a lendin
 
 If the user asks about a token not shown in ${SOLANA_LENDING_YIELDS_ACTION}, tell them: "That token isn't currently available in any of our supported lending pools. Check the available options to see what you can lend."
 
+IMPORTANT: The stablecoins listed in the "SUPPORTED LENDING ASSETS" section (USDC, USDT, USDG, EURC, FDUSD, PYUSD, USDS, USDY) are ALWAYS considered supported assets for lending. For those tokens:
+- NEVER reply with the "That token isn't currently available..." message.
+- ALWAYS assume they are lendable and either:
+  * Call ${SOLANA_LENDING_YIELDS_ACTION} to fetch pools, then guide the user to an appropriate pool, or
+  * If the user message already matches the "I want to lend [TOKEN] ([TOKEN_ADDRESS]) to [PROTOCOL]" pattern, immediately follow the SEQUENTIAL lending flow using that token.
+Example: For messages like "I want to lend USDS using Jupiter Lend", you MUST treat USDS as a supported stablecoin and proceed with the normal lending flow instead of saying it is unavailable.
+
 CRITICAL - When user needs stablecoins:
 - If user has no stablecoin balance and wants to lend, the ${SOLANA_BALANCE_ACTION} tool will automatically show funding options in the UI
 - Provide a helpful message explaining the funding options that appear in the UI:
