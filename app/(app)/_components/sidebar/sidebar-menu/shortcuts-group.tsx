@@ -1,6 +1,6 @@
 'use client';
 
-import { Droplet, ChartLine, ChartCandlestick, Zap } from 'lucide-react';
+import { Droplet, Zap, HandCoins } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 import {
@@ -24,16 +24,9 @@ const shortcuts = [
   {
     title: 'Lend',
     description: 'Lend stablecoins to earn interest',
-    icon: ChartLine,
+    icon: HandCoins,
     prompt: 'Show me the best lending pools on Solana',
     eventName: 'lend_strategy_clicked',
-  },
-  {
-    title: 'Swap',
-    description: 'Swap on Jupiter',
-    icon: ChartCandlestick,
-    prompt: "Let's trade some tokens",
-    eventName: 'trade_strategy_clicked',
   },
 ] as const;
 
