@@ -49,19 +49,34 @@ const LendingYieldsTool: React.FC<Props> = ({ tool, prevToolAgent }) => {
     return stableCoins.includes(symbol) ? symbol : null;
   };
 
-  const detectSpecificPoolIntent = (msgs: typeof messages) => {
+  const detectRequestedProvider = (msgs: typeof messages) => {
     const lastUserMessage = [...msgs].reverse().find((m) => m.role === 'user');
     const content = typeof lastUserMessage?.content === 'string' ? lastUserMessage.content : '';
-    if (!content) return false;
-    return /lend\s+(?:[0-9.,]+\s+)?[A-Za-z0-9]+\s+(?:to|using)\s+[A-Za-z0-9\s]+/i.test(content);
+    if (!content) return null;
+    if (/jupiter\s+lend|jupiter\b/i.test(content)) return 'jupiter-lend';
+    if (/kamino\b/i.test(content)) return 'kamino-lend';
+    return null;
   };
 
   const requestedSymbolRef = useRef<string | null>(detectRequestedSymbol(messages));
   const requestedSymbol = requestedSymbolRef.current;
-  const skipYieldsUI = requestedSymbol && detectSpecificPoolIntent(messages);
+  const requestedProviderRef = useRef<string | null>(detectRequestedProvider(messages));
+  const requestedProvider = requestedProviderRef.current;
+
+  const loadingLabel = useMemo(() => {
+    if (requestedSymbol && requestedProvider) {
+      return `Fetching ${requestedSymbol} lending yields on ${capitalizeWords(
+        requestedProvider.replace('-', ' '),
+      )}...`;
+    }
+    if (requestedSymbol) return `Fetching ${requestedSymbol} lending yields...`;
+    if (requestedProvider) {
+      return `Fetching lending yields on ${capitalizeWords(requestedProvider.replace('-', ' '))}...`;
+    }
+    return 'Getting best lending yields...';
+  }, [requestedProvider, requestedSymbol]);
 
   const getHeading = (result: LendingYieldsResultType) => {
-    if (skipYieldsUI) return '';
     const pools = result.body || [];
     if (!pools.length) return 'No lending yields found';
     const stableCoins = [
@@ -82,6 +97,11 @@ const LendingYieldsTool: React.FC<Props> = ({ tool, prevToolAgent }) => {
     const uniqueSymbols = Array.from(new Set(pools.map((p) => (p.symbol || '').toUpperCase())));
     const isStableOnly = uniqueSymbols.every((s) => stableCoins.includes(s));
     if (requestedSymbol && uniqueSymbols.includes(requestedSymbol)) {
+      if (requestedProvider) {
+        return `Fetched best ${requestedSymbol} lending yields on ${capitalizeWords(
+          requestedProvider.replace('-', ' '),
+        )}`;
+      }
       return `Fetched best ${requestedSymbol} lending yields`;
     }
     if (uniqueSymbols.length === 1 && isStableOnly) {
@@ -93,12 +113,20 @@ const LendingYieldsTool: React.FC<Props> = ({ tool, prevToolAgent }) => {
   return (
     <ToolCard
       tool={tool}
-      loadingText={`Getting best lending yields...`}
+      loadingText={loadingLabel}
       disableCollapseAnimation
       result={{
         heading: (result: LendingYieldsResultType) => getHeading(result),
         body: (result: LendingYieldsResultType) =>
-          !skipYieldsUI && result.body ? <LendingYields body={result.body} /> : '',
+          result.body ? (
+            <LendingYields
+              body={result.body}
+              requestedSymbol={requestedSymbol}
+              requestedProvider={requestedProvider}
+            />
+          ) : (
+            ''
+          ),
       }}
       prevToolAgent={prevToolAgent}
       className="w-full"
@@ -108,7 +136,9 @@ const LendingYieldsTool: React.FC<Props> = ({ tool, prevToolAgent }) => {
 
 const LendingYields: React.FC<{
   body: LendingYieldsResultBodyType;
-}> = ({ body }) => {
+  requestedSymbol?: string | null;
+  requestedProvider?: string | null;
+}> = ({ body, requestedSymbol, requestedProvider }) => {
   const { sendInternalMessage, isResponseLoading, messages } = useChat();
   const [selectedPool, setSelectedPool] = useState<LendingYieldsPoolData | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -153,19 +183,44 @@ const LendingYields: React.FC<{
     return stableCoins.includes(symbol) ? symbol : null;
   };
 
-  const requestedSymbolRef = useRef<string | null>(detectRequestedSymbol(messages));
-  const requestedSymbol = requestedSymbolRef.current;
+  const requestedSymbolRef = useRef<string | null>(
+    requestedSymbol ?? detectRequestedSymbol(messages),
+  );
+  const symbolToFilter = requestedSymbolRef.current;
+
+  const detectRequestedProvider = (msgs: typeof messages) => {
+    const lastUserMessage = [...msgs].reverse().find((m) => m.role === 'user');
+    const content = typeof lastUserMessage?.content === 'string' ? lastUserMessage.content : '';
+    if (!content) return null;
+    if (/jupiter\s+lend|jupiter\b/i.test(content)) return 'jupiter-lend';
+    if (/kamino\b/i.test(content)) return 'kamino-lend';
+    return null;
+  };
+
+  const requestedProviderRef = useRef<string | null>(
+    requestedProvider ?? detectRequestedProvider(messages),
+  );
+  const providerToFilter = requestedProviderRef.current;
 
   const poolsToShow = useMemo(() => {
     if (!body) return [];
-    if (!requestedSymbol) return body;
-    const filtered = body.filter((pool) => (pool.symbol || '').toUpperCase() === requestedSymbol);
-    return filtered.length > 0 ? filtered : body;
-  }, [body, requestedSymbol]);
+    let pools = body;
+    if (symbolToFilter) {
+      const filtered = pools.filter((pool) => (pool.symbol || '').toUpperCase() === symbolToFilter);
+      pools = filtered.length > 0 ? filtered : pools;
+    }
+    if (providerToFilter) {
+      const filteredByProvider = pools.filter(
+        (pool) => (pool.project || '').toLowerCase() === providerToFilter.toLowerCase(),
+      );
+      pools = filteredByProvider.length > 0 ? filteredByProvider : pools;
+    }
+    return pools;
+  }, [body, symbolToFilter, providerToFilter]);
 
   const displayPools = useMemo(() => {
     if (!poolsToShow) return [];
-    if (!requestedSymbol) {
+    if (!symbolToFilter) {
       const topThree = poolsToShow.slice(0, 3);
       if (topThree.length >= 3) {
         const [first, second, third] = topThree;
@@ -174,7 +229,7 @@ const LendingYields: React.FC<{
       return topThree;
     }
     return poolsToShow;
-  }, [poolsToShow, requestedSymbol]);
+  }, [poolsToShow, symbolToFilter]);
 
   const highlightIndex = useMemo(() => {
     if (!displayPools.length) return 0;

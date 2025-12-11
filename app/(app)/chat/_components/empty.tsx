@@ -185,7 +185,10 @@ const EmptyChat: React.FC = () => {
         />
         <div className="flex flex-col flex-1 min-w-0">
           {solPriceLoading || !formattedSolPrice ? (
-            <Skeleton className="h-4 w-28" />
+            <div className="flex flex-col gap-1">
+              <Skeleton className="h-5 w-12" />
+              <Skeleton className="h-3 w-12" />
+            </div>
           ) : (
             <div className="flex flex-col leading-tight">
               <span className="text-sm font-semibold text-neutral-50">{formattedSolPrice}</span>
@@ -208,7 +211,7 @@ const EmptyChat: React.FC = () => {
         </div>
         <div className="w-24">
           {solChartLoading || sparklineData.length === 0 ? (
-            <Skeleton className="w-full aspect-video rounded-md" />
+            <Skeleton className="w-full aspect-video rounded-sm" />
           ) : (
             <ChartContainer className="w-full" config={{}}>
               <AreaChart data={sparklineData}>
