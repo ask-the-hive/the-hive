@@ -17,6 +17,14 @@ export async function unstakeSol(
   args: UnstakeArgumentsType,
 ): Promise<SolanaActionResult<UnstakeResultBodyType>> {
   try {
+    // If no contract address provided, return guidance only
+  if (!args.contractAddress) {
+    return {
+      message: '',
+      body: { status: 'guide' },
+    };
+  }
+
     // Get token data for the liquid staking token
     const inputToken = await getToken(args.contractAddress);
     if (!inputToken) {
