@@ -55,6 +55,32 @@ async function fetchBestLendingPool(): Promise<BestPool | null> {
 }
 
 const ONBOARDING_STORAGE_KEY = 'the-hive-onboarded';
+const HERO_STAKING_CACHE_KEY = 'hero-best-staking';
+const HERO_LENDING_CACHE_KEY = 'hero-best-lending';
+const HERO_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
+const getCachedPool = (key: string): BestPool | null => {
+  if (typeof window === 'undefined') return null;
+  try {
+    const cached = localStorage.getItem(key);
+    if (!cached) return null;
+    const parsed = JSON.parse(cached) as { ts: number; pool: BestPool };
+    if (!parsed || !parsed.ts || !parsed.pool) return null;
+    if (Date.now() - parsed.ts > HERO_CACHE_TTL_MS) return null;
+    return parsed.pool;
+  } catch {
+    return null;
+  }
+};
+
+const setCachedPool = (key: string, pool: BestPool | null) => {
+  if (typeof window === 'undefined' || !pool) return;
+  try {
+    localStorage.setItem(key, JSON.stringify({ ts: Date.now(), pool }));
+  } catch {
+    // ignore cache write errors
+  }
+};
 
 const EmptyChat: React.FC = () => {
   const { currentChain } = useChain();
@@ -64,7 +90,6 @@ const EmptyChat: React.FC = () => {
   const [lending, setLending] = React.useState<BestPool | null>(null);
   const [showOnboarding, setShowOnboarding] = React.useState(false);
 
-  // Check onboarding status on mount
   React.useEffect(() => {
     if (typeof window !== 'undefined') {
       const hasBeenOnboarded = localStorage.getItem(ONBOARDING_STORAGE_KEY);
@@ -84,6 +109,11 @@ const EmptyChat: React.FC = () => {
   React.useEffect(() => {
     if (currentChain !== 'solana') return;
 
+    const cachedStaking = getCachedPool(HERO_STAKING_CACHE_KEY);
+    const cachedLending = getCachedPool(HERO_LENDING_CACHE_KEY);
+    if (cachedStaking) setStaking(cachedStaking);
+    if (cachedLending) setLending(cachedLending);
+
     let mounted = true;
     (async () => {
       try {
@@ -94,9 +124,11 @@ const EmptyChat: React.FC = () => {
         if (!mounted) return;
         if (bestStaking.status === 'fulfilled') {
           setStaking(bestStaking.value);
+          setCachedPool(HERO_STAKING_CACHE_KEY, bestStaking.value);
         }
         if (bestLending.status === 'fulfilled') {
           setLending(bestLending.value);
+          setCachedPool(HERO_LENDING_CACHE_KEY, bestLending.value);
         }
       } catch {
         // ignore; hero cards are non-critical
@@ -123,6 +155,15 @@ const EmptyChat: React.FC = () => {
     });
   }, [solPrice]);
 
+  const changeValue = solPrice?.priceChange24h ?? 0;
+  const formattedChange = useMemo(() => {
+    if (typeof changeValue !== 'number') return null;
+    const sign = changeValue > 0 ? '+' : '';
+    return `${sign}${changeValue.toFixed(2)}%`;
+  }, [changeValue]);
+
+  const sparklineColor = changeValue < 0 ? '#f87171' : '#22c55e';
+
   const sparklineData = useMemo(() => {
     if (!Array.isArray(solPriceCandles)) return [];
     return solPriceCandles.map((candle) => ({
@@ -143,11 +184,26 @@ const EmptyChat: React.FC = () => {
           className="w-5 h-5 rounded-full"
         />
         <div className="flex flex-col flex-1 min-w-0">
-          <span className="text-xs text-neutral-400">Solana</span>
           {solPriceLoading || !formattedSolPrice ? (
-            <Skeleton className="h-4 w-16 mt-1" />
+            <Skeleton className="h-4 w-28" />
           ) : (
-            <span className="text-sm font-medium text-neutral-50 mt-1">{formattedSolPrice}</span>
+            <div className="flex flex-col leading-tight">
+              <span className="text-sm font-semibold text-neutral-50">{formattedSolPrice}</span>
+              {formattedChange ? (
+                <span
+                  className={cn(
+                    'text-xs font-semibold',
+                    changeValue > 0
+                      ? 'text-emerald-400'
+                      : changeValue < 0
+                        ? 'text-rose-400'
+                        : 'text-neutral-400',
+                  )}
+                >
+                  {formattedChange}
+                </span>
+              ) : null}
+            </div>
           )}
         </div>
         <div className="w-24">
@@ -159,14 +215,14 @@ const EmptyChat: React.FC = () => {
                 <YAxis hide domain={['dataMin', 'dataMax']} />
                 <defs>
                   <linearGradient id="solanaSparkline" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#22c55e" stopOpacity={0.8} />
-                    <stop offset="95%" stopColor="#22c55e" stopOpacity={0} />
+                    <stop offset="5%" stopColor={sparklineColor} stopOpacity={0.8} />
+                    <stop offset="95%" stopColor={sparklineColor} stopOpacity={0} />
                   </linearGradient>
                 </defs>
                 <Area
                   type="monotone"
                   dataKey="price"
-                  stroke="#22c55e"
+                  stroke={sparklineColor}
                   strokeWidth={1.5}
                   fillOpacity={1}
                   fill="url(#solanaSparkline)"
@@ -241,7 +297,6 @@ const EmptyChat: React.FC = () => {
         )}
       </div>
 
-      {/* Onboarding Modal */}
       <OnboardingModal isOpen={showOnboarding} onClose={handleOnboardingComplete} />
     </div>
   );
@@ -253,7 +308,10 @@ const EmptyChat: React.FC = () => {
  * @param duration - Duration of animation in milliseconds (default: 2000ms)
  * @returns Object with current animated value and completion state
  */
-function useCountUp(target: number, duration: number = 2000): { count: number; isComplete: boolean } {
+function useCountUp(
+  target: number,
+  duration: number = 2000,
+): { count: number; isComplete: boolean } {
   const [count, setCount] = useState(0);
   const [isComplete, setIsComplete] = useState(false);
   const startTimeRef = useRef<number | null>(null);
@@ -274,7 +332,6 @@ function useCountUp(target: number, duration: number = 2000): { count: number; i
       const elapsed = currentTime - startTimeRef.current;
       const progress = Math.min(elapsed / duration, 1);
 
-      // Easing function for smooth animation (ease-out)
       const easeOut = 1 - Math.pow(1 - progress, 3);
       const currentValue = targetRef.current * easeOut;
 
@@ -362,9 +419,7 @@ const HeroApyCard: React.FC<{
                 height={20}
                 className="w-5 h-5 rounded-full"
               />
-              <span className="text-sm font-medium text-neutral-100 truncate">
-                {pool.symbol}
-              </span>
+              <span className="text-sm font-medium text-neutral-100 truncate">{pool.symbol}</span>
             </div>
             <span
               className={cn(

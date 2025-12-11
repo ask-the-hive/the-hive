@@ -79,7 +79,8 @@ export async function getLendingYields(): Promise<SolanaActionResult<LendingYiel
           apyBase: pool.apyBase,
           apyReward: null,
           apy: pool.apy,
-          rewardTokens: [],
+      rewardTokens: [],
+      projectLogoURI: null,
           poolMeta: null,
           url: null,
           underlyingTokens: [pool.mintAddress],
@@ -110,7 +111,8 @@ export async function getLendingYields(): Promise<SolanaActionResult<LendingYiel
         apyBase: pool.apyBase,
         apyReward: null,
         apy: pool.apy,
-        rewardTokens: [],
+      rewardTokens: [],
+      projectLogoURI: null,
         poolMeta: pool.address ?? null,
         url: null,
         underlyingTokens: [pool.mintAddress],
@@ -170,7 +172,7 @@ export async function getLendingYields(): Promise<SolanaActionResult<LendingYiel
     });
 
     const dedupedSorted = deduped.sort((a: any, b: any) => (b.apy || 0) - (a.apy || 0));
-    const selectedPools = dedupedSorted.slice(0, 8);
+    const selectedPools = dedupedSorted;
 
     const body = await Promise.all(
       selectedPools.map(async (pool: any) => {
@@ -197,6 +199,12 @@ export async function getLendingYields(): Promise<SolanaActionResult<LendingYiel
           tokenMintAddress: tokenMintAddress,
           predictions: pool.predictions,
           tokenData: tokenData || null,
+          projectLogoURI:
+            pool.project === 'kamino-lend'
+              ? '/logos/kamino.svg'
+              : pool.project === 'jupiter-lend' || pool.project === 'jup-lend'
+              ? '/logos/jupiter.png'
+              : null,
         };
       }),
     );
@@ -211,7 +219,7 @@ export async function getLendingYields(): Promise<SolanaActionResult<LendingYiel
       ? `Best yield: ${bestPool.symbol} via ${capitalizeWords(
           bestPool.project || '',
         )} at ${(bestPool.apy || 0).toFixed(2)}% APY. `
-      : '';
+      : 'No yields available yet. ';
 
     const result: SolanaActionResult<LendingYieldsResultBodyType> = {
       message: `${bestSummary}Found ${body.length} Solana lending pool${

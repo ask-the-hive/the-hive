@@ -112,6 +112,7 @@ CRITICAL - USE LIVE APYS, NEVER INVENT:
 - You may quote specific APYs when they come from tool results (the UI cards already show live APYs). Do NOT invent or guess numbers.
 - If no APY data is available, do NOT guess ranges—just say you'll show the live cards with current yields once available.
 - If asked for “best rates”, show the yields UI (${SOLANA_LENDING_YIELDS_ACTION}) and tell the user to pick a pool to view live rates.
+- When comparing protocols (e.g., “Kamino vs Drift for stablecoin yields”), you MUST call ${SOLANA_LENDING_YIELDS_ACTION} and base all numbers on the returned pools. If a protocol has no stablecoin lending pools (e.g., Drift does not offer stablecoin lending), explicitly state that it has no stablecoin APY instead of inventing numbers. Never output predefined or approximate APY ranges.
 
 IMPORTANT - Understanding user intent and proper flow:
 
