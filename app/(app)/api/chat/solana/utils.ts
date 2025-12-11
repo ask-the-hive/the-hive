@@ -101,6 +101,11 @@ export const chooseAgent = async (
   const mentionsStablecoin =
     /\b(stablecoin|stablecoins|usdc|usdt|usdg|eurc|fdusd|pyusd|usds)\b/.test(userText);
 
+  const mentionsStablecoinBalance =
+    mentionsStablecoin &&
+    /\b(i\s+have|holding|hold|my)\b/.test(userText) &&
+    /\b\d+(\.\d+)?\s*(usdc|usdt|usdg|eurc|fdusd|pyusd|usds)\b/.test(userText);
+
   const depositOrYieldIntent =
     /\b(lend|lending|deposit|deposits|earn|earning|park|parking|place|put|apy|yield|yields|rate|rates)\b/.test(
       userText,
@@ -108,6 +113,7 @@ export const chooseAgent = async (
 
   const wantsLending =
     /\b(lend|lending)\b/.test(userText) ||
+    mentionsStablecoinBalance ||
     (mentionsStablecoin && depositOrYieldIntent) ||
     (affirmative && /\b(lend|lending|stablecoin|apy|yield)\b/.test(assistantText));
 

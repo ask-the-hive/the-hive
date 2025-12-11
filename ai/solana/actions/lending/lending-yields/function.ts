@@ -224,7 +224,7 @@ export async function getLendingYields(): Promise<SolanaActionResult<LendingYiel
     const result: SolanaActionResult<LendingYieldsResultBodyType> = {
       message: `${bestSummary}Found ${body.length} Solana lending pool${
         body.length === 1 ? '' : 's'
-      }. Compare the cards (APY and TVL are shown in the UI) and pick the best fit to continue. DO NOT list pool names, symbols, or APYs in text. DO NOT mention tokens that were not explicitly requested. Keep the text to one short sentence. DO NOT CHECK BALANCES YET - wait for the user to select a specific pool first.`,
+      }. Compare the cards (APY and TVL are shown in the UI) and pick the best fit to continue.\n\nText rules: keep to one short sentence, do NOT list pool names/symbols/APYs in text, do NOT mention other tokens unless the user asked for them, and if you suggest a different token for higher yield make it clear they must swap first. DO NOT CHECK BALANCES YET - wait for the user to select a specific pool first.`,
       body,
     };
 
