@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useChat } from '@/app/(app)/chat/_contexts/chat';
 import ToolCard from '../../tool-card';
 import { SOLANA_LENDING_POOL_DATA_STORAGE_KEY } from '@/lib/constants';
@@ -75,6 +75,42 @@ const LendingYields: React.FC<{
     }
   }, [body]);
 
+  const requestedSymbol = useMemo(() => {
+    const lastUserMessage = [...messages].reverse().find((m) => m.role === 'user');
+    const content = typeof lastUserMessage?.content === 'string' ? lastUserMessage.content : '';
+    if (!content) return null;
+
+    const stableCoins = [
+      'USDC',
+      'USDT',
+      'USDC.E',
+      'USDT.E',
+      'USDX',
+      'USDS',
+      'USDG',
+      'USDCso',
+      'PYUSD',
+      'FDUSD',
+      'DAI',
+      'EUROe',
+      'EURC',
+    ];
+
+    const match = content.match(
+      /\b(USDC\.E|USDT\.E|USDCso|USDC|USDT|USDX|USDS|USDG|PYUSD|FDUSD|DAI|EUROe|EURC)\b/i,
+    );
+    if (!match) return null;
+    const symbol = match[1].toUpperCase();
+    return stableCoins.includes(symbol) ? symbol : null;
+  }, [messages]);
+
+  const poolsToShow = useMemo(() => {
+    if (!body) return [];
+    if (!requestedSymbol) return body;
+    const filtered = body.filter((pool) => (pool.symbol || '').toUpperCase() === requestedSymbol);
+    return filtered.length > 0 ? filtered : body;
+  }, [body, requestedSymbol]);
+
   const handleLendClick = useCallback(
     async (poolData: LendingYieldsPoolData) => {
       if (isResponseLoading) return;
@@ -103,7 +139,7 @@ const LendingYields: React.FC<{
   }, [isResponseLoading]);
 
   useEffect(() => {
-    if (!body || !body.length) return;
+    if (!poolsToShow || !poolsToShow.length) return;
     if (hasAutoSelectedRef.current) return;
     if (isResponseLoading) return;
 
@@ -125,7 +161,7 @@ const LendingYields: React.FC<{
 
     if (!supportedStablecoins.includes(tokenSymbol)) return;
 
-    const matchingPool = body.find((pool) => {
+    const matchingPool = poolsToShow.find((pool) => {
       const poolSymbol = (pool.symbol || '').toUpperCase();
       const project = (pool.project || '').toLowerCase();
       const projectMatches =
@@ -141,13 +177,13 @@ const LendingYields: React.FC<{
     hasAutoSelectedRef.current = true;
     setAutoSelected(true);
     handleLendClick(matchingPool);
-  }, [body, messages, isResponseLoading, handleLendClick]);
+  }, [poolsToShow, messages, isResponseLoading, handleLendClick]);
 
   return (
     <>
       {!autoSelected && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4 mt-4">
-          {body?.map((pool, index) => (
+          {poolsToShow?.map((pool, index) => (
             <PoolDetailsCard
               key={`${pool.name}-${pool.project}-${index}`}
               pool={pool}

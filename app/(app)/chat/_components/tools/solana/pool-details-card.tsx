@@ -52,7 +52,7 @@ function PoolDetailsCard<T extends PoolData>({
           ? 'opacity-50 cursor-not-allowed'
           : 'cursor-pointer hover:border-brand-600/50 dark:hover:border-brand-600/50',
         !disabled &&
-          index === 1 &&
+          index === 0 &&
           'hover:border-brand-600 dark:hover:border-brand-600 !shadow-[0_0_10px_rgba(234,179,8,0.5)] dark:!shadow-[0_0_10px_rgba(234,179,8,0.5)]',
       )}
       onClick={(e) => !disabled && handleClick(e)}
