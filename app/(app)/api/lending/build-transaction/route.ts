@@ -101,6 +101,33 @@ export async function POST(req: NextRequest) {
         );
     }
 
+    // Pre-flight simulate to avoid wallet warnings about unsimulatable TXs
+    try {
+      const simResult = await connection.simulateTransaction(transaction, {
+        sigVerify: false,
+      });
+      if (simResult.value.err) {
+        console.error('Lending build TX simulation failed', simResult.value.err);
+        return NextResponse.json(
+          {
+            error: 'Transaction simulation failed',
+            logs: simResult.value.logs,
+            simError: simResult.value.err,
+          },
+          { status: 400 },
+        );
+      }
+    } catch (simErr) {
+      console.error('Lending build TX simulation exception', simErr);
+      return NextResponse.json(
+        {
+          error: 'Transaction simulation failed',
+          details: simErr instanceof Error ? simErr.message : String(simErr),
+        },
+        { status: 400 },
+      );
+    }
+
     // Serialize the transaction to send to the client
     const serialized = Buffer.from(transaction.serialize()).toString('base64');
 

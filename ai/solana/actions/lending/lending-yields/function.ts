@@ -4,49 +4,36 @@ import { getKaminoPools } from '@/services/lending/get-kamino-pools';
 import { getJupiterPools } from '@/services/lending/get-jupiter-pools';
 import { getTokenBySymbol } from '@/db/services/tokens';
 import { LendingYieldsResultBodyType } from './schema';
+import { capitalizeWords } from '@/lib/string-utils';
 
-// Simple in-memory cache so that hero cards and the lending agent
-// can share the same lending-yields response without repeatedly
-// calling external APIs within a short window.
-let cachedLendingYields:
-  | {
-      timestamp: number;
-      result: SolanaActionResult<LendingYieldsResultBodyType>;
-    }
-  | null = null;
+let cachedLendingYields: {
+  timestamp: number;
+  result: SolanaActionResult<LendingYieldsResultBodyType>;
+} | null = null;
 
 const LENDING_YIELDS_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
 export async function getLendingYields(): Promise<SolanaActionResult<LendingYieldsResultBodyType>> {
   try {
-    if (cachedLendingYields && Date.now() - cachedLendingYields.timestamp < LENDING_YIELDS_CACHE_TTL_MS) {
+    if (
+      cachedLendingYields &&
+      Date.now() - cachedLendingYields.timestamp < LENDING_YIELDS_CACHE_TTL_MS
+    ) {
       return cachedLendingYields.result;
     }
 
-    // Fetch from DefiLlama, Kamino SDK, and Jupiter Lend API
     const [defiLlamaResponse, kaminoPools, jupiterPools] = await Promise.all([
       getBestLendingYields(),
       getKaminoPools(),
       getJupiterPools(),
     ]);
 
-    // Filter for Solana chains first
     const solanaPools = defiLlamaResponse.data.filter((pool: any) => pool.chain === 'Solana');
 
-    // Filter for the specific Solana lending protocols
-    const lendingProtocols = [
-      'kamino-lend', // Kamino Finance - PRIMARY (best yields)
-      'jupiter-lend', // Jupiter Lend - fetched via Jupiter API
-      'jup-lend', // Jupiter Lend alias
-      // 'marginfi-lending', // Marginfi - no pools in DeFiLlama
-      // 'credix', // Credix
-      // 'maple', // Maple Finance
-      // 'save', // Save Finance - SDK has dependency issues
-    ];
+    const lendingProtocols = ['kamino-lend', 'jupiter-lend', 'jup-lend'];
 
     const stableCoins = ['USDC', 'USDT', 'EURC', 'FDUSD', 'PYUSD', 'USDS', 'USDY', 'USDS', 'USDG'];
 
-    // Filter DefiLlama pools
     const defiLlamaPools = solanaPools.filter((pool: any) => {
       const isLendingProtocol = lendingProtocols.includes(pool.project);
       const isStableCoin = stableCoins.includes(pool.symbol);
@@ -58,20 +45,16 @@ export async function getLendingYields(): Promise<SolanaActionResult<LendingYiel
       return isLendingProtocol && !isLPPair && hasAPY && hasUnderlyingToken && isStableCoin;
     });
 
-    // Split DefiLlama pools by project
     const defiLlamaKaminoPools = defiLlamaPools.filter((p: any) => p.project === 'kamino-lend');
     const defiLlamaJupiterPools = defiLlamaPools.filter(
       (p: any) => p.project === 'jupiter-lend' || p.project === 'jup-lend',
     );
 
-    // Create maps for each protocol (keyed by mint address)
     const kaminoPoolsByMint = new Map<string, any>();
     const jupiterPoolsByMint = new Map<string, any>();
 
-    // Helper to enrich a pool with DefiLlama metadata
     const enrichPool = (basePool: any, defiLlamaPool: any) => ({
       ...basePool,
-      // Prefer DefiLlama predictions/metadata, keep base pool's APY data
       predictions: defiLlamaPool?.predictions ?? basePool.predictions,
       rewardTokens: defiLlamaPool?.rewardTokens?.length
         ? defiLlamaPool.rewardTokens
@@ -79,7 +62,6 @@ export async function getLendingYields(): Promise<SolanaActionResult<LendingYiel
       url: defiLlamaPool?.url ?? basePool.url,
     });
 
-    // Process Kamino SDK pools
     kaminoPools
       .filter((pool) => {
         const isStableCoin = stableCoins.includes(pool.symbol);
@@ -97,14 +79,14 @@ export async function getLendingYields(): Promise<SolanaActionResult<LendingYiel
           apyBase: pool.apyBase,
           apyReward: null,
           apy: pool.apy,
-          rewardTokens: [],
+      rewardTokens: [],
+      projectLogoURI: null,
           poolMeta: null,
           url: null,
           underlyingTokens: [pool.mintAddress],
           predictions: null,
         };
 
-        // Find matching DefiLlama pool for enrichment
         const matchingDefiLlama = defiLlamaKaminoPools.find(
           (p: any) => p.underlyingTokens?.[0] === mint,
         );
@@ -118,7 +100,6 @@ export async function getLendingYields(): Promise<SolanaActionResult<LendingYiel
         kaminoPoolsByMint.set(mint, enrichedKaminoPool);
       });
 
-    // Process Jupiter pools
     jupiterPools.forEach((pool) => {
       const mint = pool.mintAddress;
       if (!mint) return;
@@ -130,14 +111,14 @@ export async function getLendingYields(): Promise<SolanaActionResult<LendingYiel
         apyBase: pool.apyBase,
         apyReward: null,
         apy: pool.apy,
-        rewardTokens: [],
+      rewardTokens: [],
+      projectLogoURI: null,
         poolMeta: pool.address ?? null,
         url: null,
         underlyingTokens: [pool.mintAddress],
         predictions: pool.predictions || null,
       };
 
-      // Find matching DefiLlama pool for enrichment
       const matchingDefiLlama = defiLlamaJupiterPools.find(
         (p: any) => p.underlyingTokens?.[0] === mint,
       );
@@ -151,7 +132,6 @@ export async function getLendingYields(): Promise<SolanaActionResult<LendingYiel
       jupiterPoolsByMint.set(mint, enrichedJupiterPool);
     });
 
-    // Combine all pools (Kamino + Jupiter as separate entries)
     const solLendingPools = [
       ...Array.from(kaminoPoolsByMint.values()),
       ...Array.from(jupiterPoolsByMint.values()),
@@ -163,21 +143,39 @@ export async function getLendingYields(): Promise<SolanaActionResult<LendingYiel
       };
     }
 
-    // Sort by APY (highest first) and take top 6
-    let topSolanaPools = solLendingPools.sort((a: any, b: any) => (b.apy || 0) - (a.apy || 0));
-    topSolanaPools = topSolanaPools.slice(0, 6);
-    // Reorder only when showing exactly 3 cards; otherwise leave sorted
-    if (topSolanaPools.length >= 3) {
-      const [highest, second, third] = topSolanaPools;
-      topSolanaPools[0] = second;
-      topSolanaPools[1] = highest;
-      topSolanaPools[2] = third;
-    }
+    const mustIncludePools: any[] = [];
+    const preferSymbol = 'USDC';
 
-    // Transform to the expected format
+    const bestFromProjectForSymbol = (pools: any[], project: string, symbol: string) => {
+      return pools
+        .filter((p) => p.project === project && (p.symbol || '').toUpperCase() === symbol)
+        .sort((a, b) => (b.apy || 0) - (a.apy || 0))[0];
+    };
+
+    const bestKaminoUSDC = bestFromProjectForSymbol(solLendingPools, 'kamino-lend', preferSymbol);
+    const bestJupiterUSDC = bestFromProjectForSymbol(solLendingPools, 'jupiter-lend', preferSymbol);
+
+    if (bestKaminoUSDC) mustIncludePools.push(bestKaminoUSDC);
+    if (bestJupiterUSDC) mustIncludePools.push(bestJupiterUSDC);
+
+    const topSolanaPools = solLendingPools.sort((a: any, b: any) => (b.apy || 0) - (a.apy || 0));
+    const combined = [...mustIncludePools, ...topSolanaPools];
+    const deduped = combined.filter((pool, index, arr) => {
+      const key = `${pool.project}-${pool.tokenMintAddress || pool.underlyingTokens?.[0]}-${pool.symbol}`;
+      return (
+        index ===
+        arr.findIndex(
+          (p) =>
+            `${p.project}-${p.tokenMintAddress || p.underlyingTokens?.[0]}-${p.symbol}` === key,
+        )
+      );
+    });
+
+    const dedupedSorted = deduped.sort((a: any, b: any) => (b.apy || 0) - (a.apy || 0));
+    const selectedPools = dedupedSorted;
+
     const body = await Promise.all(
-      topSolanaPools.map(async (pool: any) => {
-        // Use underlyingTokens[0] from DefiLlama as the source of truth for the mint address
+      selectedPools.map(async (pool: any) => {
         const tokenMintAddress = pool.underlyingTokens?.[0];
 
         if (!tokenMintAddress) {
@@ -198,16 +196,35 @@ export async function getLendingYields(): Promise<SolanaActionResult<LendingYiel
           url: pool.url,
           rewardTokens: pool.rewardTokens || [],
           underlyingTokens: pool.underlyingTokens || [],
-          // Override tokenData.id with the actual mint address from DefiLlama
           tokenMintAddress: tokenMintAddress,
           predictions: pool.predictions,
           tokenData: tokenData || null,
+          projectLogoURI:
+            pool.project === 'kamino-lend'
+              ? '/logos/kamino.svg'
+              : pool.project === 'jupiter-lend' || pool.project === 'jup-lend'
+              ? '/logos/jupiter.png'
+              : null,
         };
       }),
     );
 
+    const bestPool =
+      selectedPools.reduce(
+        (best: any, current: any) => ((current.apy || 0) > (best.apy || 0) ? current : best),
+        selectedPools[0],
+      ) || null;
+
+    const bestSummary = bestPool
+      ? `Best yield: ${bestPool.symbol} via ${capitalizeWords(
+          bestPool.project || '',
+        )} at ${(bestPool.apy || 0).toFixed(2)}% APY. `
+      : 'No yields available yet. ';
+
     const result: SolanaActionResult<LendingYieldsResultBodyType> = {
-      message: `Found the ${body.length} top Solana lending pools. The user has been shown the options in the UI. Tell them to "select a lending pool in the UI to continue". DO NOT REITERATE THE OPTIONS IN TEXT. DO NOT CHECK BALANCES YET - wait for the user to select a specific pool first.`,
+      message: `${bestSummary}Found ${body.length} Solana lending pool${
+        body.length === 1 ? '' : 's'
+      }. Compare the cards (APY and TVL are shown in the UI) and pick the best fit to continue.\n\nText rules: keep to one short sentence, do NOT list pool names/symbols/APYs in text, do NOT mention other tokens unless the user asked for them, and if you suggest a different token for higher yield make it clear they must swap first. DO NOT CHECK BALANCES YET - wait for the user to select a specific pool first.`,
       body,
     };
 
