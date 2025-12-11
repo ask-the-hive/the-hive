@@ -129,8 +129,9 @@ There are MULTIPLE USDT and USDC tokens on Solana with different contract addres
 NEVER use ${SOLANA_GET_TOKEN_ADDRESS_ACTION} for lending - it may return a different token address than the lending pools use!
 
 REFINED LENDING FLOW:
+0. On any generic lending intent (e.g., user says "lending", "lend", "best lending yields"), your **first action** must be to call ${SOLANA_LENDING_YIELDS_ACTION}. Do not ask for confirmation before calling it.
 1. When user says "lend stablecoins" or "lend USDC" or "lend USDT" or "show me lending pools" (no specific pool/provider selected):
-   - Use ${SOLANA_LENDING_YIELDS_ACTION} to show available providers
+   - Immediately call ${SOLANA_LENDING_YIELDS_ACTION} to show available providers (do NOT ask for confirmation)
    - After showing the providers, provide a helpful response that encourages learning
    - Let them choose from the list or ask educational questions
    - ❌ DO NOT check balances at this stage - wait for the user to select a specific pool first

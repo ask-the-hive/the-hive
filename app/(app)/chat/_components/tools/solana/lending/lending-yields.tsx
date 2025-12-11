@@ -176,7 +176,19 @@ const LendingYields: React.FC<{
     return poolsToShow;
   }, [poolsToShow, requestedSymbol]);
 
-  const highlightIndex = !requestedSymbol && displayPools.length >= 3 ? 1 : 0;
+  const highlightIndex = useMemo(() => {
+    if (!displayPools.length) return 0;
+    let bestIdx = 0;
+    let bestYield = Number.NEGATIVE_INFINITY;
+    displayPools.forEach((pool, idx) => {
+      const y = pool.yield || 0;
+      if (y > bestYield) {
+        bestYield = y;
+        bestIdx = idx;
+      }
+    });
+    return bestIdx;
+  }, [displayPools]);
 
   const handleLendClick = useCallback(
     async (poolData: LendingYieldsPoolData) => {
