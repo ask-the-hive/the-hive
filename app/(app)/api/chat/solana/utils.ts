@@ -36,7 +36,7 @@ CRITICAL ROUTING RULES:
    - "Lend my USDT/USDC/SOL"
    - If the user already said they want lending and then replies "yes" or "sure", continue with Lending Agent (do not send to Knowledge Agent)
    - If the previous assistant message offered lending and the user responds with a short confirmation ("yes", "yep", "sure", "ok"), route to the Lending Agent to return yields.
-   - Queries about "lend"/"lending" take priority for Lending Agent; generic "apy/yield" without "stake/staking" should route to Knowledge unless tied to lending keywords.
+   - Queries about "lend"/"lending" or "best APY"/"best yield" for stablecoins should route to Lending Agent (not Knowledge).
 
 3. **Staking Agent** - Use for specific staking requests:
    🚨 CRITICAL: Use Staking Agent for any SOL staking intent, including SOL APY/yield questions
@@ -102,12 +102,14 @@ export const chooseAgent = async (
     /\b(stablecoin|stablecoins|usdc|usdt|usdg|eurc|fdusd|pyusd|usds)\b/.test(userText);
 
   const depositOrYieldIntent =
-    /\b(lend|lending|deposit|deposits|earn|earning|park|parking|place|put)\b/.test(userText);
+    /\b(lend|lending|deposit|deposits|earn|earning|park|parking|place|put|apy|yield|yields|rate|rates)\b/.test(
+      userText,
+    );
 
   const wantsLending =
     /\b(lend|lending)\b/.test(userText) ||
     (mentionsStablecoin && depositOrYieldIntent) ||
-    (affirmative && /\b(lend|lending|stablecoin)\b/.test(assistantText));
+    (affirmative && /\b(lend|lending|stablecoin|apy|yield)\b/.test(assistantText));
 
   if (wantsLending) {
     const lending = agents.find((a) => a.name === LENDING_AGENT_NAME);
