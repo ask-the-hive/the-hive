@@ -32,9 +32,10 @@ interface GenericTokenTransfer {
 interface Props {
   tokenTransfer: GenericTokenTransfer;
   address?: string;
+  compact?: boolean;
 }
 
-const TokenTransfer: React.FC<Props> = ({ tokenTransfer, address }) => {
+const TokenTransfer: React.FC<Props> = ({ tokenTransfer, address, compact = false }) => {
   const { currentChain } = useChain();
   const isSolana = currentChain === 'solana';
 
@@ -68,30 +69,36 @@ const TokenTransfer: React.FC<Props> = ({ tokenTransfer, address }) => {
       return null;
     }
 
-    return (
-      <div className="flex items-center gap-2">
+    const content = (
+      <>
         <TokenIcon
           src={solanaTokenData?.logoURI}
           alt={solanaTokenData?.name || 'Token'}
           tokenSymbol={solanaTokenData?.symbol}
-          width={24}
-          height={24}
-          className="w-6 h-6 rounded-full"
+          width={20}
+          height={20}
+          className="w-5 h-5 rounded-full"
         />
-        <div className="flex flex-col">
-          <div className="flex items-center gap-1">
-            <span className="text-sm font-medium">{solanaTokenData?.symbol || 'Unknown'}</span>
-            <span
-              className={cn('text-sm font-medium', isOutgoing ? 'text-red-500' : 'text-green-500')}
-            >
-              {isOutgoing ? '-' : '+'}
-              {formatFiat(Math.abs(amount), 1, 0)}
-            </span>
-          </div>
-          <span className="text-xs text-muted-foreground">
-            {solanaTokenData?.name || 'Unknown Token'}
-          </span>
-        </div>
+        <span className="text-sm font-medium">{solanaTokenData?.symbol || 'Unknown'}</span>
+        <span
+          className={cn('text-sm font-medium', isOutgoing ? 'text-red-500' : 'text-green-500')}
+        >
+          {isOutgoing ? '-' : '+'}
+          {formatFiat(Math.abs(amount), 1, 0)}
+        </span>
+      </>
+    );
+
+    if (compact) {
+      return <div className="flex items-center gap-2">{content}</div>;
+    }
+
+    return (
+      <div className="flex items-center gap-2">
+        {content}
+        <span className="text-xs text-muted-foreground">
+          {solanaTokenData?.name || 'Unknown Token'}
+        </span>
       </div>
     );
   }
@@ -105,28 +112,34 @@ const TokenTransfer: React.FC<Props> = ({ tokenTransfer, address }) => {
       ? 'https://basescan.org/assets/base/images/svg/empty-token.svg?v=25.4.2.0'
       : tokenTransfer.token.logo;
 
-    return (
-      <div className="flex items-center gap-2">
+    const content = (
+      <>
         <TokenIcon
           src={logoUrl}
           alt={tokenTransfer.token.name}
           tokenSymbol={tokenTransfer.token.symbol}
-          width={24}
-          height={24}
-          className="w-6 h-6 rounded-full"
+          width={20}
+          height={20}
+          className="w-5 h-5 rounded-full"
         />
-        <div className="flex flex-col">
-          <div className="flex items-center gap-1">
-            <span className="text-sm font-medium">{tokenTransfer.token.symbol}</span>
-            <span
-              className={cn('text-sm font-medium', isOutgoing ? 'text-red-500' : 'text-green-500')}
-            >
-              {isOutgoing ? '-' : '+'}
-              {formatFiat(Math.abs(amount), 1, 0)}
-            </span>
-          </div>
-          <span className="text-xs text-muted-foreground">{tokenTransfer.token.name}</span>
-        </div>
+        <span className="text-sm font-medium">{tokenTransfer.token.symbol}</span>
+        <span
+          className={cn('text-sm font-medium', isOutgoing ? 'text-red-500' : 'text-green-500')}
+        >
+          {isOutgoing ? '-' : '+'}
+          {formatFiat(Math.abs(amount), 1, 0)}
+        </span>
+      </>
+    );
+
+    if (compact) {
+      return <div className="flex items-center gap-2">{content}</div>;
+    }
+
+    return (
+      <div className="flex items-center gap-2">
+        {content}
+        <span className="text-xs text-muted-foreground">{tokenTransfer.token.name}</span>
       </div>
     );
   }
