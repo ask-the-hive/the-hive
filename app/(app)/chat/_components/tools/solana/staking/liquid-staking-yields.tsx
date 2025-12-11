@@ -82,7 +82,13 @@ const LiquidStakingYields: React.FC<{
   }, [body, isResponseLoading, messages]);
 
   const pools = body ?? [];
-  const bestApy = pools.reduce((max, pool) => Math.max(max, pool.yield || 0), 0);
+  const bestIndex = pools.reduce(
+    (best, pool, idx) => {
+      const y = pool.yield || 0;
+      return y > best.yield ? { idx, yield: y } : best;
+    },
+    { idx: 0, yield: Number.NEGATIVE_INFINITY },
+  ).idx;
 
   return (
     <>
@@ -92,7 +98,7 @@ const LiquidStakingYields: React.FC<{
             key={`${pool.name}-${pool.project}-${index}`}
             pool={pool}
             index={index}
-            highlightIndex={pool.yield === bestApy ? index : undefined}
+            highlightIndex={bestIndex}
             onClick={handleStakeClick}
             onMoreDetailsClick={handleMoreDetailsClick}
             disabled={isDisabled}

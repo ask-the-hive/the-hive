@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { generateObject, LanguageModelV1, Message } from 'ai';
+import { CoreMessage, generateObject, LanguageModelV1, Message } from 'ai';
 import { agents } from '@/ai/agents';
 import { Agent } from '@/ai/agent';
 import { LENDING_AGENT_NAME } from '@/ai/agents/lending/name';
@@ -134,18 +134,51 @@ export const chooseAgent = async (
 
   const contextMessages = messages.slice(-5);
 
+  const intentMessages: CoreMessage[] = [
+    {
+      role: 'system',
+      content:
+        'Classify the intent based on the latest user message. Return one of: lending, staking, wallet, trading, market, token-analysis, liquidity, knowledge, none.',
+    },
+    ...contextMessages.map((m) => ({
+      role:
+        m.role === 'assistant' || m.role === 'user' || m.role === 'system'
+          ? m.role
+          : 'user',
+      content: typeof m.content === 'string' ? m.content : String(m.content ?? ''),
+    })),
+  ];
+
   const { object } = await generateObject({
     model,
     schema: z.object({
-      agent: z.enum(['none', ...agents.map((agent) => agent.name)] as [string, ...string[]]),
+      agent: z.enum([
+        'lending',
+        'staking',
+        'wallet',
+        'trading',
+        'market',
+        'token-analysis',
+        'liquidity',
+        'knowledge',
+        'none',
+      ] as [string, ...string[]]),
     }),
-    messages: contextMessages,
-    system,
+    messages: intentMessages,
   });
+
+  const map: Record<string, string> = {
+    lending: LENDING_AGENT_NAME,
+    staking: STAKING_AGENT_NAME,
+  };
 
   if (object.agent === 'none') {
     return null;
   }
-
-  return agents.find((agent) => agent.name === object.agent) ?? null;
+  const mapped = map[object.agent];
+  if (mapped) {
+    const found = agents.find((a) => a.name === mapped) ?? null;
+    return found;
+  }
+  return null;
 };

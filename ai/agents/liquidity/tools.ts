@@ -1,5 +1,4 @@
 import { Connection } from '@solana/web3.js';
-
 import {
   SOLANA_DEPOSIT_LIQUIDITY_NAME,
   SOLANA_GET_POOLS_NAME,
@@ -7,9 +6,7 @@ import {
   SOLANA_WITHDRAW_LIQUIDITY_NAME,
   SOLANA_GET_WALLET_ADDRESS_ACTION,
 } from '@/ai/action-names';
-
 import { solanaTool } from '@/ai/solana';
-
 import {
   SolanaDepositLiquidityAction,
   SolanaGetPoolsAction,

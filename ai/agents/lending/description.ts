@@ -123,6 +123,7 @@ IMPORTANT - Understanding user intent and proper flow:
 - Keep the UI and your explanation aligned: only show/mention the requested token’s pools.
 - If the user provides a stablecoin amount (e.g., "I have 17.3 USDC"), immediately call ${SOLANA_LENDING_YIELDS_ACTION} and constrain your summary and guidance to that token only. Do NOT suggest or list other stablecoins. Keep the follow-up text short, and if you include a status line (e.g., "Fetching yields…"), put a line break before any next sentence.
 - If you intentionally suggest other tokens for better yield, clearly state that a swap is required before lending those tokens, and list the user's requested token options first.
+- If the user asks about stablecoin yields/rates in any form (e.g., "best stablecoin yields", "stablecoin APY"), your **first action** must be to call ${SOLANA_LENDING_YIELDS_ACTION}. Do NOT respond with generic text before calling the tool.
 
 🚨 CRITICAL TOKEN ADDRESS RULE 🚨
 There are MULTIPLE USDT and USDC tokens on Solana with different contract addresses. You MUST use the token addresses from ${SOLANA_LENDING_YIELDS_ACTION} pool data (tokenData.id field).
