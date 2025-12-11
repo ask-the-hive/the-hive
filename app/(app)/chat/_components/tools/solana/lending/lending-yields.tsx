@@ -104,6 +104,11 @@ const LendingYieldsTool: React.FC<Props> = ({ tool, prevToolAgent }) => {
       }
       return `Fetched best ${requestedSymbol} lending yields`;
     }
+    if (requestedProvider) {
+      return `Fetched best ${isStableOnly ? 'stablecoin ' : ''}lending yields on ${capitalizeWords(
+        requestedProvider.replace('-', ' '),
+      )}`;
+    }
     if (uniqueSymbols.length === 1 && isStableOnly) {
       return `Fetched best ${uniqueSymbols[0]} lending yields`;
     }
@@ -201,6 +206,15 @@ const LendingYields: React.FC<{
     requestedProvider ?? detectRequestedProvider(messages),
   );
   const providerToFilter = requestedProviderRef.current;
+  const wantsAllPoolsRef = useRef<boolean | null>(null);
+  if (wantsAllPoolsRef.current === null) {
+    const lastUserMessage = [...messages].reverse().find((m) => m.role === 'user');
+    const content = typeof lastUserMessage?.content === 'string' ? lastUserMessage.content : '';
+    wantsAllPoolsRef.current = /\b(all|every|entire|full\s+list|show\s+all|fetch\s+all|list\s+all)\b/i.test(
+      content || '',
+    );
+  }
+  const wantsAllPools = wantsAllPoolsRef.current;
 
   const poolsToShow = useMemo(() => {
     if (!body) return [];
@@ -220,16 +234,15 @@ const LendingYields: React.FC<{
 
   const displayPools = useMemo(() => {
     if (!poolsToShow) return [];
-    if (!symbolToFilter) {
-      const topThree = poolsToShow.slice(0, 3);
-      if (topThree.length >= 3) {
-        const [first, second, third] = topThree;
-        return [second ?? first, first ?? second, third].filter(Boolean) as typeof poolsToShow;
-      }
-      return topThree;
-    }
-    return poolsToShow;
-  }, [poolsToShow, symbolToFilter]);
+    if (wantsAllPools) return poolsToShow;
+    if (poolsToShow.length <= 3) return poolsToShow;
+    const [best, second, ...rest] = poolsToShow
+      .slice()
+      .sort((a, b) => (b.yield || 0) - (a.yield || 0));
+    const third = rest[0];
+    const trio = [second ?? best, best, third ?? second ?? best].filter(Boolean);
+    return trio.slice(0, 3) as typeof poolsToShow;
+  }, [poolsToShow, wantsAllPools]);
 
   const highlightIndex = useMemo(() => {
     if (!displayPools.length) return 0;
