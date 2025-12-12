@@ -14,7 +14,6 @@ import { useChat as useAiChat } from '@ai-sdk/react';
 import { Models } from '@/types/models';
 import { usePrivy } from '@privy-io/react-auth';
 import { generateId } from 'ai';
-import { useUserChats } from '@/hooks';
 import { ChainType } from '@/app/_contexts/chain-context';
 import { useRouter, usePathname } from 'next/navigation';
 import { useGlobalChatManager } from './global-chat-manager';
@@ -47,7 +46,7 @@ interface ChatContextType {
   onSubmit: () => Promise<void>;
   isLoading: boolean;
   sendMessage: (message: string) => void;
-   sendInternalMessage: (message: string) => void;
+  sendInternalMessage: (message: string) => void;
   addToolResult: <T>(toolCallId: string, result: ToolResult<T>) => void;
   isResponseLoading: boolean;
   model: Models;
@@ -103,28 +102,11 @@ const getMessageToolInvocations = (message: Message | undefined): any[] => {
 };
 
 export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
-  const { user, getAccessToken } = usePrivy();
+  const { user } = usePrivy();
   const { updateChatThreadState, removeChatThread } = useGlobalChatManager();
   const router = useRouter();
   const pathname = usePathname();
   const [completedLendToolCallIds, setCompletedLendToolCallIds] = useState<string[]>([]);
-
-  const parseJsonSafely = async (response: Response) => {
-    const text = await response.text();
-    if (!text) return null;
-    try {
-      return JSON.parse(text);
-    } catch (error) {
-      Sentry.captureException(error, {
-        tags: {
-          component: 'ChatProvider',
-          action: 'parseJsonSafely',
-          status: response.status,
-        },
-      });
-      return null;
-    }
-  };
 
   const [chatId, setChatId] = useState<string>(() => {
     const urlChatId = pathname.split('/').pop();
@@ -142,20 +124,8 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
   const [model, setModel] = useState<Models>(Models.OpenAI);
   const [chain, setChain] = useState<ChainType>('solana');
   const isResettingRef = useRef(false);
-  const { mutate } = useUserChats();
-
   const setChat = async (chatId: string) => {
     setChatId(chatId);
-    const chat = await fetch(`/api/chats/${chatId}`, {
-      headers: {
-        Authorization: `Bearer ${await getAccessToken()}`,
-      },
-    });
-    const chatData = await parseJsonSafely(chat);
-    if (chatData) {
-      setMessages(chatData.messages);
-      setChain(chatData.chain || 'solana');
-    }
   };
 
   const resetChat = async () => {
@@ -280,66 +250,7 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
     }
   }, [chatId, setInput]);
 
-  useEffect(() => {
-    if (chatId && !isResettingRef.current) {
-      const loadExistingChat = async () => {
-        try {
-          const chat = await fetch(`/api/chats/${chatId}`, {
-            headers: {
-              Authorization: `Bearer ${await getAccessToken()}`,
-            },
-          });
-
-          if (chat.ok) {
-            const chatData = await parseJsonSafely(chat);
-            if (chatData && chatData.messages && chatData.messages.length > 0) {
-              setMessages(chatData.messages);
-              setChain(chatData.chain || 'solana');
-            }
-          }
-        } catch {
-          console.log('New chat or chat not found:', chatId);
-        }
-      };
-
-      loadExistingChat();
-    }
-  }, [chatId, getAccessToken, setMessages, setChain]);
-
-  const persistTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    if (persistTimerRef.current) {
-      clearTimeout(persistTimerRef.current);
-    }
-
-    persistTimerRef.current = setTimeout(async () => {
-      if (isResettingRef.current) return;
-      if (messages.length === 0) return;
-      if (status !== 'ready') return;
-
-      const response = await fetch(`/api/chats/${chatId}`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${await getAccessToken()}`,
-        },
-        body: JSON.stringify({
-          messages,
-          chain,
-        }),
-      });
-      const data = await parseJsonSafely(response);
-      if (typeof data === 'object') {
-        mutate();
-      }
-    }, 500);
-
-    return () => {
-      if (persistTimerRef.current) {
-        clearTimeout(persistTimerRef.current);
-      }
-    };
-  }, [messages, chatId, chain, getAccessToken, mutate, status]);
+  // history disabled: no chat persistence effects
 
   const onSubmit = async () => {
     if (!input.trim()) return;
@@ -358,40 +269,6 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
       content: userInput,
     });
 
-    if (messages.length === 0) {
-      (async () => {
-        try {
-          const response = await fetch(`/api/chats/${chatId}`, {
-            method: 'POST',
-            headers: {
-              Authorization: `Bearer ${await getAccessToken()}`,
-            },
-            body: JSON.stringify({
-              messages: [
-                {
-                  role: 'user',
-                  content: userInput,
-                },
-              ],
-              chain,
-            }),
-          });
-
-          if (response.ok) {
-            mutate();
-          }
-        } catch (error) {
-          console.error('Error creating new chat:', error);
-          Sentry.captureException(error, {
-            tags: {
-              component: 'ChatProvider',
-              action: 'createNewChat',
-            },
-          });
-        }
-      })();
-    }
-
     await appendPromise;
   };
 
@@ -403,50 +280,11 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
       isResponseLoading: true,
     });
 
-    const userMessage: Message = {
-      id: generateId(),
+    await append({
       role: 'user',
       content: message,
       ...(annotations ? { annotations } : {}),
-    };
-
-    const chatCreationPromise =
-      messages.length === 0
-        ? (async () => {
-            try {
-              const response = await fetch(`/api/chats/${chatId}`, {
-                method: 'POST',
-                headers: {
-                  Authorization: `Bearer ${await getAccessToken()}`,
-                },
-                body: JSON.stringify({
-                  messages: [userMessage],
-                  chain,
-                }),
-              });
-
-              if (response.ok) {
-                mutate();
-              } else if (response.status === 409) {
-                console.log('Chat already exists, refreshing list');
-                mutate();
-              } else {
-                console.error('Error creating new chat:', response.status, response.statusText);
-              }
-            } catch (error) {
-              console.error('Error creating new chat:', error);
-            }
-          })()
-        : Promise.resolve();
-
-    const aiResponsePromise = (async () =>
-      await append({
-        role: 'user',
-        content: message,
-        ...(annotations ? { annotations } : {}),
-      }))();
-
-    await Promise.all([chatCreationPromise, aiResponsePromise]);
+    });
   };
 
   const sendMessage = async (message: string) => {

@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useChat } from '@/app/(app)/chat/_contexts/chat';
+import { useChain } from '@/app/_contexts/chain-context';
+import { usePrivy } from '@privy-io/react-auth';
 import ToolCard from '../../tool-card';
 import { SOLANA_STAKING_POOL_DATA_STORAGE_KEY } from '@/lib/constants';
 import PoolDetailsModal from './pool-details-modal';
@@ -38,6 +40,8 @@ const LiquidStakingYields: React.FC<{
   body: LiquidStakingYieldsResultBodyType;
 }> = ({ body }) => {
   const { sendMessage, sendInternalMessage, isResponseLoading, messages } = useChat();
+  const { currentWalletAddress, setCurrentChain } = useChain();
+  const { login } = usePrivy();
   const [selectedPool, setSelectedPool] = useState<LiquidStakingYieldsPoolData | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDisabled, setIsDisabled] = useState(true);
@@ -54,11 +58,17 @@ const LiquidStakingYields: React.FC<{
     async (poolData: LiquidStakingYieldsPoolData, internal = false) => {
       if (isResponseLoading) return;
 
+      setCurrentChain('solana');
+      if (!currentWalletAddress) {
+        login?.();
+        return;
+      }
+
       const symbol = poolData?.tokenData?.symbol || poolData?.symbol;
       const sender = internal ? sendInternalMessage : sendMessage;
       sender(`I want to stake SOL for ${symbol}`);
     },
-    [isResponseLoading, sendInternalMessage, sendMessage],
+    [isResponseLoading, sendInternalMessage, sendMessage, currentWalletAddress, login, setCurrentChain],
   );
 
   const handleMoreDetailsClick = (

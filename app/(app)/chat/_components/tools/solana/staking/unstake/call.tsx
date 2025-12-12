@@ -21,7 +21,7 @@ const UnstakeCallBody: React.FC<Props> = () => {
   }, [setCurrentChain]);
 
   return (
-    <Card className="p-4 max-w-full bg-gradient-to-br from-zinc-900 via-zinc-900/80 to-black border border-zinc-800 shadow-lg shadow-black/40">
+    <Card className="p-6 mt-2 max-w-full bg-neutral-900/80 border border-neutral-800 shadow-lg shadow-black/30 mb-4">
       <div className="space-y-3 text-sm text-muted-foreground">
         <div className="flex items-center gap-2 text-foreground">
           <div className="w-8 h-8 rounded-full bg-amber-500/20 border border-amber-500/30 flex items-center justify-center">

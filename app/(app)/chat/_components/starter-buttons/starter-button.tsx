@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 
 import { Button, Icon } from '@/components/ui';
 
@@ -30,6 +30,13 @@ const StarterButton: React.FC<Props> = ({
   eventName,
 }) => {
   const { sendMessage, isResponseLoading, isLoading } = useChat();
+  const [pending, setPending] = useState(false);
+
+  useEffect(() => {
+    if (!isResponseLoading && !isLoading) {
+      setPending(false);
+    }
+  }, [isResponseLoading, isLoading]);
 
   return (
     <Button
@@ -41,8 +48,9 @@ const StarterButton: React.FC<Props> = ({
         className,
       )}
       variant="outline"
-      disabled={isResponseLoading || isLoading}
+      disabled={isResponseLoading || isLoading || pending}
       onClick={() => {
+        setPending(true);
         sendMessage(prompt);
         posthog.capture(eventName);
       }}
@@ -64,7 +72,7 @@ const StarterButton: React.FC<Props> = ({
             {description}
           </p>
         </div>
-        {(isResponseLoading || isLoading) && (
+        {(pending || isResponseLoading || isLoading) && (
           <Loader2 className="w-4 h-4 animate-spin text-neutral-500" />
         )}
       </div>

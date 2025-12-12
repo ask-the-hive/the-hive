@@ -13,22 +13,22 @@ interface Props {
 }
 
 const Messages: React.FC<Props> = ({ messages, messageClassName }) => {
-  const { isResponseLoading } = useChat();
+  const { isResponseLoading, isLoading } = useChat();
   const { scrollRef, messagesRef, scrollToBottom } = useScrollAnchor();
   const prevMessageCountRef = useRef(messages.length);
   const prevIsLoadingRef = useRef(isResponseLoading);
 
   useEffect(() => {
     const messageCountChanged = messages.length > prevMessageCountRef.current;
-    const loadingStarted = isResponseLoading && !prevIsLoadingRef.current;
+    const loadingStarted = (isResponseLoading || isLoading) && !prevIsLoadingRef.current;
 
     if (messageCountChanged || loadingStarted) {
       scrollToBottom();
     }
 
     prevMessageCountRef.current = messages.length;
-    prevIsLoadingRef.current = isResponseLoading;
-  }, [messages.length, isResponseLoading, scrollToBottom]);
+    prevIsLoadingRef.current = isResponseLoading || isLoading;
+  }, [messages.length, isResponseLoading, isLoading, scrollToBottom]);
 
   const visibleMessages = messages.filter((message) => {
     const annotations = message.annotations as any[] | undefined;
@@ -56,9 +56,8 @@ const Messages: React.FC<Props> = ({ messages, messageClassName }) => {
             isLatestAssistant={index === visibleMessages.length - 1 && message.role === 'assistant'}
           />
         ))}
-        {isResponseLoading && visibleMessages[visibleMessages.length - 1]?.role !== 'assistant' && (
-          <LoadingMessage />
-        )}
+        {(isResponseLoading || isLoading) &&
+          visibleMessages[visibleMessages.length - 1]?.role !== 'assistant' && <LoadingMessage />}
       </div>
     </div>
   );

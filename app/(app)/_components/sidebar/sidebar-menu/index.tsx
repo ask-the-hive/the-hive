@@ -1,14 +1,11 @@
 'use client';
 
 import React from 'react';
-
 import { SidebarMenu as SidebarMenuUI } from '@/components/ui';
-
-import ChatsGroup from './chats-group';
 import ShortcutsGroup from './shortcuts-group';
 import AccountButton from './account-button';
 import PortfolioButton from './portfolio-button';
-// import SavedTokensGroup from './saved-tokens-group';
+import ChatsGroup from './chats-group';
 
 const SidebarMenu: React.FC = () => {
   return (

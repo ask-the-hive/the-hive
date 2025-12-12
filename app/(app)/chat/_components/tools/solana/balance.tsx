@@ -125,8 +125,8 @@ const TokenFundingOptions: React.FC<TokenFundingOptionsProps> = ({
   };
 
   return (
-    <div className="flex justify-center w-full">
-      <div className="w-full md:w-[70%]">
+    <div className="flex w-full">
+      <div className="w-full">
         <Card className="mt-4 p-4 border rounded-lg bg-blue-50 dark:bg-neutral-800">
           <div className="p-4 pt-8">
             <div className="flex flex-col items-center gap-3 mb-4">

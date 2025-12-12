@@ -1,5 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useChat } from '@/app/(app)/chat/_contexts/chat';
+import { useChain } from '@/app/_contexts/chain-context';
+import { usePrivy } from '@privy-io/react-auth';
 import ToolCard from '../../tool-card';
 import { SOLANA_LENDING_POOL_DATA_STORAGE_KEY } from '@/lib/constants';
 import { capitalizeWords } from '@/lib/string-utils';
@@ -145,9 +147,12 @@ const LendingYields: React.FC<{
   requestedProvider?: string | null;
 }> = ({ body, requestedSymbol, requestedProvider }) => {
   const { sendInternalMessage, isResponseLoading, messages } = useChat();
+  const { currentWalletAddress, setCurrentChain } = useChain();
+  const { login } = usePrivy();
   const [selectedPool, setSelectedPool] = useState<LendingYieldsPoolData | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDisabled, setIsDisabled] = useState(true);
+  const [pendingPoolId, setPendingPoolId] = useState<string | null>(null);
   const hasAutoSelectedRef = useRef(false);
   const [autoSelected, setAutoSelected] = useState(false);
 
@@ -262,8 +267,17 @@ const LendingYields: React.FC<{
     async (poolData: LendingYieldsPoolData) => {
       if (isResponseLoading) return;
 
+      if (!currentWalletAddress) {
+        login?.();
+        return;
+      }
+
       const symbol = poolData?.tokenData?.symbol || poolData?.symbol;
       const tokenAddress = poolData?.tokenMintAddress || poolData?.tokenData?.id;
+      const pendingId = tokenAddress || poolData.name;
+
+      setPendingPoolId(pendingId);
+      setIsDisabled(true);
 
       sendInternalMessage(
         `I want to lend ${symbol} (${tokenAddress}) to ${capitalizeWords(poolData.project)}`,
@@ -282,6 +296,7 @@ const LendingYields: React.FC<{
   useEffect(() => {
     if (!isResponseLoading) {
       setIsDisabled(false);
+      setPendingPoolId(null);
     }
   }, [isResponseLoading]);
 
@@ -343,6 +358,9 @@ const LendingYields: React.FC<{
               onClick={handleLendClick}
               onMoreDetailsClick={handleMoreDetailsClick}
               disabled={isDisabled}
+              isPending={
+                pendingPoolId === (pool.tokenMintAddress || pool.tokenData?.id || pool.name)
+              }
             />
           ))}
         </div>

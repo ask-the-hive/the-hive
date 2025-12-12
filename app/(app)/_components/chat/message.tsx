@@ -186,6 +186,15 @@ function getDisplayContent(
 
   const toolInvocations = getMessageToolInvocations(message);
 
+  const hasUnstakeGuide = toolInvocations.some(
+    (tool) =>
+      tool.state === 'result' &&
+      tool.toolName?.toLowerCase?.().includes('unstake') &&
+      (tool as any).result?.body?.status === 'guide',
+  );
+
+  if (hasUnstakeGuide) return null;
+
   const isSolanaWalletAllBalances = (toolName: string) => {
     const parts = toolName.split('-');
     const toolAgent = parts[0];
