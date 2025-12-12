@@ -7,23 +7,32 @@ import Messages from './messages';
 import ChatInput from './input';
 import { LoadingMessage } from '@/app/(app)/_components/chat';
 import { useChat } from '../_contexts/chat';
+import { useState } from 'react';
 
 const Chat: React.FC = () => {
   const searchParams = useSearchParams();
   const { messages, sendMessage, isResponseLoading } = useChat();
   const hasProcessedInitialMessage = useRef(false);
+  const [prefillLoading, setPrefillLoading] = useState(false);
 
   useEffect(() => {
     const initialMessage = searchParams.get('message');
 
     if (initialMessage && messages.length === 0 && !hasProcessedInitialMessage.current) {
+      setPrefillLoading(true);
       hasProcessedInitialMessage.current = true;
       sendMessage(decodeURIComponent(initialMessage));
     }
   }, [searchParams, messages.length, sendMessage]);
 
+  useEffect(() => {
+    if (messages.length > 0 || !isResponseLoading) {
+      setPrefillLoading(false);
+    }
+  }, [messages.length, isResponseLoading]);
+
   const cleanedMessages = messages.filter((message) => message.role !== 'system');
-  const showInitialLoading = cleanedMessages.length === 0 && isResponseLoading;
+  const showInitialLoading = cleanedMessages.length === 0 && (isResponseLoading || prefillLoading);
 
   return (
     <>

@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils';
 import { capitalizeWords, getConfidenceLabel } from '@/lib/string-utils';
 import VarApyTooltip from '@/components/var-apy-tooltip';
 import posthog from 'posthog-js';
+import { Loader2 } from 'lucide-react';
 
 interface PoolData {
   name: string;
@@ -28,6 +29,7 @@ interface PoolDetailsCardProps<T extends PoolData> {
   onMoreDetailsClick: (pool: T, event: React.MouseEvent) => void;
   disabled?: boolean;
   highlightIndex?: number;
+  isPending?: boolean;
 }
 
 function PoolDetailsCard<T extends PoolData>({
@@ -37,6 +39,7 @@ function PoolDetailsCard<T extends PoolData>({
   onMoreDetailsClick,
   disabled = false,
   highlightIndex = 0,
+  isPending = false,
 }: PoolDetailsCardProps<T>) {
   const handleClick = (event: React.MouseEvent) => {
     event.stopPropagation();
@@ -56,9 +59,15 @@ function PoolDetailsCard<T extends PoolData>({
           : 'cursor-pointer hover:border-brand-600/50 dark:hover:border-brand-600/50',
         index === highlightIndex &&
           'border-brand-600 dark:border-brand-600 !shadow-[0_0_4px_rgba(234,179,8,0.25)] dark:!shadow-[0_0_4px_rgba(234,179,8,0.25)]',
+        isPending && 'ring-2 ring-brand-600/50',
       )}
       onClick={(e) => !disabled && handleClick(e)}
     >
+      {isPending && (
+        <div className="absolute inset-0 bg-black/40 dark:bg-black/50 flex items-center justify-center rounded-xl z-10">
+          <Loader2 className="w-6 h-6 animate-spin text-white" />
+        </div>
+      )}
       <div className="items-center flex-col justify-between gap-2 mb-2 hidden md:flex">
         <div className="flex items-center gap-2">
           <TokenIcon

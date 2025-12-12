@@ -148,6 +148,7 @@ const LendingYields: React.FC<{
   const [selectedPool, setSelectedPool] = useState<LendingYieldsPoolData | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDisabled, setIsDisabled] = useState(true);
+  const [pendingPoolId, setPendingPoolId] = useState<string | null>(null);
   const hasAutoSelectedRef = useRef(false);
   const [autoSelected, setAutoSelected] = useState(false);
 
@@ -264,6 +265,10 @@ const LendingYields: React.FC<{
 
       const symbol = poolData?.tokenData?.symbol || poolData?.symbol;
       const tokenAddress = poolData?.tokenMintAddress || poolData?.tokenData?.id;
+      const pendingId = tokenAddress || poolData.name;
+
+      setPendingPoolId(pendingId);
+      setIsDisabled(true);
 
       sendInternalMessage(
         `I want to lend ${symbol} (${tokenAddress}) to ${capitalizeWords(poolData.project)}`,
@@ -282,6 +287,7 @@ const LendingYields: React.FC<{
   useEffect(() => {
     if (!isResponseLoading) {
       setIsDisabled(false);
+      setPendingPoolId(null);
     }
   }, [isResponseLoading]);
 
@@ -343,6 +349,9 @@ const LendingYields: React.FC<{
               onClick={handleLendClick}
               onMoreDetailsClick={handleMoreDetailsClick}
               disabled={isDisabled}
+              isPending={
+                pendingPoolId === (pool.tokenMintAddress || pool.tokenData?.id || pool.name)
+              }
             />
           ))}
         </div>
