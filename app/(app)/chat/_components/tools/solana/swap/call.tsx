@@ -102,7 +102,7 @@ const SwapCallBody: React.FC<Props> = ({ toolCallId, args }) => {
   if (isSuccess && txSignature) {
     return (
       <div className="flex justify-center w-full">
-        <div className="w-full md:w-[70%]">
+        <div className="w-full ">
           <SwapResultCard
             result={{
               status: 'complete',

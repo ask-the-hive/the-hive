@@ -26,22 +26,22 @@ const UnstakeResult: React.FC<Props> = ({ result }) => {
 
   if (status === 'guide') {
     return (
-      <Card className="p-4 bg-gradient-to-br from-zinc-900 via-zinc-900/80 to-black border border-zinc-800 shadow-inner shadow-black/30">
-        <div className="flex items-center gap-2 text-foreground mb-2">
-          <div className="w-8 h-8 rounded-full bg-amber-500/20 border border-amber-500/30 flex items-center justify-center">
-            <Undo2 className="w-4 h-4 text-amber-400" />
-          </div>
-          <span className="font-semibold text-sm">How to unstake</span>
+      <Card className="p-8 bg-neutral-900/80 border border-neutral-800 shadow-lg shadow-black/30 mb-4 mt-4 w-full max-w-full space-y-4">
+        <div className="flex items-center gap-2 text-foreground text-center">
+          <span className="font-semibold text-lg w-full">How to unstake</span>
         </div>
-        <div className="space-y-1 text-foreground/90 text-sm">
+        <div className="space-y-2 text-foreground/90 text-sm">
           <p>1) Open your portfolio page</p>
           <p>2) Select your staking position (e.g., mSOL, JupSOL)</p>
           <p>3) Tap Unstake/Withdraw to swap back to SOL</p>
         </div>
-        <div className="flex gap-2 flex-wrap mt-3">
-          <Button asChild size="sm" variant="secondary" className="flex items-center gap-1">
+        <div className="flex gap-3 flex-wrap">
+          <Button
+            variant="brand"
+            className="border- flex items-center justify-center gap-2 w-full rounded-full text-base py-3 mt-4"
+          >
             <Link href={portfolioPath}>
-              <span>Open Portfolio</span>
+              <span className="text-sm">Open Portfolio</span>
             </Link>
           </Button>
         </div>
