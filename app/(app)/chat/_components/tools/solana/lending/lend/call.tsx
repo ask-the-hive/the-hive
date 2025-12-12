@@ -278,7 +278,7 @@ const LendCallBody: React.FC<Props> = ({ toolCallId, args }) => {
   if (isSuccess && txSignature) {
     return (
       <div className="flex justify-center w-full">
-        <div className="w-full md:w-[70%]">
+        <div className="w-full ">
           <LendResult
             tokenData={tokenData || undefined}
             poolData={poolData || undefined}
@@ -294,7 +294,7 @@ const LendCallBody: React.FC<Props> = ({ toolCallId, args }) => {
   if (tokenDataLoading || tokenPriceLoading || balanceLoading || !tokenData || !tokenData.id) {
     return (
       <div className="flex justify-center w-full">
-        <div className="w-full md:w-[70%]">
+        <div className="w-full ">
           <Skeleton className="h-48 w-full" />
         </div>
       </div>
@@ -303,7 +303,7 @@ const LendCallBody: React.FC<Props> = ({ toolCallId, args }) => {
 
   return (
     <div className="flex justify-center w-full">
-      <div className="w-full md:w-[70%]">
+      <div className="w-full">
         <Card className="p-4 max-w-full">
           <div className="flex flex-col gap-4 w-full">
             <div className="text-center space-y-2">

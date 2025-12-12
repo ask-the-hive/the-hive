@@ -25,22 +25,22 @@ const GetAllBalances: React.FC<Props> = ({ tool, prevToolAgent }) => {
                     result.body?.balances.length 
                         ? `Found ${result.body.balances.length} tokens` 
                         : `No tokens found`,
-                body: (result: AllBalancesResultType) => result.body?.balances.length 
-                    ? (
-                        <div className="flex flex-wrap gap-2">
+                body: (result: AllBalancesResultType) =>
+                    result.body?.balances.length ? (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3">
                             {result.body.balances.map((balance, index) => (
-                                <div key={index} className="flex-shrink-0">
-                                    <TokenBalance 
-                                        token={balance.token}
-                                        balance={balance.balance}
-                                        logoURI={balance.logoURI}
-                                        name={balance.name}
-                                    />
-                                </div>
+                                <TokenBalance
+                                    key={index}
+                                    token={balance.token}
+                                    balance={balance.balance}
+                                    logoURI={balance.logoURI}
+                                    name={balance.name}
+                                />
                             ))}
                         </div>
-                    ) 
-                    : "No tokens found"
+                    ) : (
+                        'No tokens found'
+                    )
             }}
             prevToolAgent={prevToolAgent}
         />

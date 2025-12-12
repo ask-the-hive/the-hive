@@ -32,7 +32,7 @@ const Stake: React.FC<Props> = ({ tool, prevToolAgent }) => {
           if (result.body?.status === 'complete') {
             return (
               <div className="flex justify-center w-full">
-                <div className="w-full md:w-[70%]">
+                <div className="w-full ">
                   <StakeResult
                     outputTokenData={result.body.outputTokenData}
                     poolData={result.body.poolData}

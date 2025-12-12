@@ -159,7 +159,7 @@ const WithdrawCallBody: React.FC<{
         body: (result: any) =>
           result.body ? (
             <div className="flex justify-center w-full">
-              <div className="w-full md:w-[70%]">
+              <div className="w-full ">
                 <WithdrawResult
                   amount={result.body.amount}
                   tokenSymbol={result.body.tokenSymbol}

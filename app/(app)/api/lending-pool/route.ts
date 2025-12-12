@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getBestLendingYields } from '@/services/lending/get-best-lending-yields';
+import { getLendingYields } from '@/ai/solana/actions/lending/lending-yields/function';
 
 export async function GET(request: Request) {
   try {
@@ -7,25 +8,53 @@ export async function GET(request: Request) {
     const project = searchParams.get('project');
     const symbol = searchParams.get('symbol');
 
-    if (!project || !symbol) {
-      return NextResponse.json(
-        { error: 'Missing required parameters: project and symbol' },
-        { status: 400 },
+    if (project && symbol && project.toLowerCase() === 'all' && symbol.toLowerCase() === 'all') {
+      const result = await getLendingYields();
+      const pools = result.body || [];
+
+      if (!pools.length) {
+        return NextResponse.json({ error: 'No lending pools available' }, { status: 404 });
+      }
+
+      const best = pools.reduce(
+        (max, pool) => ((pool.yield || 0) > (max.yield || 0) ? pool : max),
+        pools[0],
       );
+
+      return NextResponse.json({
+        project: best.project,
+        symbol: best.symbol,
+        yield: best.yield || 0,
+        apyBase: best.apyBase || 0,
+        apyReward: best.apyReward || 0,
+        tvlUsd: best.tvlUsd || 0,
+        url: best.url,
+        rewardTokens: best.rewardTokens || [],
+        underlyingTokens: best.underlyingTokens || [],
+        poolMeta: best.poolMeta,
+        predictions: best.predictions,
+        tokenData: best.tokenData || null,
+        tokenMintAddress: best.tokenMintAddress || best.underlyingTokens?.[0] || null,
+      });
     }
 
-    // Fetch all pools from DeFiLlama
     const allPools = await getBestLendingYields();
+    const stableSymbols = ['USDC', 'USDT', 'USDG', 'EURC', 'FDUSD', 'PYUSD', 'USDS'];
+    const solLendingPools = (allPools.data || []).filter(
+      (pool: any) =>
+        pool.chain === 'Solana' && stableSymbols.includes((pool.symbol || '').toUpperCase()),
+    );
 
-    // Filter for Solana lending pools matching the project and symbol
-    const matchingPool = allPools.data?.find((pool: any) => {
-      const isMatch =
-        pool.project?.toLowerCase() === project.toLowerCase() &&
-        pool.symbol?.toLowerCase() === symbol.toLowerCase() &&
-        pool.chain === 'Solana';
+    let matchingPool: any | undefined;
+    if (project && symbol) {
+      matchingPool = solLendingPools.find((pool: any) => {
+        const isMatch =
+          pool.project?.toLowerCase() === project.toLowerCase() &&
+          pool.symbol?.toLowerCase() === symbol.toLowerCase();
 
-      return isMatch;
-    });
+        return isMatch;
+      });
+    }
 
     if (!matchingPool) {
       return NextResponse.json(
@@ -34,7 +63,6 @@ export async function GET(request: Request) {
       );
     }
 
-    // Return the fresh pool data
     return NextResponse.json({
       project: matchingPool.project,
       symbol: matchingPool.symbol,

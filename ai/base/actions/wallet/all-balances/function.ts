@@ -42,7 +42,7 @@ export async function allBalances(
         });
 
         return {
-            message: `Found ${balances.length} token balances`,
+            message: 'Balances shown above. Pick a token to trade or explore next.',
             body: {
                 balances
             }

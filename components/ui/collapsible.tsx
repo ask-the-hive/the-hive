@@ -34,7 +34,7 @@ const CollapsibleContent = React.forwardRef<
   <CollapsiblePrimitive.Content
     ref={ref}
     className={cn(
-      'mb-6',
+      '!mb-0 !pt-0 data-[state=open]:mb-6 data-[state=open]:pt-2',
       disableAnimation
         ? 'data-[state=closed]:hidden'
         : [

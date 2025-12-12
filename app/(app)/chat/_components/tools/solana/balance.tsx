@@ -17,6 +17,7 @@ import { useFundWallet } from '@privy-io/react-auth/solana';
 import { useSendTransaction } from '@/hooks/privy/use-send-transaction';
 import { useResolveAssetSymbolToAddress } from '@/hooks/queries/token/use-resolve-asset-symbol-to-address';
 import { useTokenMetadata } from '@/hooks/queries/token/use-token-metadata';
+import { useTokenBalance as useWalletTokenBalance } from '@/hooks/queries/token/use-token-balance';
 import { Info, Loader2 } from 'lucide-react';
 import { SOL_MINT } from '@/lib/constants';
 import type { ToolInvocation } from 'ai';
@@ -48,16 +49,14 @@ const TokenFundingOptions: React.FC<TokenFundingOptionsProps> = ({
     },
   });
   const { wallet } = useSendTransaction();
-
   const [isOpeningSwap, setIsOpeningSwap] = useState(false);
+  const [hasCompletedFlow, setHasCompletedFlow] = useState(false);
   const isTokenSOL = tokenSymbol === 'SOL';
 
-  // Use the resolve hook to get token address from symbol
   const { data: resolvedAddress, isLoading: isResolving } = useResolveAssetSymbolToAddress(
     !tokenAddress ? tokenSymbol : '',
   );
 
-  // Determine final token address to use
   const finalTokenAddress = useMemo(() => {
     if (isTokenSOL) {
       return SOL_MINT;
@@ -67,17 +66,29 @@ const TokenFundingOptions: React.FC<TokenFundingOptionsProps> = ({
       return tokenAddress;
     }
 
-    // Use provided address first, then resolved address
     return resolvedAddress;
   }, [isTokenSOL, resolvedAddress, tokenAddress]);
 
-  // Fetch token metadata if we don't have a logoURI but have an address
   const shouldFetchMetadata = !logoURI && !!finalTokenAddress;
   const { data: tokenMetadata, isLoading: isLoadingMetadata } = useTokenMetadata(
     shouldFetchMetadata ? finalTokenAddress : '',
   );
 
-  // Determine the logo to use
+  const { balance: liveBalance } = useWalletTokenBalance(
+    finalTokenAddress || '',
+    wallet?.address || '',
+  );
+
+  React.useEffect(() => {
+    if (hasCompletedFlow) return;
+    if (!onComplete) return;
+    if (!finalTokenAddress || !wallet?.address) return;
+    if (liveBalance !== null && liveBalance !== undefined && liveBalance > 0.00001) {
+      onComplete('swap');
+      setHasCompletedFlow(true);
+    }
+  }, [hasCompletedFlow, liveBalance, finalTokenAddress, wallet?.address, onComplete]);
+
   const finalLogoURI = useMemo(() => {
     if (logoURI) return logoURI;
     if (tokenMetadata?.logo_uri) return tokenMetadata.logo_uri;
@@ -88,8 +99,9 @@ const TokenFundingOptions: React.FC<TokenFundingOptionsProps> = ({
     if (finalTokenAddress) {
       setIsOpeningSwap(true);
       try {
-        await openSwapModal('buy', finalTokenAddress, () => {
+        openSwapModal('buy', finalTokenAddress, () => {
           onComplete?.('swap');
+          setHasCompletedFlow(true);
         });
       } finally {
         setIsOpeningSwap(false);
@@ -108,12 +120,13 @@ const TokenFundingOptions: React.FC<TokenFundingOptionsProps> = ({
     } finally {
       setIsFunding(false);
       onComplete?.('fundWallet');
+      setHasCompletedFlow(true);
     }
   };
 
   return (
-    <div className="flex justify-center w-full">
-      <div className="w-full md:w-[70%]">
+    <div className="flex w-full">
+      <div className="w-full">
         <Card className="mt-4 p-4 border rounded-lg bg-blue-50 dark:bg-neutral-800">
           <div className="p-4 pt-8">
             <div className="flex flex-col items-center gap-3 mb-4">
@@ -199,7 +212,6 @@ const TokenFundingOptions: React.FC<TokenFundingOptionsProps> = ({
 const GetBalance: React.FC<Props> = ({ tool, prevToolAgent }) => {
   const { messages, sendMessage } = useChat();
 
-  // Check if we're in a staking or lending flow
   const isInStakingFlow = messages.some((message) =>
     message.parts?.some((part) => {
       return part.type === 'tool-invocation' && part.toolInvocation.toolName.includes(`staking-`);
@@ -213,19 +225,15 @@ const GetBalance: React.FC<Props> = ({ tool, prevToolAgent }) => {
   );
 
   const isInStakingOrLendingFlow = isInStakingFlow || isInLendingFlow;
-
-  // Extract context from tool args to include in completion message
   const tokenAddress = tool?.args?.tokenAddress;
   const walletAddress = tool?.args?.walletAddress;
 
-  // Handler for when user completes funding options
   const handleFundingComplete = useCallback(
     (type: 'fundWallet' | 'swap', completedTokenSymbol: string) => {
       if (type === 'fundWallet') {
-        // User closed onramp without completing; do not send any message
         return;
       }
-      // User completed swap - include all context for agent to continue
+
       if (isInLendingFlow) {
         sendMessage(
           `I have acquired ${completedTokenSymbol} (${tokenAddress}) and I'm ready to lend. My wallet address is ${walletAddress}. Please show me the lending interface now.`,
@@ -255,7 +263,6 @@ const GetBalance: React.FC<Props> = ({ tool, prevToolAgent }) => {
       }}
       result={{
         heading: (result: BalanceResultType) => {
-          console.log('result in balance heading', result);
           if (result.body?.token) {
             if (isInStakingOrLendingFlow && result.body?.balance > 0.00001) {
               return `${result.body.balance} ${result.body.token} balance`;
@@ -276,7 +283,6 @@ const GetBalance: React.FC<Props> = ({ tool, prevToolAgent }) => {
             );
           }
 
-          // Always show swap/onramp when balance is zero
           if (hasZeroBalance) {
             const tokenAddress = result.body?.tokenAddress || tool?.args?.tokenAddress;
             return (
@@ -289,23 +295,18 @@ const GetBalance: React.FC<Props> = ({ tool, prevToolAgent }) => {
             );
           }
 
-          // If in flow but balance > 0, hide the balance display
           if (isInFlow && !hasZeroBalance) {
             return null;
           }
 
           return (
-            <div className="flex justify-center w-full">
-              <div className="w-full md:w-[70%]">
-                <div className="flex flex-col gap-4">
-                  <TokenBalance
-                    token={result.body.token}
-                    balance={result.body.balance}
-                    logoURI={result.body.logoURI}
-                    name={result.body.name}
-                  />
-                </div>
-              </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 w-full">
+              <TokenBalance
+                token={result.body.token}
+                balance={result.body.balance}
+                logoURI={result.body.logoURI}
+                name={result.body.name}
+              />
             </div>
           );
         },

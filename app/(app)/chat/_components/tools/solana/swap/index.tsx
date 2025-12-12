@@ -32,7 +32,7 @@ const Swap: React.FC<SwapProps> = ({ tool, prevToolAgent }) => {
           if (result.body?.status === 'complete') {
             return (
               <div className="flex justify-center w-full">
-                <div className="w-full md:w-[70%]">
+                <div className="w-full ">
                   <SwapResultCard result={result.body} />
                 </div>
               </div>
@@ -42,7 +42,7 @@ const Swap: React.FC<SwapProps> = ({ tool, prevToolAgent }) => {
           const args = tool.args as SolanaTradeArgumentsType;
           return (
             <div className="flex justify-center w-full">
-              <div className="w-full md:w-[70%]">
+              <div className="w-full ">
                 <SwapCallBody toolCallId={tool.toolCallId} args={args} />
               </div>
             </div>
@@ -53,7 +53,7 @@ const Swap: React.FC<SwapProps> = ({ tool, prevToolAgent }) => {
         heading: 'Swap',
         body: (toolCallId: string, args: SolanaTradeArgumentsType) => (
           <div className="flex justify-center w-full">
-            <div className="w-full md:w-[70%]">
+            <div className="w-full ">
               <SwapCallBody toolCallId={toolCallId} args={args} />
             </div>
           </div>

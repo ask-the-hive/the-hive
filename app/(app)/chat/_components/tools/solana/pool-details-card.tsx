@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils';
 import { capitalizeWords, getConfidenceLabel } from '@/lib/string-utils';
 import VarApyTooltip from '@/components/var-apy-tooltip';
 import posthog from 'posthog-js';
+import { Loader2 } from 'lucide-react';
 
 interface PoolData {
   name: string;
@@ -15,6 +16,7 @@ interface PoolData {
     symbol?: string;
     id?: string;
   } | null;
+  projectLogoURI?: string | null;
   predictions?: {
     binnedConfidence: number | string;
   };
@@ -26,6 +28,8 @@ interface PoolDetailsCardProps<T extends PoolData> {
   onClick: (pool: T) => void | Promise<void>;
   onMoreDetailsClick: (pool: T, event: React.MouseEvent) => void;
   disabled?: boolean;
+  highlightIndex?: number;
+  isPending?: boolean;
 }
 
 function PoolDetailsCard<T extends PoolData>({
@@ -34,6 +38,8 @@ function PoolDetailsCard<T extends PoolData>({
   onClick,
   onMoreDetailsClick,
   disabled = false,
+  highlightIndex = 0,
+  isPending = false,
 }: PoolDetailsCardProps<T>) {
   const handleClick = (event: React.MouseEvent) => {
     event.stopPropagation();
@@ -51,12 +57,17 @@ function PoolDetailsCard<T extends PoolData>({
         disabled
           ? 'opacity-50 cursor-not-allowed'
           : 'cursor-pointer hover:border-brand-600/50 dark:hover:border-brand-600/50',
-        !disabled &&
-          index === 1 &&
-          'hover:border-brand-600 dark:hover:border-brand-600 !shadow-[0_0_10px_rgba(234,179,8,0.5)] dark:!shadow-[0_0_10px_rgba(234,179,8,0.5)]',
+        index === highlightIndex &&
+          'border-brand-600 dark:border-brand-600 !shadow-[0_0_4px_rgba(234,179,8,0.25)] dark:!shadow-[0_0_4px_rgba(234,179,8,0.25)]',
+        isPending && 'ring-2 ring-brand-600/50',
       )}
       onClick={(e) => !disabled && handleClick(e)}
     >
+      {isPending && (
+        <div className="absolute inset-0 bg-black/40 dark:bg-black/50 flex items-center justify-center rounded-xl z-10">
+          <Loader2 className="w-6 h-6 animate-spin text-white" />
+        </div>
+      )}
       <div className="items-center flex-col justify-between gap-2 mb-2 hidden md:flex">
         <div className="flex items-center gap-2">
           <TokenIcon
@@ -70,7 +81,19 @@ function PoolDetailsCard<T extends PoolData>({
           <h3 className="font-semibold text-lg">{pool.name}</h3>
         </div>
 
-        {pool.project && <p className="font-medium">{capitalizeWords(pool.project)}</p>}
+        {pool.project && (
+          <div className="flex items-center gap-2">
+            <TokenIcon
+              src={pool.projectLogoURI || undefined}
+              alt={pool.project || ''}
+              tokenSymbol={pool.project}
+              width={18}
+              height={18}
+              className="w-4 h-4 rounded-full"
+            />
+            <p className="font-medium">{capitalizeWords(pool.project)}</p>
+          </div>
+        )}
       </div>
 
       <div className="items-end gap-1 relative hidden md:flex">
@@ -93,7 +116,19 @@ function PoolDetailsCard<T extends PoolData>({
           />
           <div className="items-center flex-col justify-between gap-2">
             <h3 className="font-semibold text-md">{pool.name}</h3>
-            {pool.project && <p className="text-xs font-medium">{capitalizeWords(pool.project)}</p>}
+            {pool.project && (
+              <div className="flex items-center gap-1">
+                <TokenIcon
+                  src={pool.projectLogoURI || undefined}
+                  alt={pool.project || ''}
+                  tokenSymbol={pool.project}
+                  width={16}
+                  height={16}
+                  className="w-4 h-4 rounded-full"
+                />
+                <p className="text-xs font-medium">{capitalizeWords(pool.project)}</p>
+              </div>
+            )}
           </div>
         </div>
 
@@ -130,7 +165,6 @@ function PoolDetailsCard<T extends PoolData>({
         </div>
       </div>
 
-      {/* More Details Button - Inline on mobile, absolute on desktop */}
       <div className="mt-4 md:absolute md:bottom-0 md:left-0 md:right-0 md:transform md:translate-y-full md:group-hover:translate-y-0 md:transition-transform md:duration-300 md:ease-in-out md:bg-white md:dark:bg-neutral-800 md:border-t md:border-gray-200 md:dark:border-gray-700 md:p-3">
         <Button
           variant="outline"

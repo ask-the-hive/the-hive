@@ -14,7 +14,6 @@ import { useChat as useAiChat } from '@ai-sdk/react';
 import { Models } from '@/types/models';
 import { usePrivy } from '@privy-io/react-auth';
 import { generateId } from 'ai';
-import { useUserChats } from '@/hooks';
 import { ChainType } from '@/app/_contexts/chain-context';
 import { useRouter, usePathname } from 'next/navigation';
 import { useGlobalChatManager } from './global-chat-manager';
@@ -26,6 +25,7 @@ import {
   SOLANA_TRANSFER_NAME,
   SOLANA_DEPOSIT_LIQUIDITY_NAME,
   SOLANA_WITHDRAW_LIQUIDITY_NAME,
+  SOLANA_LEND_ACTION,
 } from '@/ai/action-names';
 import * as Sentry from '@sentry/nextjs';
 
@@ -46,6 +46,7 @@ interface ChatContextType {
   onSubmit: () => Promise<void>;
   isLoading: boolean;
   sendMessage: (message: string) => void;
+  sendInternalMessage: (message: string) => void;
   addToolResult: <T>(toolCallId: string, result: ToolResult<T>) => void;
   isResponseLoading: boolean;
   model: Models;
@@ -56,8 +57,8 @@ interface ChatContextType {
   resetChat: () => void;
   chatId: string;
   inputDisabledMessage: string;
-  // New property to check if we can start a new chat
   canStartNewChat: boolean;
+  completedLendToolCallIds: string[];
 }
 
 const ChatContext = createContext<ChatContextType>({
@@ -67,6 +68,7 @@ const ChatContext = createContext<ChatContextType>({
   onSubmit: async () => {},
   isLoading: false,
   sendMessage: () => {},
+  sendInternalMessage: () => {},
   isResponseLoading: false,
   addToolResult: () => {},
   model: Models.OpenAI,
@@ -78,34 +80,33 @@ const ChatContext = createContext<ChatContextType>({
   chatId: '',
   inputDisabledMessage: '',
   canStartNewChat: true,
+  completedLendToolCallIds: [],
 });
 
 interface ChatProviderProps {
   children: ReactNode;
 }
 
+const getMessageToolInvocations = (message: Message | undefined): any[] => {
+  if (!message) return [];
+
+  if (message.parts && message.parts.length > 0) {
+    return (message.parts as any[])
+      .filter((part) => part && part.type === 'tool-invocation' && (part as any).toolInvocation)
+      .map((part) => (part as any).toolInvocation);
+  }
+
+  const legacyToolInvocations = (message as any).toolInvocations as any[] | undefined;
+
+  return legacyToolInvocations ?? [];
+};
+
 export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
-  const { user, getAccessToken } = usePrivy();
+  const { user } = usePrivy();
   const { updateChatThreadState, removeChatThread } = useGlobalChatManager();
   const router = useRouter();
   const pathname = usePathname();
-
-  const parseJsonSafely = async (response: Response) => {
-    const text = await response.text();
-    if (!text) return null;
-    try {
-      return JSON.parse(text);
-    } catch (error) {
-      Sentry.captureException(error, {
-        tags: {
-          component: 'ChatProvider',
-          action: 'parseJsonSafely',
-          status: response.status,
-        },
-      });
-      return null;
-    }
-  };
+  const [completedLendToolCallIds, setCompletedLendToolCallIds] = useState<string[]>([]);
 
   const [chatId, setChatId] = useState<string>(() => {
     const urlChatId = pathname.split('/').pop();
@@ -122,23 +123,9 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
   const [isResponseLoading, setIsResponseLoading] = useState(false);
   const [model, setModel] = useState<Models>(Models.OpenAI);
   const [chain, setChain] = useState<ChainType>('solana');
-
   const isResettingRef = useRef(false);
-
-  const { mutate } = useUserChats();
-
   const setChat = async (chatId: string) => {
     setChatId(chatId);
-    const chat = await fetch(`/api/chats/${chatId}`, {
-      headers: {
-        Authorization: `Bearer ${await getAccessToken()}`,
-      },
-    });
-    const chatData = await parseJsonSafely(chat);
-    if (chatData) {
-      setMessages(chatData.messages);
-      setChain(chatData.chain || 'solana');
-    }
   };
 
   const resetChat = async () => {
@@ -223,6 +210,18 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
   }, [isLoading, chatId, updateChatThreadState]);
 
   const addToolResult = <T,>(toolCallId: string, result: ToolResult<T>) => {
+    const lastMessage = messages[messages.length - 1];
+    const toolInvocations = getMessageToolInvocations(lastMessage);
+    const lendInvocation = toolInvocations.find((toolInvocation) =>
+      toolInvocation.toolName.includes(SOLANA_LEND_ACTION),
+    );
+
+    if (lendInvocation && (result as any)?.body?.status === 'complete') {
+      setCompletedLendToolCallIds((prev) =>
+        prev.includes(toolCallId) ? prev : [...prev, toolCallId],
+      );
+    }
+
     addToolResultBase({
       toolCallId,
       result,
@@ -251,54 +250,7 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
     }
   }, [chatId, setInput]);
 
-  useEffect(() => {
-    if (chatId && !isResettingRef.current) {
-      const loadExistingChat = async () => {
-        try {
-          const chat = await fetch(`/api/chats/${chatId}`, {
-            headers: {
-              Authorization: `Bearer ${await getAccessToken()}`,
-            },
-          });
-
-          if (chat.ok) {
-            const chatData = await parseJsonSafely(chat);
-            if (chatData && chatData.messages && chatData.messages.length > 0) {
-              setMessages(chatData.messages);
-              setChain(chatData.chain || 'solana');
-            }
-          }
-        } catch {
-          console.log('New chat or chat not found:', chatId);
-        }
-      };
-
-      loadExistingChat();
-    }
-  }, [chatId, getAccessToken, setMessages, setChain]);
-
-  useEffect(() => {
-    const updateChat = async () => {
-      if (messages.length > 0) {
-        const response = await fetch(`/api/chats/${chatId}`, {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${await getAccessToken()}`,
-          },
-          body: JSON.stringify({
-            messages,
-            chain,
-          }),
-        });
-        const data = await parseJsonSafely(response);
-        if (typeof data === 'object') {
-          mutate();
-        }
-      }
-    };
-
-    updateChat();
-  }, [messages, chatId, chain, getAccessToken, mutate]);
+  // history disabled: no chat persistence effects
 
   const onSubmit = async () => {
     if (!input.trim()) return;
@@ -306,106 +258,50 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
     const userInput = input;
     setInput('');
 
-    if (messages.length === 0) {
-      try {
-        const response = await fetch(`/api/chats/${chatId}`, {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${await getAccessToken()}`,
-          },
-          body: JSON.stringify({
-            messages: [
-              {
-                role: 'user',
-                content: userInput,
-              },
-            ],
-            chain,
-          }),
-        });
-
-        if (response.ok) {
-          mutate();
-        }
-      } catch (error) {
-        console.error('Error creating new chat:', error);
-        Sentry.captureException(error, {
-          tags: {
-            component: 'ChatProvider',
-            action: 'createNewChat',
-          },
-        });
-      }
-    }
-
     setIsResponseLoading(true);
     updateChatThreadState(chatId, {
       isLoading: true,
       isResponseLoading: true,
     });
-    await append({
+
+    const appendPromise = append({
       role: 'user',
       content: userInput,
+    });
+
+    await appendPromise;
+  };
+
+  const sendMessageBase = async (message: string, annotations?: any[]) => {
+    setIsResponseLoading(true);
+
+    updateChatThreadState(chatId, {
+      isLoading: true,
+      isResponseLoading: true,
+    });
+
+    await append({
+      role: 'user',
+      content: message,
+      ...(annotations ? { annotations } : {}),
     });
   };
 
   const sendMessage = async (message: string) => {
-    setIsResponseLoading(true);
+    await sendMessageBase(message);
+  };
 
-    updateChatThreadState(chatId, {
-      isLoading: true,
-      isResponseLoading: true,
-    });
-
-    const userMessage: Message = {
-      id: generateId(),
-      role: 'user',
-      content: message,
-    };
-
-    const chatCreationPromise =
-      messages.length === 0
-        ? (async () => {
-            try {
-              const response = await fetch(`/api/chats/${chatId}`, {
-                method: 'POST',
-                headers: {
-                  Authorization: `Bearer ${await getAccessToken()}`,
-                },
-                body: JSON.stringify({
-                  messages: [userMessage],
-                  chain,
-                }),
-              });
-
-              if (response.ok) {
-                mutate();
-              } else if (response.status === 409) {
-                console.log('Chat already exists, refreshing list');
-                mutate();
-              } else {
-                console.error('Error creating new chat:', response.status, response.statusText);
-              }
-            } catch (error) {
-              console.error('Error creating new chat:', error);
-            }
-          })()
-        : Promise.resolve();
-
-    const aiResponsePromise = (async () =>
-      await append({
-        role: 'user',
-        content: message,
-      }))();
-
-    await Promise.all([chatCreationPromise, aiResponsePromise]);
+  const sendInternalMessage = async (message: string) => {
+    await sendMessageBase(message, [{ internal: true }]);
   };
 
   const inputDisabledMessage = useMemo(() => {
     if (messages.length === 0) return '';
     const lastMessage = messages[messages.length - 1];
-    let message = lastMessage.toolInvocations
-      ?.map((toolInvocation) => {
+    const toolInvocations = getMessageToolInvocations(lastMessage);
+
+    let message = toolInvocations
+      .map((toolInvocation) => {
         if (toolInvocation.state === 'result') return '';
         const toolName = toolInvocation.toolName.slice(toolInvocation.toolName.indexOf('-') + 1);
         switch (toolName) {
@@ -448,6 +344,7 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
         onSubmit,
         isLoading,
         sendMessage,
+        sendInternalMessage,
         isResponseLoading,
         addToolResult,
         model,
@@ -459,6 +356,7 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
         chatId,
         inputDisabledMessage,
         canStartNewChat,
+        completedLendToolCallIds,
       }}
     >
       {children}

@@ -11,6 +11,7 @@ import { deepseek } from '@ai-sdk/deepseek';
 import { Models } from "@/types/models";
 import { chooseAgent } from "@/app/(app)/api/chat/solana/utils";
 import { agents } from "@/ai/agents";
+import { WALLET_AGENT_NAME } from "@/ai/agents/wallet/name";
 
 const system = 
 `You a network of blockchain agents called The Hive (or Hive for short). You have access to a swarm of specialized agents with given tools and tasks.
@@ -88,11 +89,27 @@ export const POST = async (req: NextRequest) => {
             system,
         });
     } else {
+        let agentSystem = chosenAgent.systemPrompt;
+
+        if (chosenAgent.name === WALLET_AGENT_NAME) {
+            agentSystem = `${agentSystem}
+
+GLOBAL TOOL RESULT RULES:
+- Do not restate or enumerate raw tool outputs that the UI already renders (such as detailed balance lists).
+- For wallet balance tools, especially the "get all balances" action, follow your balance-display rules exactly and avoid bullet lists of individual token balances.
+
+BUZZ, the native token of The Hive, is strictly a memecoin and has no utility.`;
+        } else {
+            agentSystem = `${agentSystem}
+
+Unless explicitly stated, you should not reiterate the output of the tool as it is shown in the user interface. BUZZ, the native token of The Hive, is strictly a memecoin and has no utility.`;
+        }
+
         streamTextResult = streamText({
             model,
             tools: chosenAgent.tools,
             messages: truncatedMessages,
-            system: `${chosenAgent.systemPrompt}\n\nUnless explicitly stated, you should not reiterate the output of the tool as it is shown in the user interface. BUZZ, the native token of The Hive, is strictly a memecoin and has no utility.`,
+            system: agentSystem,
         });
     }
 

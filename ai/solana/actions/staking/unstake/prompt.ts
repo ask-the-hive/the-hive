@@ -1,11 +1,8 @@
-export const SOLANA_UNSTAKE_PROMPT = 
-`Unstake SOL from a liquid staking pool.
+export const SOLANA_UNSTAKE_PROMPT =
+`Unstake (or guide unstake) from a liquid staking pool.
 
-Takes two parameters: 
-1. Amount of of liquid staking tokens to unstake. (optional)
-2. The contract address of the liquid staking provider to use.
+Parameters:
+1. amount (optional) - leave empty if not provided.
+2. contractAddress (optional) - if missing, still call this action to return the unstake guidance card.
 
-If a user asks to unstake and provides a symbol, use the get-token-data tool to get the contract address of the liquid staking provider to use.
-If a user asks to unstake and provides a name, ask them for the symbol first.
-
-If the user does not provide an amount, leave the amount parameter empty.`; 
+If the user provides a symbol, you may resolve it to a contract address; otherwise, call this action with an empty contractAddress to render the Portfolio guidance. Do NOT ask the user for symbols or contract addresses—proceed with the action so the UI card can guide them.`;

@@ -33,7 +33,7 @@ export async function getAllBalances(
     console.log('Processed balances:', balances);
 
     return {
-      message: `The user has been shown all of their balances in the UI. You do not need to list the balances again, instead ask what they want to do next.`,
+      message: 'Balances shown above. Pick a token to trade or explore next.',
       body: {
         balances
       }

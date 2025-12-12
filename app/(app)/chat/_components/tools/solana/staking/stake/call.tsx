@@ -149,7 +149,7 @@ const StakeCallBody: React.FC<Props> = ({ toolCallId, args }) => {
   if (isSuccess && txSignature && outputTokenData) {
     return (
       <div className="flex justify-center w-full">
-        <div className="w-full md:w-[70%]">
+        <div className="w-full ">
           <StakeResult
             outputTokenData={outputTokenData}
             poolData={poolData}
@@ -163,7 +163,7 @@ const StakeCallBody: React.FC<Props> = ({ toolCallId, args }) => {
 
   return (
     <div className="flex justify-center w-full">
-      <div className="w-full md:w-[70%]">
+      <div className="w-full ">
         <Card className="p-4 max-w-full">
           {inputTokenLoading || outputTokenLoading ? (
             <Skeleton className="h-48 w-full" />

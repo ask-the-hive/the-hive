@@ -18,32 +18,30 @@ interface Props {
 
 const GetBalance: React.FC<Props> = ({ tool, prevToolAgent }) => {
   return (
-    <div className="flex justify-center w-full">
-      <div className="w-full md:w-[70%]">
-        <ToolCard
-          tool={tool}
-          loadingText={`Getting ${tool.args.tokenSymbol || 'BNB'} Balance...`}
-          result={{
-            heading: (result: BalanceResultType) =>
-              result.body?.token
-                ? `Fetched ${result.body.token} Balance`
-                : `Failed to fetch balance`,
-            body: (result: BalanceResultType) =>
-              result.body ? (
+    <div className="w-full">
+      <ToolCard
+        tool={tool}
+        loadingText={`Getting ${tool.args.tokenSymbol || 'BNB'} Balance...`}
+        result={{
+          heading: (result: BalanceResultType) =>
+            result.body?.token ? `Fetched ${result.body.token} Balance` : `Failed to fetch balance`,
+          body: (result: BalanceResultType) =>
+            result.body ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 w-full">
                 <TokenBalance
                   token={result.body.token}
                   balance={result.body.balance}
                   logoURI={result.body.logoURI}
                   name={result.body.name}
                 />
-              ) : (
-                <p className="text-sm text-neutral-600 dark:text-neutral-400">No balance found</p>
-              ),
-          }}
-          prevToolAgent={prevToolAgent}
-          className="w-full"
-        />
-      </div>
+              </div>
+            ) : (
+              <p className="text-sm text-neutral-600 dark:text-neutral-400">No balance found</p>
+            ),
+        }}
+        prevToolAgent={prevToolAgent}
+        className="w-full"
+      />
     </div>
   );
 };

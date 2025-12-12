@@ -1,46 +1,50 @@
 'use client';
 
-import React, { useRef, useEffect } from 'react';
-
+import React, { useRef, useEffect, useState } from 'react';
 import { ArrowUp } from 'lucide-react';
-
 import Textarea from 'react-textarea-autosize';
-
-import { Button, Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui';
-
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider, Button } from '@/components/ui';
 import { useEnterSubmit } from '../_hooks';
-
 import { useChat } from '../_contexts/chat';
-
 import { cn } from '@/lib/utils';
 
-// import ModelSelector from '../../_components/chat/model-selector';
-// import ChainSelector from '../../_components/chat/chain-selector';
-import { usePrivy } from '@privy-io/react-auth';
-import FollowUpSuggestions from './follow-up-suggestions';
+const PROMPT_POOL = [
+  'Help me stake SOL',
+  'How to earn in DeFi',
+  'Compare lending options',
+  'Best staking yields',
+  'Where to deposit stablecoins',
+];
 
 const ChatInput: React.FC = () => {
-  const { user } = usePrivy();
-
-  const {
-    input,
-    setInput,
-    onSubmit,
-    // model,
-    // setModel,
-    // chain,
-    // setChain,
-    inputDisabledMessage,
-    // messages,
-    isLoading,
-  } = useChat();
-
-  const { onKeyDown } = useEnterSubmit({ onSubmit: onSubmit });
-
+  const { input, setInput, onSubmit, inputDisabledMessage, isLoading, messages } = useChat();
+  const { onKeyDown } = useEnterSubmit({
+    onSubmit: () => {
+      if (isLoading || inputDisabledMessage !== '') return;
+      onSubmit();
+    },
+  });
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const [rotatedPrompts, setRotatedPrompts] = useState(PROMPT_POOL);
 
-  // Check if chat has started (has messages)
-  // const hasMessages = messages.length > 0;
+  useEffect(() => {
+    const storageKey = 'chat-tip-rotation-index';
+    const lastIndexRaw = typeof window !== 'undefined' ? localStorage.getItem(storageKey) : null;
+    const lastIndex = lastIndexRaw ? parseInt(lastIndexRaw, 10) : -1;
+    const nextIndex = Number.isFinite(lastIndex) ? (lastIndex + 1) % PROMPT_POOL.length : 0;
+    const rotated = PROMPT_POOL.map(
+      (_prompt, idx) => PROMPT_POOL[(nextIndex + idx) % PROMPT_POOL.length],
+    );
+
+    setRotatedPrompts(rotated);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(storageKey, `${nextIndex}`);
+    }
+  }, []);
+
+  const tipPrompt = rotatedPrompts[0] || 'Ask the hive anything...';
+  const hasMessages = (messages || []).length > 0;
+  const placeholder = hasMessages ? 'Ask the hive anything...' : `Tip: ${tipPrompt}`;
 
   useEffect(() => {
     if (!isLoading && inputRef.current) {
@@ -50,20 +54,15 @@ const ChatInput: React.FC = () => {
 
   return (
     <div className="flex flex-col gap-1 w-full">
-      <FollowUpSuggestions />
       <form
         onSubmit={(e) => {
           e.preventDefault();
           onSubmit();
         }}
         className={cn(
-          // Base styles
           'w-full rounded-lg flex flex-col overflow-hidden transition-colors duration-200 ease-in-out border border-transparent shadow-md',
-          // Light mode styles
           'bg-neutral-100 focus-within:border-brand-600',
-          // Dark mode styles
           'dark:bg-neutral-700/50 dark:focus-within:border-brand-600',
-          // Remove loading state styling that prevents new chat creation
         )}
       >
         <div className="relative flex items-center">
@@ -72,18 +71,19 @@ const ChatInput: React.FC = () => {
               ref={inputRef}
               tabIndex={0}
               onKeyDown={onKeyDown}
-              placeholder="Ask the hive anything..."
+              placeholder={placeholder}
               className={cn(
-                'w-full max-h-40 resize-none bg-transparent px-5 pt-5 pb-5 pr-14 text-[17px] file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-neutral-600 dark:placeholder:text-neutral-400 disabled:cursor-not-allowed disabled:opacity-50',
+                'w-full resize-none bg-transparent px-5 pt-5 pb-5 pr-14 text-[17px] file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-neutral-600 dark:placeholder:text-neutral-400 disabled:cursor-not-allowed disabled:opacity-50 no-scrollbar',
                 'focus-visible:outline-none',
                 'dark:placeholder:text-neutral-400',
               )}
+              minRows={1}
+              maxRows={3}
               value={input}
               onChange={(e) => {
                 setInput(e.target.value);
               }}
-              // Only disable input for tool invocations, not for loading state
-              disabled={inputDisabledMessage !== '' || isLoading}
+              disabled={inputDisabledMessage !== ''}
               autoFocus
             />
           </OptionalTooltip>
@@ -94,10 +94,7 @@ const ChatInput: React.FC = () => {
                   <Button
                     type="submit"
                     size="icon"
-                    // Only disable submit button for empty input or tool invocations
-                    disabled={
-                      input.trim() === '' || inputDisabledMessage !== '' || !user || isLoading
-                    }
+                    disabled={input.trim() === '' || inputDisabledMessage !== '' || isLoading}
                     variant="ghost"
                     className="h-8 w-8"
                   >

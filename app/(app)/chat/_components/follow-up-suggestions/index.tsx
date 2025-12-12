@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useChat } from '@/app/(app)/chat/_contexts/chat';
 import { Models } from '@/types/models';
 import { Button, Skeleton, Icon } from '@/components/ui';
-import { Message } from 'ai';
+import { Message, ToolInvocation } from 'ai';
 import { cn } from '@/lib/utils';
 import { determineSuggestionsPrompt } from './utils';
 
@@ -33,7 +33,6 @@ const generateFollowUpSuggestions = async (messages: Message[], model: Models) =
       },
     });
 
-    // Check if response is ok and has content
     if (!response.ok) {
       console.warn('Failed to fetch suggestions:', response.status, response.statusText);
       return [];
@@ -57,25 +56,43 @@ const generateFollowUpSuggestions = async (messages: Message[], model: Models) =
   }
 };
 
+const getMessageToolInvocations = (message: Message): ToolInvocation[] => {
+  if (!message) return [];
+
+  if (message.parts && message.parts.length > 0) {
+    return (message.parts as any[])
+      .filter((part) => part && part.type === 'tool-invocation' && (part as any).toolInvocation)
+      .map((part) => (part as any).toolInvocation as ToolInvocation);
+  }
+
+  const legacyToolInvocations = (message as any).toolInvocations as ToolInvocation[] | undefined;
+
+  return legacyToolInvocations ?? [];
+};
+
 const FollowUpSuggestions: React.FC = () => {
   const { model, sendMessage, isResponseLoading, messages, chatId, isLoading } = useChat();
   const [isGenerating, setIsGenerating] = useState(false);
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const requestTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastFetchedKeyRef = useRef<string | null>(null);
 
   const generateSuggestions = useCallback(async () => {
     if (isResponseLoading || isLoading || !messages.length) return;
 
-    // Check if any messages have incomplete tool invocations
     const hasIncompleteTools = messages.some((message) =>
-      message.toolInvocations?.some((tool) => tool.state !== 'result'),
+      getMessageToolInvocations(message).some((tool) => tool.state !== 'result'),
     );
 
     if (hasIncompleteTools) return;
 
-    if (requestTimeoutRef.current) {
-      clearTimeout(requestTimeoutRef.current);
+    // Only fetch once per latest message set to avoid duplicate requests
+    const lastMessage = messages[messages.length - 1];
+    const latestKey = lastMessage ? `${lastMessage.id}-${lastMessage.role}` : null;
+    if (latestKey && lastFetchedKeyRef.current === latestKey) {
+      return;
     }
+    lastFetchedKeyRef.current = latestKey;
 
     setIsGenerating(true);
     try {
@@ -92,23 +109,15 @@ const FollowUpSuggestions: React.FC = () => {
 
   useEffect(() => {
     generateSuggestions();
-
-    return () => {
-      if (requestTimeoutRef.current) {
-        clearTimeout(requestTimeoutRef.current);
-      }
-    };
   }, [generateSuggestions]);
 
   if (isLoading) return null;
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mt-4 mb-2 px-4">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mb-2 px-4">
       {isGenerating ? (
         <>
-          {/* Mobile: Show only 1 skeleton */}
           <Skeleton className="w-full h-[22px] md:hidden" />
-          {/* Desktop: Show all 3 skeletons */}
           {Array.from({ length: 3 }).map((_, index) => (
             <Skeleton key={index} className="w-full h-[32px] hidden md:block rounded-full" />
           ))}

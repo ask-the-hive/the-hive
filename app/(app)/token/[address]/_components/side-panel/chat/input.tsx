@@ -77,7 +77,7 @@ const ChatInput: React.FC = () => {
                     size="icon"
                     // Only disable submit button for empty input or tool invocations
                     disabled={
-                      input.trim() === '' || inputDisabledMessage !== '' || !user || isLoading
+                      input.trim() === '' || inputDisabledMessage !== '' || isLoading
                     }
                     variant="ghost"
                     className="h-8 w-8"

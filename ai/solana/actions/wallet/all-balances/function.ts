@@ -1,62 +1,84 @@
-import { LAMPORTS_PER_SOL, PublicKey, Connection } from "@solana/web3.js";
-
-
-import { getTokenAccountsByOwner } from "@/services/helius";
-
-import type { SolanaActionResult } from "../../solana-action";
-import type { AllBalancesArgumentsType, AllBalancesResultBodyType } from "./types";
-import { getToken } from "@/db/services";
+import { LAMPORTS_PER_SOL, PublicKey, Connection } from '@solana/web3.js';
+import { getTokenAccountsByOwner } from '@/services/helius';
+import type { SolanaActionResult } from '../../solana-action';
+import type { AllBalancesArgumentsType, AllBalancesResultBodyType } from './types';
+import { getToken } from '@/db/services';
+import { getTokenMetadata } from '@/services/birdeye';
 
 export async function getAllBalances(
   connection: Connection,
-  args: AllBalancesArgumentsType
+  args: AllBalancesArgumentsType,
 ): Promise<SolanaActionResult<AllBalancesResultBodyType>> {
   try {
-    let balances: {
+    const balances: {
       balance: number;
       token: string;
       name: string;
       logoURI: string;
     }[] = [];
 
-    // Get SOL balance
-    const solBalance = await connection.getBalance(new PublicKey(args.walletAddress)) / LAMPORTS_PER_SOL;
+    const solBalance =
+      (await connection.getBalance(new PublicKey(args.walletAddress))) / LAMPORTS_PER_SOL;
     balances.push({
       balance: solBalance,
-      token: "SOL",
-      name: "Solana",
-      logoURI: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTX6PYmAiDpUliZWnmCHKPc3VI7QESDKhLndQ&s"
+      token: 'SOL',
+      name: 'Solana',
+      logoURI:
+        'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTX6PYmAiDpUliZWnmCHKPc3VI7QESDKhLndQ&s',
     });
 
-    // Get all token accounts
     const tokenAccounts = await getTokenAccountsByOwner(args.walletAddress);
 
-    // Get balance for each token account
     for await (const account of tokenAccounts) {
-      const token = await getToken(account.mint!);
-        if (token) {
-          balances.push({
-            balance: account.amount! / 10 ** token.decimals,
-            token: token.symbol,
-            name: token.name,
-            logoURI: token.logoURI
-          });
+      let token = await getToken(account.mint!);
+      if (!token) {
+        try {
+          const metadata = await getTokenMetadata(account.mint!, 'solana');
+          if (metadata && metadata.symbol !== 'UNKNOWN') {
+            token = {
+              id: account.mint!,
+              symbol: metadata.symbol,
+              name: metadata.name,
+              logoURI: metadata.logo_uri || '',
+              decimals: metadata.decimals || 6,
+              tags: [],
+              freezeAuthority: null,
+              mintAuthority: null,
+              permanentDelegate: null,
+              extensions: metadata.extensions || {},
+            } as any;
+          }
+        } catch (error) {
+          console.warn('Unable to fetch metadata for mint', account.mint, error);
         }
+      }
+
+      const balanceAmount =
+        token?.decimals !== undefined && token.decimals !== null
+          ? account.amount! / 10 ** token.decimals
+          : account.amount!;
+
+      balances.push({
+        balance: balanceAmount,
+        token: token?.symbol || account.mint!,
+        name: token?.name || account.mint!,
+        logoURI: token?.logoURI || '',
+      });
     }
 
     return {
-      message: `The user has been shown all of their balances in the UI. You do not need to list the balances again, instead ask what they want to do next.`,
+      message: 'Balances shown above. Pick a token to swap, lend, stake, or explore next.',
       body: {
-        balances: balances
-      }
+        balances: balances,
+      },
     };
   } catch (error) {
     console.error(error);
     return {
       message: `Error getting balances: ${error}`,
       body: {
-        balances: []
-      }
+        balances: [],
+      },
     };
   }
-} 
+}

@@ -1,6 +1,6 @@
 'use client';
 
-import { Droplet, ChartLine, ChartCandlestick, Zap } from 'lucide-react';
+import { Droplet, Zap, HandCoins } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 import {
@@ -15,25 +15,18 @@ import posthog from 'posthog-js';
 
 const shortcuts = [
   {
-    title: 'Stake',
+    title: 'Stake SOL',
     description: 'Earn the highest yields with liquid staking',
     icon: Droplet,
     prompt: 'Find me the best staking yields on Solana',
     eventName: 'stake_strategy_clicked',
   },
   {
-    title: 'Lend',
+    title: 'Lend Stablecoins',
     description: 'Lend stablecoins to earn interest',
-    icon: ChartLine,
+    icon: HandCoins,
     prompt: 'Show me the best lending pools on Solana',
     eventName: 'lend_strategy_clicked',
-  },
-  {
-    title: 'Swap',
-    description: 'Swap on Jupiter',
-    icon: ChartCandlestick,
-    prompt: "Let's trade some tokens",
-    eventName: 'trade_strategy_clicked',
   },
 ] as const;
 

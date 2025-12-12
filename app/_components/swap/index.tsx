@@ -8,8 +8,10 @@ import { Button } from '@/components/ui';
 import { cn } from '@/lib/utils';
 import LogInButton from '@/app/(app)/_components/log-in-button';
 import TokenInput from './token-input';
+import { useChain } from '@/app/_contexts/chain-context';
 import { useSendTransaction, useTokenBalance, useTokenDataByAddress } from '@/hooks';
 import { getSwapObj, getQuote } from '@/services/jupiter';
+import { useSWRConfig } from 'swr';
 
 type QuoteResponse = any;
 import type { Token } from '@/db/types';
@@ -60,6 +62,8 @@ const Swap: React.FC<Props> = ({
   setSwapResult,
   eventName,
 }) => {
+  const { mutate } = useSWRConfig();
+  const { currentChain } = useChain();
   const [inputAmount, setInputAmount] = useState<string>(initialInputAmount || '');
   const [inputToken, setInputToken] = useState<Token | null>(initialInputToken);
 
@@ -110,21 +114,36 @@ const Swap: React.FC<Props> = ({
 
   const [isQuoteLoading, setIsQuoteLoading] = useState<boolean>(false);
   const [quoteResponse, setQuoteResponse] = useState<QuoteResponse | null>(null);
-
   const [isSwapping, setIsSwapping] = useState<boolean>(false);
 
   const onErrorRef = useRef(onError);
   onErrorRef.current = onError;
   const setSwapResultRef = useRef(setSwapResult);
   setSwapResultRef.current = setSwapResult;
-
   const lastQuoteParamsRef = useRef<string | null>(null);
 
   const { sendTransaction, wallet } = useSendTransaction();
-
   const { balance: inputBalance, isLoading: inputBalanceLoading } = useTokenBalance(
     inputToken?.id || '',
     wallet?.address || '',
+  );
+
+  const refreshBalances = useCallback(
+    async (tokenIds: Array<string | null | undefined>) => {
+      if (!wallet?.address) return;
+
+      const keys = tokenIds
+        .filter((id): id is string => !!id)
+        .flatMap((id) => [
+          `token-balance-${id}-${wallet.address}`,
+          `token-balance-${currentChain}-${id}-${wallet.address}`,
+        ]);
+
+      if (!keys.length) return;
+
+      await Promise.all(keys.map((key) => mutate(key, undefined, { revalidate: true })));
+    },
+    [wallet?.address, currentChain, mutate],
   );
 
   const onChangeInputOutput = () => {
@@ -174,6 +193,8 @@ const Swap: React.FC<Props> = ({
         outputToken: outputToken?.symbol,
       });
 
+      void refreshBalances([inputToken?.id, outputToken?.id]);
+
       onSuccess?.(txHash);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
@@ -189,7 +210,6 @@ const Swap: React.FC<Props> = ({
     }
   };
 
-  // Extract stable primitive values for the quote effect
   const inputTokenId = inputToken?.id;
   const inputTokenDecimals = inputToken?.decimals;
   const inputTokenSymbol = inputToken?.symbol;
@@ -197,9 +217,7 @@ const Swap: React.FC<Props> = ({
   const outputTokenDecimals = outputToken?.decimals;
   const outputTokenSymbol = outputToken?.symbol;
 
-  // Quote fetching - only fetch when params actually change
   useEffect(() => {
-    // Early exit if no complete token data or no valid input amount
     if (
       !hasCompleteTokenData ||
       !inputAmount ||
@@ -215,10 +233,8 @@ const Swap: React.FC<Props> = ({
       return;
     }
 
-    // Create a unique key for the current quote params
     const quoteParamsKey = `${inputTokenId}-${outputTokenId}-${inputAmount}`;
 
-    // Skip if we've already fetched this exact quote
     if (lastQuoteParamsRef.current === quoteParamsKey) {
       return;
     }
@@ -232,14 +248,12 @@ const Swap: React.FC<Props> = ({
           .mul(new Decimal(10).pow(inputTokenDecimals))
           .toFixed(0, Decimal.ROUND_DOWN);
 
-        // Check if the output token address looks valid (should be 32-44 characters)
         if (!outputTokenId || outputTokenId.length < 32) {
           throw new Error(`Invalid output token address: ${outputTokenId}`);
         }
 
         const quote = await getQuote(inputTokenId, outputTokenId, inputAmountWei);
 
-        // Mark this quote as fetched
         lastQuoteParamsRef.current = quoteParamsKey;
 
         setQuoteResponse(quote);
@@ -250,7 +264,6 @@ const Swap: React.FC<Props> = ({
 
         handleOutputAmountChange(outputAmountStr);
 
-        // Call setSwapResult if provided
         if (setSwapResultRef.current && inputTokenSymbol && outputTokenSymbol) {
           setSwapResultRef.current({
             outputAmount: outputAmountStr,

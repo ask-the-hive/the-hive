@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card } from '@/components/ui';
 import { usePrice } from '@/hooks/queries/price';
 import { Skeleton } from '@/components/ui';
@@ -17,47 +17,62 @@ interface Props {
 }
 
 const TokenBalance: React.FC<Props> = ({ balance, logoURI, symbol, token, name }) => {
-  // Use token as symbol if symbol is not provided
-  const displaySymbol = symbol || token || 'Unknown';
-  // Use name as fallback for the alt text
-  const altText = `${displaySymbol || name || 'Unknown'} token logo`;
+  const rawSymbol = symbol || token || 'Unknown';
+  const formattedSymbol =
+    rawSymbol.length > 18 ? `${rawSymbol.slice(0, 6)}…${rawSymbol.slice(-4)}` : rawSymbol;
+  const altText = `${rawSymbol || name || 'Unknown'} token logo`;
+  const [logoError, setLogoError] = useState(false);
 
-  const { data: tokenAddress } = useResolveAssetSymbolToAddress(displaySymbol);
+  // Skip extra lookups when a logo is already provided and we don't need price data
+  const shouldResolve = !logoURI;
+  const { data: tokenAddress } = useResolveAssetSymbolToAddress(shouldResolve ? rawSymbol : '');
   const { data: tokenData, isLoading: isTokenLoading } = useTokenDataByAddress(tokenAddress || '');
   const { data: price, isLoading: isPriceLoading } = usePrice(tokenData?.id || '');
-  // The balance is already in the correct format, no need to divide by 10^decimals
+
+  const resolvedLogoURI = logoURI || tokenData?.logoURI || (tokenData as any)?.logo_uri || '';
 
   return (
-    <Card className="flex items-center justify-between gap-2 p-4">
-      <div className="flex flex-row items-center gap-2">
-        {logoURI ? (
-          <Image src={logoURI} alt={altText} width={32} height={32} className="rounded-full" />
+    <Card className="flex items-center justify-between gap-3 p-3 md:p-4 w-full min-w-[210px] md:min-w-[240px] overflow-hidden">
+      <div className="flex flex-row items-center gap-2 min-w-0">
+        {resolvedLogoURI && !logoError ? (
+          <Image
+            src={resolvedLogoURI}
+            alt={altText}
+            width={32}
+            height={32}
+            className="rounded-full"
+            onError={() => setLogoError(true)}
+          />
         ) : (
           <div className="w-8 h-8 rounded-full bg-neutral-200 dark:bg-neutral-700 flex items-center justify-center">
-            <span className="text-xs font-semibold text-neutral-600 dark:text-neutral-300">
-              {displaySymbol?.toUpperCase()}
-            </span>
+            <span className="text-sm font-semibold text-neutral-600 dark:text-neutral-300">?</span>
           </div>
         )}
 
-        <span className="text-lg font-medium text-muted-foreground">{displaySymbol}</span>
+        <span className="text-sm md:text-base font-semibold text-neutral-100 truncate">
+          {formattedSymbol}
+        </span>
       </div>
-      <div className="flex flex-col items-end">
-        <div className="flex flex-row items-end gap-2">
-          <p className="text-md font-medium">
-            {balance.toLocaleString(undefined, {
-              maximumFractionDigits: 4,
-              minimumFractionDigits: 4,
-            })}
+      <div className="flex flex-col items-end gap-1 min-w-0">
+        <div className="flex flex-row items-baseline gap-1">
+          <p className="text-sm md:text-base font-semibold">
+            {balance > 0 && balance < 0.0001
+              ? '≈ 0'
+              : balance.toLocaleString(undefined, {
+                  maximumFractionDigits: 4,
+                  minimumFractionDigits: balance === 0 ? 0 : 2,
+                })}
           </p>
-          <p className="text-md text-muted-foreground">{displaySymbol}</p>
+          <p className="text-xs md:text-sm text-muted-foreground whitespace-nowrap">
+            {formattedSymbol}
+          </p>
         </div>
         {isTokenLoading || isPriceLoading ? (
-          <Skeleton className="w-16 h-4" />
+          <Skeleton className="w-16 h-3" />
         ) : (
           tokenData &&
           price && (
-            <p className="text-md text-muted-foreground">
+            <p className="text-xs md:text-sm text-muted-foreground">
               $
               {(price.value * Number(balance)).toLocaleString(undefined, {
                 minimumFractionDigits: 2,

@@ -13,10 +13,17 @@ interface Props {
 }
 
 const Messages: React.FC<Props> = ({ messageClassName, token }) => {
-  const { messages, isResponseLoading } = useChat();
+  const { messages, isResponseLoading, isLoading } = useChat();
   const { scrollRef, messagesRef } = useScrollAnchor();
 
   if (messages.length === 0) {
+    if (isResponseLoading || isLoading) {
+      return (
+        <div className="flex-1 flex flex-col w-full justify-center items-center" ref={scrollRef}>
+          <LoadingMessage compressed />
+        </div>
+      );
+    }
     return (
       <div className="flex-1 flex flex-col w-full justify-center items-center" ref={scrollRef}>
         <p className="text-sm text-center text-gray-500 dark:text-gray-400">
@@ -44,7 +51,7 @@ const Messages: React.FC<Props> = ({ messageClassName, token }) => {
             ToolComponent={({ tool }) => <Tool tool={tool} token={token} />}
           />
         ))}
-        {isResponseLoading && <LoadingMessage compressed />}
+        {(isResponseLoading || isLoading) && <LoadingMessage compressed />}
       </div>
     </div>
   );

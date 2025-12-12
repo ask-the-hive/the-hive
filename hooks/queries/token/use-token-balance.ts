@@ -25,9 +25,34 @@ export const useTokenBalance = (tokenAddress: string, walletAddress: string) => 
       if (chain === 'solana') {
         const connection = new Connection(process.env.NEXT_PUBLIC_SOLANA_RPC_URL!);
         if (tokenAddress === 'So11111111111111111111111111111111111111112') {
-          const balance =
-            (await connection.getBalance(new PublicKey(walletAddress))) / LAMPORTS_PER_SOL;
-          return balance;
+          const owner = new PublicKey(walletAddress);
+
+          const nativeLamports = await connection.getBalance(owner);
+          const nativeSol = nativeLamports / LAMPORTS_PER_SOL;
+
+          let wrappedSol = 0;
+
+          try {
+            const wsolAta = getAssociatedTokenAddressSync(
+              new PublicKey(tokenAddress),
+              owner,
+              false,
+              TOKEN_PROGRAM_ID,
+            );
+            const wsolAccount = await connection.getTokenAccountBalance(wsolAta);
+            wrappedSol = wsolAccount.value.uiAmount ?? 0;
+          } catch (error) {
+            Sentry.captureException(error, {
+              extra: {
+                tokenAddress,
+                walletAddress,
+                chain,
+                context: 'useTokenBalance wSOL ATA lookup',
+              },
+            });
+          }
+
+          return nativeSol + wrappedSol;
         } else {
           // Basic validation: if tokenAddress is not a valid base58 pubkey length, return null so UI can show '--'
           if (tokenAddress.length < 32 || tokenAddress.length > 44) {

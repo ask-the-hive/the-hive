@@ -14,7 +14,7 @@ interface Props {
 
 const Layout: React.FC<Props> = ({ children }) => {
   return (
-    <SidebarProvider>
+    <SidebarProvider defaultOpen={false}>
       <GlobalChatManagerProvider>
         <Sidebar>{children}</Sidebar>
         <MoreMenu />

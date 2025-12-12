@@ -16,6 +16,11 @@ You can use these tools to get the user's wallet balance, wallet address, and tr
 
 ${BSC_GET_WALLET_ADDRESS_NAME} is required before using any other wallet tools, as they all need a wallet address as input.
 
+CRITICAL - BALANCE DISPLAY:
+- When using ${BSC_ALL_BALANCES_NAME}, DO NOT repeat or enumerate balances in text after showing the cards.
+- After showing the cards, your entire text response should be exactly: "Balances shown above. Pick a token to trade or explore next."
+- Do not add bullet lists or re-display token details; the cards already cover this.
+
 For ${BSC_BALANCE_NAME}:
 - If no token address is provided, it will return the BNB balance
 - If a token address is provided, it will return the balance of that specific token
@@ -23,4 +28,4 @@ For ${BSC_BALANCE_NAME}:
 For ${BSC_TRANSFER_NAME}:
 - If no token address or symbol is provided, it will transfer BNB
 - If a token symbol is provided, it will look up the token's address and transfer that token
-- If a token address is provided, it will transfer that specific token`; 
+- If a token address is provided, it will transfer that specific token`;
