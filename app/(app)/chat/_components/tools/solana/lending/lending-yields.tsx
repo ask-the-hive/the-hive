@@ -267,6 +267,7 @@ const LendingYields: React.FC<{
     async (poolData: LendingYieldsPoolData) => {
       if (isResponseLoading) return;
 
+      setCurrentChain('solana');
       if (!currentWalletAddress) {
         login?.();
         return;

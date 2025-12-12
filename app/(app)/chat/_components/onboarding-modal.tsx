@@ -30,20 +30,23 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onClose }) =>
   const steps = [
     {
       number: 1,
-      title: 'Find Your Yield',
-      description: 'Discover the best staking and lending opportunities with real-time APY data',
+      title: 'Discover & Compare Yields',
+      description:
+        'Find top Solana staking and lending opportunities with verified, real-time APY.',
       icon: Search,
     },
     {
       number: 2,
-      title: 'Connect Wallet',
-      description: 'Securely connect your Solana wallet to start earning',
+      title: 'Securely Connect Wallet',
+      description:
+        'Link your Solana wallet to instantly access and execute transactions on the best protocols.',
       icon: Wallet,
     },
     {
       number: 3,
-      title: 'Earn Yield',
-      description: 'Stake or lend your assets and watch your rewards grow',
+      title: 'Start Earning Instantly',
+      description:
+        'Execute staking or lending actions directly from your wallet to maximize your rewards.',
       icon: TrendingUp,
     },
   ];
@@ -193,4 +196,3 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onClose }) =>
 };
 
 export default OnboardingModal;
-
