@@ -1,6 +1,6 @@
 'use client';
 
-import { Droplet, ChartLine, ChartCandlestick, Zap } from 'lucide-react';
+import { Droplet, Zap, HandCoins } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 import {
@@ -15,33 +15,35 @@ import posthog from 'posthog-js';
 
 const shortcuts = [
   {
-    title: 'Stake',
+    title: 'Stake SOL',
     description: 'Earn the highest yields with liquid staking',
     icon: Droplet,
     prompt: 'Find me the best staking yields on Solana',
     eventName: 'stake_strategy_clicked',
   },
   {
-    title: 'Lend',
+    title: 'Lend Stablecoins',
     description: 'Lend stablecoins to earn interest',
-    icon: ChartLine,
+    icon: HandCoins,
     prompt: 'Show me the best lending pools on Solana',
     eventName: 'lend_strategy_clicked',
-  },
-  {
-    title: 'Swap',
-    description: 'Swap on Jupiter',
-    icon: ChartCandlestick,
-    prompt: "Let's trade some tokens",
-    eventName: 'trade_strategy_clicked',
   },
 ] as const;
 
 const ShortcutsGroup = () => {
   const router = useRouter();
-  const { isMobile, setOpenMobile } = useSidebar();
+  const { isMobile, setOpenMobile, open, setOpen, state } = useSidebar();
+
+  const ensureChatsOpen = () => {
+    if (isMobile) {
+      setOpenMobile(true);
+    } else if (!open) {
+      setOpen(true);
+    }
+  };
 
   const handleShortcutClick = (prompt: string) => {
+    ensureChatsOpen();
     // Navigate to /chat with the prompt as a message query parameter
     router.push(`/chat?message=${encodeURIComponent(prompt)}`);
     if (isMobile) {
@@ -49,9 +51,34 @@ const ShortcutsGroup = () => {
     }
   };
 
+  if (state === 'collapsed') {
+    return (
+      <>
+        {shortcuts.map((shortcut) => {
+          const Icon = shortcut.icon;
+          return (
+            <SidebarMenuItem key={shortcut.title}>
+              <SidebarMenuButton
+                onClick={() => {
+                  handleShortcutClick(shortcut.prompt);
+                  posthog.capture(shortcut.eventName);
+                }}
+                tooltip={shortcut.title}
+                className="cursor-pointer"
+              >
+                <Icon className="h-4 w-4" />
+                <span className="text-sm font-medium">{shortcut.title}</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          );
+        })}
+      </>
+    );
+  }
+
   return (
     <SidebarMenuItem>
-      <SidebarMenuButton className="justify-between w-full pointer-events-none">
+      <SidebarMenuButton className="justify-between w-full" tooltip="Shortcuts">
         <div className="flex items-center gap-2">
           <Zap className="h-4 w-4" />
           <h1 className="text-sm font-semibold">Shortcuts</h1>

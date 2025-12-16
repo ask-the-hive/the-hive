@@ -35,10 +35,6 @@ const PoolEarningPotential: React.FC<Props> = ({
     return ((outputAmount * outputTokenPrice * poolData.yield) / 100) * (selectedTimespan / 12);
   }, [outputAmount, outputTokenPrice, poolData.yield, selectedTimespan]);
 
-  if (!poolData.tokenData) {
-    return null;
-  }
-
   return (
     <div className="mt-6">
       <div className="flex items-center justify-between gap-2 mb-3 w-full">
@@ -55,7 +51,7 @@ const PoolEarningPotential: React.FC<Props> = ({
             <TokenIcon
               src={poolData.tokenData?.logoURI}
               alt={poolData.name}
-              tokenSymbol={poolData.tokenData?.symbol}
+              tokenSymbol={poolData.tokenData?.symbol || (poolData as any).symbol}
               width={24}
               height={24}
               className="w-6 h-6 rounded-full"

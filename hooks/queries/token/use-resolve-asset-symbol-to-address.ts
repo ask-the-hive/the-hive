@@ -73,10 +73,12 @@ async function resolveAssetSymbolToAddressClient(
     if (contractAddress && typeof contractAddress === 'string' && contractAddress.length > 0) {
       return contractAddress;
     } else {
-      throw new Error('No contract address found');
+      // Gracefully return null when address cannot be resolved
+      return null;
     }
-  } catch (e) {
-    console.error('Error fetching token metadata:', e);
+  } catch {
+    // Silence lookup failures; return null so callers can fall back
+    return null;
   }
   return null;
 }

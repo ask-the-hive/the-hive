@@ -71,6 +71,8 @@ export default {
       animation: {
         'shiny-text': 'shiny-text 8s infinite',
         'border-beam': 'border-beam calc(var(--duration)*1s) infinite linear',
+        'honeycomb-shine': 'honeycomb-shine 0.8s ease-in-out',
+        'premium-shimmer': 'premium-shimmer 2s ease-in-out',
       },
       keyframes: {
         'shiny-text': {
@@ -84,6 +86,27 @@ export default {
         'border-beam': {
           '100%': {
             'offset-distance': '100%',
+          },
+        },
+        'honeycomb-shine': {
+          '0%': {
+            transform: 'translateX(-100%) translateY(-100%) rotate(45deg)',
+          },
+          '100%': {
+            transform: 'translateX(100%) translateY(100%) rotate(45deg)',
+          },
+        },
+        'premium-shimmer': {
+          '0%': {
+            transform: 'translateX(-100%) translateY(-100%) rotate(135deg)',
+            opacity: '0',
+          },
+          '50%': {
+            opacity: '0.12',
+          },
+          '100%': {
+            transform: 'translateX(100%) translateY(100%) rotate(135deg)',
+            opacity: '0',
           },
         },
       },

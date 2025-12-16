@@ -32,7 +32,7 @@ const Lend: React.FC<Props> = ({ tool, prevToolAgent }) => {
           if (result.body?.status === 'complete') {
             return (
               <div className="flex justify-center w-full">
-                <div className="w-full md:w-[70%]">
+                <div className="w-full ">
                   <LendResult
                     tokenData={result.body.tokenData}
                     poolData={result.body.poolData}

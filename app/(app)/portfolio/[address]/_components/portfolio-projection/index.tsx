@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import {
   LineChart,
   Line,
+  Area,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -104,11 +105,9 @@ const formatCurrency = (value: number) => {
   }).format(value);
 };
 
-// Helper function to calculate net APY from liquid staking positions
 const calculateNetStakingAPY = (positions: LiquidStakingPosition[]): number => {
   if (!positions.length) return 0;
 
-  // Calculate weighted APY based on position values
   let totalValue = 0;
   let weightedAPY = 0;
 
@@ -121,11 +120,9 @@ const calculateNetStakingAPY = (positions: LiquidStakingPosition[]): number => {
   return totalValue > 0 ? weightedAPY / totalValue : 0;
 };
 
-// Helper function to calculate net APY from lending positions
 const calculateNetLendingAPY = (positions: LendingPosition[]): number => {
   if (!positions.length) return 0;
 
-  // Calculate weighted APY based on position values
   let totalValue = 0;
   let weightedAPY = 0;
 
@@ -159,7 +156,6 @@ const PortfolioProjection: React.FC<Props> = ({
     setError(null);
 
     try {
-      // Fetch portfolio projection
       const projectionResponse = await fetch(
         `/api/portfolio/projection?wallet=${address}&days=${days}&chain=${currentChain}`,
       );
@@ -169,14 +165,9 @@ const PortfolioProjection: React.FC<Props> = ({
       }
 
       const projectionData = await projectionResponse.json();
-
-      // Calculate net APY from liquid staking positions
       const netStakingAPY = calculateNetStakingAPY(stakingPositions || []);
-
-      // Calculate net APY from lending positions
       const netLendingAPY = calculateNetLendingAPY(lendingPositions || []);
 
-      // Add staking/lending APY and positions data to the data
       const enhancedData = {
         ...projectionData,
         netStakingAPY,
@@ -206,32 +197,36 @@ const PortfolioProjection: React.FC<Props> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [address, days, currentChain, stakingPositions, lendingPositions]);
 
-  // Handle days change with loading state
   const handleDaysChange = React.useCallback((value: string) => {
     setProjectionLoading(true);
     setDays(parseInt(value));
-    // Brief delay to show loading state
     setTimeout(() => setProjectionLoading(false), 50);
   }, []);
 
-  // Memoize historical data separately to prevent unnecessary recalculations
   const historicalData = React.useMemo(() => {
     if (!data) return [];
-    return data.historical.map((item) => ({
-      ...item,
-      type: 'Historical',
-      date: new Date(item.date).toLocaleDateString(),
-      netWorth: item.netWorth,
-      projectedNetWorth: null, // No projection for historical data
-    }));
+    const currentNetWorth =
+      data.historical.length > 0
+        ? data.historical[data.historical.length - 1].netWorth
+        : data.baseNetWorth;
+    const currentDate =
+      data.historical.length > 0
+        ? new Date(data.historical[data.historical.length - 1].date).toLocaleDateString()
+        : new Date().toLocaleDateString();
+    return [
+      {
+        type: 'Historical',
+        date: currentDate,
+        netWorth: currentNetWorth,
+        projectedNetWorth: null,
+      },
+    ];
   }, [data]);
 
-  // Enrich staking positions with currentUsdValue from portfolio data
   const enrichedStakingPositions = React.useMemo(() => {
     if (!data) return [];
     return (
       data.liquidStakingPositions?.map((position) => {
-        // Find the token in portfolio
         const portfolioToken = portfolio?.items?.find(
           (item: any) =>
             item.address === position.lstToken.id || item.symbol === position.lstToken.symbol,
@@ -258,52 +253,38 @@ const PortfolioProjection: React.FC<Props> = ({
     );
   }, [data, portfolio]);
 
-  // Calculate total value of staking positions using enriched data
   const totalStakingValue = enrichedStakingPositions.reduce((total, position) => {
     return total + (position.currentUsdValue || 0);
   }, 0);
 
-  // Calculate total value of lending positions
   const totalLendingValue =
     data?.lendingPositions?.reduce((total, position) => {
       return total + position.amount;
     }, 0) || 0;
 
-  // Combine historical and projection data for the chart
   const chartData = React.useMemo(() => {
     if (!data) return [];
 
-    // Get the most recent historical date to determine where projections start
     const lastHistoricalDate =
       data.historical.length > 0
         ? new Date(data.historical[data.historical.length - 1].date)
         : new Date();
 
-    // Calculate current net worth (most recent historical value or base net worth)
     const currentNetWorth =
       data.historical.length > 0
         ? data.historical[data.historical.length - 1].netWorth
         : data.baseNetWorth;
 
-    // Calculate net APY from liquid staking positions
     const netStakingAPY = data.netStakingAPY || 0;
-    // Calculate net APY from lending positions
     const netLendingAPY = data.netLendingAPY || 0;
 
-    // Calculate total value of lending positions (using amount as USD value proxy)
-    // Note: This assumes position.amount is already in USD or we need to multiply by token price
-    // For now, we'll use amount directly as it should represent the USD value
     const totalLendingValue =
       data.lendingPositions?.reduce((total, position) => {
-        // Get token price from portfolio if available, otherwise use amount as-is
-        // For simplicity, we'll use amount directly assuming it's already in USD terms
         return total + position.amount;
       }, 0) || 0;
 
-    // Calculate combined yield positions value
     const totalYieldPositionsValue = totalStakingValue + totalLendingValue;
 
-    // Calculate weighted combined APY
     let combinedAPY = 0;
     if (totalYieldPositionsValue > 0) {
       const stakingWeight = totalStakingValue / totalYieldPositionsValue;
@@ -311,48 +292,25 @@ const PortfolioProjection: React.FC<Props> = ({
       combinedAPY = netStakingAPY * stakingWeight + netLendingAPY * lendingWeight;
     }
 
-    // Generate forward projections if we have yield positions (staking or lending)
     const projectionData = [];
     const hasYieldPositions = hasStakingPositions || hasLendingPositions;
     if (hasYieldPositions && combinedAPY > 0 && totalYieldPositionsValue > 0) {
-      // Calculate non-yield portfolio value (base portfolio minus yield positions)
       const nonYieldValue = currentNetWorth - totalYieldPositionsValue;
 
-      // Add a projection point at day 0 (same day as last historical data) to connect the lines
       projectionData.push({
         date: lastHistoricalDate.toLocaleDateString(),
-        netWorth: currentNetWorth, // Start projection at current net worth
+        netWorth: currentNetWorth,
         type: 'Projection',
       });
 
-      // Start with day 7, then generate one data point per week
-      for (let i = 7; i <= days; i += 7) {
+      for (let i = 1; i <= days; i++) {
         const projectionDate = new Date(lastHistoricalDate);
         projectionDate.setDate(projectionDate.getDate() + i);
 
-        // Calculate yield gains with compound interest (combined from staking + lending)
         const daysFromNow = i;
         const yieldGains =
           totalYieldPositionsValue * (Math.pow(1 + combinedAPY / 100, daysFromNow / 365) - 1);
 
-        // Total projected value = non-yield value + original yield positions value + yield gains
-        const projectedValue = nonYieldValue + totalYieldPositionsValue + yieldGains;
-
-        projectionData.push({
-          date: projectionDate.toLocaleDateString(),
-          netWorth: projectedValue,
-          type: 'Projection',
-        });
-      }
-
-      // Add final data point at the exact end date if it wasn't included
-      const lastDataPoint = projectionData[projectionData.length - 1];
-      if (lastDataPoint && days > 1 && days % 7 !== 1) {
-        const projectionDate = new Date(lastHistoricalDate);
-        projectionDate.setDate(projectionDate.getDate() + days);
-
-        const yieldGains =
-          totalYieldPositionsValue * (Math.pow(1 + combinedAPY / 100, days / 365) - 1);
         const projectedValue = nonYieldValue + totalYieldPositionsValue + yieldGains;
 
         projectionData.push({
@@ -364,12 +322,10 @@ const PortfolioProjection: React.FC<Props> = ({
     }
 
     const combined = [
-      // Historical data (actual past performance)
       ...historicalData,
-      // Projection data (only if we have staking positions)
       ...projectionData.map((item) => ({
         ...item,
-        netWorth: null, // No historical value for projection data
+        netWorth: null,
         projectedNetWorth: item.netWorth,
       })),
     ];
@@ -377,13 +333,58 @@ const PortfolioProjection: React.FC<Props> = ({
     return combined;
   }, [data, days, hasStakingPositions, hasLendingPositions, historicalData, totalStakingValue]);
 
-  // Calculate Y-axis domain with padding to center the chart line
-  const yAxisDomain = React.useMemo(() => {
+  const smoothedChartData = React.useMemo(() => {
     if (!chartData || chartData.length === 0) {
+      return chartData;
+    }
+
+    const smoothSeries = (
+      data: Array<Record<string, any>>,
+      key: 'netWorth' | 'projectedNetWorth',
+      windowSize = 3,
+    ) => {
+      const halfWindow = Math.floor(windowSize / 2);
+      const result = data.map((item) => ({ ...item }));
+
+      for (let i = 0; i < data.length; i++) {
+        const value = data[i][key];
+        if (value === null || value === undefined || typeof value !== 'number') continue;
+
+        let sum = 0;
+        let count = 0;
+
+        for (let j = i - halfWindow; j <= i + halfWindow; j++) {
+          if (j < 0 || j >= data.length) continue;
+          const neighbor = data[j][key];
+          if (neighbor === null || neighbor === undefined || typeof neighbor !== 'number') {
+            continue;
+          }
+          sum += neighbor;
+          count += 1;
+        }
+
+        if (count > 0) {
+          result[i][key] = sum / count;
+        }
+      }
+
+      return result;
+    };
+
+    let smoothed = chartData.map((item: any) => ({ ...item }));
+    smoothed = smoothSeries(smoothed, 'netWorth');
+    smoothed = smoothSeries(smoothed, 'projectedNetWorth');
+
+    return smoothed;
+  }, [chartData]);
+
+  const yAxisDomain = React.useMemo(() => {
+    const source = smoothedChartData || chartData;
+    if (!source || source.length === 0) {
       return ['auto', 'auto'];
     }
 
-    const allValues = chartData.flatMap((item: any) => {
+    const allValues = source.flatMap((item: any) => {
       const values = [];
       if (item.netWorth !== null && item.netWorth !== undefined) {
         values.push(item.netWorth);
@@ -400,15 +401,18 @@ const PortfolioProjection: React.FC<Props> = ({
 
     const minValue = Math.min(...allValues);
     const maxValue = Math.max(...allValues);
-    const range = maxValue - minValue;
+    const rawRange = maxValue - minValue;
 
-    // Add 20% padding above and below
-    const padding = range * 0.8;
-    const yMin = Math.max(0, minValue - padding);
-    const yMax = maxValue + padding;
+    const minVisualRange = Math.max(rawRange, (maxValue || 1) * 0.01); // ~1% band
+    const padding = minVisualRange * 0.1;
+    const mid = (minValue + maxValue) / 2;
+    const halfRange = minVisualRange / 2;
+
+    const yMin = Math.max(0, mid - halfRange - padding);
+    const yMax = mid + halfRange + padding;
 
     return [yMin, yMax];
-  }, [chartData]);
+  }, [chartData, smoothedChartData]);
 
   const CustomTooltip = ({ active, payload, label, earningAmount }: any) => {
     if (active && payload && payload.length) {
@@ -487,26 +491,19 @@ const PortfolioProjection: React.FC<Props> = ({
     return null;
   }
 
-  // Calculate current value including lending positions
-  // The historical data may not include lending positions, so we add them here
   const baseCurrentValue =
     data.historical.length > 0
       ? data.historical[data.historical.length - 1].netWorth
       : data.baseNetWorth;
 
-  // Add lending positions to current value if they're not already included in historical data
-  // Note: We assume historical data doesn't include lending positions, so we add them
   const currentValue = baseCurrentValue + totalLendingValue;
 
-  // Calculate projected value based on staking and lending APY
   const netStakingAPY = data.netStakingAPY || 0;
   const netLendingAPY = data.netLendingAPY || 0;
   let projectedValue = currentValue;
 
-  // Calculate combined yield positions value
   const totalYieldPositionsValue = totalStakingValue + totalLendingValue;
 
-  // Calculate weighted combined APY
   let combinedAPY = 0;
   if (totalYieldPositionsValue > 0) {
     const stakingWeight = totalStakingValue / totalYieldPositionsValue;
@@ -514,16 +511,11 @@ const PortfolioProjection: React.FC<Props> = ({
     combinedAPY = netStakingAPY * stakingWeight + netLendingAPY * lendingWeight;
   }
 
-  // If we have yield positions (staking or lending), calculate projected value
   const hasYieldPositions = hasStakingPositions || hasLendingPositions;
   if (hasYieldPositions && combinedAPY > 0 && totalYieldPositionsValue > 0) {
-    // Calculate non-yield portfolio value (base portfolio minus yield positions)
     const nonYieldValue = currentValue - totalYieldPositionsValue;
-
-    // Calculate yield gains with compound interest (combined from staking + lending)
     const yieldGains = totalYieldPositionsValue * (Math.pow(1 + combinedAPY / 100, days / 365) - 1);
 
-    // Total projected value = non-yield value + original yield positions value + yield gains
     projectedValue = nonYieldValue + totalYieldPositionsValue + yieldGains;
   }
 
@@ -541,9 +533,7 @@ const PortfolioProjection: React.FC<Props> = ({
         {(hasStakingPositions || hasLendingPositions) && (
           <CardHeader className="p-4">
             <div className="flex items-center flex-col md:flex-row justify-between">
-              {/* Summary Stats */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
-                {/* Current Value -> Projected Value */}
                 <div className="flex items-center justify-center bg-muted/30 rounded-lg p-2">
                   <div className="text-center bg-muted/50 rounded-lg flex-1">
                     <p className=" text-base md:text-xl font-bold">
@@ -591,7 +581,6 @@ const PortfolioProjection: React.FC<Props> = ({
                   </div>
                 </div>
 
-                {/* Earning Amount -> Projected Gain */}
                 <div className="flex items-center justify-center bg-muted/30 rounded-lg p-2">
                   <div className="text-center bg-muted/50 rounded-lg flex-1">
                     <p className="text-base md:text-xl font-bold">
@@ -674,17 +663,27 @@ const PortfolioProjection: React.FC<Props> = ({
         )}
         <CardContent>
           <div className={`space-y-6 ${!hasStakingPositions ? 'pt-10' : ''}`}>
-            {/* Chart */}
             {projectionLoading ? (
               <Skeleton className="h-80 w-full" />
             ) : (
               <div className="h-80">
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={chartData} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+                  <LineChart
+                    data={smoothedChartData || chartData}
+                    margin={{ top: 0, right: 0, left: 0, bottom: 0 }}
+                  >
+                    <CartesianGrid
+                      stroke="rgba(148, 163, 184, 0.25)"
+                      strokeDasharray="3 3"
+                      vertical={false}
+                    />
                     <XAxis
                       dataKey="date"
                       tick={{ fontSize: 12 }}
+                      interval={Math.max(
+                        1,
+                        Math.floor((smoothedChartData?.length || chartData.length || 30) / 6),
+                      )}
                       tickFormatter={(value) => {
                         const date = new Date(value);
                         return `${date.getMonth() + 1}/${date.getDate()}`;
@@ -696,43 +695,54 @@ const PortfolioProjection: React.FC<Props> = ({
                       domain={yAxisDomain}
                     />
                     <Tooltip content={<CustomTooltip earningAmount={totalYieldPositionsValue} />} />
-                    <Line
-                      type="monotone"
-                      dataKey="netWorth"
-                      stroke="#D19900"
-                      strokeWidth={2}
-                      dot={false}
-                      name="Historical Portfolio Value"
-                    />
                     {((data.liquidStakingPositions && data.liquidStakingPositions.length > 0) ||
                       (data.lendingPositions && data.lendingPositions.length > 0)) && (
-                      <Line
-                        type="monotone"
-                        dataKey="projectedNetWorth"
-                        stroke="#D19900"
-                        strokeWidth={2}
-                        strokeDasharray="5 5"
-                        dot={false}
-                        name={
-                          hasStakingPositions && hasLendingPositions
-                            ? `Projected w/ Yield (${data?.netStakingAPY?.toFixed(2) || 0}% staking, ${data?.netLendingAPY?.toFixed(2) || 0}% lending)`
-                            : hasStakingPositions
-                              ? `Projected w/ Staking (${data?.netStakingAPY?.toFixed(2) || 0}% net APY)`
-                              : `Projected w/ Lending (${data?.netLendingAPY?.toFixed(2) || 0}% net APY)`
-                        }
-                      />
+                      <>
+                        <Line
+                          type="monotone"
+                          dataKey="projectedNetWorth"
+                          stroke="#D19900"
+                          strokeWidth={2.4}
+                          strokeDasharray="4 4"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          isAnimationActive
+                          animationDuration={700}
+                          animationEasing="ease-out"
+                          dot={false}
+                          connectNulls
+                          name={
+                            hasStakingPositions && hasLendingPositions
+                              ? `Projected w/ Yield (${data?.netStakingAPY?.toFixed(2) || 0}% staking, ${data?.netLendingAPY?.toFixed(2) || 0}% lending)`
+                              : hasStakingPositions
+                                ? `Projected w/ Staking (${data?.netStakingAPY?.toFixed(2) || 0}% net APY)`
+                                : `Projected w/ Lending (${data?.netLendingAPY?.toFixed(2) || 0}% net APY)`
+                          }
+                        />
+                        <Area
+                          type="monotone"
+                          dataKey="projectedNetWorth"
+                          stroke="none"
+                          fill="url(#projectionFill)"
+                          isAnimationActive
+                          animationDuration={700}
+                          animationEasing="ease-out"
+                          connectNulls
+                        />
+                        <defs>
+                          <linearGradient id="projectionFill" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="#d19900" stopOpacity={0.25} />
+                            <stop offset="100%" stopColor="#d19900" stopOpacity={0.05} />
+                          </linearGradient>
+                        </defs>
+                      </>
                     )}
                   </LineChart>
                 </ResponsiveContainer>
               </div>
             )}
 
-            {/* Legend */}
             <div className="flex items-center justify-center gap-6 text-sm">
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-brand-600 rounded-full"></div>
-                <span>Historical Portfolio Value</span>
-              </div>
               {((data.liquidStakingPositions && data.liquidStakingPositions.length > 0) ||
                 (data.lendingPositions && data.lendingPositions.length > 0)) &&
                 ((data?.netStakingAPY || 0) > 0 || (data?.netLendingAPY || 0) > 0) && (

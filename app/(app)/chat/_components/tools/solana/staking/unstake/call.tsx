@@ -1,87 +1,47 @@
 'use client';
 
 import React, { useEffect } from 'react';
-
-import { Card, Skeleton } from '@/components/ui';
-
-import Swap from '@/app/_components/swap';
-
-import { useTokenDataByAddress } from '@/hooks';
-
-import { useChat } from '@/app/(app)/chat/_contexts/chat';
-
+import Link from 'next/link';
+import { Card, Button } from '@/components/ui';
+import { Undo2 } from 'lucide-react';
 import { useChain } from '@/app/_contexts/chain-context';
-
-import { UnstakeResultBodyType, type UnstakeArgumentsType } from '@/ai';
+import { type UnstakeArgumentsType } from '@/ai';
 
 interface Props {
   toolCallId: string;
   args: UnstakeArgumentsType;
 }
 
-const UnstakeCallBody: React.FC<Props> = ({ toolCallId, args }) => {
-  const { addToolResult } = useChat();
-  const { setCurrentChain } = useChain();
+const UnstakeCallBody: React.FC<Props> = () => {
+  const { setCurrentChain, currentWalletAddress } = useChain();
+  const portfolioPath = currentWalletAddress ? `/portfolio/${currentWalletAddress}` : '/portfolio';
 
-  // Set the current chain to Solana for unstaking
   useEffect(() => {
     setCurrentChain('solana');
   }, [setCurrentChain]);
 
-  const { data: inputTokenData, isLoading: inputTokenLoading } = useTokenDataByAddress(
-    args.contractAddress,
-  );
-  const { data: outputTokenData, isLoading: outputTokenLoading } = useTokenDataByAddress(
-    'So11111111111111111111111111111111111111112',
-  );
-
   return (
-    <Card className="p-4 max-w-full">
-      {inputTokenLoading || outputTokenLoading ? (
-        <Skeleton className="h-48 w-96 max-w-full" />
-      ) : (
-        <Swap
-          initialInputToken={inputTokenData}
-          initialOutputToken={outputTokenData}
-          inputLabel="Unstake"
-          outputLabel="Receive"
-          initialInputAmount={args.amount?.toString()}
-          swapText="Unstake"
-          swappingText="Unstaking..."
-          eventName="unstake"
-          onSuccess={(tx) => {
-            addToolResult<UnstakeResultBodyType>(toolCallId, {
-              message: `Unstake successful!`,
-              body: {
-                tx,
-                status: 'complete',
-                inputAmount: args.amount || 0,
-                symbol: outputTokenData?.symbol || '',
-              },
-            });
-          }}
-          onError={(error) => {
-            addToolResult(toolCallId, {
-              message: `Unstake failed: ${error}`,
-              body: {
-                status: 'failed',
-                error,
-              },
-            });
-          }}
-          onCancel={() => {
-            addToolResult(toolCallId, {
-              message: `Unstake cancelled`,
-              body: {
-                status: 'cancelled',
-                tx: '',
-                inputAmount: 0,
-                symbol: '',
-              },
-            });
-          }}
-        />
-      )}
+    <Card className="p-6 mt-2 max-w-full bg-neutral-900/80 border border-neutral-800 shadow-lg shadow-black/30 mb-4">
+      <div className="space-y-3 text-sm text-muted-foreground">
+        <div className="flex items-center gap-2 text-foreground">
+          <div className="w-8 h-8 rounded-full bg-amber-500/20 border border-amber-500/30 flex items-center justify-center">
+            <Undo2 className="w-4 h-4 text-amber-400" />
+          </div>
+          <span className="font-semibold">Unstake guidance</span>
+        </div>
+        <div className="space-y-1 text-foreground/90">
+          <p>1) Open your portfolio page</p>
+          <p>2) Select your staking position (e.g., mSOL, JupSOL)</p>
+          <p>3) Tap Unstake/Withdraw to swap back to SOL</p>
+        </div>
+        <div className="flex gap-2 flex-wrap">
+          <Button asChild size="sm" variant="secondary" className="flex items-center gap-1">
+            <Link href={portfolioPath}>
+              <span>Open Portfolio</span>
+            </Link>
+          </Button>
+        </div>
+      </div>
     </Card>
   );
 };

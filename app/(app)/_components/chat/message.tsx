@@ -9,6 +9,12 @@ import { cn } from '@/lib/utils';
 import { getAgentName } from '../../chat/_components/tools/tool-to-agent';
 import { pfpURL } from '@/lib/pfp';
 import { useChat } from '@/app/(app)/chat/_contexts/chat';
+import {
+  SOLANA_LEND_ACTION,
+  SOLANA_ALL_BALANCES_NAME,
+  SOLANA_LENDING_YIELDS_ACTION,
+  SOLANA_LIQUID_STAKING_YIELDS_ACTION,
+} from '@/ai/action-names';
 import type { Message as MessageType, ToolInvocation as ToolInvocationType } from 'ai';
 
 interface Props {
@@ -35,16 +41,18 @@ const Message: React.FC<Props> = ({
 }) => {
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      // Preload the loader gif so it appears instantly when needed
       const img = new window.Image();
       img.src = '/hive-thinking.gif';
     }
   }, []);
 
   const { user } = usePrivy();
-  const { isResponseLoading } = useChat();
+  const { isResponseLoading, completedLendToolCallIds } = useChat();
 
   const isUser = message.role === 'user';
+
+  const currentToolInvocations = getMessageToolInvocations(message);
+  const previousToolInvocations = getMessageToolInvocations(previousMessage);
 
   const nextMessageSameRole = nextMessage?.role === message.role;
   const previousMessageSameRole = previousMessage?.role === message.role;
@@ -53,11 +61,8 @@ const Message: React.FC<Props> = ({
   return (
     <div
       className={cn(
-        // base styles
         'flex w-full px-2 py-4 max-w-full last:border-b-0 h-fit',
-        // mobile styles
         'flex-col gap-2',
-        // desktop styles
         'md:flex-row md:gap-4 md:px-4',
         compressed && 'md:px-2 md:flex-col gap-0 md:gap-1',
         nextMessageSameRole && 'pb-0',
@@ -129,30 +134,226 @@ const Message: React.FC<Props> = ({
           compressed && 'gap-0 md:w-full pt-0',
         )}
       >
-        {message.toolInvocations && message.toolInvocations.length > 0 && (
+        {currentToolInvocations.length > 0 && (
           <div className="flex flex-col gap-2">
-            {message.toolInvocations.map((tool, index) => (
+            {currentToolInvocations.map((tool, index) => (
               <ToolComponent
                 key={tool.toolCallId}
                 tool={tool}
                 prevToolAgent={
                   index === 0
-                    ? previousMessage?.toolInvocations?.[0]
-                      ? getAgentName(previousMessage?.toolInvocations?.[0])
+                    ? previousToolInvocations[0]
+                      ? getAgentName(previousToolInvocations[0])
                       : undefined
-                    : message.toolInvocations![index - 1]
-                      ? getAgentName(message.toolInvocations![index - 1])
+                    : currentToolInvocations[index - 1]
+                      ? getAgentName(currentToolInvocations[index - 1])
                       : undefined
                 }
               />
             ))}
           </div>
         )}
-        {message.content && <MessageMarkdown content={message.content} compressed={compressed} />}
+        {getDisplayContent(message, previousMessage, completedLendToolCallIds) && (
+          <MessageMarkdown
+            content={
+              getDisplayContent(message, previousMessage, completedLendToolCallIds) as string
+            }
+            compressed={compressed}
+          />
+        )}
       </div>
     </div>
   );
 };
+
+function getMessageToolInvocations(message?: MessageType): ToolInvocationType[] {
+  if (!message) return [];
+
+  if (message.parts && message.parts.length > 0) {
+    return (message.parts as any[])
+      .filter((part) => part && part.type === 'tool-invocation' && (part as any).toolInvocation)
+      .map((part) => (part as any).toolInvocation as ToolInvocationType);
+  }
+
+  const legacyToolInvocations = (message as any).toolInvocations as
+    | ToolInvocationType[]
+    | undefined;
+
+  return legacyToolInvocations ?? [];
+}
+
+function getDisplayContent(
+  message: MessageType,
+  previousMessage?: MessageType,
+  completedLendToolCallIds?: string[],
+): string | null {
+  if (message.role !== 'assistant') return message.content || null;
+
+  const toolInvocations = getMessageToolInvocations(message);
+
+  const hasUnstakeGuide = toolInvocations.some(
+    (tool) =>
+      tool.state === 'result' &&
+      tool.toolName?.toLowerCase?.().includes('unstake') &&
+      (tool as any).result?.body?.status === 'guide',
+  );
+
+  if (hasUnstakeGuide) return null;
+
+  const isSolanaWalletAllBalances = (toolName: string) => {
+    const parts = toolName.split('-');
+    const toolAgent = parts[0];
+    const actionName = parts.slice(1).join('-');
+
+    return toolAgent === 'wallet' && actionName === SOLANA_ALL_BALANCES_NAME;
+  };
+
+  const hasAllBalancesResult = toolInvocations.some(
+    (tool) => isSolanaWalletAllBalances(tool.toolName) && tool.state === 'result',
+  );
+
+  if (hasAllBalancesResult) {
+    return 'Balances shown above. Pick a token to swap, lend, stake, or explore next.';
+  }
+
+  const completedIds = completedLendToolCallIds ?? [];
+
+  const hasCompletedLend = toolInvocations.some((tool) => {
+    if (!tool.toolName.includes(SOLANA_LEND_ACTION)) return false;
+    if (tool.state !== 'result') return false;
+    if (!completedIds.includes(tool.toolCallId)) return false;
+    return true;
+  });
+
+  if (hasCompletedLend) {
+    return "You're all set — your lending deposit is complete and now earning yield automatically. You can view or manage it using the card above.";
+  }
+
+  const YIELDS_CTA = 'Yields shown above. Pick a pool card to continue.';
+
+  const yieldsToolStateIn = (m?: MessageType): 'none' | 'pending' | 'complete' => {
+    if (!m) return 'none';
+    const invocations = getMessageToolInvocations(m);
+
+    const isYieldsTool = (toolName: string) => {
+      const normalized = String(toolName || '').toLowerCase().replace(/-/g, '_');
+      return (
+        normalized.includes(SOLANA_LENDING_YIELDS_ACTION) ||
+        normalized.includes(SOLANA_LIQUID_STAKING_YIELDS_ACTION) ||
+        normalized.includes('lending_yields') ||
+        normalized.includes('liquid_staking_yields')
+      );
+    };
+
+    const yieldsInvocations = invocations.filter((tool) => isYieldsTool(tool.toolName));
+    if (!yieldsInvocations.length) return 'none';
+
+    const hasNonResult = yieldsInvocations.some((tool) => tool.state !== 'result');
+    return hasNonResult ? 'pending' : 'complete';
+  };
+
+  const yieldsState = yieldsToolStateIn(message);
+  const prevYieldsState = yieldsToolStateIn(previousMessage);
+
+  if (yieldsState === 'pending') return null;
+
+  if (yieldsState === 'complete') {
+    return YIELDS_CTA;
+  }
+
+  if (prevYieldsState === 'complete') {
+    const sanitized = stripYieldListings(message.content || '', { appendCta: false });
+    if (!sanitized) return null;
+
+    if (sanitized.trim() === YIELDS_CTA) return null;
+
+    const normalized = sanitized.replace(/\s+/g, ' ').trim();
+    const isJustPickInstruction =
+      normalized.length <= 140 &&
+      /\b(pick|choose|select)\b/i.test(normalized) &&
+      /\b(pool|pools|card|cards)\b/i.test(normalized);
+    if (isJustPickInstruction) return null;
+
+    return sanitized;
+  }
+
+  return message.content || null;
+}
+
+function stripYieldListings(
+  content: string,
+  options: { appendCta?: boolean } = {},
+): string {
+  const appendCta = options.appendCta !== false;
+  const raw = (content || '').trim();
+  if (!raw) return '';
+
+  const lines = raw.split('\n');
+  const output: string[] = [];
+
+  let skippingList = false;
+  for (const line of lines) {
+    const trimmed = line.trim();
+    const isBullet = /^([-*•]|\d+[.)])\s+/.test(trimmed);
+    const hasPercent = /\b\d+(?:\.\d+)?%\b/.test(trimmed);
+    const hasYieldWord = /\b(apy|apr|yield|tvl)\b/i.test(trimmed);
+    const hasVia = /\bvia\b/i.test(trimmed);
+    const looksLikePoolListing =
+      hasPercent &&
+      (hasYieldWord || hasVia || isBullet) &&
+      (hasVia ||
+        isBullet ||
+        /\b(jupiter|kamino|marginfi|solend|drift|lido|sanctum|jito|marinade|helius|binance|bybit)\b/i.test(
+          trimmed,
+        ) ||
+        /^[A-Z0-9*]{2,16}\b/.test(trimmed));
+
+    const looksLikeListIntro =
+      /\bhere (are|is)\b/i.test(trimmed) &&
+      /\b(options|pools|rates|yields)\b/i.test(trimmed) &&
+      /\b(lend|lending|stake|staking)\b/i.test(trimmed);
+
+    if (looksLikeListIntro) {
+      continue;
+    }
+
+    if (looksLikePoolListing) {
+      skippingList = true;
+      continue;
+    }
+
+    if (skippingList) {
+      if (trimmed === '') continue;
+      const looksLikePoolListingContinuation =
+        hasPercent &&
+        (hasYieldWord || hasVia) &&
+        (hasVia ||
+          /\b(jupiter|kamino|marginfi|solend|drift|lido|sanctum|jito|marinade|helius|binance|bybit)\b/i.test(
+            trimmed,
+          ) ||
+          /^[A-Z0-9*]{2,16}\b/.test(trimmed));
+      if (isBullet || looksLikePoolListingContinuation) continue;
+      skippingList = false;
+    }
+
+    output.push(line);
+  }
+
+  const cleaned = output
+    .join('\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+
+  if (!cleaned) return '';
+
+  const hasPickInstruction = /\b(pick|choose|select)\b/i.test(cleaned);
+  const hasCardReference = /\b(card|cards)\b/i.test(cleaned);
+  if (appendCta && !hasPickInstruction && !hasCardReference) {
+    return `${cleaned}\n\nPick a pool card above to continue.`;
+  }
+
+  return cleaned;
+}
 
 const MessageMarkdown = React.memo(
   ({ content, compressed }: { content: string; compressed?: boolean }) => {
@@ -188,7 +389,6 @@ const MessageMarkdown = React.memo(
                 },
                 p({ children, node }) {
                   const hasBlockElements = node?.children?.some((child: any) => {
-                    // child can be Text | Element | other ElementContent variants; guard for elements
                     const tag = (child as any)?.tagName as string | undefined;
                     return (
                       (child as any)?.type === 'element' &&

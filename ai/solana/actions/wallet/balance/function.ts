@@ -6,9 +6,10 @@ import {
 } from '@solana/spl-token';
 import type { BalanceArgumentsType, BalanceResultBodyType } from './types';
 import type { SolanaActionResult } from '../../solana-action';
-import { getToken } from '@/db/services';
+import { getToken, getTokenBySymbol } from '@/db/services';
 import { getTokenMetadata } from '@/services/birdeye';
 import { SOL_LOGO_URL, SOL_MINT } from '@/lib/constants';
+import { resolveAssetSymbolToAddress } from '@/services/tokens/resolve-asset-symbol-to-address';
 
 /**
  * Resolves native SOL or SPL token balances (Token-2022 first, then SPL) and enriches with metadata when available.
@@ -28,72 +29,52 @@ export async function getBalance(
     let balance: number;
     let tokenData = null;
 
-    const isCheckingSOL = !args.tokenAddress || args.tokenAddress === SOL_MINT;
+    let tokenAddress: string | undefined = args.tokenAddress || undefined;
+    if (!tokenAddress && args.tokenSymbol && args.tokenSymbol.toUpperCase() !== 'SOL') {
+      const dbToken = await getTokenBySymbol(args.tokenSymbol, 'solana');
+      tokenAddress = dbToken?.contractAddress || dbToken?.id || tokenAddress;
+      if (!tokenAddress) {
+        const resolved = await resolveAssetSymbolToAddress(args.tokenSymbol, 'solana');
+        tokenAddress = resolved || undefined;
+      }
+    }
+
+    const isCheckingSOL = !tokenAddress || tokenAddress === SOL_MINT;
 
     if (isCheckingSOL) {
       balance = (await connection.getBalance(new PublicKey(args.walletAddress))) / LAMPORTS_PER_SOL;
-      console.log('✅ Native SOL balance:', balance);
-      tokenData = {
-        symbol: 'SOL',
-        name: 'Solana',
-        logoURI: SOL_LOGO_URL,
-      };
     } else {
-      if (!args.tokenAddress) {
+      if (!tokenAddress) {
         throw new Error('Token address is required for SPL token balance check');
       }
 
-      console.log('🔍 Getting token balance:', {
-        tokenAddress: args.tokenAddress,
-        walletAddress: args.walletAddress,
-        tokenSymbol: args.tokenSymbol,
-      });
-
       let token_address = getAssociatedTokenAddressSync(
-        new PublicKey(args.tokenAddress),
+        new PublicKey(tokenAddress),
         new PublicKey(args.walletAddress),
         false,
         TOKEN_2022_PROGRAM_ID,
       );
 
-      console.log('🔍 Derived Token-2022 account address (ATA):', token_address.toBase58());
-
       try {
         const token_account = await connection.getTokenAccountBalance(token_address);
         balance = token_account.value.uiAmount ?? 0;
-        console.log('✅ Token-2022 balance found:', {
-          balance,
-          rawAmount: token_account.value.amount,
-          decimals: token_account.value.decimals,
-          uiAmount: token_account.value.uiAmount,
-        });
       } catch {
-        console.log('⚠️ No Token-2022 account found, trying SPL Token...');
-
         token_address = getAssociatedTokenAddressSync(
-          new PublicKey(args.tokenAddress),
+          new PublicKey(tokenAddress),
           new PublicKey(args.walletAddress),
           false,
           TOKEN_PROGRAM_ID,
         );
 
-        console.log('🔍 Derived SPL Token account address (ATA):', token_address.toBase58());
-
         try {
           const token_account = await connection.getTokenAccountBalance(token_address);
           balance = token_account.value.uiAmount ?? 0;
-          console.log('✅ SPL Token balance found:', {
-            balance,
-            rawAmount: token_account.value.amount,
-            decimals: token_account.value.decimals,
-            uiAmount: token_account.value.uiAmount,
-          });
         } catch {
           console.error('❌ No token account found (tried both Token-2022 and SPL Token)');
           console.error(
             '❌ Token-2022 ATA:',
             getAssociatedTokenAddressSync(
-              new PublicKey(args.tokenAddress),
+              new PublicKey(tokenAddress),
               new PublicKey(args.walletAddress),
               false,
               TOKEN_2022_PROGRAM_ID,
@@ -109,7 +90,7 @@ export async function getBalance(
       try {
         tokenData = await getToken(args.tokenAddress);
       } catch (tokenError) {
-        console.log('Error fetching token data from DB, trying Birdeye API:', tokenError);
+        console.error('Error fetching token data from DB, trying Birdeye API:', tokenError);
         try {
           const birdeyeMetadata = await getTokenMetadata(args.tokenAddress, 'solana');
           if (birdeyeMetadata && birdeyeMetadata.symbol !== 'UNKNOWN') {
@@ -125,33 +106,17 @@ export async function getBalance(
               permanentDelegate: null,
               extensions: birdeyeMetadata.extensions || {},
             };
-            console.log('✅ Fetched token metadata from Birdeye:', tokenData.symbol);
           }
         } catch (birdeyeError) {
-          console.log('Error fetching token data from Birdeye:', birdeyeError);
+          console.error('Error fetching token data from Birdeye:', birdeyeError);
           tokenData = null;
         }
       }
-    } else if (isCheckingSOL) {
-      console.log('Skipping token data fetch - checking SOL balance');
     }
 
     const tokenSymbol = isCheckingSOL ? 'SOL' : args.tokenSymbol || tokenData?.symbol || undefined;
     const tokenName = isCheckingSOL ? 'Solana' : tokenData?.name || args.tokenSymbol || undefined;
-
     const tokenLogoURI = tokenData?.logoURI || (isCheckingSOL ? SOL_LOGO_URL : undefined);
-
-    if (args.tokenAddress && !isCheckingSOL) {
-      console.log('🔍 Token metadata resolution:', {
-        tokenAddress: args.tokenAddress,
-        tokenSymbolProvided: args.tokenSymbol,
-        isCheckingSOL,
-        tokenDataFound: !!tokenData,
-        finalTokenSymbol: tokenSymbol,
-        finalTokenName: tokenName,
-      });
-    }
-
     const finalTokenSymbol =
       tokenSymbol || (args.tokenAddress ? args.tokenAddress.slice(0, 8) : 'SOL');
 
@@ -173,7 +138,7 @@ export async function getBalance(
         logoURI: tokenLogoURI,
         canStake: finalTokenSymbol === 'SOL' && balance > 0.00001,
         needsSOL: finalTokenSymbol === 'SOL' && balance <= 0.00001,
-        tokenAddress: isCheckingSOL ? SOL_MINT : args.tokenAddress,
+        tokenAddress: isCheckingSOL ? SOL_MINT : tokenAddress,
       },
     };
   } catch (error) {

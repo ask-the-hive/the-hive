@@ -7,11 +7,13 @@ import { useChain } from '@/app/_contexts/chain-context';
 import { SOLANA_STAKING_POOL_DATA_STORAGE_KEY } from '@/lib/constants';
 import type { StakeArgumentsType, StakeResultBodyType } from '@/ai';
 import { saveLiquidStakingPosition } from '@/services/liquid-staking/save';
+import { useLogin } from '@/hooks';
 import PoolEarningPotential from '../../pool-earning-potential';
 import StakeResult from './stake-result';
 import VarApyTooltip from '@/components/var-apy-tooltip';
 import { capitalizeWords } from '@/lib/string-utils';
 import * as Sentry from '@sentry/nextjs';
+import type { LiquidStakingYieldsPoolData } from '@/ai';
 
 const ReceiveTooltip = () => {
   return (
@@ -35,16 +37,27 @@ interface Props {
 const StakeCallBody: React.FC<Props> = ({ toolCallId, args }) => {
   const { addToolResult } = useChat();
   const { setCurrentChain, walletAddresses } = useChain();
-  const [poolData, setPoolData] = React.useState<any>(null);
+  const { user, login, connectWallet, ready } = useLogin();
+  const [poolData, setPoolData] = React.useState<LiquidStakingYieldsPoolData | null>(null);
   const [outputAmount, setOutputAmount] = React.useState<number>(0);
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
   const [isSuccess, setIsSuccess] = React.useState(false);
   const [txSignature, setTxSignature] = React.useState<string | null>(null);
 
-  // Set the current chain to Solana for staking
   useEffect(() => {
     setCurrentChain('solana');
   }, [setCurrentChain]);
+
+  useEffect(() => {
+    if (!ready) return;
+    if (walletAddresses.solana) return;
+
+    if (user) {
+      connectWallet();
+    } else {
+      login?.();
+    }
+  }, [walletAddresses.solana, user, connectWallet, login, ready, toolCallId]);
 
   const { data: inputTokenData, isLoading: inputTokenLoading } = useTokenDataByAddress(
     'So11111111111111111111111111111111111111112',
@@ -54,7 +67,6 @@ const StakeCallBody: React.FC<Props> = ({ toolCallId, args }) => {
   );
   const { data: outputTokenPrice } = usePrice(outputTokenData?.id || '');
 
-  // Fetch pool data from sessionStorage
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const storedPoolData = sessionStorage.getItem(SOLANA_STAKING_POOL_DATA_STORAGE_KEY);
@@ -64,7 +76,7 @@ const StakeCallBody: React.FC<Props> = ({ toolCallId, args }) => {
           const selectedPool = allPools.find(
             (pool: any) => pool.symbol.toLowerCase() === outputTokenData?.symbol.toLowerCase(),
           );
-          setPoolData(selectedPool);
+          setPoolData(selectedPool ?? null);
         } catch (error) {
           console.error('Error parsing stored pool data:', error);
         }
@@ -72,37 +84,78 @@ const StakeCallBody: React.FC<Props> = ({ toolCallId, args }) => {
     }
   }, [outputTokenData?.symbol]);
 
+  useEffect(() => {
+    if (!outputTokenData?.symbol) return;
+    if (poolData) return;
+
+    let cancelled = false;
+
+    const fetchPool = async () => {
+      try {
+        const res = await fetch(
+          `/api/liquid-staking-pool?symbol=${encodeURIComponent(outputTokenData.symbol)}`,
+        );
+        if (!res.ok) return;
+
+        const data = await res.json();
+        if (cancelled) return;
+
+        const normalized: LiquidStakingYieldsPoolData = {
+          name: data.symbol || outputTokenData.symbol,
+          symbol: data.symbol || outputTokenData.symbol,
+          yield: Number(data.yield || 0),
+          apyBase: Number(data.apyBase || 0),
+          apyReward: Number(data.apyReward || 0),
+          tvlUsd: Number(data.tvlUsd || 0),
+          project: String(data.project || 'liquid-staking'),
+          poolMeta: String(data.poolMeta || ''),
+          url: String(data.url || ''),
+          rewardTokens: Array.isArray(data.rewardTokens) ? data.rewardTokens : [],
+          underlyingTokens: Array.isArray(data.underlyingTokens) ? data.underlyingTokens : [],
+          predictions: data.predictions,
+          tokenData: data.tokenData || outputTokenData,
+        };
+
+        setPoolData(normalized);
+      } catch (error) {
+        console.error('Error fetching liquid staking pool data:', error);
+      }
+    };
+
+    fetchPool();
+    return () => {
+      cancelled = true;
+    };
+  }, [outputTokenData, outputTokenData?.symbol, poolData]);
+
   const handleStakeSuccess = async (tx: string) => {
-    // Use Solana wallet address from chain context, not user.wallet.address
     const solanaAddress = walletAddresses.solana;
-    console.log('solanaAddress', solanaAddress);
+
+    setIsSuccess(true);
+    setTxSignature(tx);
+    setErrorMessage(null);
 
     if (!solanaAddress || !outputTokenData || !poolData) {
-      console.error('Missing required data for creating liquid staking position', {
+      console.error('Missing data for saving liquid staking position', {
         solanaAddress,
         hasOutputTokenData: !!outputTokenData,
         hasPoolData: !!poolData,
       });
-      return;
     }
 
-    // Set success state immediately for UI feedback
-    setIsSuccess(true);
-    setTxSignature(tx);
-    setErrorMessage(null); // Clear any previous errors
-
     try {
-      await saveLiquidStakingPosition({
-        walletAddress: solanaAddress,
-        chainId: 'solana',
-        amount: outputAmount,
-        lstToken: outputTokenData,
-        poolData: poolData,
-      });
+      if (solanaAddress && outputTokenData && poolData) {
+        await saveLiquidStakingPosition({
+          walletAddress: solanaAddress,
+          chainId: 'solana',
+          amount: outputAmount,
+          lstToken: outputTokenData,
+          poolData: poolData,
+        });
+      }
     } catch (error) {
       console.error('Error saving liquid staking position:', error);
     } finally {
-      // Also notify the chat system
       addToolResult<StakeResultBodyType>(toolCallId, {
         message: `Stake successful!`,
         body: {
@@ -111,7 +164,7 @@ const StakeCallBody: React.FC<Props> = ({ toolCallId, args }) => {
           symbol: outputTokenData?.symbol || '',
           outputAmount,
           outputTokenData: outputTokenData || undefined,
-          poolData: poolData,
+          poolData: poolData || undefined,
         },
       });
     }
@@ -119,7 +172,7 @@ const StakeCallBody: React.FC<Props> = ({ toolCallId, args }) => {
 
   const handleError = (error: unknown) => {
     console.error('Error staking:', error);
-    // Check if user cancelled the transaction
+
     const errorStr = String(error);
     const isUserCancellation =
       errorStr.toLowerCase().includes('user rejected') ||
@@ -140,19 +193,17 @@ const StakeCallBody: React.FC<Props> = ({ toolCallId, args }) => {
       });
     } else {
       Sentry.captureException(error);
-      // Show error message but keep UI visible for retry
       setErrorMessage('There was an issue submitting the transaction. Please try again.');
     }
   };
 
-  // Show success state if transaction completed
   if (isSuccess && txSignature && outputTokenData) {
     return (
       <div className="flex justify-center w-full">
-        <div className="w-full md:w-[70%]">
+        <div className="w-full ">
           <StakeResult
             outputTokenData={outputTokenData}
-            poolData={poolData}
+            poolData={poolData || undefined}
             outputAmount={outputAmount}
             tx={txSignature}
           />
@@ -163,7 +214,7 @@ const StakeCallBody: React.FC<Props> = ({ toolCallId, args }) => {
 
   return (
     <div className="flex justify-center w-full">
-      <div className="w-full md:w-[70%]">
+      <div className="w-full ">
         <Card className="p-4 max-w-full">
           {inputTokenLoading || outputTokenLoading ? (
             <Skeleton className="h-48 w-full" />
@@ -181,7 +232,7 @@ const StakeCallBody: React.FC<Props> = ({ toolCallId, args }) => {
                     <p className="text-sm text-gray-600 dark:text-gray-400">
                       Earn{' '}
                       <span className="text-green-400 font-medium">
-                        {poolData.yield.toFixed(2)}%
+                        {(poolData.yield || 0).toFixed(2)}%
                       </span>{' '}
                       APY
                     </p>
@@ -198,11 +249,12 @@ const StakeCallBody: React.FC<Props> = ({ toolCallId, args }) => {
                 initialInputAmount={args.amount?.toString()}
                 swapText="Stake"
                 swappingText="Staking..."
+                autoConnectOnMount
                 eventName="stake"
                 receiveTooltip={<ReceiveTooltip />}
                 onOutputChange={(amount) => {
                   setOutputAmount(amount);
-                  setErrorMessage(null); // Clear error when user changes amount
+                  setErrorMessage(null);
                 }}
                 onSuccess={handleStakeSuccess}
                 onError={handleError}
@@ -218,7 +270,6 @@ const StakeCallBody: React.FC<Props> = ({ toolCallId, args }) => {
                 }}
               />
 
-              {/* Show error message if transaction failed */}
               <div className="flex justify-center w-full h-4 mt-2">
                 {errorMessage && (
                   <p className="flex justify-center w-full text-sm text-red-600 dark:text-red-400 text-center">
@@ -227,7 +278,6 @@ const StakeCallBody: React.FC<Props> = ({ toolCallId, args }) => {
                 )}
               </div>
 
-              {/* Display pool information and yield calculator if available */}
               {poolData && (
                 <PoolEarningPotential
                   poolData={poolData}
