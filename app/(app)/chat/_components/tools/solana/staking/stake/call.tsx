@@ -13,6 +13,7 @@ import StakeResult from './stake-result';
 import VarApyTooltip from '@/components/var-apy-tooltip';
 import { capitalizeWords } from '@/lib/string-utils';
 import * as Sentry from '@sentry/nextjs';
+import type { LiquidStakingYieldsPoolData } from '@/ai';
 
 const ReceiveTooltip = () => {
   return (
@@ -37,7 +38,7 @@ const StakeCallBody: React.FC<Props> = ({ toolCallId, args }) => {
   const { addToolResult } = useChat();
   const { setCurrentChain, walletAddresses } = useChain();
   const { user, login, connectWallet, ready } = useLogin();
-  const [poolData, setPoolData] = React.useState<any>(null);
+  const [poolData, setPoolData] = React.useState<LiquidStakingYieldsPoolData | null>(null);
   const [outputAmount, setOutputAmount] = React.useState<number>(0);
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
   const [isSuccess, setIsSuccess] = React.useState(false);
@@ -75,13 +76,56 @@ const StakeCallBody: React.FC<Props> = ({ toolCallId, args }) => {
           const selectedPool = allPools.find(
             (pool: any) => pool.symbol.toLowerCase() === outputTokenData?.symbol.toLowerCase(),
           );
-          setPoolData(selectedPool);
+          setPoolData(selectedPool ?? null);
         } catch (error) {
           console.error('Error parsing stored pool data:', error);
         }
       }
     }
   }, [outputTokenData?.symbol]);
+
+  useEffect(() => {
+    if (poolData) return;
+
+    let cancelled = false;
+
+    const fetchPool = async () => {
+      try {
+        const res = await fetch(
+          `/api/liquid-staking-pool?symbol=${encodeURIComponent(outputTokenData.symbol)}`,
+        );
+        if (!res.ok) return;
+
+        const data = await res.json();
+        if (cancelled) return;
+
+        const normalized: LiquidStakingYieldsPoolData = {
+          name: data.symbol || outputTokenData.symbol,
+          symbol: data.symbol || outputTokenData.symbol,
+          yield: Number(data.yield || 0),
+          apyBase: Number(data.apyBase || 0),
+          apyReward: Number(data.apyReward || 0),
+          tvlUsd: Number(data.tvlUsd || 0),
+          project: String(data.project || 'liquid-staking'),
+          poolMeta: String(data.poolMeta || ''),
+          url: String(data.url || ''),
+          rewardTokens: Array.isArray(data.rewardTokens) ? data.rewardTokens : [],
+          underlyingTokens: Array.isArray(data.underlyingTokens) ? data.underlyingTokens : [],
+          predictions: data.predictions,
+          tokenData: data.tokenData || outputTokenData,
+        };
+
+        setPoolData(normalized);
+      } catch (error) {
+        console.error('Error fetching liquid staking pool data:', error);
+      }
+    };
+
+    fetchPool();
+    return () => {
+      cancelled = true;
+    };
+  }, [outputTokenData, outputTokenData?.symbol, poolData]);
 
   const handleStakeSuccess = async (tx: string) => {
     const solanaAddress = walletAddresses.solana;
@@ -119,7 +163,7 @@ const StakeCallBody: React.FC<Props> = ({ toolCallId, args }) => {
           symbol: outputTokenData?.symbol || '',
           outputAmount,
           outputTokenData: outputTokenData || undefined,
-          poolData: poolData,
+          poolData: poolData || undefined,
         },
       });
     }
@@ -158,7 +202,7 @@ const StakeCallBody: React.FC<Props> = ({ toolCallId, args }) => {
         <div className="w-full ">
           <StakeResult
             outputTokenData={outputTokenData}
-            poolData={poolData}
+            poolData={poolData || undefined}
             outputAmount={outputAmount}
             tx={txSignature}
           />
@@ -187,7 +231,7 @@ const StakeCallBody: React.FC<Props> = ({ toolCallId, args }) => {
                     <p className="text-sm text-gray-600 dark:text-gray-400">
                       Earn{' '}
                       <span className="text-green-400 font-medium">
-                        {poolData.yield.toFixed(2)}%
+                        {(poolData.yield || 0).toFixed(2)}%
                       </span>{' '}
                       APY
                     </p>
