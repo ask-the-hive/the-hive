@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { useChat } from '@/app/(app)/chat/_contexts/chat';
 import { useChain } from '@/app/_contexts/chain-context';
-import { usePrivy } from '@privy-io/react-auth';
 import ToolCard from '../../tool-card';
 import { SOLANA_STAKING_POOL_DATA_STORAGE_KEY } from '@/lib/constants';
 import PoolDetailsModal from './pool-details-modal';
 import PoolDetailsCard from '../pool-details-card';
 import type { ToolInvocation } from 'ai';
+import { useLogin } from '@/hooks';
 import type {
   LiquidStakingYieldsResultBodyType,
   LiquidStakingYieldsResultType,
@@ -41,7 +41,7 @@ const LiquidStakingYields: React.FC<{
 }> = ({ body }) => {
   const { sendMessage, sendInternalMessage, isResponseLoading, messages } = useChat();
   const { currentWalletAddress, setCurrentChain } = useChain();
-  const { login } = usePrivy();
+  const { user, login, linkWallet, connectWallet, ready } = useLogin();
   const [selectedPool, setSelectedPool] = useState<LiquidStakingYieldsPoolData | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDisabled, setIsDisabled] = useState(true);
@@ -59,8 +59,15 @@ const LiquidStakingYields: React.FC<{
       if (isResponseLoading) return;
 
       setCurrentChain('solana');
-      if (!currentWalletAddress) {
+      if (!ready) return;
+
+      if (!user) {
         login?.();
+        return;
+      }
+
+      if (!currentWalletAddress) {
+        connectWallet();
         return;
       }
 
@@ -68,7 +75,18 @@ const LiquidStakingYields: React.FC<{
       const sender = internal ? sendInternalMessage : sendMessage;
       sender(`I want to stake SOL for ${symbol}`);
     },
-    [isResponseLoading, sendInternalMessage, sendMessage, currentWalletAddress, login, setCurrentChain],
+    [
+      isResponseLoading,
+      sendInternalMessage,
+      sendMessage,
+      currentWalletAddress,
+      login,
+      linkWallet,
+      connectWallet,
+      setCurrentChain,
+      user,
+      ready,
+    ],
   );
 
   const handleMoreDetailsClick = (
