@@ -85,6 +85,7 @@ const StakeCallBody: React.FC<Props> = ({ toolCallId, args }) => {
   }, [outputTokenData?.symbol]);
 
   useEffect(() => {
+    if (!outputTokenData?.symbol) return;
     if (poolData) return;
 
     let cancelled = false;
