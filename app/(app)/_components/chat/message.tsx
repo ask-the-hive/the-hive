@@ -229,6 +229,8 @@ function getDisplayContent(
     return "You're all set — your lending deposit is complete and now earning yield automatically. You can view or manage it using the card above.";
   }
 
+  const YIELDS_CTA = 'Yields shown above. Pick a pool card to continue.';
+
   const yieldsToolStateIn = (m?: MessageType): 'none' | 'pending' | 'complete' => {
     if (!m) return 'none';
     const invocations = getMessageToolInvocations(m);
@@ -256,19 +258,33 @@ function getDisplayContent(
   if (yieldsState === 'pending') return null;
 
   if (yieldsState === 'complete') {
-    return 'Yields shown above. Pick a pool card to continue.';
+    return YIELDS_CTA;
   }
 
   if (prevYieldsState === 'complete') {
-    const sanitized = stripYieldListings(message.content || '');
-    if (!sanitized) return 'Yields shown above. Pick a pool card to continue.';
+    const sanitized = stripYieldListings(message.content || '', { appendCta: false });
+    if (!sanitized) return null;
+
+    if (sanitized.trim() === YIELDS_CTA) return null;
+
+    const normalized = sanitized.replace(/\s+/g, ' ').trim();
+    const isJustPickInstruction =
+      normalized.length <= 140 &&
+      /\b(pick|choose|select)\b/i.test(normalized) &&
+      /\b(pool|pools|card|cards)\b/i.test(normalized);
+    if (isJustPickInstruction) return null;
+
     return sanitized;
   }
 
   return message.content || null;
 }
 
-function stripYieldListings(content: string): string {
+function stripYieldListings(
+  content: string,
+  options: { appendCta?: boolean } = {},
+): string {
+  const appendCta = options.appendCta !== false;
   const raw = (content || '').trim();
   if (!raw) return '';
 
@@ -332,7 +348,7 @@ function stripYieldListings(content: string): string {
 
   const hasPickInstruction = /\b(pick|choose|select)\b/i.test(cleaned);
   const hasCardReference = /\b(card|cards)\b/i.test(cleaned);
-  if (!hasPickInstruction && !hasCardReference) {
+  if (appendCta && !hasPickInstruction && !hasCardReference) {
     return `${cleaned}\n\nPick a pool card above to continue.`;
   }
 

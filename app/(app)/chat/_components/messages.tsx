@@ -57,7 +57,7 @@ const Messages: React.FC<Props> = ({ messages, messageClassName }) => {
           />
         ))}
         {(isResponseLoading || isLoading) &&
-          visibleMessages[visibleMessages.length - 1]?.role !== 'assistant' && <LoadingMessage />}
+          messages[messages.length - 1]?.role !== 'assistant' && <LoadingMessage />}
       </div>
     </div>
   );
