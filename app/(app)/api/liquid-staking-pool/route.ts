@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getBestLiquidStaking } from '@/services/staking-rewards/get-best-liquid-staking';
 import { withErrorHandling } from '@/lib/api-error-handler';
 import { getLiquidStakingYields } from '@/ai/solana/actions/staking/liquid-staking-yields/function';
+import { getTokenBySymbol } from '@/db/services/tokens';
 
 export const GET = withErrorHandling(async (request: Request) => {
   const { searchParams } = new URL(request.url);
@@ -41,14 +42,31 @@ export const GET = withErrorHandling(async (request: Request) => {
   const solPools = (allPools.data || []).filter((pool: any) => pool.chain === 'Solana');
 
   let matchingPool: any | undefined;
-  if (project && symbol) {
-    matchingPool = solPools.find((pool: any) => {
-      const isMatch =
-        pool.project?.toLowerCase() === project.toLowerCase() &&
-        pool.symbol?.toLowerCase() === symbol.toLowerCase();
+  const normalizedSymbol = symbol?.toLowerCase();
+  const normalizedProject = project?.toLowerCase();
 
-      return isMatch;
-    });
+  if (normalizedSymbol && normalizedProject) {
+    matchingPool = solPools.find(
+      (pool: any) =>
+        pool.project?.toLowerCase() === normalizedProject &&
+        pool.symbol?.toLowerCase() === normalizedSymbol,
+    );
+  } else if (normalizedSymbol) {
+    const candidates = solPools
+      .filter((pool: any) => pool.symbol?.toLowerCase() === normalizedSymbol)
+      .filter((pool: any) => {
+        const poolSymbol = String(pool.symbol || '');
+        const isLPPair = poolSymbol.includes('-') || poolSymbol.includes('/');
+        return !isLPPair && Number(pool.apy || 0) > 0;
+      });
+
+    if (candidates.length > 0) {
+      matchingPool = candidates.reduce((best: any, current: any) => {
+        const bestApy = Number(best?.apy || 0);
+        const currentApy = Number(current?.apy || 0);
+        return currentApy > bestApy ? current : best;
+      }, candidates[0]);
+    }
   }
 
   if (!matchingPool) {
@@ -56,6 +74,16 @@ export const GET = withErrorHandling(async (request: Request) => {
       { error: 'Pool not found for the specified project and symbol' },
       { status: 404 },
     );
+  }
+
+  let tokenData = null;
+  if (symbol) {
+    try {
+      tokenData = await getTokenBySymbol(symbol, 'solana');
+    } catch (error) {
+      console.error('Error fetching tokenData for liquid staking pool:', error);
+      tokenData = null;
+    }
   }
 
   return NextResponse.json({
@@ -70,5 +98,6 @@ export const GET = withErrorHandling(async (request: Request) => {
     underlyingTokens: matchingPool.underlyingTokens || [],
     poolMeta: matchingPool.poolMeta,
     predictions: matchingPool.predictions,
+    tokenData: tokenData || null,
   });
 });

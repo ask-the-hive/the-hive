@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils';
 import LogInButton from '@/app/(app)/_components/log-in-button';
 import TokenInput from './token-input';
 import { useChain } from '@/app/_contexts/chain-context';
-import { useSendTransaction, useTokenBalance, useTokenDataByAddress } from '@/hooks';
+import { useSendTransaction, useTokenBalance, useTokenDataByAddress, useLogin } from '@/hooks';
 import { getSwapObj, getQuote } from '@/services/jupiter';
 import { useSWRConfig } from 'swr';
 
@@ -40,6 +40,7 @@ interface Props {
     outputToken: string;
     inputToken: string;
   }) => void;
+  autoConnectOnMount?: boolean;
 }
 
 const Swap: React.FC<Props> = ({
@@ -61,9 +62,11 @@ const Swap: React.FC<Props> = ({
   className,
   setSwapResult,
   eventName,
+  autoConnectOnMount = false,
 }) => {
   const { mutate } = useSWRConfig();
   const { currentChain } = useChain();
+  const { login, connectWallet, user, ready } = useLogin();
   const [inputAmount, setInputAmount] = useState<string>(initialInputAmount || '');
   const [inputToken, setInputToken] = useState<Token | null>(initialInputToken);
 
@@ -127,6 +130,23 @@ const Swap: React.FC<Props> = ({
     inputToken?.id || '',
     wallet?.address || '',
   );
+
+  const hasAutoConnected = useRef(false);
+
+  // Auto prompt connect/login when requested (e.g., staking flow) so users aren't stuck on the button
+  useEffect(() => {
+    if (!autoConnectOnMount) return;
+    if (hasAutoConnected.current) return;
+    if (!ready) return;
+    if (wallet) return;
+
+    hasAutoConnected.current = true;
+    if (user) {
+      connectWallet();
+    } else {
+      login?.();
+    }
+  }, [autoConnectOnMount, wallet, user, connectWallet, login, ready]);
 
   const refreshBalances = useCallback(
     async (tokenIds: Array<string | null | undefined>) => {

@@ -102,7 +102,7 @@ const PoolDetailsModal: React.FC<Props> = ({ pool, isOpen, onClose, variant = 's
             <TokenIcon
               src={pool.tokenData?.logoURI}
               alt={pool.name}
-              tokenSymbol={pool.tokenData?.symbol}
+              tokenSymbol={pool.tokenData?.symbol || pool.symbol}
               width={40}
               height={40}
               className="w-10 h-10 rounded-full"
