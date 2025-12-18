@@ -4,6 +4,12 @@ import { agents } from '@/ai/agents';
 import { Agent } from '@/ai/agent';
 import { LENDING_AGENT_NAME } from '@/ai/agents/lending/name';
 import { STAKING_AGENT_NAME } from '@/ai/agents/staking/name';
+import { WALLET_AGENT_NAME } from '@/ai/agents/wallet/name';
+import { TRADING_AGENT_NAME } from '@/ai/agents/trading/name';
+import { MARKET_AGENT_NAME } from '@/ai/agents/market/name';
+import { TOKEN_ANALYSIS_AGENT_NAME } from '@/ai/agents/token-analysis/name';
+import { LIQUIDITY_AGENT_NAME } from '@/ai/agents/liquidity/name';
+import { KNOWLEDGE_AGENT_NAME } from '@/ai/agents/knowledge/name';
 
 export const system = `You are the orchestrator of a swarm of blockchain agents that each have specialized tasks.
 
@@ -98,6 +104,13 @@ export const chooseAgent = async (
     userText.trim(),
   );
 
+  const exploratoryIntent =
+    /\b(best (defi|opportunit|opportunity|strateg|strategy)|how can i (earn|make)|passive income|what should i do|compare|options|opportunit(?:y|ies))\b/.test(
+      userText,
+    ) && !/\b(trending|trade|swap|buy|sell|transfer|send|stake|unstake|lend|lending|deposit|withdraw)\b/.test(userText);
+
+  if (exploratoryIntent) return null;
+
   const mentionsStablecoin =
     /\b(stablecoin|stablecoins|usdc|usdt|usdg|eurc|fdusd|pyusd|usds)\b/.test(userText);
 
@@ -130,6 +143,16 @@ export const chooseAgent = async (
   if (wantsStaking) {
     const staking = agents.find((a) => a.name === STAKING_AGENT_NAME);
     if (staking) return staking;
+  }
+
+  const wantsTrending =
+    /\btrending\b/.test(userText) ||
+    /\btrending\b/.test(assistantText) ||
+    (affirmative && /\btrending\b/.test(assistantText));
+
+  if (wantsTrending) {
+    const market = agents.find((a) => a.name === MARKET_AGENT_NAME);
+    if (market) return market;
   }
 
   const contextMessages = messages.slice(-5);
@@ -170,6 +193,12 @@ export const chooseAgent = async (
   const map: Record<string, string> = {
     lending: LENDING_AGENT_NAME,
     staking: STAKING_AGENT_NAME,
+    wallet: WALLET_AGENT_NAME,
+    trading: TRADING_AGENT_NAME,
+    market: MARKET_AGENT_NAME,
+    'token-analysis': TOKEN_ANALYSIS_AGENT_NAME,
+    liquidity: LIQUIDITY_AGENT_NAME,
+    knowledge: KNOWLEDGE_AGENT_NAME,
   };
 
   if (object.agent === 'none') {

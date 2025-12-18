@@ -24,10 +24,7 @@ export async function getTrendingTokens(
     };
   } catch (error) {
     return {
-      message: `Error getting trending tokens: ${error}`,
-      body: {
-        tokens: [],
-      }
+      message: `Error getting trending tokens: ${String(error)}`,
     };
   }
 }
