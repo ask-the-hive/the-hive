@@ -45,7 +45,7 @@ const ShortcutsGroup = () => {
   const handleShortcutClick = (prompt: string) => {
     ensureChatsOpen();
     // Navigate to /chat with the prompt as a message query parameter
-    router.push(`/chat?message=${encodeURIComponent(prompt)}`);
+    router.push(`/chat?message=${encodeURIComponent(prompt)}&source=shortcut`);
     if (isMobile) {
       setOpenMobile(false);
     }

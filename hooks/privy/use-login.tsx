@@ -21,7 +21,7 @@ export const useLogin = ({
   onError?: (error: any) => void;
 } = {}) => {
   const router = useRouter();
-  const { user, ready, logout, linkWallet: privyLinkWallet } = usePrivy();
+  const { user, ready, logout, linkWallet: privyLinkWallet, isModalOpen } = usePrivy();
   const { currentChain, setCurrentChain, setLastVerifiedSolanaWallet } = useChain();
   const { wallets } = useWallets();
   const { wallets: solanaWallets } = useSolanaWallets();
@@ -98,6 +98,7 @@ export const useLogin = ({
   return {
     user,
     ready,
+    isPrivyModalOpen: isModalOpen,
     login: enhancedLogin,
     connectWallet,
     logout: enhancedLogout,

@@ -14,7 +14,7 @@ interface Props {
 }
 
 const LogInButton: React.FC<Props> = ({ onComplete, className }) => {
-  const { login, user, linkWallet } = useLogin({
+  const { login, user, linkWallet, isPrivyModalOpen } = useLogin({
     onComplete,
     onError: (err: any) => {
       if (!err?.includes('exited_auth_flow')) {
@@ -27,6 +27,14 @@ const LogInButton: React.FC<Props> = ({ onComplete, className }) => {
       }
     },
   });
+
+  if (isPrivyModalOpen) {
+    return (
+      <div className={cn('w-full flex items-center justify-center', className)}>
+        <p className="text-sm text-muted-foreground">Continue in the Privy modal…</p>
+      </div>
+    );
+  }
 
   return (
     <Button
