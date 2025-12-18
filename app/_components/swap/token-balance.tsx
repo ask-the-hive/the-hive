@@ -36,12 +36,15 @@ const TokenBalance: React.FC<Props> = ({
      ? Math.max(rawBalance - SOL_RESERVE, 0)
      : rawBalance;
 
+   const displayDigits =
+     isSol && spendableBalance > 0 && spendableBalance < 0.01 ? Math.max(digits, 6) : digits;
+
   return (
     <div className="flex items-center gap-2 text-neutral-500 dark:text-neutral-400">
       <Wallet className="w-3 h-3" />
       <p className="text-sm">
         {spendableBalance.toLocaleString(undefined, {
-          maximumFractionDigits: digits,
+          maximumFractionDigits: displayDigits,
         })}{' '}
         {tokenSymbol}
       </p>

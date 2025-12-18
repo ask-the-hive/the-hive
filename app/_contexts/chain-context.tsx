@@ -158,13 +158,21 @@ export const ChainProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     const solanaWalletAccounts = user?.linkedAccounts
       ?.filter((account: any) => account.type === 'wallet' && account.chainType === 'solana')
       .sort((a: any, b: any) => {
-        const dateA = new Date(a.latestVerifiedAt).getTime();
-        const dateB = new Date(b.latestVerifiedAt).getTime();
+        const dateA = new Date(a.latestVerifiedAt ?? 0).getTime();
+        const dateB = new Date(b.latestVerifiedAt ?? 0).getTime();
         return dateB - dateA; // Sort descending (most recent first)
       });
 
     if (solanaWalletAccounts && solanaWalletAccounts.length > 0) {
-      const fallbackWallet = solanaWalletAccounts[0] as any;
+      const externalWallet =
+        solanaWalletAccounts.find(
+          (account: any) =>
+            account.walletClientType !== 'privy' &&
+            !!account.address &&
+            !String(account.address).startsWith('0x'),
+        ) ?? null;
+
+      const fallbackWallet = (externalWallet ?? solanaWalletAccounts[0]) as any;
 
       setWalletAddresses((prev) => ({
         ...prev,
@@ -179,6 +187,44 @@ export const ChainProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
     setLastVerifiedSolanaWallet();
   }, [user, walletAddresses.solana, setLastVerifiedSolanaWallet]);
+
+  useEffect(() => {
+    if (!user) return;
+
+    const phantomConnected =
+      typeof window !== 'undefined' && window.solana?.publicKey && window.solana?.isConnected;
+
+    if (phantomConnected) {
+      const phantomAddress = window.solana!.publicKey!.toString();
+      if (walletAddresses.solana !== phantomAddress) {
+        setWalletAddresses((prev) => ({ ...prev, solana: phantomAddress }));
+      }
+      return;
+    }
+
+    if (!walletAddresses.solana) return;
+
+    const solanaAccounts =
+      ((user as any)?.linkedAccounts?.filter(
+        (account: any) => account.type === 'wallet' && account.chainType === 'solana',
+      ) as any[]) ?? [];
+
+    const currentAccount = solanaAccounts.find(
+      (account: any) => String(account.address) === String(walletAddresses.solana),
+    );
+
+    const isCurrentEmbedded = (currentAccount as any)?.walletClientType === 'privy';
+    if (!isCurrentEmbedded) return;
+
+    const externalAccount = solanaAccounts.find((account: any) => {
+      const address = account?.address;
+      return account?.walletClientType !== 'privy' && !!address && !String(address).startsWith('0x');
+    });
+
+    if (externalAccount && externalAccount.address !== walletAddresses.solana) {
+      setWalletAddresses((prev) => ({ ...prev, solana: externalAccount.address }));
+    }
+  }, [user, walletAddresses.solana]);
 
   const handleDisconnect = useCallback(async () => {
     posthog.capture('wallet_disconnected', {

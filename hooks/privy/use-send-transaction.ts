@@ -28,40 +28,58 @@ export const useSendTransaction = () => {
   let wallet: any = null;
 
   if (currentChain === 'solana') {
+    const windowPhantomAddress =
+      typeof window !== 'undefined' && (window as any).solana?.publicKey
+        ? String((window as any).solana.publicKey)
+        : null;
+
+    const isSolanaAddress = (address?: string) => !!address && !address.startsWith('0x');
+    const isEmbeddedPrivyWallet = (w: any) => w?.walletClientType === 'privy';
+    const isExternalWallet = (w: any) => isSolanaAddress(w?.address) && !isEmbeddedPrivyWallet(w);
+
     // Try useSolanaWallets first (new API) - for external wallets
     if (solanaWallets.length > 0) {
-      wallet = solanaWallets[0];
+      if (windowPhantomAddress) {
+        wallet = solanaWallets.find((w: any) => w?.address === windowPhantomAddress) ?? null;
+      }
+      if (!wallet) {
+        wallet = solanaWallets.find(isExternalWallet) ?? null;
+      }
+      if (!wallet) {
+        wallet = solanaWallets[0];
+      }
     }
     // Try linkedAccounts for embedded or linked Solana wallets
     else if (user?.linkedAccounts) {
-      const solanaAccount = user.linkedAccounts.find(
-        (account: any) =>
-          account.type === 'wallet' &&
-          account.walletClientType === 'privy' &&
-          account.chainType === 'solana',
+      const solanaAccounts = user.linkedAccounts.filter(
+        (account: any) => account.type === 'wallet' && account.chainType === 'solana',
       );
-      if (solanaAccount) {
-        wallet = solanaAccount;
-      } else {
-        // Check for external Solana wallets in linkedAccounts
-        const externalSolana = user.linkedAccounts.find(
-          (account: any) =>
-            account.type === 'wallet' &&
-            !account.address?.startsWith('0x') &&
-            (account.walletClientType === 'phantom' || account.walletClientType === 'solana'),
-        );
-        if (externalSolana) {
-          wallet = externalSolana;
-        }
+
+      if (windowPhantomAddress) {
+        wallet = solanaAccounts.find((w: any) => w?.address === windowPhantomAddress) ?? null;
+      }
+
+      if (!wallet) {
+        wallet = solanaAccounts.find(isExternalWallet) ?? null;
+      }
+
+      if (!wallet) {
+        wallet =
+          solanaAccounts.find(
+            (account: any) => account.walletClientType === 'privy' && isSolanaAddress(account.address),
+          ) ?? null;
       }
     }
     // Fallback to allWallets (look for non-0x addresses or phantom)
     if (!wallet && allWallets.length > 0) {
-      const solanaWallet = allWallets.find(
-        (w) => !w.address.startsWith('0x') || w.walletClientType === 'phantom',
-      );
-      if (solanaWallet) {
-        wallet = solanaWallet;
+      if (windowPhantomAddress) {
+        wallet = allWallets.find((w: any) => w?.address === windowPhantomAddress) ?? null;
+      }
+      if (!wallet) {
+        wallet = allWallets.find(isExternalWallet) ?? null;
+      }
+      if (!wallet) {
+        wallet = allWallets.find((w: any) => isSolanaAddress(w?.address)) ?? null;
       }
     }
     // Last resort: use user.wallet if it's a Solana wallet
