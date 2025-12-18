@@ -17,11 +17,18 @@ const Chat: React.FC = () => {
 
   useEffect(() => {
     const initialMessage = searchParams.get('message');
+    const source = searchParams.get('source');
 
     if (initialMessage && messages.length === 0 && !hasProcessedInitialMessage.current) {
       setPrefillLoading(true);
       hasProcessedInitialMessage.current = true;
-      sendMessage(decodeURIComponent(initialMessage));
+      let messageToSend = initialMessage;
+      try {
+        messageToSend = decodeURIComponent(initialMessage);
+      } catch {
+        // noop: `initialMessage` may already be decoded (or contain a raw `%`)
+      }
+      sendMessage(messageToSend, { skipWalletPrompt: source === 'shortcut' });
     }
   }, [searchParams, messages.length, sendMessage]);
 
