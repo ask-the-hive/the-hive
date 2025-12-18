@@ -49,7 +49,7 @@ interface ChatContextType {
   setInput: (input: string) => void;
   onSubmit: () => Promise<void>;
   isLoading: boolean;
-  sendMessage: (message: string) => void;
+  sendMessage: (message: string, options?: { skipWalletPrompt?: boolean }) => void;
   sendInternalMessage: (message: string) => void;
   addToolResult: <T>(toolCallId: string, result: ToolResult<T>) => void;
   isResponseLoading: boolean;
@@ -211,6 +211,12 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
       if (!privyReady) return;
 
       const lower = message.toLowerCase();
+      const isYieldDiscoveryQuery =
+        /\b(yield|yields|apy|apr|rate|rates)\b/.test(lower) &&
+        !/\b(i want to|i'd like to|stake my|unstake|deposit|withdraw)\b/.test(lower) &&
+        !/\b\d+(\.\d+)?\s*sol\b/.test(lower);
+      if (isYieldDiscoveryQuery) return;
+
       const stakeKeywords =
         /\b(stake|staking|unstake)\b/.test(lower) ||
         /\b(drift|dsol|jupiter|jupsol|hsol|helius|jito|jitosol|marinade|msol|lido|stsol|sanctum|inf|blaze|blazestake|bsol|binance|bnsol|bybit|bbsol)\b/.test(
@@ -332,8 +338,13 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
     await appendPromise;
   };
 
-  const sendMessageBase = async (message: string, annotations?: any[]) => {
-    maybePromptSolanaWallet(message);
+  const sendMessageBase = async (
+    message: string,
+    options?: { skipWalletPrompt?: boolean; annotations?: any[] },
+  ) => {
+    if (!options?.skipWalletPrompt) {
+      maybePromptSolanaWallet(message);
+    }
     setIsResponseLoading(true);
 
     updateChatThreadState(chatId, {
@@ -344,16 +355,16 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
     await append({
       role: 'user',
       content: message,
-      ...(annotations ? { annotations } : {}),
+      ...(options?.annotations ? { annotations: options.annotations } : {}),
     });
   };
 
-  const sendMessage = async (message: string) => {
-    await sendMessageBase(message);
+  const sendMessage = async (message: string, options?: { skipWalletPrompt?: boolean }) => {
+    await sendMessageBase(message, options);
   };
 
   const sendInternalMessage = async (message: string) => {
-    await sendMessageBase(message, [{ internal: true }]);
+    await sendMessageBase(message, { annotations: [{ internal: true }] });
   };
 
   const inputDisabledMessage = useMemo(() => {
