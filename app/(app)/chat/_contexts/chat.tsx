@@ -8,7 +8,6 @@ import React, {
   useEffect,
   useMemo,
   useRef,
-  useCallback,
 } from 'react';
 import { Message } from 'ai/react';
 import { useChat as useAiChat } from '@ai-sdk/react';
@@ -16,7 +15,6 @@ import { Models } from '@/types/models';
 import { usePrivy } from '@privy-io/react-auth';
 import { generateId } from 'ai';
 import { ChainType } from '@/app/_contexts/chain-context';
-import { useChain } from '@/app/_contexts/chain-context';
 import { useRouter, usePathname } from 'next/navigation';
 import { useGlobalChatManager } from './global-chat-manager';
 import {
@@ -28,10 +26,8 @@ import {
   SOLANA_DEPOSIT_LIQUIDITY_NAME,
   SOLANA_WITHDRAW_LIQUIDITY_NAME,
   SOLANA_LEND_ACTION,
-  SOLANA_LIQUID_STAKING_YIELDS_ACTION,
 } from '@/ai/action-names';
 import * as Sentry from '@sentry/nextjs';
-import { useLogin } from '@/hooks';
 
 export enum ColorMode {
   LIGHT = 'light',
@@ -107,8 +103,6 @@ const getMessageToolInvocations = (message: Message | undefined): any[] => {
 
 export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
   const { user: privyUser } = usePrivy();
-  const { walletAddresses, setCurrentChain } = useChain();
-  const { user: loginUser, ready: privyReady, login, connectWallet } = useLogin();
   const { updateChatThreadState, removeChatThread } = useGlobalChatManager();
   const router = useRouter();
   const pathname = usePathname();
@@ -206,65 +200,6 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
 
   const isLoading = status === 'submitted' || status === 'streaming';
 
-  const maybePromptSolanaWallet = useCallback(
-    (message: string) => {
-      if (!privyReady) return;
-
-      const lower = message.toLowerCase();
-      const isYieldDiscoveryQuery =
-        /\b(yield|yields|apy|apr|rate|rates)\b/.test(lower) &&
-        !/\b(i want to|i'd like to|stake my|unstake|deposit|withdraw)\b/.test(lower) &&
-        !/\b\d+(\.\d+)?\s*sol\b/.test(lower);
-      if (isYieldDiscoveryQuery) return;
-
-      const stakeKeywords =
-        /\b(stake|staking|unstake)\b/.test(lower) ||
-        /\b(drift|dsol|jupiter|jupsol|hsol|helius|jito|jitosol|marinade|msol|lido|stsol|sanctum|inf|blaze|blazestake|bsol|binance|bnsol|bybit|bbsol)\b/.test(
-          lower,
-        );
-
-      if (!stakeKeywords) return;
-
-      const recentHasStakingYields = messages
-        .slice(-8)
-        .some((m) =>
-          getMessageToolInvocations(m).some((inv) =>
-            String(inv?.toolName || '').includes(SOLANA_LIQUID_STAKING_YIELDS_ACTION),
-          ),
-        );
-
-      const isProviderSelectionAfterYields = recentHasStakingYields && stakeKeywords;
-
-      const isStakingIntent =
-        /\b(stake|staking|unstake)\b/.test(lower) || isProviderSelectionAfterYields;
-      if (!isStakingIntent) return;
-
-      // Prefer Solana wallet connect flow for staking-related intents
-      setCurrentChain('solana');
-
-      const windowSolana = typeof window !== 'undefined' ? (window as any).solana : undefined;
-      const browserSolanaConnected = !windowSolana || windowSolana.isConnected === true;
-      const needsWallet = !walletAddresses.solana || !browserSolanaConnected;
-
-      if (!needsWallet) return;
-
-      if (loginUser) {
-        connectWallet();
-      } else {
-        login?.();
-      }
-    },
-    [
-      connectWallet,
-      login,
-      loginUser,
-      messages,
-      privyReady,
-      setCurrentChain,
-      walletAddresses.solana,
-    ],
-  );
-
   useEffect(() => {
     if (isLoading) {
       updateChatThreadState(chatId, {
@@ -321,7 +256,6 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
     if (!input.trim()) return;
 
     const userInput = input;
-    maybePromptSolanaWallet(userInput);
     setInput('');
 
     setIsResponseLoading(true);
@@ -342,9 +276,6 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
     message: string,
     options?: { skipWalletPrompt?: boolean; annotations?: any[] },
   ) => {
-    if (!options?.skipWalletPrompt) {
-      maybePromptSolanaWallet(message);
-    }
     setIsResponseLoading(true);
 
     updateChatThreadState(chatId, {

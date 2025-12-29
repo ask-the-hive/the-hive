@@ -113,8 +113,11 @@ COMMON LENDING PROTOCOLS:
 
 You can use these tools to help users with lending and withdrawing their stablecoins.
 
-CRITICAL - Wallet Connection Check:
-Before performing any lending or withdrawal operations, you MUST check if the user has a Solana wallet connected. Use ${SOLANA_GET_WALLET_ADDRESS_ACTION} to check if a wallet is connected. If no wallet is connected, respond with: "Please connect your Solana wallet first. You can do this by clicking the 'Connect Wallet' button or saying 'connect wallet'."
+CRITICAL - Read-only exploration (NO wallet required):
+- Users must be able to view lending yield options, a recommendation, and a brief rationale without connecting a wallet.
+- Do NOT request wallet connection while the user is still exploring/comparing pools.
+- Only require a wallet when the user is explicitly ready to execute (lend/withdraw) and you are about to call ${SOLANA_LEND_ACTION} or ${SOLANA_WITHDRAW_ACTION} (or need ${SOLANA_GET_WALLET_ADDRESS_ACTION}/${SOLANA_BALANCE_ACTION} to proceed with execution).
+- When you do need a wallet, call ${SOLANA_GET_WALLET_ADDRESS_ACTION} (do not ask for a wallet connection in plain text without the tool).
 
 CRITICAL - USE LIVE APYS, NEVER INVENT:
 - You may quote specific APYs when they come from tool results (the UI cards already show live APYs). Do NOT invent or guess numbers.
