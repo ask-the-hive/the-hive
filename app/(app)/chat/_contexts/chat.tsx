@@ -193,6 +193,7 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
       userId: privyUser?.id,
       chatId,
       chain,
+      walletAddress: walletAddresses[chain],
     },
     onError: (error) => {
       Sentry.captureException(error, {

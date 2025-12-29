@@ -10,6 +10,8 @@ import { deepseek } from '@ai-sdk/deepseek';
 
 import { Models } from '@/types/models';
 import { WALLET_AGENT_NAME } from '@/ai/agents/wallet/name';
+import { RECOMMENDATION_AGENT_NAME } from '@/ai/agents/recommendation/name';
+import { SOLANA_ALL_BALANCES_NAME, SOLANA_GET_WALLET_ADDRESS_ACTION } from '@/ai/action-names';
 import { chooseAgent } from './utils';
 
 const system = `You are The Hive, a network of specialized blockchain agents on Solana.
@@ -55,7 +57,7 @@ Which interests you more - lending, staking, or finding trending tokens?"
 Be conversational, helpful, and guide them toward The Hive's features. Once they express interest in a specific feature, the system will route them to the specialized agent.`;
 
 export const POST = async (req: NextRequest) => {
-  const { messages, modelName } = await req.json();
+  const { messages, modelName, walletAddress } = await req.json();
 
   let MAX_TOKENS: number | undefined = undefined;
   let model: LanguageModelV1 | undefined = undefined;
@@ -119,6 +121,16 @@ export const POST = async (req: NextRequest) => {
     });
   } else {
     let agentSystem = chosenAgent.systemPrompt;
+
+    if (chosenAgent.name === RECOMMENDATION_AGENT_NAME) {
+      agentSystem = `${agentSystem}
+
+WALLET_ADDRESS: ${walletAddress || ''}
+
+ENFORCEMENT:
+- If WALLET_ADDRESS is empty, call recommendation-${SOLANA_GET_WALLET_ADDRESS_ACTION} and stop (no optimization without holdings).
+- If WALLET_ADDRESS is non-empty, call recommendation-${SOLANA_ALL_BALANCES_NAME} first using WALLET_ADDRESS before recommending.`;
+    }
 
     if (chosenAgent.name === WALLET_AGENT_NAME) {
       agentSystem = `${agentSystem}
