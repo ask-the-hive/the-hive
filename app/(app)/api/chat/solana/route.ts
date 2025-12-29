@@ -123,10 +123,7 @@ export const POST = async (req: NextRequest) => {
       agentSystem = `${agentSystem}
 
 WALLET_ADDRESS: ${walletAddress || ''}
-
-ENFORCEMENT:
-- If WALLET_ADDRESS is empty, call recommendation-${SOLANA_GET_WALLET_ADDRESS_ACTION} and stop (no optimization without holdings).
-- If WALLET_ADDRESS is non-empty, call recommendation-${SOLANA_ALL_BALANCES_NAME} first using WALLET_ADDRESS before recommending.`;
+`;
     }
 
     if (chosenAgent.name === WALLET_AGENT_NAME) {
@@ -148,12 +145,12 @@ Status-based responses:
    - Provide educational context about what they're doing
    - Explain how it works and what to expect
    - Guide them through the next steps
-   - Example: "Great! I'm showing you the lending interface. **What you're doing:** You're lending USDT at 16.49% APY..."
+   - Example: "Great! I'm showing you the lending interface. **What you're doing:** You're lending USDT at the live rate shown in the card..."
 
 2. **status === 'complete'**: Transaction succeeded
    - Provide a success message confirming what was accomplished
    - Explain what they can do next
-   - Example: "You're all set — your USDT is now lent! Your position is earning 16.49% APY..."
+   - Example: "You're all set — your USDT is now lent! You can track the live rate and earnings in your position..."
 
 3. **status === 'cancelled'**: User cancelled the transaction
    - Acknowledge neutrally without making them feel bad

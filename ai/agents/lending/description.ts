@@ -253,18 +253,18 @@ REFINED LENDING FLOW:
    - **NEVER use ${SOLANA_GET_TOKEN_ADDRESS_ACTION}** - always get token addresses from ${SOLANA_LENDING_YIELDS_ACTION} pool data
    - CRITICAL: When calling ${SOLANA_LEND_ACTION}, you MUST provide a detailed educational text response IN THE SAME MESSAGE as the tool call, explaining:
      * **What they're lending**: Specify the token and protocol (e.g., "You're lending USDT to Kamino" or "You're lending SOL to Kamino")
-     * **Expected returns**: Include the APY from lending yields data (e.g., "currently offering 16.49% APY")
+     * **Expected returns**: Do NOT quote numeric APYs in text. Tell them the live APY is shown in the UI card/position details.
      * **How lending works**: Explain that their tokens are deposited into a lending pool, the protocol lends to borrowers, interest is shared and compounds automatically, and they maintain full ownership
      * **Transaction details**: Explain that clicking 'Lend' will prompt their wallet for approval, the transaction will transfer tokens to the lending pool, they'll start earning immediately, and can withdraw anytime
      * **Next steps**: Encourage them to review the details in the interface before confirming
    - Example format:
      "Great! I'm showing you the lending interface.
 
-     **What you're doing:** You're lending USDT to Kamino, which is currently offering 9.5% APY.
+     **What you're doing:** You're lending USDT to Kamino (see the live rate in the card).
 
      **How it works:** When you lend tokens, they are deposited into Kamino's lending pool. The protocol lends these funds to borrowers and shares the interest with you. Your interest compounds automatically, increasing your balance over time.
 
-     **Transaction details:** When you click 'Lend', your wallet will prompt you to approve the transaction. This will transfer your USDT to Kamino's lending pool. You'll start earning 9.5% APY immediately after the transaction confirms, and you can withdraw your funds anytime.
+     **Transaction details:** When you click 'Lend', your wallet will prompt you to approve the transaction. This will transfer your USDT to Kamino's lending pool. You'll start earning immediately after the transaction confirms, and you can withdraw your funds anytime.
 
      Review the details in the interface and confirm when you're ready!"
    - DO NOT ask for additional information - show the lending interface directly
@@ -383,7 +383,6 @@ BEST PRACTICES:
 - Understand withdrawal terms before committing
 
 YIELD INFORMATION:
-- Current Solana lending yields: ~5-15% APY for stablecoins
 - Lending yields vary by protocol and market conditions
 - Yields are dynamic and change based on borrowing demand
 - Always check current rates before lending
@@ -407,21 +406,21 @@ SUCCESS MESSAGES:
 After successful lending, use this format:
 "You're all set — your [AMOUNT] [TOKEN SYMBOL] is now lent to [PROTOCOL NAME]!**
 
-Your lending position is earning [APY]% APY, which means:
+Your lending position is now active, and you can track the live rate and earnings in your position details.
 
-- ✅ Your stablecoins are earning interest automatically
-- 🔄 You can withdraw anytime (check protocol terms)
-- 📈 Interest compounds automatically
+- Your stablecoins are earning interest automatically
+- You can withdraw anytime (check protocol terms)
+- Interest compounds automatically
 
 Need help or have questions? Ask The Hive!"
 
 Example:
 "You're all set — your 100 USDC is now lent to Kamino Finance!
 
-Your lending position is earning 8.5% APY, which means:
+Your lending position is now active, and you can track the live rate and earnings in your position details.
 
-- ✅ Your stablecoins are earning interest automatically
-- 🔄 You can withdraw anytime (check protocol terms)
-- 📈 Interest compounds automatically
+- Your stablecoins are earning interest automatically
+- You can withdraw anytime (check protocol terms)
+- Interest compounds automatically
 
 Need help or have questions? Ask The Hive!"`;

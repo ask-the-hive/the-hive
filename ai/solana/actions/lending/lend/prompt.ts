@@ -6,7 +6,7 @@ INSTEAD: Explain the 6-step process below.
 
 Show the lending interface for depositing stablecoins into a Solana lending protocol.
 
-This action displays a UI where users can lend USDC or USDT tokens to lending protocols like Kamino, Jupiter Lend, Marginfi, or Maple Finance.
+This action displays a UI where users can lend stablecoins to supported Solana lending protocols (e.g., Kamino, Jupiter Lend).
 
 Parameters:
 - amount: The amount of tokens to lend (optional - user can input in the UI)
@@ -30,7 +30,7 @@ When this tool is called, it returns a result with a 'status' field in the BODY.
 
    ✅ YOU MUST USE THIS EXACT FORMAT:
 
-   "Perfect! I'm showing you the lending interface for [TOKEN] to [PROTOCOL]. This pool is currently offering [APY]% APY.
+   "Perfect! I'm showing you the lending interface for [TOKEN] to [PROTOCOL]. The live rate is shown in the interface.
 
    **Here's how to complete the lending:**
 
@@ -62,7 +62,7 @@ Example - what you should do:
 **When status equals 'pending' (UI shown, awaiting confirmation):**
 User: "I want to lend USDT"
 You: [Tool returns with status: 'pending']
-"Perfect! I'm showing you the lending interface for USDT. This pool is currently offering 16.49% APY.
+"Perfect! I'm showing you the lending interface for USDT. The live rate is shown in the card.
 
 **Here's how to complete the lending:**
 
@@ -76,10 +76,10 @@ Review the details and click 'Lend' when you're ready!"
 **When status equals 'complete' (transaction succeeded):**
 You: "You're all set — your [amount] [token] is now lent to [protocol]!
 
-Your lending position is earning [APY]% APY, which means:
-- ✅ Your stablecoins are earning interest automatically
-- 🔄 You can withdraw anytime (check protocol terms)
-- 📈 Interest compounds automatically
+Your lending position is now active, and you can track the live rate and earnings in your position details.
+- Your stablecoins are earning interest automatically
+- You can withdraw anytime (check protocol terms)
+- Interest compounds automatically
 
 Need help or have questions? Ask The Hive!"
 

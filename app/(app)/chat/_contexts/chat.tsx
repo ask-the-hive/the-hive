@@ -14,7 +14,7 @@ import { useChat as useAiChat } from '@ai-sdk/react';
 import { Models } from '@/types/models';
 import { usePrivy } from '@privy-io/react-auth';
 import { generateId } from 'ai';
-import { ChainType } from '@/app/_contexts/chain-context';
+import { ChainType, useChain } from '@/app/_contexts/chain-context';
 import { useRouter, usePathname } from 'next/navigation';
 import { useGlobalChatManager } from './global-chat-manager';
 import {
@@ -103,6 +103,7 @@ const getMessageToolInvocations = (message: Message | undefined): any[] => {
 
 export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
   const { user: privyUser } = usePrivy();
+  const { walletAddresses } = useChain();
   const { updateChatThreadState, removeChatThread } = useGlobalChatManager();
   const router = useRouter();
   const pathname = usePathname();
