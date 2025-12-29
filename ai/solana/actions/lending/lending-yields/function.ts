@@ -4,7 +4,6 @@ import { getKaminoPools } from '@/services/lending/get-kamino-pools';
 import { getJupiterPools } from '@/services/lending/get-jupiter-pools';
 import { getTokenBySymbol } from '@/db/services/tokens';
 import { LendingYieldsResultBodyType } from './schema';
-import { capitalizeWords } from '@/lib/string-utils';
 import { z } from 'zod';
 import { LendingYieldsInputSchema } from './input-schema';
 
@@ -217,18 +216,6 @@ export async function getLendingYields(
       }),
     );
 
-    const bestPool =
-      selectedPools.reduce(
-        (best: any, current: any) => ((current.apy || 0) > (best.apy || 0) ? current : best),
-        selectedPools[0],
-      ) || null;
-
-    const bestSummary = bestPool
-      ? `Best yield: ${bestPool.symbol} via ${capitalizeWords(
-          bestPool.project || '',
-        )} at ${(bestPool.apy || 0).toFixed(2)}% APY. `
-      : 'No yields available yet. ';
-
     cachedLendingYields = {
       timestamp: Date.now(),
       body,
@@ -282,16 +269,6 @@ const buildLendingYieldsMessage = (
 ) => {
   if (!pools.length) return 'No lending pools found.';
 
-  const bestPool =
-    pools.reduce(
-      (best: any, current: any) => ((current.yield || 0) > (best.yield || 0) ? current : best),
-      pools[0],
-    ) || null;
-
-  const bestSummary = bestPool
-    ? `Best yield: ${bestPool.symbol} via ${capitalizeWords(bestPool.project || '')} at ${(bestPool.yield || 0).toFixed(2)}% APY. `
-    : '';
-
   const isFiltered =
     !!args.symbol ||
     !!args.project ||
@@ -299,10 +276,10 @@ const buildLendingYieldsMessage = (
     typeof args.sortBy === 'string';
 
   if (isFiltered) {
-    return `${bestSummary}Found ${pools.length} Solana lending pool${pools.length === 1 ? '' : 's'}.`;
+    return `Found ${pools.length} Solana lending pool${pools.length === 1 ? '' : 's'}.`;
   }
 
-  return `${bestSummary}Found ${pools.length} Solana lending pool${
+  return `Found ${pools.length} Solana lending pool${
     pools.length === 1 ? '' : 's'
   }. Compare the cards (APY and TVL are shown in the UI) and pick the best fit to continue.\n\nText rules: keep to one short sentence, do NOT list pool names/symbols/APYs in text, do NOT mention other tokens unless the user asked for them, and if you suggest a different token for higher yield make it clear they must swap first. DO NOT CHECK BALANCES YET - wait for the user to select a specific pool first.`;
 };

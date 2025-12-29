@@ -71,10 +71,11 @@ CRITICAL ROUTING RULES:
    - Checking wallet balances
    - Wallet operations
 
-7. **Trading Agent** - Use for:
+7. **Trading Agent** - Use ONLY when explicitly requested:
    - Trading or swapping tokens
    - Buying tokens
    - Token exchanges
+   - 🚫 Do NOT route "earn", "yield", "help", "decide for me", or other default/confused intent to Trading.
 
 8. **Market Agent** - Use for:
    - Trending tokens
@@ -112,6 +113,8 @@ export const chooseAgent = async (
   const affirmative = /^(yes|yep|yeah|sure|ok|okay|alright|continue|go ahead)\b/.test(
     userText.trim(),
   );
+
+  const explicitTrading = /\b(trade|trading|swap|buy|sell)\b/.test(userText);
 
   const exploratoryIntent =
     /\b(best (defi|opportunit|opportunity|strateg|strategy)|how can i (earn|make)|passive income|what should i do|compare|options|opportunit(?:y|ies))\b/.test(
@@ -230,6 +233,12 @@ export const chooseAgent = async (
     }),
     messages: intentMessages,
   });
+
+  if (object.agent === 'trading' && !explicitTrading) {
+    const recommendation = agents.find((a) => a.name === RECOMMENDATION_AGENT_NAME);
+    if (recommendation) return recommendation;
+    return null;
+  }
 
   const map: Record<string, string> = {
     recommendation: RECOMMENDATION_AGENT_NAME,
