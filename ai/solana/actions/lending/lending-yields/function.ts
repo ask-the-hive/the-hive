@@ -4,22 +4,29 @@ import { getKaminoPools } from '@/services/lending/get-kamino-pools';
 import { getJupiterPools } from '@/services/lending/get-jupiter-pools';
 import { getTokenBySymbol } from '@/db/services/tokens';
 import { LendingYieldsResultBodyType } from './schema';
-import { capitalizeWords } from '@/lib/string-utils';
+import { z } from 'zod';
+import { LendingYieldsInputSchema } from './input-schema';
 
 let cachedLendingYields: {
   timestamp: number;
-  result: SolanaActionResult<LendingYieldsResultBodyType>;
+  body: LendingYieldsResultBodyType;
 } | null = null;
 
 const LENDING_YIELDS_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
-export async function getLendingYields(): Promise<SolanaActionResult<LendingYieldsResultBodyType>> {
+export async function getLendingYields(
+  args: z.infer<typeof LendingYieldsInputSchema> = {},
+): Promise<SolanaActionResult<LendingYieldsResultBodyType>> {
   try {
     if (
       cachedLendingYields &&
       Date.now() - cachedLendingYields.timestamp < LENDING_YIELDS_CACHE_TTL_MS
     ) {
-      return cachedLendingYields.result;
+      const filtered = applyLendingYieldsArgs(cachedLendingYields.body, args);
+      return {
+        message: buildLendingYieldsMessage(filtered, args),
+        body: filtered,
+      };
     }
 
     const [defiLlamaResponse, kaminoPools, jupiterPools] = await Promise.all([
@@ -209,31 +216,16 @@ export async function getLendingYields(): Promise<SolanaActionResult<LendingYiel
       }),
     );
 
-    const bestPool =
-      selectedPools.reduce(
-        (best: any, current: any) => ((current.apy || 0) > (best.apy || 0) ? current : best),
-        selectedPools[0],
-      ) || null;
-
-    const bestSummary = bestPool
-      ? `Best yield: ${bestPool.symbol} via ${capitalizeWords(
-          bestPool.project || '',
-        )} at ${(bestPool.apy || 0).toFixed(2)}% APY. `
-      : 'No yields available yet. ';
-
-    const result: SolanaActionResult<LendingYieldsResultBodyType> = {
-      message: `${bestSummary}Found ${body.length} Solana lending pool${
-        body.length === 1 ? '' : 's'
-      }. Compare the cards (APY and TVL are shown in the UI) and pick the best fit to continue.\n\nText rules: keep to one short sentence, do NOT list pool names/symbols/APYs in text, do NOT mention other tokens unless the user asked for them, and if you suggest a different token for higher yield make it clear they must swap first. DO NOT CHECK BALANCES YET - wait for the user to select a specific pool first.`,
+    cachedLendingYields = {
+      timestamp: Date.now(),
       body,
     };
 
-    cachedLendingYields = {
-      timestamp: Date.now(),
-      result,
+    const filtered = applyLendingYieldsArgs(body, args);
+    return {
+      message: buildLendingYieldsMessage(filtered, args),
+      body: filtered,
     };
-
-    return result;
   } catch (error) {
     console.error(error);
     return {
@@ -241,3 +233,53 @@ export async function getLendingYields(): Promise<SolanaActionResult<LendingYiel
     };
   }
 }
+
+const applyLendingYieldsArgs = (
+  pools: LendingYieldsResultBodyType,
+  args: z.infer<typeof LendingYieldsInputSchema>,
+): LendingYieldsResultBodyType => {
+  let filtered = pools.slice();
+
+  if (args.symbol) {
+    const symbol = args.symbol.toUpperCase();
+    filtered = filtered.filter((p) => (p.symbol || '').toUpperCase() === symbol);
+  }
+
+  if (args.project) {
+    const project = args.project.toLowerCase();
+    filtered = filtered.filter((p) => String(p.project || '').toLowerCase() === project);
+  }
+
+  const sortBy = args.sortBy ?? 'apy';
+  filtered.sort((a, b) => {
+    if (sortBy === 'tvl') return (b.tvlUsd || 0) - (a.tvlUsd || 0);
+    return (b.yield || 0) - (a.yield || 0);
+  });
+
+  if (typeof args.limit === 'number') {
+    filtered = filtered.slice(0, args.limit);
+  }
+
+  return filtered;
+};
+
+const buildLendingYieldsMessage = (
+  pools: LendingYieldsResultBodyType,
+  args: z.infer<typeof LendingYieldsInputSchema>,
+) => {
+  if (!pools.length) return 'No lending pools found.';
+
+  const isFiltered =
+    !!args.symbol ||
+    !!args.project ||
+    typeof args.limit === 'number' ||
+    typeof args.sortBy === 'string';
+
+  if (isFiltered) {
+    return `Found ${pools.length} Solana lending pool${pools.length === 1 ? '' : 's'}.`;
+  }
+
+  return `Found ${pools.length} Solana lending pool${
+    pools.length === 1 ? '' : 's'
+  }. Compare the cards (APY and TVL are shown in the UI) and pick the best fit to continue.\n\nText rules: keep to one short sentence, do NOT list pool names/symbols/APYs in text, do NOT mention other tokens unless the user asked for them, and if you suggest a different token for higher yield make it clear they must swap first. DO NOT CHECK BALANCES YET - wait for the user to select a specific pool first.`;
+};

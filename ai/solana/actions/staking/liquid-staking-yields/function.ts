@@ -4,15 +4,16 @@ import { getTokenBySymbol } from '@/db/services';
 
 import type { LiquidStakingYieldsResultBodyType } from './types';
 import type { SolanaActionResult } from '../../solana-action';
+import type { LiquidStakingYieldsArgumentsType } from './types';
 
 /**
  * Gets the best liquid staking yields from Staking Rewards API.
  *
  * @returns A message containing the best liquid staking yields information
  */
-export async function getLiquidStakingYields(): Promise<
-  SolanaActionResult<LiquidStakingYieldsResultBodyType>
-> {
+export async function getLiquidStakingYields(
+  args: LiquidStakingYieldsArgumentsType = {},
+): Promise<SolanaActionResult<LiquidStakingYieldsResultBodyType>> {
   try {
     const response = await getBestLiquidStaking();
 
@@ -68,22 +69,30 @@ export async function getLiquidStakingYields(): Promise<
       };
     }
 
-    // Sort by APY (highest first) and take top 3
-    const topSolanaPools = solLiquidStakingPools
-      .sort((a, b) => (b.apy || 0) - (a.apy || 0))
-      .slice(0, 3);
+    const sortBy = args.sortBy ?? 'apy';
+    const limit = args.limit ?? 3;
 
-    // Reorder so highest APY is in the center (index 1)
-    if (topSolanaPools.length === 3) {
-      const [highest, second, third] = topSolanaPools;
-      topSolanaPools[0] = second; // Second highest on left
-      topSolanaPools[1] = highest; // Highest APY in center
-      topSolanaPools[2] = third; // Third highest on right
+    const sortedPools = solLiquidStakingPools
+      .slice()
+      .sort((a, b) => {
+        if (sortBy === 'tvl') {
+          return (b.tvlUsd || 0) - (a.tvlUsd || 0);
+        }
+        return (b.apy || 0) - (a.apy || 0);
+      })
+      .slice(0, limit);
+
+    // Preserve the original UI layout for "top 3 by APY" (highest in center).
+    if (sortBy === 'apy' && sortedPools.length === 3) {
+      const [highest, second, third] = sortedPools;
+      sortedPools[0] = second;
+      sortedPools[1] = highest;
+      sortedPools[2] = third;
     }
 
     // Transform to the expected format
     const body = await Promise.all(
-      topSolanaPools.map(async (pool) => {
+      sortedPools.map(async (pool) => {
         const tokenData = await getTokenBySymbol(pool.symbol);
         return {
           name: pool.symbol,
@@ -103,8 +112,11 @@ export async function getLiquidStakingYields(): Promise<
       }),
     );
 
+    const isSingle = limit === 1;
     return {
-      message: `Top pools are displayed as cards above. Do NOT list or repeat them in text—ask the user to pick a provider card to continue staking.`,
+      message: isSingle
+        ? `The safest pool (by TVL proxy) is displayed as a card above. Tell the user to click it to continue.`
+        : `Top pools are displayed as cards above. Do NOT list or repeat them in text—ask the user to pick a provider card to continue staking.`,
       body,
     };
   } catch (error) {

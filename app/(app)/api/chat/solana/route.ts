@@ -10,11 +10,11 @@ import { deepseek } from '@ai-sdk/deepseek';
 
 import { Models } from '@/types/models';
 import { WALLET_AGENT_NAME } from '@/ai/agents/wallet/name';
+import { RECOMMENDATION_AGENT_NAME } from '@/ai/agents/recommendation/name';
+import { SOLANA_ALL_BALANCES_NAME, SOLANA_GET_WALLET_ADDRESS_ACTION } from '@/ai/action-names';
 import { chooseAgent } from './utils';
 
 const system = `You are The Hive, a network of specialized blockchain agents on Solana.
-
-Your native ticker is BUZZ with a contract address of 9DHe3pycTuymFk4H4bbPoAJ4hQrr2kaLDF6J6aAKpump. BUZZ is strictly a memecoin and has no utility.
 
 When users ask exploratory or general questions about opportunities on Solana, your role is to:
 1. Acknowledge their interest enthusiastically
@@ -24,7 +24,6 @@ When users ask exploratory or general questions about opportunities on Solana, y
 AVAILABLE FEATURES ON SOLANA:
 - **Lending**: View top lending yields for stablecoins (USDC/USDT) and lend to protocols like Kamino
 - **Staking**: View top liquid staking yields for SOL and stake to get LSTs (liquid staking tokens)
-- **Trading**: Swap tokens on Solana DEXs
 - **Market Data**: Get top traders and trading history
 - **Token Analysis**: Analyze specific tokens (price, holders, charts, bubble maps)
 - **Liquidity**: View and manage liquidity pools
@@ -44,9 +43,9 @@ You: "Great question! Let me help you discover the best opportunities on Solana.
 
 The Hive specializes in three main discovery strategies:
 
-**Lending** - Earn high yields on stablecoins (USDC/USDT) by lending to DeFi protocols. Currently seeing rates of 13-16% APY on platforms like Kamino.
+**Lending** - Earn yield on stablecoins (USDC/USDT) via lending protocols. (Live APYs are shown in the cards.)
 
-**Staking** - Stake your SOL to earn rewards (6-8% APY) and receive liquid staking tokens (LSTs) that you can use in other DeFi protocols.
+**Staking** - Stake SOL via liquid staking to earn rewards and receive liquid staking tokens (LSTs). (Live APYs are shown in the cards.)
 
 **Trending Tokens** - Discover the hottest tokens on Solana right now with real-time trending data and trading activity.
 
@@ -55,7 +54,7 @@ Which interests you more - lending, staking, or finding trending tokens?"
 Be conversational, helpful, and guide them toward The Hive's features. Once they express interest in a specific feature, the system will route them to the specialized agent.`;
 
 export const POST = async (req: NextRequest) => {
-  const { messages, modelName } = await req.json();
+  const { messages, modelName, walletAddress } = await req.json();
 
   let MAX_TOKENS: number | undefined = undefined;
   let model: LanguageModelV1 | undefined = undefined;
@@ -120,14 +119,23 @@ export const POST = async (req: NextRequest) => {
   } else {
     let agentSystem = chosenAgent.systemPrompt;
 
+    if (chosenAgent.name === RECOMMENDATION_AGENT_NAME) {
+      agentSystem = `${agentSystem}
+
+WALLET_ADDRESS: ${walletAddress || ''}
+
+ENFORCEMENT:
+- If WALLET_ADDRESS is empty, call recommendation-${SOLANA_GET_WALLET_ADDRESS_ACTION} and stop (no optimization without holdings).
+- If WALLET_ADDRESS is non-empty, call recommendation-${SOLANA_ALL_BALANCES_NAME} first using WALLET_ADDRESS before recommending.`;
+    }
+
     if (chosenAgent.name === WALLET_AGENT_NAME) {
       agentSystem = `${agentSystem}
 
 GLOBAL TOOL RESULT RULES:
 - Do not restate or enumerate raw tool outputs that the UI already renders (such as detailed balance lists).
 - For wallet balance tools, especially the "get all balances" action, follow your balance-display rules exactly and avoid bullet lists of individual token balances.
-
-BUZZ, the native token of The Hive, is strictly a memecoin and has no utility.`;
+`;
     } else {
       agentSystem = `${agentSystem}
 
@@ -157,7 +165,9 @@ Status-based responses:
 
 IMPORTANT: Check the status field in tool results to provide contextually appropriate responses. Do NOT provide success messages when status is 'pending'.
 
-BUZZ, the native token of The Hive, is strictly a memecoin and has no utility.`;
+ACTION CTA RULE:
+- If you provide a recommendation, end your message with exactly one concrete CTA line (e.g., "Connect wallet", "View safest pool", "Stake now", "Lend now").
+`;
     }
 
     streamTextResult = streamText({

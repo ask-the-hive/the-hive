@@ -2,6 +2,7 @@
 
 import React from 'react';
 import * as Sentry from '@sentry/nextjs';
+import { getUserFacingErrorInfo } from '@/lib/user-facing-error';
 
 interface ErrorBoundaryState {
   hasError: boolean;
@@ -28,9 +29,7 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
       error.message?.includes('is not configured under images') ||
       error.message?.includes('next-image-unconfigured-host') ||
       error.message?.includes('Encountered two children with the same key') ||
-      error.message?.includes('Keys should be unique') ||
-      error.message?.includes('Network Error') ||
-      error.message?.includes('Raydium_Api');
+      error.message?.includes('Keys should be unique');
 
     if (isNonCriticalError) {
       // Log the error but don't show the error boundary
@@ -70,19 +69,35 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
         return <FallbackComponent error={this.state.error} resetError={this.resetError} />;
       }
 
+      const info = getUserFacingErrorInfo(this.state.error);
+      const isOffline = typeof navigator !== 'undefined' && navigator.onLine === false;
+
       return (
         <div className="flex flex-col items-center justify-center p-8 text-center">
-          <h2 className="text-lg font-semibold text-red-600 mb-2">Something went wrong</h2>
-          <p className="text-gray-100 mb-4">
-            An unexpected error occurred. Please try again. If the problem persists, please contact
-            support.
-          </p>
-          <button
-            onClick={this.resetError}
-            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-          >
-            Try again
-          </button>
+          <h2 className="text-lg font-semibold text-red-600 mb-2">{info.title}</h2>
+          <p className="text-gray-100 mb-3">{info.message}</p>
+          <div className="text-sm text-gray-300 mb-5 space-y-1">
+            {isOffline && <p>You appear to be offline.</p>}
+            {info.nextSteps.map((step, idx) => (
+              <p key={idx}>{step}</p>
+            ))}
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={this.resetError}
+              className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+            >
+              Try again
+            </button>
+            <button
+              onClick={() => {
+                if (typeof window !== 'undefined') window.location.reload();
+              }}
+              className="px-4 py-2 bg-neutral-800 text-white rounded hover:bg-neutral-700"
+            >
+              Reload page
+            </button>
+          </div>
         </div>
       );
     }

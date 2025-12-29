@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
 import { PrivyClient } from '@privy-io/server-auth';
+import { toUserFacingErrorText } from '@/lib/user-facing-error';
 
 // Initialize Privy client for token verification
 let privyClient: PrivyClient | null = null;
@@ -138,12 +139,12 @@ export function withErrorHandling<T extends any[]>(
       // Determine status code from error or default to 500
       const statusCode = (error as any)?.status || (error as any)?.statusCode || 500;
 
-      // For client errors (4xx), we can show more specific messages
-      // For server errors (5xx), keep generic for security
+      // Never return raw/technical errors to the client.
+      // Always include a clear next step in the error text.
       const errorMessage =
-        statusCode >= 400 && statusCode < 500 && (error as any)?.message
-          ? (error as any).message
-          : 'Internal server error';
+        statusCode >= 400 && statusCode < 500
+          ? toUserFacingErrorText(error)
+          : toUserFacingErrorText('Internal server error');
 
       return NextResponse.json({ error: errorMessage }, { status: statusCode });
     }

@@ -18,18 +18,17 @@ Given this list of agents and their capabilities, choose the one that is most ap
 
 CRITICAL ROUTING RULES:
 
-1. **Recommendation Agent** - Use for decision-seeking/global yield queries:
+1. **Recommendation Agent** - Use for decision-seeking yield queries that require a concrete answer:
    - "Where should I earn yield right now?"
-   - "Best APY on Solana" (global optimization)
-   - "Safest place to earn yield"
-   - "Recommend the optimal yield strategy"
-   - Must consider BOTH staking and lending and return a primary recommendation + alternatives.
+   - "Best/safest/optimal yield"
+   - Global optimization across staking + lending
+   - Never respond with "it depends" for these; route to Recommendation Agent.
 
-2. **Knowledge Agent** - Use for protocol/concept education (NOT decisions):
-   - Definitions, how things work, terms, risks, neutral explanations
-   - 🚫 Do NOT use Knowledge Agent for "best/safest/optimal" decision questions or global yield optimization
+2. **Knowledge Agent** - Use for truly educational questions:
+   - Protocol explanations, definitions, terms, neutral comparisons
+   - 🚫 NEVER route "best/safest/optimal/right now" yield decisions to Knowledge Agent.
 
-3. **No Agent (discovery)** - Use for truly exploratory/comparison queries:
+3. **No Agent (discovery)** - Use for broad, exploratory queries:
    - "What are the best DeFi opportunities?" (comparing multiple strategies)
    - "How can I earn on Solana?" (open-ended exploration)
    - "What should I do with my crypto?" (needs guidance)
@@ -37,7 +36,7 @@ CRITICAL ROUTING RULES:
    - "Passive income opportunities" (general exploration)
    - Users exploring what they can do without a specific strategy in mind
    - These should trigger the conversational fallback to help users discover features
-   - Return null for these so the conversational discovery flow runs
+   - Return null for these so the conversational discovery flow runs.
 
 4. **Lending Agent** - Use for specific lending requests or stablecoin yield-shopping:
    - "Show me the best lending pools on Solana" ← LENDING AGENT
@@ -72,10 +71,11 @@ CRITICAL ROUTING RULES:
    - Checking wallet balances
    - Wallet operations
 
-7. **Trading Agent** - Use for:
+7. **Trading Agent** - Use ONLY when explicitly requested:
    - Trading or swapping tokens
    - Buying tokens
    - Token exchanges
+   - 🚫 Do NOT route "earn", "yield", "help", "decide for me", or other default/confused intent to Trading.
 
 8. **Market Agent** - Use for:
    - Trending tokens
@@ -114,10 +114,27 @@ export const chooseAgent = async (
     userText.trim(),
   );
 
+  const explicitTrading = /\b(trade|trading|swap|buy|sell)\b/.test(userText);
+
   const exploratoryIntent =
     /\b(best (defi|opportunit|opportunity|strateg|strategy)|how can i (earn|make)|passive income|what should i do|compare|options|opportunit(?:y|ies))\b/.test(
       userText,
     ) && !/\b(trending|trade|swap|buy|sell|transfer|send|stake|unstake|lend|lending|deposit|withdraw)\b/.test(userText);
+
+  const imperativeDecision =
+    /\b(just tell me what to do|tell me what to do|decide for me|you decide|pick for me|do it for me|what should i do|what do i do)\b/.test(
+      userText,
+    );
+
+  const unclearIntent =
+    /\b(help|idk|i don't know|not sure|unsure|whatever|what now|recommend something)\b/.test(
+      userText,
+    );
+
+  if (imperativeDecision || unclearIntent) {
+    const recommendation = agents.find((a) => a.name === RECOMMENDATION_AGENT_NAME);
+    if (recommendation) return recommendation;
+  }
 
   if (exploratoryIntent) return null;
 
@@ -131,13 +148,11 @@ export const chooseAgent = async (
       userText,
     );
 
-  const globalYieldQuery =
-    yieldIntent &&
-    !mentionsStablecoin &&
-    !mentionsSolToken &&
-    !/\b(stake|staking|unstake|lend|lending|borrow)\b/.test(userText);
+  const mentionsExplicitStrategy = /\b(stake|staking|unstake|lend|lending|borrow)\b/.test(userText);
+  const isGlobalDecisionYieldQuery =
+    yieldIntent && decisionSeeking && !mentionsStablecoin && !mentionsSolToken && !mentionsExplicitStrategy;
 
-  if (globalYieldQuery || (yieldIntent && decisionSeeking && !mentionsStablecoin && !mentionsSolToken)) {
+  if (isGlobalDecisionYieldQuery) {
     const recommendation = agents.find((a) => a.name === RECOMMENDATION_AGENT_NAME);
     if (recommendation) return recommendation;
   }
@@ -189,7 +204,7 @@ export const chooseAgent = async (
     {
       role: 'system',
       content:
-        'Classify the intent based on the latest user message. Return one of: recommendation, lending, staking, wallet, trading, market, token-analysis, liquidity, knowledge, none. IMPORTANT: Do not choose knowledge for decision-seeking yield queries (best/safest/optimal/recommend/where should I).',
+        'Classify the intent based on the latest user message. Return one of: recommendation, lending, staking, wallet, trading, market, token-analysis, liquidity, knowledge, none. IMPORTANT: Never choose knowledge for decision-seeking yield queries (best/safest/optimal/recommend/right now).',
     },
     ...contextMessages.map((m) => ({
       role:
@@ -219,6 +234,12 @@ export const chooseAgent = async (
     messages: intentMessages,
   });
 
+  if (object.agent === 'trading' && !explicitTrading) {
+    const recommendation = agents.find((a) => a.name === RECOMMENDATION_AGENT_NAME);
+    if (recommendation) return recommendation;
+    return null;
+  }
+
   const map: Record<string, string> = {
     recommendation: RECOMMENDATION_AGENT_NAME,
     lending: LENDING_AGENT_NAME,
@@ -235,7 +256,7 @@ export const chooseAgent = async (
     return null;
   }
 
-  if (object.agent === 'knowledge' && yieldIntent && decisionSeeking) {
+  if (object.agent === 'knowledge' && isGlobalDecisionYieldQuery) {
     const recommendation = agents.find((a) => a.name === RECOMMENDATION_AGENT_NAME);
     if (recommendation) return recommendation;
   }
