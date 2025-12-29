@@ -1,6 +1,8 @@
 import { z } from "zod";
 
 import { CoreTool, tool } from "ai";
+import * as Sentry from '@sentry/nextjs';
+import { sanitizeUserVisibleMessage, toUserFacingErrorText } from '@/lib/user-facing-error';
 
 import { KNOWLEDGE_ACTIONS } from "./actions";
 
@@ -20,8 +22,18 @@ export const knowledgeTool = <TActionSchema extends KnowledgeActionSchemaAny, TR
         description: action.description,
         parameters: action.argsSchema,
         execute: async (args) => {
-            const result = await (func as ((args: z.infer<TActionSchema>) => Promise<KnowledgeActionResult<TResultBody>>))(args);
-            return result;
+            try {
+                const result = await (func as ((args: z.infer<TActionSchema>) => Promise<KnowledgeActionResult<TResultBody>>))(args);
+                return {
+                    ...result,
+                    message: sanitizeUserVisibleMessage(result?.message),
+                } satisfies KnowledgeActionResult<TResultBody>;
+            } catch (error) {
+                Sentry.captureException(error);
+                return {
+                    message: toUserFacingErrorText(error),
+                } satisfies KnowledgeActionResult<TResultBody>;
+            }
         }
     });
 }
