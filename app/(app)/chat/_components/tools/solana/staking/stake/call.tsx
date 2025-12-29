@@ -7,7 +7,6 @@ import { useChain } from '@/app/_contexts/chain-context';
 import { SOLANA_STAKING_POOL_DATA_STORAGE_KEY } from '@/lib/constants';
 import type { StakeArgumentsType, StakeResultBodyType } from '@/ai';
 import { saveLiquidStakingPosition } from '@/services/liquid-staking/save';
-import { useLogin } from '@/hooks';
 import PoolEarningPotential from '../../pool-earning-potential';
 import StakeResult from './stake-result';
 import VarApyTooltip from '@/components/var-apy-tooltip';
@@ -37,7 +36,6 @@ interface Props {
 const StakeCallBody: React.FC<Props> = ({ toolCallId, args }) => {
   const { addToolResult } = useChat();
   const { setCurrentChain, walletAddresses } = useChain();
-  const { user, login, connectWallet, ready } = useLogin();
   const [poolData, setPoolData] = React.useState<LiquidStakingYieldsPoolData | null>(null);
   const [outputAmount, setOutputAmount] = React.useState<number>(0);
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
@@ -47,17 +45,6 @@ const StakeCallBody: React.FC<Props> = ({ toolCallId, args }) => {
   useEffect(() => {
     setCurrentChain('solana');
   }, [setCurrentChain]);
-
-  useEffect(() => {
-    if (!ready) return;
-    if (walletAddresses.solana) return;
-
-    if (user) {
-      connectWallet();
-    } else {
-      login?.();
-    }
-  }, [walletAddresses.solana, user, connectWallet, login, ready, toolCallId]);
 
   const { data: inputTokenData, isLoading: inputTokenLoading } = useTokenDataByAddress(
     'So11111111111111111111111111111111111111112',
@@ -249,7 +236,6 @@ const StakeCallBody: React.FC<Props> = ({ toolCallId, args }) => {
                 initialInputAmount={args.amount?.toString()}
                 swapText="Stake"
                 swappingText="Staking..."
-                autoConnectOnMount
                 eventName="stake"
                 receiveTooltip={<ReceiveTooltip />}
                 onOutputChange={(amount) => {

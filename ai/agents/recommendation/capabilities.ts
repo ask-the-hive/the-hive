@@ -1,3 +1,3 @@
 export const RECOMMENDATION_AGENT_CAPABILITIES =
-  'Personalized yield recommendations (staking vs lending) using wallet holdings when available.';
+  `Decision-first recommendations for earning yield on Solana. Compares staking vs lending yields and surfaces a primary recommendation with brief rationale and alternatives.`;
 
