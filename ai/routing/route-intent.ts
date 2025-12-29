@@ -84,7 +84,11 @@ export function routeIntent(
     return { agentName: agents.market, mode: flowState.mode, reason: 'explore_specific' };
   }
   if (intent.domain === 'token-analysis') {
-    return { agentName: agents['token-analysis'], mode: flowState.mode, reason: 'explore_specific' };
+    return {
+      agentName: agents['token-analysis'],
+      mode: flowState.mode,
+      reason: 'explore_specific',
+    };
   }
   if (intent.domain === 'liquidity') {
     return { agentName: agents.liquidity, mode: flowState.mode, reason: 'explore_specific' };
@@ -95,4 +99,3 @@ export function routeIntent(
 
   return { agentName: null, mode: flowState.mode, reason: 'explore_ambiguous' };
 }
-

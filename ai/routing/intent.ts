@@ -8,6 +8,7 @@ export const IntentDomainSchema = z.enum([
   'knowledge',
   'portfolio',
   'market',
+  'token-analysis',
   'liquidity',
   'unknown',
 ]);
