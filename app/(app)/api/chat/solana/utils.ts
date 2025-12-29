@@ -4,6 +4,7 @@ import { agents } from '@/ai/agents';
 import { Agent } from '@/ai/agent';
 import { LENDING_AGENT_NAME } from '@/ai/agents/lending/name';
 import { STAKING_AGENT_NAME } from '@/ai/agents/staking/name';
+import { RECOMMENDATION_AGENT_NAME } from '@/ai/agents/recommendation/name';
 import { WALLET_AGENT_NAME } from '@/ai/agents/wallet/name';
 import { TRADING_AGENT_NAME } from '@/ai/agents/trading/name';
 import { MARKET_AGENT_NAME } from '@/ai/agents/market/name';
@@ -17,19 +18,28 @@ Given this list of agents and their capabilities, choose the one that is most ap
 
 CRITICAL ROUTING RULES:
 
-1. **Knowledge Agent** - Use for truly exploratory/comparison queries:
+1. **Recommendation Agent** - Use for decision-seeking/global yield queries:
+   - "Where should I earn yield right now?"
+   - "Best APY on Solana" (global optimization)
+   - "Safest place to earn yield"
+   - "Recommend the optimal yield strategy"
+   - Must consider BOTH staking and lending and return a primary recommendation + alternatives.
+
+2. **Knowledge Agent** - Use for protocol/concept education (NOT decisions):
+   - Definitions, how things work, terms, risks, neutral explanations
+   - 🚫 Do NOT use Knowledge Agent for "best/safest/optimal" decision questions or global yield optimization
+
+3. **No Agent (discovery)** - Use for truly exploratory/comparison queries:
    - "What are the best DeFi opportunities?" (comparing multiple strategies)
    - "How can I earn on Solana?" (open-ended exploration)
    - "What should I do with my crypto?" (needs guidance)
    - "Compare lending vs staking" (explicit comparison)
    - "Passive income opportunities" (general exploration)
-   - "Best APY on Solana" (comparing across all options)
    - Users exploring what they can do without a specific strategy in mind
    - These should trigger the conversational fallback to help users discover features
-   - 🚫 DO NOT use Knowledge Agent when the user is asking to take an action (stake, lend, deposit, earn, compare yields with amounts) — route to the action agents so they get live options and CTAs
-   - 🚫 NEVER invent or quote specific APY percentages or protocol names when uncertain. Use categories only (e.g., "stablecoin lending", "liquid staking") and invite the user to open the strategy cards in the UI to see live APYs.
+   - Return null for these so the conversational discovery flow runs
 
-2. **Lending Agent** - Use for specific lending requests or stablecoin yield-shopping:
+4. **Lending Agent** - Use for specific lending requests or stablecoin yield-shopping:
    - "Show me the best lending pools on Solana" ← LENDING AGENT
    - "Best lending yields" / "best stablecoin yields" / "best USDC APY" ← LENDING AGENT
    - "Lending rates for USDC/USDT" ← LENDING AGENT
@@ -44,7 +54,7 @@ CRITICAL ROUTING RULES:
    - If the previous assistant message offered lending and the user responds with a short confirmation ("yes", "yep", "sure", "ok"), route to the Lending Agent to return yields.
    - Queries about "lend"/"lending" or "best APY"/"best yield" for stablecoins should route to Lending Agent (not Knowledge).
 
-3. **Staking Agent** - Use for specific staking requests:
+5. **Staking Agent** - Use for specific staking requests:
    🚨 CRITICAL: Use Staking Agent for any SOL staking intent, including SOL APY/yield questions
    - "Show me the best staking pools" ← STAKING AGENT
    - "Best staking yields" ← STAKING AGENT
@@ -57,29 +67,29 @@ CRITICAL ROUTING RULES:
    - "How much can I stake?" (checks SOL balance)
    - Any query with "stake" keyword → Staking Agent
 
-4. **Wallet Agent** - Use for:
+6. **Wallet Agent** - Use for:
    - Token transfers
    - Checking wallet balances
    - Wallet operations
 
-5. **Trading Agent** - Use for:
+7. **Trading Agent** - Use for:
    - Trading or swapping tokens
    - Buying tokens
    - Token exchanges
 
-6. **Market Agent** - Use for:
+8. **Market Agent** - Use for:
    - Trending tokens
    - Top traders for a timeframe
    - Trading history for a wallet
 
-7. **Token Analysis Agent** - Use for:
+9. **Token Analysis Agent** - Use for:
    - Data about a specific token (price, volume, holders)
    - Top holders of a token
    - Price charts
    - Bubble maps (token distribution)
    - Top traders of a specific token
 
-8. **Liquidity Agent** - Use for:
+10. **Liquidity Agent** - Use for:
    - Liquidity pool information
    - Depositing liquidity into pools
    - User's LP tokens
@@ -113,6 +123,24 @@ export const chooseAgent = async (
 
   const mentionsStablecoin =
     /\b(stablecoin|stablecoins|usdc|usdt|usdg|eurc|fdusd|pyusd|usds)\b/.test(userText);
+
+  const mentionsSolToken = /\bsol\b/.test(userText);
+  const yieldIntent = /\b(yield|yields|apy|apr|earn|earning|rate|rates)\b/.test(userText);
+  const decisionSeeking =
+    /\b(best|safest|optimal|recommend|where should i|what should i|should i|right now)\b/.test(
+      userText,
+    );
+
+  const globalYieldQuery =
+    yieldIntent &&
+    !mentionsStablecoin &&
+    !mentionsSolToken &&
+    !/\b(stake|staking|unstake|lend|lending|borrow)\b/.test(userText);
+
+  if (globalYieldQuery || (yieldIntent && decisionSeeking && !mentionsStablecoin && !mentionsSolToken)) {
+    const recommendation = agents.find((a) => a.name === RECOMMENDATION_AGENT_NAME);
+    if (recommendation) return recommendation;
+  }
 
   const mentionsStablecoinBalance =
     mentionsStablecoin &&
@@ -161,7 +189,7 @@ export const chooseAgent = async (
     {
       role: 'system',
       content:
-        'Classify the intent based on the latest user message. Return one of: lending, staking, wallet, trading, market, token-analysis, liquidity, knowledge, none.',
+        'Classify the intent based on the latest user message. Return one of: recommendation, lending, staking, wallet, trading, market, token-analysis, liquidity, knowledge, none. IMPORTANT: Do not choose knowledge for decision-seeking yield queries (best/safest/optimal/recommend/where should I).',
     },
     ...contextMessages.map((m) => ({
       role:
@@ -176,6 +204,7 @@ export const chooseAgent = async (
     model,
     schema: z.object({
       agent: z.enum([
+        'recommendation',
         'lending',
         'staking',
         'wallet',
@@ -191,6 +220,7 @@ export const chooseAgent = async (
   });
 
   const map: Record<string, string> = {
+    recommendation: RECOMMENDATION_AGENT_NAME,
     lending: LENDING_AGENT_NAME,
     staking: STAKING_AGENT_NAME,
     wallet: WALLET_AGENT_NAME,
@@ -204,6 +234,12 @@ export const chooseAgent = async (
   if (object.agent === 'none') {
     return null;
   }
+
+  if (object.agent === 'knowledge' && yieldIntent && decisionSeeking) {
+    const recommendation = agents.find((a) => a.name === RECOMMENDATION_AGENT_NAME);
+    if (recommendation) return recommendation;
+  }
+
   const mapped = map[object.agent];
   if (mapped) {
     const found = agents.find((a) => a.name === mapped) ?? null;
