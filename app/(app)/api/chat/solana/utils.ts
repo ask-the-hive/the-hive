@@ -118,6 +118,21 @@ export const chooseAgent = async (
       userText,
     ) && !/\b(trending|trade|swap|buy|sell|transfer|send|stake|unstake|lend|lending|deposit|withdraw)\b/.test(userText);
 
+  const imperativeDecision =
+    /\b(just tell me what to do|tell me what to do|decide for me|you decide|pick for me|do it for me|what should i do|what do i do)\b/.test(
+      userText,
+    );
+
+  const unclearIntent =
+    /\b(help|idk|i don't know|not sure|unsure|whatever|what now|recommend something)\b/.test(
+      userText,
+    );
+
+  if (imperativeDecision || unclearIntent) {
+    const recommendation = agents.find((a) => a.name === RECOMMENDATION_AGENT_NAME);
+    if (recommendation) return recommendation;
+  }
+
   if (exploratoryIntent) return null;
 
   const mentionsStablecoin =

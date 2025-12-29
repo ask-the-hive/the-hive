@@ -169,6 +169,9 @@ Status-based responses:
 
 IMPORTANT: Check the status field in tool results to provide contextually appropriate responses. Do NOT provide success messages when status is 'pending'.
 
+ACTION CTA RULE:
+- If you provide a recommendation, end your message with exactly one concrete CTA line (e.g., "Connect wallet", "View safest pool", "Stake now", "Lend now").
+
 BUZZ, the native token of The Hive, is strictly a memecoin and has no utility.`;
     }
 
