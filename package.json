@@ -14,7 +14,8 @@
     "lint": "next lint",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "format:staged": "prettier --write --ignore-unknown"
+    "format:staged": "prettier --write --ignore-unknown",
+    "validate:routing": "ts-node -P tsconfig.scripts.json -r tsconfig-paths/register scripts/validate-routing.ts"
   },
   "dependencies": {
     "@0x/contract-addresses": "^8.13.0",

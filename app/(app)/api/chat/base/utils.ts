@@ -1,6 +1,4 @@
-import { z } from 'zod';
-
-import { generateObject, LanguageModelV1, Message } from 'ai';
+import { CoreMessage, LanguageModelV1, Message } from 'ai';
 
 import { Agent } from '@/ai/agent';
 import { baseKnowledgeAgent } from '@/ai/agents/base-knowledge';
@@ -9,6 +7,10 @@ import { baseWalletAgent } from '@/ai/agents/base-wallet';
 import { baseMarketAgent } from '@/ai/agents/base-market';
 import { baseLiquidityAgent } from '@/ai/agents/base-liquidity';
 import { baseTradingAgent } from '@/ai/agents/base-trading';
+import { classifyIntent } from '@/ai/routing/classify-intent';
+import { Intent } from '@/ai/routing/intent';
+import { deriveFlowStateFromIntent } from '@/ai/routing/flow-state';
+import { routeIntent, RouteDecision } from '@/ai/routing/route-intent';
 
 // List of Base-specific agents
 export const baseAgents: Agent[] = [
@@ -20,24 +22,53 @@ export const baseAgents: Agent[] = [
   baseTradingAgent,
 ];
 
-export const system = `You are the orchestrator of a swarm of blockchain agents that each have specialized tasks on the Base Chain.
+const toCoreMessages = (messages: Message[], limit = 8): CoreMessage[] =>
+  messages.slice(-limit).map((m) => ({
+    role: m.role === 'assistant' || m.role === 'user' || m.role === 'system' ? m.role : 'user',
+    content: typeof m.content === 'string' ? m.content : String(m.content ?? ''),
+  }));
 
-Given this list of agents and their capabilities, choose the one that is most appropriate for the user's request.
+export type ChooseRouteResult = {
+  agent: Agent | null;
+  intent: Intent;
+  decision: RouteDecision;
+};
 
-${baseAgents.map((agent) => `${agent.name}: ${agent.capabilities}`).join('\n\n')}`;
+export const chooseRoute = async (
+  model: LanguageModelV1,
+  messages: Message[],
+): Promise<ChooseRouteResult> => {
+  const intent = await classifyIntent({
+    model,
+    messages: toCoreMessages(messages),
+    chain: 'base',
+  });
+
+  const decision = routeIntent(
+    intent,
+    {
+      agents: {
+        knowledge: baseKnowledgeAgent.name,
+        wallet: baseWalletAgent.name,
+        market: baseMarketAgent.name,
+        liquidity: baseLiquidityAgent.name,
+        trading: baseTradingAgent.name,
+        'token-analysis': baseTokenAnalysisAgent.name,
+      },
+    },
+    deriveFlowStateFromIntent(intent),
+  );
+
+  const agent = decision.agentName
+    ? baseAgents.find((a) => a.name === decision.agentName) ?? null
+    : null;
+  return { agent, intent, decision };
+};
 
 export const chooseAgent = async (
   model: LanguageModelV1,
   messages: Message[],
 ): Promise<Agent | null> => {
-  const { object } = await generateObject({
-    model,
-    schema: z.object({
-      agent: z.enum(baseAgents.map((agent) => agent.name) as [string, ...string[]]),
-    }),
-    messages,
-    system,
-  });
-
-  return baseAgents.find((agent) => agent.name === object.agent) ?? null;
+  const { agent } = await chooseRoute(model, messages);
+  return agent;
 };
