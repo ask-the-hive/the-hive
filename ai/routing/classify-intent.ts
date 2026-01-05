@@ -38,6 +38,8 @@ Important rules:
 - Never set explicitTrading=true for "earn/yield/help/what should I do" unless the user explicitly requested trading.
 - If the user asks for a decision ("best/safest/optimal/right now"), goal must be decide (not learn).
 - If the user is only asking to view yields/options, goal must be explore and explicitExecution must be false.
+- If the user says "lend X" or "stake SOL" without a specific protocol/pool selected, treat it as explore (they want to see options first), NOT execute.
+- Set explicitExecution=true when the user specifies an amount and/or a protocol/pool (or says "lend/stake now", "do it", "execute", "confirm").
 
 Confidence:
 - Set confidence closer to 1 when the intent is explicit; closer to 0 when ambiguous.`,

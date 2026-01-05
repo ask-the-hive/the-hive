@@ -11,8 +11,8 @@ import { deepseek } from '@ai-sdk/deepseek';
 import { Models } from '@/types/models';
 import { WALLET_AGENT_NAME } from '@/ai/agents/wallet/name';
 import { RECOMMENDATION_AGENT_NAME } from '@/ai/agents/recommendation/name';
-import { SOLANA_ALL_BALANCES_NAME, SOLANA_GET_WALLET_ADDRESS_ACTION } from '@/ai/action-names';
-import { chooseAgent } from './utils';
+import { chooseRoute } from './utils';
+import { gateToolsByMode } from '@/ai/routing/gate-tools';
 
 const system = `You are The Hive, a network of specialized blockchain agents on Solana.
 
@@ -106,7 +106,7 @@ export const POST = async (req: NextRequest) => {
     }
   }
 
-  const chosenAgent = await chooseAgent(model, truncatedMessages);
+  const { agent: chosenAgent, intent, decision } = await chooseRoute(model, truncatedMessages);
 
   let streamTextResult: StreamTextResult<Record<string, CoreTool<any, any>>, any>;
 
@@ -118,11 +118,18 @@ export const POST = async (req: NextRequest) => {
     });
   } else {
     let agentSystem = chosenAgent.systemPrompt;
+    const allowWalletConnect = decision.mode === 'execute' || intent.needsWalletForPersonalization;
 
     if (chosenAgent.name === RECOMMENDATION_AGENT_NAME) {
       agentSystem = `${agentSystem}
 
 WALLET_ADDRESS: ${walletAddress || ''}
+FLOW_MODE: ${decision.mode}
+`;
+    } else {
+      agentSystem = `${agentSystem}
+
+FLOW_MODE: ${decision.mode}
 `;
     }
 
@@ -169,7 +176,7 @@ ACTION CTA RULE:
 
     streamTextResult = streamText({
       model,
-      tools: chosenAgent.tools,
+      tools: gateToolsByMode(chosenAgent.tools, { mode: decision.mode, allowWalletConnect }),
       messages: truncatedMessages,
       system: agentSystem,
     });

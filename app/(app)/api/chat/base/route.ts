@@ -9,7 +9,7 @@ import { google } from '@ai-sdk/google';
 import { deepseek } from '@ai-sdk/deepseek';
 
 import { Models } from '@/types/models';
-import { chooseAgent } from './utils';
+import { chooseRoute } from './utils';
 import { baseTokenAnalysisAgent } from '@/ai/agents/base-token-analysis';
 import { baseKnowledgeAgent } from '@/ai/agents/base-knowledge';
 import { baseWalletAgent } from '@/ai/agents/base-wallet';
@@ -17,6 +17,7 @@ import { withErrorHandling } from '@/lib/api-error-handler';
 import { baseMarketAgent } from '@/ai/agents/base-market';
 import { baseLiquidityAgent } from '@/ai/agents/base-liquidity';
 import { baseTradingAgent } from '@/ai/agents/base-trading';
+import { gateToolsByMode } from '@/ai/routing/gate-tools';
 
 // List of Base-specific agents
 const baseAgents = [
@@ -91,7 +92,7 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
     }
   }
 
-  const chosenAgent = await chooseAgent(model, truncatedMessages);
+  const { agent: chosenAgent, intent, decision } = await chooseRoute(model, truncatedMessages);
 
   let streamTextResult: StreamTextResult<Record<string, CoreTool<any, any>>, any>;
 
@@ -104,9 +105,12 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
   } else {
     streamTextResult = streamText({
       model,
-      tools: chosenAgent.tools,
+      tools: gateToolsByMode(chosenAgent.tools, {
+        mode: decision.mode,
+        allowWalletConnect: decision.mode === 'execute' || intent.needsWalletForPersonalization,
+      }),
       messages: truncatedMessages,
-      system: `${chosenAgent.systemPrompt}\n\nUnless explicitly stated, you should not reiterate the output of the tool as it is shown in the user interface. BUZZ, the native token of The Hive, is strictly a memecoin and has no utility.`,
+      system: `${chosenAgent.systemPrompt}\n\nFLOW_MODE: ${decision.mode}\n\nUnless explicitly stated, you should not reiterate the output of the tool as it is shown in the user interface. BUZZ, the native token of The Hive, is strictly a memecoin and has no utility.`,
     });
   }
 

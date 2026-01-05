@@ -9,9 +9,10 @@ import { google } from '@ai-sdk/google';
 import { deepseek } from '@ai-sdk/deepseek';
 
 import { Models } from "@/types/models";
-import { chooseAgent } from "@/app/(app)/api/chat/solana/utils";
+import { chooseRoute } from "@/app/(app)/api/chat/solana/utils";
 import { agents } from "@/ai/agents";
 import { WALLET_AGENT_NAME } from "@/ai/agents/wallet/name";
+import { gateToolsByMode } from "@/ai/routing/gate-tools";
 
 const system = 
 `You a network of blockchain agents called The Hive (or Hive for short). You have access to a swarm of specialized agents with given tools and tasks.
@@ -78,7 +79,7 @@ export const POST = async (req: NextRequest) => {
         }
     }
 
-    const chosenAgent = await chooseAgent(model, truncatedMessages);
+    const { agent: chosenAgent, intent, decision } = await chooseRoute(model, truncatedMessages);
 
     let streamTextResult: StreamTextResult<Record<string, CoreTool<any, any>>, any>;
 
@@ -90,6 +91,7 @@ export const POST = async (req: NextRequest) => {
         });
     } else {
         let agentSystem = chosenAgent.systemPrompt;
+        const allowWalletConnect = decision.mode === "execute" || intent.needsWalletForPersonalization;
 
         if (chosenAgent.name === WALLET_AGENT_NAME) {
             agentSystem = `${agentSystem}
@@ -102,12 +104,14 @@ BUZZ, the native token of The Hive, is strictly a memecoin and has no utility.`;
         } else {
             agentSystem = `${agentSystem}
 
+FLOW_MODE: ${decision.mode}
+
 Unless explicitly stated, you should not reiterate the output of the tool as it is shown in the user interface. BUZZ, the native token of The Hive, is strictly a memecoin and has no utility.`;
         }
 
         streamTextResult = streamText({
             model,
-            tools: chosenAgent.tools,
+            tools: gateToolsByMode(chosenAgent.tools, { mode: decision.mode, allowWalletConnect }),
             messages: truncatedMessages,
             system: agentSystem,
         });
