@@ -9,8 +9,6 @@ export async function GET(
   const { address } = await params;
   const chain = (request.nextUrl.searchParams.get('chain') as ChainType) || 'solana';
 
-  console.debug('Request params:', { address, chain });
-
   try {
     const portfolio = await getPortfolio(address, chain);
     return NextResponse.json(portfolio);

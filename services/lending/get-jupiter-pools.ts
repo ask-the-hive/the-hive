@@ -137,7 +137,10 @@ async function refreshCache(forceRefresh = false) {
   inFlight = fetchAndCache()
     .catch((error) => {
       console.error('Failed to refresh Jupiter pools cache:', error);
-      throw error;
+      if (cachedPools) return cachedPools;
+      cachedPools = [];
+      cachedAt = Date.now();
+      return [];
     })
     .finally(() => {
       inFlight = null;

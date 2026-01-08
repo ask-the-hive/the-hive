@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useChat } from '@/app/(app)/chat/_contexts/chat';
 import { useChain } from '@/app/_contexts/chain-context';
-import { usePrivy } from '@privy-io/react-auth';
 import ToolCard from '../../tool-card';
 import { SOLANA_LENDING_POOL_DATA_STORAGE_KEY } from '@/lib/constants';
 import { capitalizeWords } from '@/lib/string-utils';
@@ -13,6 +12,12 @@ import type {
   LendingYieldsResultType,
   LendingYieldsPoolData,
 } from '@/ai/solana/actions/lending/lending-yields/schema';
+import { isSupportedSolanaLendingStablecoin } from '@/lib/yield-support';
+import { resolveLendingProjectKey } from '@/lib/lending';
+
+const shouldShowAll = (limit?: number) => Number.isFinite(limit) && (limit ?? 0) > 3;
+const LOOP_GUARD_MESSAGE =
+  'Tool call blocked to prevent repeating the same request in a single turn.';
 
 interface Props {
   tool: ToolInvocation;
@@ -20,101 +25,72 @@ interface Props {
 }
 
 const LendingYieldsTool: React.FC<Props> = ({ tool, prevToolAgent }) => {
-  const { messages } = useChat();
-
-  const detectRequestedSymbol = (msgs: typeof messages) => {
-    const lastUserMessage = [...msgs].reverse().find((m) => m.role === 'user');
-    const content = typeof lastUserMessage?.content === 'string' ? lastUserMessage.content : '';
-    if (!content) return null;
-
-    const stableCoins = [
-      'USDC',
-      'USDT',
-      'USDC.E',
-      'USDT.E',
-      'USDX',
-      'USDS',
-      'USDG',
-      'USDCso',
-      'PYUSD',
-      'FDUSD',
-      'DAI',
-      'EUROe',
-      'EURC',
-    ];
-
-    const match = content.match(
-      /\b(USDC\.E|USDT\.E|USDCso|USDC|USDT|USDX|USDS|USDG|PYUSD|FDUSD|DAI|EUROe|EURC)\b/i,
-    );
-    if (!match) return null;
-    const symbol = match[1].toUpperCase();
-    return stableCoins.includes(symbol) ? symbol : null;
-  };
-
-  const detectRequestedProvider = (msgs: typeof messages) => {
-    const lastUserMessage = [...msgs].reverse().find((m) => m.role === 'user');
-    const content = typeof lastUserMessage?.content === 'string' ? lastUserMessage.content : '';
-    if (!content) return null;
-    if (/jupiter\s+lend|jupiter\b/i.test(content)) return 'jupiter-lend';
-    if (/kamino\b/i.test(content)) return 'kamino-lend';
+  if (
+    tool.state === 'result' &&
+    'result' in tool &&
+    (tool.result as LendingYieldsResultType).message === LOOP_GUARD_MESSAGE
+  ) {
     return null;
-  };
+  }
 
-  const requestedSymbolRef = useRef<string | null>(detectRequestedSymbol(messages));
+  const args = (tool.args || {}) as Partial<{
+    symbol: string;
+    project: string;
+    limit: number;
+  }>;
+  const sortBy = String((tool.args as any)?.sortBy || 'apy').toLowerCase();
+  const limit = typeof args.limit === 'number' ? args.limit : undefined;
+
+  const requestedSymbolRef = useRef<string | null>(
+    args.symbol && isSupportedSolanaLendingStablecoin(args.symbol)
+      ? args.symbol.toUpperCase()
+      : null,
+  );
   const requestedSymbol = requestedSymbolRef.current;
-  const requestedProviderRef = useRef<string | null>(detectRequestedProvider(messages));
-  const requestedProvider = requestedProviderRef.current;
+
+  const requestedProvider = useRef(resolveLendingProjectKey(args.project)).current;
 
   const loadingLabel = useMemo(() => {
     if (requestedSymbol && requestedProvider) {
-      return `Fetching ${requestedSymbol} lending yields on ${capitalizeWords(
+      return `Fetching ${sortBy === 'tvl' ? 'highest TVL ' : ''}${requestedSymbol} lending yields on ${capitalizeWords(
         requestedProvider.replace('-', ' '),
       )}...`;
     }
-    if (requestedSymbol) return `Fetching ${requestedSymbol} lending yields...`;
+    if (requestedSymbol)
+      return `Fetching ${sortBy === 'tvl' ? 'highest TVL ' : ''}${requestedSymbol} lending yields...`;
     if (requestedProvider) {
-      return `Fetching lending yields on ${capitalizeWords(requestedProvider.replace('-', ' '))}...`;
+      return `Fetching ${sortBy === 'tvl' ? 'highest TVL ' : ''}lending yields on ${capitalizeWords(
+        requestedProvider.replace('-', ' '),
+      )}...`;
     }
-    return 'Getting best lending yields...';
-  }, [requestedProvider, requestedSymbol]);
+    return sortBy === 'tvl' ? 'Getting highest TVL lending yields...' : 'Getting best lending yields...';
+  }, [requestedProvider, requestedSymbol, sortBy]);
 
   const getHeading = (result: LendingYieldsResultType) => {
     const pools = result.body || [];
     if (!pools.length) return 'No lending yields found';
-    const stableCoins = [
-      'USDC',
-      'USDT',
-      'USDC.E',
-      'USDT.E',
-      'USDX',
-      'USDS',
-      'USDG',
-      'USDCso',
-      'PYUSD',
-      'FDUSD',
-      'DAI',
-      'EUROe',
-      'EURC',
-    ];
     const uniqueSymbols = Array.from(new Set(pools.map((p) => (p.symbol || '').toUpperCase())));
-    const isStableOnly = uniqueSymbols.every((s) => stableCoins.includes(s));
+    const isStableOnly = uniqueSymbols.every((s) => isSupportedSolanaLendingStablecoin(s));
+    const prefix = sortBy === 'tvl' ? 'Fetched highest TVL' : 'Fetched best';
     if (requestedSymbol && uniqueSymbols.includes(requestedSymbol)) {
       if (requestedProvider) {
-        return `Fetched best ${requestedSymbol} lending yields on ${capitalizeWords(
+        return `${prefix} ${requestedSymbol} lending yields on ${capitalizeWords(
           requestedProvider.replace('-', ' '),
         )}`;
       }
-      return `Fetched best ${requestedSymbol} lending yields`;
+      return `${prefix} ${requestedSymbol} lending yields`;
     }
     if (requestedProvider) {
-      return `Fetched best ${isStableOnly ? 'stablecoin ' : ''}lending yields on ${capitalizeWords(
+      return `${prefix} ${isStableOnly ? 'stablecoin ' : ''}lending yields on ${capitalizeWords(
         requestedProvider.replace('-', ' '),
       )}`;
     }
     if (uniqueSymbols.length === 1 && isStableOnly) {
-      return `Fetched best ${uniqueSymbols[0]} lending yields`;
+      return `${prefix} ${uniqueSymbols[0]} lending yields`;
     }
-    return isStableOnly ? 'Fetched best stablecoin lending yields' : 'Fetched best lending yields';
+    return isStableOnly
+      ? `${prefix} stablecoin lending yields`
+      : `${prefix} lending yields`;
   };
 
   return (
@@ -126,11 +102,7 @@ const LendingYieldsTool: React.FC<Props> = ({ tool, prevToolAgent }) => {
         heading: (result: LendingYieldsResultType) => getHeading(result),
         body: (result: LendingYieldsResultType) =>
           result.body ? (
-            <LendingYields
-              body={result.body}
-              requestedSymbol={requestedSymbol}
-              requestedProvider={requestedProvider}
-            />
+            <LendingYields body={result.body} sortBy={sortBy} limit={limit} toolState={tool.state} />
           ) : (
             ''
           ),
@@ -143,18 +115,16 @@ const LendingYieldsTool: React.FC<Props> = ({ tool, prevToolAgent }) => {
 
 const LendingYields: React.FC<{
   body: LendingYieldsResultBodyType;
-  requestedSymbol?: string | null;
-  requestedProvider?: string | null;
-}> = ({ body, requestedSymbol, requestedProvider }) => {
-  const { sendInternalMessage, isResponseLoading, messages } = useChat();
-  const { currentWalletAddress, setCurrentChain } = useChain();
-  const { login } = usePrivy();
+  sortBy?: string;
+  limit?: number;
+  toolState?: string;
+}> = ({ body, sortBy, limit, toolState }) => {
+  const { sendClientAction } = useChat();
+  const { setCurrentChain } = useChain();
   const [selectedPool, setSelectedPool] = useState<LendingYieldsPoolData | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isDisabled, setIsDisabled] = useState(true);
-  const [pendingPoolId, setPendingPoolId] = useState<string | null>(null);
-  const hasAutoSelectedRef = useRef(false);
-  const [autoSelected, setAutoSelected] = useState(false);
+  const showAllRef = useRef(shouldShowAll(limit));
+  const interactionReady = toolState !== 'call' && toolState !== 'partial-call';
 
   useEffect(() => {
     if (!body) return;
@@ -164,208 +134,87 @@ const LendingYields: React.FC<{
     }
   }, [body]);
 
-  const detectRequestedSymbol = (msgs: typeof messages) => {
-    const lastUserMessage = [...msgs].reverse().find((m) => m.role === 'user');
-    const content = typeof lastUserMessage?.content === 'string' ? lastUserMessage.content : '';
-    if (!content) return null;
-
-    const stableCoins = [
-      'USDC',
-      'USDT',
-      'USDC.E',
-      'USDT.E',
-      'USDX',
-      'USDS',
-      'USDG',
-      'USDCso',
-      'PYUSD',
-      'FDUSD',
-      'DAI',
-      'EUROe',
-      'EURC',
-    ];
-
-    const match = content.match(
-      /\b(USDC\.E|USDT\.E|USDCso|USDC|USDT|USDX|USDS|USDG|PYUSD|FDUSD|DAI|EUROe|EURC)\b/i,
-    );
-    if (!match) return null;
-    const symbol = match[1].toUpperCase();
-    return stableCoins.includes(symbol) ? symbol : null;
-  };
-
-  const requestedSymbolRef = useRef<string | null>(
-    requestedSymbol ?? detectRequestedSymbol(messages),
-  );
-  const symbolToFilter = requestedSymbolRef.current;
-
-  const detectRequestedProvider = (msgs: typeof messages) => {
-    const lastUserMessage = [...msgs].reverse().find((m) => m.role === 'user');
-    const content = typeof lastUserMessage?.content === 'string' ? lastUserMessage.content : '';
-    if (!content) return null;
-    if (/jupiter\s+lend|jupiter\b/i.test(content)) return 'jupiter-lend';
-    if (/kamino\b/i.test(content)) return 'kamino-lend';
-    return null;
-  };
-
-  const requestedProviderRef = useRef<string | null>(
-    requestedProvider ?? detectRequestedProvider(messages),
-  );
-  const providerToFilter = requestedProviderRef.current;
-  const wantsAllPoolsRef = useRef<boolean | null>(null);
-  if (wantsAllPoolsRef.current === null) {
-    const lastUserMessage = [...messages].reverse().find((m) => m.role === 'user');
-    const content = typeof lastUserMessage?.content === 'string' ? lastUserMessage.content : '';
-    wantsAllPoolsRef.current = /\b(all|every|entire|full\s+list|show\s+all|fetch\s+all|list\s+all)\b/i.test(
-      content || '',
-    );
-  }
-  const wantsAllPools = wantsAllPoolsRef.current;
-
-  const poolsToShow = useMemo(() => {
-    if (!body) return [];
-    let pools = body;
-    if (symbolToFilter) {
-      const filtered = pools.filter((pool) => (pool.symbol || '').toUpperCase() === symbolToFilter);
-      pools = filtered.length > 0 ? filtered : pools;
-    }
-    if (providerToFilter) {
-      const filteredByProvider = pools.filter(
-        (pool) => (pool.project || '').toLowerCase() === providerToFilter.toLowerCase(),
-      );
-      pools = filteredByProvider.length > 0 ? filteredByProvider : pools;
-    }
-    return pools;
-  }, [body, symbolToFilter, providerToFilter]);
+  const sortedPools = useMemo(() => {
+    const pools = body ?? [];
+    const sortKey = String(sortBy || 'apy').toLowerCase();
+    return pools.slice().sort((a, b) => {
+      if (sortKey === 'tvl') return (b.tvlUsd || 0) - (a.tvlUsd || 0);
+      return (b.yield || 0) - (a.yield || 0);
+    });
+  }, [body, sortBy]);
 
   const displayPools = useMemo(() => {
-    if (!poolsToShow) return [];
-    if (wantsAllPools) return poolsToShow;
-    if (poolsToShow.length <= 3) return poolsToShow;
-    const [best, second, ...rest] = poolsToShow
-      .slice()
-      .sort((a, b) => (b.yield || 0) - (a.yield || 0));
-    const third = rest[0];
-    const trio = [second ?? best, best, third ?? second ?? best].filter(Boolean);
-    return trio.slice(0, 3) as typeof poolsToShow;
-  }, [poolsToShow, wantsAllPools]);
+    if (showAllRef.current) return sortedPools;
+    return sortedPools.slice(0, Math.min(3, sortedPools.length));
+  }, [sortedPools]);
+
+  const arrangedPools = useMemo(() => {
+    if (displayPools.length !== 3) return displayPools;
+    const sorted = displayPools.slice().sort((a, b) => (b.yield || 0) - (a.yield || 0));
+    const [best, second, third] = sorted;
+    return [second ?? best, best, third ?? second ?? best].filter(Boolean);
+  }, [displayPools]);
 
   const highlightIndex = useMemo(() => {
-    if (!displayPools.length) return 0;
+    if (!arrangedPools.length) return 0;
     let bestIdx = 0;
-    let bestYield = Number.NEGATIVE_INFINITY;
-    displayPools.forEach((pool, idx) => {
-      const y = pool.yield || 0;
-      if (y > bestYield) {
-        bestYield = y;
+    let bestScore = Number.NEGATIVE_INFINITY;
+    arrangedPools.forEach((pool, idx) => {
+      const score =
+        String(sortBy || 'apy').toLowerCase() === 'tvl' ? pool.tvlUsd || 0 : pool.yield || 0;
+      if (score > bestScore) {
+        bestScore = score;
         bestIdx = idx;
       }
     });
     return bestIdx;
-  }, [displayPools]);
+  }, [arrangedPools, sortBy]);
 
-  const handleLendClick = useCallback(
+  const openDetails = useCallback((poolData: LendingYieldsPoolData) => {
+    setSelectedPool(poolData);
+    setIsModalOpen(true);
+  }, []);
+
+  const handleExecuteClick = useCallback(
     async (poolData: LendingYieldsPoolData) => {
-      if (isResponseLoading) return;
+      if (!interactionReady) return;
 
       setCurrentChain('solana');
-      if (!currentWalletAddress) {
-        login?.();
-        return;
-      }
 
       const symbol = poolData?.tokenData?.symbol || poolData?.symbol;
       const tokenAddress = poolData?.tokenMintAddress || poolData?.tokenData?.id;
-      const pendingId = tokenAddress || poolData.name;
 
-      setPendingPoolId(pendingId);
-      setIsDisabled(true);
-
-      sendInternalMessage(
-        `I want to lend ${symbol} (${tokenAddress}) to ${capitalizeWords(poolData.project)}`,
+      sendClientAction(
+        `I want to deposit ${symbol} (${tokenAddress}) into ${capitalizeWords(poolData.project)}`,
+        {
+          type: 'execute_lend',
+          chain: 'solana',
+          tokenSymbol: String(symbol || ''),
+          tokenAddress: String(tokenAddress || ''),
+          protocol: String(poolData.project || ''),
+        },
+        { visible: true },
       );
     },
-    [isResponseLoading, sendInternalMessage],
+    [interactionReady, sendClientAction, setCurrentChain],
   );
-
-  const handleMoreDetailsClick = (poolData: LendingYieldsPoolData, event: React.MouseEvent) => {
-    event.stopPropagation();
-
-    setSelectedPool(poolData);
-    setIsModalOpen(true);
-  };
-
-  useEffect(() => {
-    if (!isResponseLoading) {
-      setIsDisabled(false);
-      setPendingPoolId(null);
-    }
-  }, [isResponseLoading]);
-
-  useEffect(() => {
-    if (!poolsToShow || !poolsToShow.length) return;
-    if (hasAutoSelectedRef.current) return;
-    if (isResponseLoading) return;
-
-    const lastUserMessage = [...messages].reverse().find((m) => m.role === 'user');
-    const content = typeof lastUserMessage?.content === 'string' ? lastUserMessage.content : '';
-    if (!content) return;
-
-    const match =
-      content.match(
-        /lend\s+(?:[0-9.,]+\s+)?([A-Za-z0-9]+)\s+(?:to|using)\s+([A-Za-z0-9\s]+?)(?:\.|$)/i,
-      ) || null;
-
-    if (!match) return;
-
-    const [, tokenSymbolRaw, protocolRaw] = match;
-    const tokenSymbol = tokenSymbolRaw.toUpperCase();
-    const protocol = protocolRaw.trim().toLowerCase();
-    const supportedStablecoins = ['USDC', 'USDT', 'USDG', 'EURC', 'FDUSD', 'PYUSD', 'USDS', 'USDY'];
-
-    if (!supportedStablecoins.includes(tokenSymbol)) return;
-
-    const matchingPool = poolsToShow.find((pool) => {
-      const poolSymbol = (pool.symbol || '').toUpperCase();
-      const project = (pool.project || '').toLowerCase();
-      const projectMatches =
-        project.includes(protocol) ||
-        protocol.includes(project) ||
-        (project.includes('jupiter') && protocol.includes('jupiter'));
-
-      return poolSymbol === tokenSymbol && projectMatches;
-    });
-
-    if (!matchingPool) return;
-
-    hasAutoSelectedRef.current = true;
-    setAutoSelected(true);
-    handleLendClick(matchingPool);
-  }, [poolsToShow, messages, isResponseLoading, handleLendClick]);
-
-  if (autoSelected && requestedSymbol) {
-    return null;
-  }
 
   return (
     <>
-      {!autoSelected && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4 mt-4">
-          {displayPools?.map((pool, index) => (
-            <PoolDetailsCard
-              key={`${pool.name}-${pool.project}-${index}`}
-              pool={pool}
-              index={index}
-              highlightIndex={highlightIndex}
-              onClick={handleLendClick}
-              onMoreDetailsClick={handleMoreDetailsClick}
-              disabled={isDisabled}
-              isPending={
-                pendingPoolId === (pool.tokenMintAddress || pool.tokenData?.id || pool.name)
-              }
-            />
-          ))}
-        </div>
-      )}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4 mt-4">
+        {arrangedPools?.map((pool, index) => (
+          <PoolDetailsCard
+            key={`${pool.project || 'unknown'}-${pool.tokenMintAddress || pool.underlyingTokens?.[0] || pool.tokenData?.id || pool.name}`}
+            pool={pool}
+            index={index}
+            highlightIndex={highlightIndex}
+            primaryActionLabel="Lend now"
+            onPrimaryAction={handleExecuteClick}
+            onOpenDetails={openDetails}
+            disabled={!interactionReady}
+          />
+        ))}
+      </div>
 
       <PoolDetailsModal
         pool={selectedPool}

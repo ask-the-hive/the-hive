@@ -13,6 +13,7 @@ import { ethers } from 'ethers';
 import { useState, useEffect } from 'react';
 import { BNB_METADATA, WBNB_ADDRESS, WBNB_METADATA } from '@/lib/config/bsc';
 import { ERC20_ABI } from '@/lib/config/abis/erc20';
+import { toUserFacingErrorTextWithContext } from '@/lib/user-facing-error';
 import ToolCard from '../../tool-card';
 import { Card } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
@@ -237,9 +238,7 @@ const TransferCall: React.FC<TransferCallProps> = ({ args, toolCallId }) => {
           symbol = tokenSymbol;
         } catch (error) {
           console.error('Error interacting with token contract:', error);
-          throw new Error(
-            `Failed to interact with token contract: ${error instanceof Error ? error.message : String(error)}`,
-          );
+          throw new Error('Failed to interact with token contract');
         }
       }
 
@@ -257,11 +256,12 @@ const TransferCall: React.FC<TransferCallProps> = ({ args, toolCallId }) => {
       });
     } catch (error) {
       console.error('Transfer error:', error);
+      const message = toUserFacingErrorTextWithContext('Transfer failed.', error);
       addToolResult<TransferResult>(toolCallId, {
-        message: `Transfer failed: ${error instanceof Error ? error.message : String(error)}`,
+        message,
         body: {
           success: false,
-          error: error instanceof Error ? error.message : String(error),
+          error: message,
         },
       });
     } finally {

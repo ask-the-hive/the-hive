@@ -3,6 +3,7 @@ import { getTokenMetadata } from '@/services/birdeye/get-token-metadata';
 import { ChainType } from '@/app/_contexts/chain-context';
 import { NextRequest, NextResponse } from 'next/server';
 import { withErrorHandling } from '@/lib/api-error-handler';
+import { isStablecoinSymbol } from '@/lib/yield-support';
 
 export const GET = withErrorHandling(async (req: NextRequest) => {
   const searchParams = req.nextUrl.searchParams;
@@ -63,7 +64,6 @@ export const GET = withErrorHandling(async (req: NextRequest) => {
   }
 
   // Filter out stablecoins, native token, wrapped native tokens, and other unwanted tokens
-  const STABLECOINS = ['USDT', 'USDC'];
   const NATIVE_TOKENS: Record<ChainType, string> = {
     solana: 'SOL',
     bsc: 'BNB',
@@ -86,7 +86,7 @@ export const GET = withErrorHandling(async (req: NextRequest) => {
 
       // Filter out stablecoins, native tokens, wrapped native tokens, and LST
       if (
-        STABLECOINS.includes(symbol) ||
+        isStablecoinSymbol(symbol) ||
         symbol === nativeSymbol ||
         symbol === wrappedNativeSymbol ||
         symbol === 'LST'

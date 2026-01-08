@@ -15,6 +15,7 @@ import TokenInput from '../../bsc/transfer/token-input';
 import { ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
+import { toUserFacingErrorTextWithContext } from '@/lib/user-facing-error';
 
 import type { Token } from '@/db/types/token';
 import {
@@ -343,9 +344,7 @@ const SwapCallBody: React.FC<Props> = ({ toolCallId, args }) => {
       if (!quoteResponse.ok) {
         const errorData = await quoteResponse.json();
         console.error('Quote error:', errorData);
-        throw new Error(
-          `Failed to get swap quote: ${errorData.reason || errorData.message || 'Unknown error'}`,
-        );
+        throw new Error('Failed to get swap quote');
       }
 
       const quote = await quoteResponse.json();
@@ -376,15 +375,16 @@ const SwapCallBody: React.FC<Props> = ({ toolCallId, args }) => {
       });
     } catch (error) {
       console.error('Swap error:', error);
+      const message = toUserFacingErrorTextWithContext('Swap failed.', error);
       addToolResult<TradeResultBodyType>(toolCallId, {
-        message: `Swap failed: ${error instanceof Error ? error.message : String(error)}`,
+        message,
         body: {
           transaction: '',
           inputAmount: 0,
           inputToken: '',
           outputToken: '',
           walletAddress: args.walletAddress,
-          error: error instanceof Error ? error.message : String(error),
+          error: message,
         },
       });
     } finally {

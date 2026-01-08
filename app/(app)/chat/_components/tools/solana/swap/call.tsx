@@ -14,14 +14,38 @@ import type { SolanaTradeArgumentsType, SolanaTradeResultBodyType } from '@/ai';
 import SwapResultCard from './swap-result';
 import * as Sentry from '@sentry/nextjs';
 import { Token } from '@/db/types';
+import type { ClientAction } from '@/ai/routing/client-action';
 
 interface Props {
   toolCallId: string;
   args: SolanaTradeArgumentsType;
+  toolName: string;
 }
 
-const SwapCallBody: React.FC<Props> = ({ toolCallId, args }) => {
-  const { addToolResult } = useChat();
+const getAgentPrefix = (toolName: string | undefined): string => {
+  const name = String(toolName ?? '');
+  const dash = name.indexOf('-');
+  return dash === -1 ? name : name.slice(0, dash);
+};
+
+const findMostRecentClientAction = (
+  messages: Array<{ role?: string; annotations?: any[] }>,
+  type: ClientAction['type'],
+): ClientAction | null => {
+  for (let i = messages.length - 1; i >= 0; i -= 1) {
+    const msg = messages[i] as any;
+    if (msg?.role !== 'user') continue;
+    const annotations = Array.isArray(msg?.annotations) ? msg.annotations : [];
+    for (let a = annotations.length - 1; a >= 0; a -= 1) {
+      const action = annotations[a]?.clientAction;
+      if (action && action.type === type) return action as ClientAction;
+    }
+  }
+  return null;
+};
+
+const SwapCallBody: React.FC<Props> = ({ toolCallId, args, toolName }) => {
+  const { addToolResult, sendClientAction, messages } = useChat();
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
   const [isSuccess, setIsSuccess] = React.useState(false);
   const [txSignature, setTxSignature] = React.useState<string | null>(null);
@@ -68,6 +92,21 @@ const SwapCallBody: React.FC<Props> = ({ toolCallId, args }) => {
         outputTokenAddress: outputTokenData?.id || '',
       },
     });
+
+    const agentPrefix = getAgentPrefix(toolName);
+    if (agentPrefix === 'staking') {
+      const action = findMostRecentClientAction(messages as any, 'execute_stake');
+      if (action) {
+        sendClientAction('Resume staking after swap', action);
+      }
+    }
+
+    if (agentPrefix === 'lending') {
+      const action = findMostRecentClientAction(messages as any, 'execute_lend');
+      if (action) {
+        sendClientAction('Resume lending after swap', action);
+      }
+    }
   };
 
   const handleError = (error: unknown) => {

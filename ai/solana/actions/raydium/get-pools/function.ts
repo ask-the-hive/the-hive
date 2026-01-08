@@ -1,6 +1,7 @@
 import { getRaydiumPoolById } from "@/services/raydium";
 import { getToken, getTokenBySymbol } from "@/db/services";
 import { getTokenPairsFromAddress } from "@/services/dexscreener";
+import { toUserFacingErrorTextWithContext } from "@/lib/user-facing-error";
 
 import type { GetPoolsArgumentsType, GetPoolsResultBodyType } from "./types";
 import type { SolanaActionResult } from "../../solana-action";
@@ -57,7 +58,7 @@ export async function getPools(args: GetPoolsArgumentsType): Promise<SolanaActio
     }
   } catch (error) {
     return {
-      message: `Error getting pools: ${error}`,
+      message: toUserFacingErrorTextWithContext("Couldn't load pools right now.", error),
     };
   }
 }

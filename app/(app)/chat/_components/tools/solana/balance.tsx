@@ -43,11 +43,12 @@ const TokenFundingOptions: React.FC<TokenFundingOptionsProps> = ({
 }) => {
   const [isFunding, setIsFunding] = useState(false);
   const { onOpen: openSwapModal } = useSwapModal();
-  const { fundWallet } = useFundWallet({
-    onUserExited: () => {
-      onComplete?.('fundWallet');
-    },
-  });
+  const handleUserExited = useCallback(() => {
+    setIsFunding(false);
+    onComplete?.('fundWallet');
+  }, [onComplete]);
+
+  const { fundWallet } = useFundWallet({ onUserExited: handleUserExited });
   const { wallet } = useSendTransaction();
   const [isOpeningSwap, setIsOpeningSwap] = useState(false);
   const [hasCompletedFlow, setHasCompletedFlow] = useState(false);
@@ -110,17 +111,15 @@ const TokenFundingOptions: React.FC<TokenFundingOptionsProps> = ({
   };
 
   const handleBuy = async () => {
+    if (!wallet?.address) return;
     setIsFunding(true);
     try {
-      if (wallet?.address) {
-        await fundWallet(wallet.address, { amount: '1' });
-      }
+      await fundWallet(wallet.address, { amount: '1' });
+      // Modal opening is async; completion is detected via live balance changes.
     } catch {
       // no-op; user may cancel funding
     } finally {
       setIsFunding(false);
-      onComplete?.('fundWallet');
-      setHasCompletedFlow(true);
     }
   };
 
@@ -210,7 +209,7 @@ const TokenFundingOptions: React.FC<TokenFundingOptionsProps> = ({
 };
 
 const GetBalance: React.FC<Props> = ({ tool, prevToolAgent }) => {
-  const { messages, sendMessage } = useChat();
+  const { messages, sendInternalMessage, sendClientAction } = useChat();
 
   const isInStakingFlow = messages.some((message) =>
     message.parts?.some((part) => {
@@ -228,25 +227,52 @@ const GetBalance: React.FC<Props> = ({ tool, prevToolAgent }) => {
   const tokenAddress = tool?.args?.tokenAddress;
   const walletAddress = tool?.args?.walletAddress;
 
+  const findMostRecentClientAction = React.useCallback(
+    (type: 'execute_stake' | 'execute_lend') => {
+      for (let i = messages.length - 1; i >= 0; i -= 1) {
+        const msg = messages[i] as any;
+        if (msg?.role !== 'user') continue;
+        const annotations = Array.isArray(msg?.annotations) ? msg.annotations : [];
+        for (let a = annotations.length - 1; a >= 0; a -= 1) {
+          const action = annotations[a]?.clientAction;
+          if (action && action.type === type) return action as Record<string, unknown>;
+        }
+      }
+      return null;
+    },
+    [messages],
+  );
+
   const handleFundingComplete = useCallback(
     (type: 'fundWallet' | 'swap', completedTokenSymbol: string) => {
       if (type === 'fundWallet') {
+        if (isInLendingFlow) {
+          sendInternalMessage('I have closed the onramp in the lending flow.');
+        } else if (isInStakingFlow) {
+          sendInternalMessage('I have closed the onramp in the staking flow.');
+        }
         return;
       }
 
       if (isInLendingFlow) {
-        sendMessage(
-          `I have acquired ${completedTokenSymbol} (${tokenAddress}) and I'm ready to lend. My wallet address is ${walletAddress}. Please show me the lending interface now.`,
-        );
+        const action = findMostRecentClientAction('execute_lend');
+        if (action) {
+          sendClientAction('Resume lending after funding', action);
+          return;
+        }
+        sendInternalMessage(`I have the required ${completedTokenSymbol}.`);
       } else if (isInStakingFlow) {
-        sendMessage(
-          `I have acquired ${completedTokenSymbol} (${tokenAddress}) and I'm ready to stake. My wallet address is ${walletAddress}. Please show me the staking interface now.`,
-        );
+        const action = findMostRecentClientAction('execute_stake');
+        if (action) {
+          sendClientAction('Resume staking after funding', action);
+          return;
+        }
+        sendInternalMessage(`I have the required ${completedTokenSymbol}.`);
       } else {
-        sendMessage(`I have the required ${completedTokenSymbol}.`);
+        sendInternalMessage(`I have the required ${completedTokenSymbol}.`);
       }
     },
-    [sendMessage, isInLendingFlow, isInStakingFlow, tokenAddress, walletAddress],
+    [findMostRecentClientAction, isInLendingFlow, isInStakingFlow, sendClientAction, sendInternalMessage],
   );
 
   return (

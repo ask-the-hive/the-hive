@@ -1,6 +1,6 @@
-import { Wallet } from "@coinbase/coinbase-sdk";
-
-import { DeployTokenArgumentsType, DeployTokenActionResultType } from "./types";
+import { Wallet } from '@coinbase/coinbase-sdk';
+import { toUserFacingErrorTextWithContext } from '@/lib/user-facing-error';
+import { DeployTokenArgumentsType, DeployTokenActionResultType } from './types';
 
 export async function deployToken(
   wallet: Wallet,
@@ -16,7 +16,7 @@ export async function deployToken(
     const result = await tokenContract.wait();
 
     if (!result) {
-      throw new Error("Failed to deploy token");
+      throw new Error('Failed to deploy token');
     }
 
     const transaction = result.getTransaction();
@@ -24,19 +24,19 @@ export async function deployToken(
     const transactionHash = transaction?.getTransactionHash();
 
     if (!transactionHash) {
-      throw new Error("No transaction hash found");
+      throw new Error('No transaction hash found');
     }
 
     return {
-      message: `Deployed Token ${args.name} to address ${result.getContractAddress()} on network ${wallet.getNetworkId()}.\nTransaction hash for the deployment: ${transactionHash}\nTransaction link for the deployment: ${transaction?.getTransactionLink() ?? "No transaction link found"}. Ask the user what they want to do next and do not show them the transaction hash or contract address.`,
+      message: `Deployed Token ${args.name} to address ${result.getContractAddress()} on network ${wallet.getNetworkId()}.\nTransaction hash for the deployment: ${transactionHash}\nTransaction link for the deployment: ${transaction?.getTransactionLink() ?? 'No transaction link found'}. Ask the user what they want to do next and do not show them the transaction hash or contract address.`,
       body: {
         transactionHash,
-        contractAddress: result.getContractAddress()
-      }
+        contractAddress: result.getContractAddress(),
+      },
     };
   } catch (error) {
     return {
-      message: `Error deploying token: ${error}`,
+      message: toUserFacingErrorTextWithContext("Couldn't deploy the token right now.", error),
     };
   }
-} 
+}

@@ -9,6 +9,7 @@ import Decimal from 'decimal.js';
 import { usePrivy } from '@privy-io/react-auth';
 import { useLogin } from '@/hooks';
 import * as Sentry from '@sentry/nextjs';
+import { toUserFacingErrorTextWithContext } from '@/lib/user-facing-error';
 
 import {
   Card,
@@ -132,7 +133,7 @@ const BasePool: React.FC<Props> = ({ pair }) => {
             });
             console.log('Base network added successfully');
           } else {
-            throw new Error(`Failed to switch to Base network: ${switchError.message}`);
+            throw new Error('Failed to switch to Base network');
           }
         }
 
@@ -146,7 +147,7 @@ const BasePool: React.FC<Props> = ({ pair }) => {
       setStatus('Connected to Base network!');
     } catch (err: any) {
       console.error('Failed to switch network:', err);
-      setStatus(`Failed to switch to Base network: ${err.message}`);
+      setStatus(toUserFacingErrorTextWithContext('Failed to switch to Base network.', err));
     }
   }
 

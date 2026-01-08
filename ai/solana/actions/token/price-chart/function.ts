@@ -1,5 +1,6 @@
 import type { TokenPriceChartResultBodyType } from "./types";
 import type { SolanaActionResult } from "../../solana-action";
+import { toUserFacingErrorTextWithContext } from "@/lib/user-facing-error";
 
 export async function getPriceChart(): Promise<SolanaActionResult<TokenPriceChartResultBodyType>> {
   try {
@@ -9,7 +10,7 @@ export async function getPriceChart(): Promise<SolanaActionResult<TokenPriceChar
     };
   } catch (error) {
     return {
-      message: `Error getting top holders: ${error}`,
+      message: toUserFacingErrorTextWithContext("Couldn't load the price chart right now.", error),
     };
   }
 } 

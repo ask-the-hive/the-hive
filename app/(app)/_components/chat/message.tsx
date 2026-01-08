@@ -14,8 +14,95 @@ import {
   SOLANA_ALL_BALANCES_NAME,
   SOLANA_LENDING_YIELDS_ACTION,
   SOLANA_LIQUID_STAKING_YIELDS_ACTION,
+  SOLANA_STAKE_ACTION,
+  SOLANA_WITHDRAW_ACTION,
 } from '@/ai/action-names';
+import { UI_DECISION_RESPONSE_NAME } from '@/ai/ui/decision-response/name';
 import type { Message as MessageType, ToolInvocation as ToolInvocationType } from 'ai';
+
+const looksLikeApyTvlSummary = (text: string) => {
+  const normalized = String(text || '').trim();
+  if (!normalized) return false;
+  const hasPercent = /\b\d+(?:\.\d+)?%/.test(normalized);
+  const hasDollar = /\$\d{1,3}(?:,\d{3})*(?:\.\d+)?/.test(normalized);
+  return hasPercent && hasDollar;
+};
+
+const isInternalUserMessage = (message: any): boolean => {
+  if (!message || message.role !== 'user') return false;
+  const annotations = (message as any)?.annotations;
+  if (!Array.isArray(annotations)) return false;
+  return annotations.some((a) => a && typeof a === 'object' && (a as any).internal === true);
+};
+
+const readYieldSummaryFromToolInvocations = (toolInvocations: ToolInvocationType[]) => {
+  const yieldsInvocation = toolInvocations.find((tool: any) => {
+    if (tool.state !== 'result') return false;
+    const name = String(tool.toolName || '').toLowerCase();
+    return (
+      name.includes(SOLANA_LENDING_YIELDS_ACTION) ||
+      name.includes(SOLANA_LIQUID_STAKING_YIELDS_ACTION) ||
+      name.includes('lending_yields') ||
+      name.includes('liquid_staking_yields')
+    );
+  }) as any;
+  if (!yieldsInvocation?.result) return null;
+
+  const toolName = String(yieldsInvocation.toolName || '').toLowerCase();
+  const kind: 'lending' | 'staking' = toolName.includes(SOLANA_LENDING_YIELDS_ACTION)
+    ? 'lending'
+    : 'staking';
+
+  const pools = Array.isArray(yieldsInvocation.result?.body) ? yieldsInvocation.result.body : [];
+  if (!pools.length) return null;
+
+  const sortBy = String((yieldsInvocation as any)?.args?.sortBy || 'apy').toLowerCase();
+  const best = pools
+    .slice()
+    .sort((a: any, b: any) => {
+      if (sortBy === 'tvl') return (Number(b?.tvlUsd ?? 0) || 0) - (Number(a?.tvlUsd ?? 0) || 0);
+      return (Number(b?.yield ?? 0) || 0) - (Number(a?.yield ?? 0) || 0);
+    })[0];
+  const symbol = String(best?.tokenData?.symbol || best?.symbol || '').toUpperCase();
+  const apy = Number(best?.yield ?? 0);
+  const tvlUsd = Number(best?.tvlUsd ?? 0);
+  if (!symbol || !Number.isFinite(apy) || !Number.isFinite(tvlUsd)) return null;
+
+  const apyText = apy.toFixed(2);
+  const tvlText = Math.round(tvlUsd).toLocaleString('en-US');
+  const cta =
+    kind === 'lending'
+      ? 'Click “Lend now” on the pool you want.'
+      : 'Click “Stake now” on the pool you want.';
+  if (sortBy === 'tvl') {
+    return `The ${symbol} pool has the highest total value locked (TVL) right now at $${tvlText}, with an APY of ${apyText}%.\n\n${cta}`;
+  }
+  return `${symbol} has the highest APY right now at ${apyText}%, with a total value locked (TVL) of $${tvlText}.\n\n${cta}`;
+};
+
+const yieldsToolStateIn = (m?: MessageType): 'none' | 'pending' | 'complete' => {
+  if (!m) return 'none';
+  const invocations = getMessageToolInvocations(m);
+
+  const isYieldsTool = (toolName: string) => {
+    const normalized = String(toolName || '')
+      .toLowerCase()
+      .split('-')
+      .join('_');
+    return (
+      normalized.includes(SOLANA_LENDING_YIELDS_ACTION) ||
+      normalized.includes(SOLANA_LIQUID_STAKING_YIELDS_ACTION) ||
+      normalized.includes('lending_yields') ||
+      normalized.includes('liquid_staking_yields')
+    );
+  };
+
+  const yieldsInvocations = invocations.filter((tool) => isYieldsTool(tool.toolName));
+  if (!yieldsInvocations.length) return 'none';
+
+  const hasNonResult = yieldsInvocations.some((tool) => tool.state !== 'result');
+  return hasNonResult ? 'pending' : 'complete';
+};
 
 interface Props {
   message: MessageType;
@@ -47,16 +134,90 @@ const Message: React.FC<Props> = ({
   }, []);
 
   const { user } = usePrivy();
-  const { isResponseLoading, completedLendToolCallIds } = useChat();
-
+  const { isLoading, completedLendToolCallIds, completedStakeToolCallIds, messages } = useChat();
   const isUser = message.role === 'user';
-
   const currentToolInvocations = getMessageToolInvocations(message);
   const previousToolInvocations = getMessageToolInvocations(previousMessage);
-
   const nextMessageSameRole = nextMessage?.role === message.role;
   const previousMessageSameRole = previousMessage?.role === message.role;
-  const showLoadingAvatar = !isUser && isLatestAssistant && isResponseLoading;
+  const showLoadingAvatar = !isUser && isLatestAssistant && isLoading;
+
+  const suppressExtraYieldSummaries = React.useMemo(() => {
+    if (message.role !== 'assistant') return false;
+    if (currentToolInvocations.length > 0) return false;
+
+    const list = messages || [];
+    const idx = list.findIndex((m) => m === message || m.id === message.id);
+    if (idx <= 0) return false;
+
+    let yieldsIdx = -1;
+    for (let i = idx - 1; i >= 0; i -= 1) {
+      const prev = list[i];
+      // Don't let internal/system user messages (e.g. sidebar shortcuts) break the "suppress
+      // follow-up yield summaries" detection.
+      if (prev.role === 'user' && !isInternalUserMessage(prev)) break;
+      if (prev.role === 'assistant' && yieldsToolStateIn(prev) === 'complete') {
+        yieldsIdx = i;
+        break;
+      }
+    }
+    if (yieldsIdx < 0) return false;
+
+    // Always suppress assistant follow-ups after a yields tool; the UI shows a deterministic summary under the cards.
+    return true;
+  }, [currentToolInvocations.length, message, message.id, message.role, messages]);
+
+  const displayContent = suppressExtraYieldSummaries
+    ? null
+    : getDisplayContent(
+        message,
+        previousMessage,
+        completedLendToolCallIds,
+        completedStakeToolCallIds,
+      );
+  const yieldsToolMessageFallback = React.useMemo(() => {
+    if (message.role !== 'assistant') return null;
+    if (yieldsToolStateIn(message) !== 'complete') return null;
+    if (currentToolInvocations.length === 0) return null;
+
+    const fromTool = readYieldSummaryFromToolInvocations(currentToolInvocations);
+    if (fromTool) return fromTool;
+
+    return null;
+  }, [currentToolInvocations, message]);
+
+  const finalDisplayContent = displayContent ?? yieldsToolMessageFallback;
+  // Intentionally no skeleton loading here; users prefer stable output without placeholder flicker.
+  const hasCancelledOrFailedActionTool = React.useMemo(() => {
+    if (!currentToolInvocations.length) return false;
+    const isRelevant = (toolName: string) => {
+      const name = String(toolName || '');
+      return (
+        name.includes(SOLANA_LEND_ACTION) ||
+        name.includes(SOLANA_STAKE_ACTION) ||
+        name.includes(SOLANA_WITHDRAW_ACTION)
+      );
+    };
+
+    return currentToolInvocations.some((tool: any) => {
+      if (!isRelevant(tool.toolName)) return false;
+      if (tool.state !== 'result') return false;
+      const status = tool?.result?.body?.status;
+      return status === 'cancelled' || status === 'failed';
+    });
+  }, [currentToolInvocations]);
+
+  const shouldRenderTextAboveTools = React.useMemo(() => {
+    if (currentToolInvocations.length === 0) return false;
+    if (yieldsToolStateIn(message) !== 'none') return false;
+    if (hasCancelledOrFailedActionTool) return false;
+
+    // Default to tool-first layout. Only show a short lead-in above tools.
+    const text = typeof finalDisplayContent === 'string' ? finalDisplayContent.trim() : '';
+    if (!text) return false;
+    if (text.length > 160) return false;
+    return /^here (are|is)\b/i.test(text) || /^i (found|pulled)\b/i.test(text);
+  }, [currentToolInvocations.length, finalDisplayContent, hasCancelledOrFailedActionTool, message]);
 
   return (
     <div
@@ -134,6 +295,13 @@ const Message: React.FC<Props> = ({
           compressed && 'gap-0 md:w-full pt-0',
         )}
       >
+        {/* Show assistant text above tools when both exist (better UX for "Here are the best..." lead-in). */}
+        {finalDisplayContent && !isUser && shouldRenderTextAboveTools && (
+          <div className="pb-3">
+            <MessageMarkdown content={finalDisplayContent as string} compressed={compressed} />
+          </div>
+        )}
+
         {currentToolInvocations.length > 0 && (
           <div className="flex flex-col gap-2">
             {currentToolInvocations.map((tool, index) => (
@@ -153,14 +321,18 @@ const Message: React.FC<Props> = ({
             ))}
           </div>
         )}
-        {getDisplayContent(message, previousMessage, completedLendToolCallIds) && (
-          <MessageMarkdown
-            content={
-              getDisplayContent(message, previousMessage, completedLendToolCallIds) as string
-            }
-            compressed={compressed}
-          />
+
+        {finalDisplayContent && (!currentToolInvocations.length || isUser) && (
+          <MessageMarkdown content={finalDisplayContent as string} compressed={compressed} />
         )}
+
+        {/* For yields tools, render the computed summary below the cards/tool UI. */}
+        {finalDisplayContent &&
+          !isUser &&
+          currentToolInvocations.length > 0 &&
+          !shouldRenderTextAboveTools && (
+            <MessageMarkdown content={finalDisplayContent as string} compressed={compressed} />
+          )}
       </div>
     </div>
   );
@@ -186,10 +358,19 @@ function getDisplayContent(
   message: MessageType,
   previousMessage?: MessageType,
   completedLendToolCallIds?: string[],
+  completedStakeToolCallIds?: string[],
 ): string | null {
   if (message.role !== 'assistant') return message.content || null;
 
   const toolInvocations = getMessageToolInvocations(message);
+  const previousToolInvocations = getMessageToolInvocations(previousMessage);
+  const contentText =
+    typeof message.content === 'string' ? message.content : String(message.content ?? '');
+  const hasDecisionResponse = toolInvocations.some((tool) =>
+    String(tool.toolName || '')
+      .toLowerCase()
+      .endsWith(`-${UI_DECISION_RESPONSE_NAME}`),
+  );
 
   const hasUnstakeGuide = toolInvocations.some(
     (tool) =>
@@ -199,6 +380,7 @@ function getDisplayContent(
   );
 
   if (hasUnstakeGuide) return null;
+  if (hasDecisionResponse) return null;
 
   const isSolanaWalletAllBalances = (toolName: string) => {
     const parts = toolName.split('-');
@@ -216,143 +398,97 @@ function getDisplayContent(
     return 'Balances shown above. Pick a token to swap, lend, stake, or explore next.';
   }
 
-  const completedIds = completedLendToolCallIds ?? [];
+  const stripYieldBoilerplate = (raw: string): string => {
+    const lines = String(raw || '').split('\n');
+    const stripHeadingLine = (value: string) =>
+      value
+        .trim()
+        .replace(/^>\s*/, '') // blockquote
+        .replace(/^[-*+]\s+/, '') // bullet list
+        .replace(/^\d+\.\s+/, '') // numbered list
+        .replace(/^#+\s*/, '')
+        .replace(/^(\*\*|__)(.*)\1$/, '$2')
+        .replace(/:$/, '')
+        .trim();
+
+    const filtered = lines.filter((line, idx) => {
+      const trimmed = stripHeadingLine(line);
+      if (!trimmed) return idx !== 0; // drop leading empty lines only
+
+      // Remove headings like "Lend USDS" / "Stake MSOL".
+      if (/^(lend|stake)\s+[a-z0-9]{2,10}$/i.test(trimmed)) return false;
+
+      // Remove generic boilerplate like "USDS offers the highest yield..." (it causes duplication).
+      // Keep lines that include exact APY+TVL details.
+      const isBoilerplate = /offers the highest (?:yield|apy)\b/i.test(trimmed);
+      if (isBoilerplate) {
+        const hasPercent = /\b\d+(?:\.\d+)?%/.test(trimmed);
+        const hasDollar = /\$\d{1,3}(?:,\d{3})*(?:\.\d+)?/.test(trimmed);
+        if (!(hasPercent && hasDollar)) return false;
+      }
+
+      return true;
+    });
+
+    return filtered.join('\n').trim();
+  };
+
+  // If the previous message was a yields tool result, only allow a single follow-up summary that
+  // includes exact APY + TVL; suppress any generic extra text (e.g. "Lend USDS ... offers ...").
+  const prevYieldsComplete = yieldsToolStateIn(previousMessage) === 'complete';
+  if (prevYieldsComplete) {
+    const stripped = stripYieldBoilerplate(contentText);
+    if (looksLikeApyTvlSummary(stripped)) return stripped || null;
+    return null;
+  }
+
+  if (toolInvocations.length === 0 && previousMessage) {
+    const prevTools = getMessageToolInvocations(previousMessage);
+    const prevCancelled = prevTools.some((tool: any) => {
+      if (tool.state !== 'result') return false;
+      const status = (tool as any).result?.body?.status;
+      return status === 'cancelled';
+    });
+    if (prevCancelled) return null;
+  }
+
+  const completedLendIds = completedLendToolCallIds ?? [];
+  const completedStakeIds = completedStakeToolCallIds ?? [];
 
   const hasCompletedLend = toolInvocations.some((tool) => {
     if (!tool.toolName.includes(SOLANA_LEND_ACTION)) return false;
     if (tool.state !== 'result') return false;
-    if (!completedIds.includes(tool.toolCallId)) return false;
+    if (!completedLendIds.includes(tool.toolCallId)) return false;
     return true;
   });
 
   if (hasCompletedLend) {
-    return "You're all set — your lending deposit is complete and now earning yield automatically. You can view or manage it using the card above.";
+    return "You're all set — your deposit is complete and is earning yield automatically. You can view or manage it using the card above.";
   }
 
-  const YIELDS_CTA = 'Yields shown above. Pick a pool card to continue.';
+  const hasCompletedStake = toolInvocations.some((tool) => {
+    if (!tool.toolName.includes(SOLANA_STAKE_ACTION)) return false;
+    if (tool.state !== 'result') return false;
+    if (!completedStakeIds.includes(tool.toolCallId)) return false;
+    return true;
+  });
 
-  const yieldsToolStateIn = (m?: MessageType): 'none' | 'pending' | 'complete' => {
-    if (!m) return 'none';
-    const invocations = getMessageToolInvocations(m);
-
-    const isYieldsTool = (toolName: string) => {
-      const normalized = String(toolName || '').toLowerCase().replace(/-/g, '_');
-      return (
-        normalized.includes(SOLANA_LENDING_YIELDS_ACTION) ||
-        normalized.includes(SOLANA_LIQUID_STAKING_YIELDS_ACTION) ||
-        normalized.includes('lending_yields') ||
-        normalized.includes('liquid_staking_yields')
-      );
-    };
-
-    const yieldsInvocations = invocations.filter((tool) => isYieldsTool(tool.toolName));
-    if (!yieldsInvocations.length) return 'none';
-
-    const hasNonResult = yieldsInvocations.some((tool) => tool.state !== 'result');
-    return hasNonResult ? 'pending' : 'complete';
-  };
+  if (hasCompletedStake) {
+    return "You're all set — your staking deposit is complete and is earning yield automatically. You can view or manage it using the card above.";
+  }
 
   const yieldsState = yieldsToolStateIn(message);
-  const prevYieldsState = yieldsToolStateIn(previousMessage);
-
   if (yieldsState === 'pending') return null;
-
   if (yieldsState === 'complete') {
-    return YIELDS_CTA;
+    // Hide text on the tool-result message; the model will provide the summary in a follow-up message.
+    return null;
   }
 
-  if (prevYieldsState === 'complete') {
-    const sanitized = stripYieldListings(message.content || '', { appendCta: false });
-    if (!sanitized) return null;
-
-    if (sanitized.trim() === YIELDS_CTA) return null;
-
-    const normalized = sanitized.replace(/\s+/g, ' ').trim();
-    const isJustPickInstruction =
-      normalized.length <= 140 &&
-      /\b(pick|choose|select)\b/i.test(normalized) &&
-      /\b(pool|pools|card|cards)\b/i.test(normalized);
-    if (isJustPickInstruction) return null;
-
-    return sanitized;
+  if (toolInvocations.length === 0) {
+    return stripYieldBoilerplate(contentText) || null;
   }
 
   return message.content || null;
-}
-
-function stripYieldListings(
-  content: string,
-  options: { appendCta?: boolean } = {},
-): string {
-  const appendCta = options.appendCta !== false;
-  const raw = (content || '').trim();
-  if (!raw) return '';
-
-  const lines = raw.split('\n');
-  const output: string[] = [];
-
-  let skippingList = false;
-  for (const line of lines) {
-    const trimmed = line.trim();
-    const isBullet = /^([-*•]|\d+[.)])\s+/.test(trimmed);
-    const hasPercent = /\b\d+(?:\.\d+)?%\b/.test(trimmed);
-    const hasYieldWord = /\b(apy|apr|yield|tvl)\b/i.test(trimmed);
-    const hasVia = /\bvia\b/i.test(trimmed);
-    const looksLikePoolListing =
-      hasPercent &&
-      (hasYieldWord || hasVia || isBullet) &&
-      (hasVia ||
-        isBullet ||
-        /\b(jupiter|kamino|marginfi|solend|drift|lido|sanctum|jito|marinade|helius|binance|bybit)\b/i.test(
-          trimmed,
-        ) ||
-        /^[A-Z0-9*]{2,16}\b/.test(trimmed));
-
-    const looksLikeListIntro =
-      /\bhere (are|is)\b/i.test(trimmed) &&
-      /\b(options|pools|rates|yields)\b/i.test(trimmed) &&
-      /\b(lend|lending|stake|staking)\b/i.test(trimmed);
-
-    if (looksLikeListIntro) {
-      continue;
-    }
-
-    if (looksLikePoolListing) {
-      skippingList = true;
-      continue;
-    }
-
-    if (skippingList) {
-      if (trimmed === '') continue;
-      const looksLikePoolListingContinuation =
-        hasPercent &&
-        (hasYieldWord || hasVia) &&
-        (hasVia ||
-          /\b(jupiter|kamino|marginfi|solend|drift|lido|sanctum|jito|marinade|helius|binance|bybit)\b/i.test(
-            trimmed,
-          ) ||
-          /^[A-Z0-9*]{2,16}\b/.test(trimmed));
-      if (isBullet || looksLikePoolListingContinuation) continue;
-      skippingList = false;
-    }
-
-    output.push(line);
-  }
-
-  const cleaned = output
-    .join('\n')
-    .replace(/\n{3,}/g, '\n\n')
-    .trim();
-
-  if (!cleaned) return '';
-
-  const hasPickInstruction = /\b(pick|choose|select)\b/i.test(cleaned);
-  const hasCardReference = /\b(card|cards)\b/i.test(cleaned);
-  if (appendCta && !hasPickInstruction && !hasCardReference) {
-    return `${cleaned}\n\nPick a pool card above to continue.`;
-  }
-
-  return cleaned;
 }
 
 const MessageMarkdown = React.memo(

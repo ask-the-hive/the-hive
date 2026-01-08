@@ -23,6 +23,7 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import LogInButton from '@/app/(app)/_components/log-in-button';
 import type { Token } from '@/db/types/token';
+import { toUserFacingErrorTextWithContext } from '@/lib/user-facing-error';
 
 interface Props {
   toolCallId: string;
@@ -359,9 +360,7 @@ const SwapCallBody: React.FC<Props> = ({ toolCallId, args }) => {
       if (!quoteResponse.ok) {
         const errorData = await quoteResponse.json();
         console.error('Quote error:', errorData);
-        throw new Error(
-          `Failed to get swap quote: ${errorData.reason || errorData.message || 'Unknown error'}`,
-        );
+        throw new Error('Failed to get swap quote');
       }
 
       const quote = await quoteResponse.json();
@@ -457,15 +456,16 @@ const SwapCallBody: React.FC<Props> = ({ toolCallId, args }) => {
       });
     } catch (error) {
       console.error('Error executing trade:', error);
+      const message = toUserFacingErrorTextWithContext('Swap failed.', error);
       addToolResult(toolCallId, {
-        message: `Failed to execute trade: ${error}`,
+        message,
         body: {
           transaction: '',
           inputAmount: Number(inputAmount || '0'),
           inputToken: inputToken?.symbol || '',
           outputToken: outputToken?.symbol || '',
           walletAddress: args.walletAddress,
-          error: error instanceof Error ? error.message : String(error),
+          error: message,
         },
       });
     } finally {

@@ -14,6 +14,15 @@ interface SwapProps {
 }
 
 const Swap: React.FC<SwapProps> = ({ tool, prevToolAgent }) => {
+  const resultStatus =
+    tool.state === 'result' && 'result' in tool
+      ? (tool.result as SolanaTradeResultType).body?.status
+      : undefined;
+
+  if (resultStatus === 'cancelled') {
+    return null;
+  }
+
   return (
     <ToolCard
       tool={tool}
@@ -43,7 +52,7 @@ const Swap: React.FC<SwapProps> = ({ tool, prevToolAgent }) => {
           return (
             <div className="flex justify-center w-full">
               <div className="w-full ">
-                <SwapCallBody toolCallId={tool.toolCallId} args={args} />
+                <SwapCallBody toolCallId={tool.toolCallId} args={args} toolName={tool.toolName} />
               </div>
             </div>
           );
@@ -54,7 +63,7 @@ const Swap: React.FC<SwapProps> = ({ tool, prevToolAgent }) => {
         body: (toolCallId: string, args: SolanaTradeArgumentsType) => (
           <div className="flex justify-center w-full">
             <div className="w-full ">
-              <SwapCallBody toolCallId={toolCallId} args={args} />
+              <SwapCallBody toolCallId={toolCallId} args={args} toolName={tool.toolName} />
             </div>
           </div>
         ),

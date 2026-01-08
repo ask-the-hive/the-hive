@@ -6,6 +6,7 @@ import { Icon } from '@/components/ui/icon';
 import { AnimatedShinyText } from '@/components/ui/animated-shiny-text';
 
 import { cn } from '@/lib/utils';
+import { sanitizeUserVisibleMessage } from '@/lib/user-facing-error';
 
 import type { ToolInvocation } from 'ai';
 import type { BaseActionResult } from '@/ai';
@@ -43,6 +44,7 @@ const ToolCard = <ActionResultBodyType, ActionArgsType>({
   const agentName = getAgentName(tool);
 
   const agentIcon = getAgentIcon(agentName);
+  const safeText = (value: unknown) => sanitizeUserVisibleMessage(value);
 
   return (
     <div className={cn('flex flex-col gap-2', className)}>
@@ -74,8 +76,11 @@ const ToolCard = <ActionResultBodyType, ActionArgsType>({
           )
         ) : (
           (() => {
-            const headingResult = 'result' in tool ? result.heading(tool.result) : null;
-            const bodyResult = 'result' in tool ? result.body(tool.result) : null;
+            const headingRaw = 'result' in tool ? result.heading(tool.result) : null;
+            const headingResult =
+              typeof headingRaw === 'string' ? safeText(headingRaw) : headingRaw;
+            const bodyRaw = 'result' in tool ? result.body(tool.result) : null;
+            const bodyResult = typeof bodyRaw === 'string' ? safeText(bodyRaw) : bodyRaw;
             const hasBodyContent = bodyResult !== null && bodyResult !== undefined;
 
             return (

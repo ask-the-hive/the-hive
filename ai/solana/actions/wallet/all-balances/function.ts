@@ -75,7 +75,7 @@ export async function getAllBalances(
   } catch (error) {
     console.error(error);
     return {
-      message: `Error getting balances: ${error}`,
+      message: "Couldn't load wallet balances right now. Next: try again.",
       body: {
         balances: [],
       },

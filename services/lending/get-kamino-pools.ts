@@ -1,6 +1,7 @@
 import { KaminoMarket, DEFAULT_RECENT_SLOT_DURATION_MS } from '@kamino-finance/klend-sdk';
 import { createSolanaRpc, address as createAddress } from '@solana/kit';
 import { Connection, PublicKey } from '@solana/web3.js';
+import { TOKEN_2022_PROGRAM_ID } from '@solana/spl-token';
 
 const KAMINO_MAIN_MARKET = new PublicKey('7u3HeHxYDLhnCoErrtycNokbQYbWGzLs6JSDqGAv5PfF');
 const KAMINO_PROGRAM_ID = new PublicKey('KLend2g3cP87fffoy8q1mQqGKjrxjC8boSyAYavgmjD');
@@ -45,6 +46,15 @@ async function fetchAndCache(): Promise<KaminoPoolData[]> {
     try {
       const symbol = reserve.symbol;
       const mintAddress = reserve.state.liquidity.mintPubkey.toString();
+
+      // Kamino (KLend) reserves currently operate on classic SPL-Token mints. Token-2022 mints
+      // may show up in the market data but deposits can fail at runtime. Filter them out so
+      // users don't get a broken "Lend now" path.
+      const mintInfo = await connection.getAccountInfo(new PublicKey(mintAddress));
+      if (mintInfo?.owner?.equals(TOKEN_2022_PROGRAM_ID)) {
+        continue;
+      }
+
       const supplyAPYDecimal = reserve.totalSupplyAPY(currentSlot);
       const supplyAPYPercent = supplyAPYDecimal * 100;
 
@@ -76,7 +86,10 @@ async function refreshCache(forceRefresh = false) {
   inFlight = fetchAndCache()
     .catch((error) => {
       console.error('❌ Error refreshing Kamino pools cache:', error);
-      throw error;
+      if (cachedKaminoPools) return cachedKaminoPools;
+      cachedKaminoPools = [];
+      cachedAt = Date.now();
+      return [];
     })
     .finally(() => {
       inFlight = null;

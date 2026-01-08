@@ -9,8 +9,9 @@ import { baseLiquidityAgent } from '@/ai/agents/base-liquidity';
 import { baseTradingAgent } from '@/ai/agents/base-trading';
 import { classifyIntent } from '@/ai/routing/classify-intent';
 import { Intent } from '@/ai/routing/intent';
-import { deriveFlowStateFromIntent } from '@/ai/routing/flow-state';
+import { deriveFlowStateFromConversation } from '@/ai/routing/derive-flow-state';
 import { routeIntent, RouteDecision } from '@/ai/routing/route-intent';
+import { getLastClientAction, intentFromClientAction } from '@/ai/routing/client-action';
 
 // List of Base-specific agents
 export const baseAgents: Agent[] = [
@@ -38,11 +39,14 @@ export const chooseRoute = async (
   model: LanguageModelV1,
   messages: Message[],
 ): Promise<ChooseRouteResult> => {
-  const intent = await classifyIntent({
-    model,
-    messages: toCoreMessages(messages),
-    chain: 'base',
-  });
+  const clientAction = getLastClientAction(messages);
+  const intent = clientAction
+    ? intentFromClientAction(clientAction)
+    : await classifyIntent({
+        model,
+        messages: toCoreMessages(messages),
+        chain: 'base',
+      });
 
   const decision = routeIntent(
     intent,
@@ -56,11 +60,11 @@ export const chooseRoute = async (
         'token-analysis': baseTokenAnalysisAgent.name,
       },
     },
-    deriveFlowStateFromIntent(intent),
+    deriveFlowStateFromConversation({ intent, messages }),
   );
 
   const agent = decision.agentName
-    ? baseAgents.find((a) => a.name === decision.agentName) ?? null
+    ? (baseAgents.find((a) => a.name === decision.agentName) ?? null)
     : null;
   return { agent, intent, decision };
 };

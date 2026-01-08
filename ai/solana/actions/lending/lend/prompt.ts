@@ -1,86 +1,19 @@
-export const LEND_PROMPT = `🚨🚨🚨 CRITICAL - READ FIRST 🚨🚨🚨
-When status='pending', the transaction has NOT started. DO NOT say "pending" or "initiated".
-INSTEAD: Explain the 6-step process below.
+export const LEND_PROMPT = `Show the lending interface for depositing tokens into a Solana lending protocol.
 
----
+The tool returns a result with \`body.status\`. Always respond based on \`body.status\`:
 
-Show the lending interface for depositing stablecoins into a Solana lending protocol.
+- status === "pending" (UI shown; user has not executed yet):
+  - Do NOT say the transaction is pending/initiated.
+  - Briefly explain what to do next: review details, enter amount if needed, click Lend, approve in wallet.
+  - Do NOT tell them to connect a wallet or pick a pool (already done).
 
-This action displays a UI where users can lend stablecoins to supported Solana lending protocols (e.g., Kamino, Jupiter Lend).
+- status === "complete":
+  - Confirm the action completed and that they can monitor/withdraw in the UI.
 
-Parameters:
-- amount: The amount of tokens to lend (optional - user can input in the UI)
-- tokenAddress: The contract address of the token being lent (USDC or USDT)
-- protocolAddress: The contract address of the lending protocol
-- walletAddress: The user's wallet address
+- status === "cancelled":
+  - Respond briefly and neutrally (no step-by-step instructions).
 
-NOTE: The Lending Agent should check SOL balance using the balance tool BEFORE calling this action. Users need at least 0.0001 SOL to cover transaction fees. If they don't have enough SOL, direct them to add SOL to their wallet first.
+- status === "failed":
+  - Explain it didn’t go through in plain language and give one next step (try again / check wallet / pick another pool).
 
-🚨 CRITICAL - Check the result status and respond accordingly 🚨
-
-When this tool is called, it returns a result with a 'status' field in the BODY. You MUST check the body.status field FIRST and provide the appropriate response based on the status:
-
-1. **If status is 'pending'**: The UI is showing and awaiting user confirmation. The transaction has NOT been initiated yet.
-
-   🚨 CRITICAL - WHAT NOT TO SAY:
-   - ❌ DO NOT mention "Connect Your Wallet" - already connected
-   - ❌ DO NOT mention "Select the pool" or "Navigate to lending section" - already selected
-   - ❌ DO NOT say "transaction is pending" - hasn't started yet
-   - ❌ DO NOT create your own steps - use ONLY the 4 steps below
-
-   ✅ YOU MUST USE THIS EXACT FORMAT:
-
-   "Perfect! I'm showing you the lending interface for [TOKEN] to [PROTOCOL]. The live rate is shown in the interface.
-
-   **Here's how to complete the lending:**
-
-   1. **Review**: Input an amount to lend and review the APY shown in the interface above
-   2. **Click 'Lend'**: When ready, click the Lend button
-   3. **Approve**: Your wallet will prompt you to approve the transaction
-   4. **Confirm**: Once approved, your tokens will be deposited and you'll start earning immediately
-
-   Review the details and click 'Lend' when you're ready!"
-
-2. **If status is 'complete'**: The transaction succeeded. Show success message:
-   - Confirm the lending is complete with the amount and token
-   - Explain that they're earning APY automatically and can withdraw anytime
-   - Encourage them to ask if they have questions
-
-3. **If status is 'cancelled'**: 🚨 User cancelled the transaction. DO NOT provide step-by-step instructions.
-
-   ✅ YOU MUST respond with ONLY this:
-   "No problem! Let me know if you'd like to try again or if you have any questions."
-
-   Keep it brief and friendly. DO NOT repeat the lending steps.
-
-4. **If status is 'failed'**: The transaction failed. Acknowledge the failure and offer help.
-
-IMPORTANT: Always check the status field in the result to determine which response to provide.
-
-Example - what you should do:
-
-**When status equals 'pending' (UI shown, awaiting confirmation):**
-User: "I want to lend USDT"
-You: [Tool returns with status: 'pending']
-"Perfect! I'm showing you the lending interface for USDT. The live rate is shown in the card.
-
-**Here's how to complete the lending:**
-
-1. **Review**: Check the amount and APY shown in the interface above
-2. **Click 'Lend'**: When ready, click the Lend button
-3. **Approve**: Your wallet will prompt you to approve the transaction
-4. **Confirm**: Once approved, your USDT will be deposited into the lending pool and you'll start earning immediately
-
-Review the details and click 'Lend' when you're ready!"
-
-**When status equals 'complete' (transaction succeeded):**
-You: "You're all set — your [amount] [token] is now lent to [protocol]!
-
-Your lending position is now active, and you can track the live rate and earnings in your position details.
-- Your stablecoins are earning interest automatically
-- You can withdraw anytime (check protocol terms)
-- Interest compounds automatically
-
-Need help or have questions? Ask The Hive!"
-
-The UI will handle the actual transaction signing and execution.`;
+Do not include raw/technical error messages; keep user-facing guidance short.`;

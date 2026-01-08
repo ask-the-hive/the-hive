@@ -1,8 +1,6 @@
-import { Wallet, WalletData, Coinbase } from "@coinbase/coinbase-sdk";
-
-import { z } from "zod";
-
-import { CdpAction, CdpActionResult, CdpActionSchemaAny } from "./actions/cdp-action";
+import { Wallet, WalletData, Coinbase } from '@coinbase/coinbase-sdk';
+import { z } from 'zod';
+import { CdpAction, CdpActionResult, CdpActionSchemaAny } from './actions/cdp-action';
 
 /**
  * Configuration options for the CDP Agentkit
@@ -43,17 +41,16 @@ export class CdpAgentkit {
     const source = config.source;
 
     if (!cdpApiKeyName) {
-      throw new Error("CDP_API_KEY_NAME is required but not provided");
+      throw new Error('CDP_API_KEY_NAME is required but not provided');
     }
     if (!cdpApiKeyPrivateKey) {
-      throw new Error("CDP_API_KEY_PRIVATE_KEY is required but not provided");
+      throw new Error('CDP_API_KEY_PRIVATE_KEY is required but not provided');
     }
 
-    // Configure CDP SDK
     Coinbase.configure({
       apiKeyName: cdpApiKeyName,
-      privateKey: cdpApiKeyPrivateKey.replace(/\\n/g, "\n"),
-      source: source || "agentkit-core",
+      privateKey: cdpApiKeyPrivateKey.replace(/\\n/g, '\n'),
+      source: source || 'agentkit-core',
     });
   }
 
@@ -79,7 +76,8 @@ export class CdpAgentkit {
         agentkit.wallet = await Wallet.create({ networkId: networkId });
       }
     } catch (error) {
-      throw new Error(`Failed to initialize wallet: ${error}`);
+      console.error('Failed to initialize CDP wallet:', error);
+      throw new Error('Failed to initialize wallet');
     }
 
     return agentkit;
@@ -110,7 +108,9 @@ export class CdpAgentkit {
       return await action.func(this.wallet!, args);
     }
 
-    return await (action.func as (args: z.infer<TActionSchema>) => Promise<CdpActionResult<TResultBody>>)(args);
+    return await (
+      action.func as (args: z.infer<TActionSchema>) => Promise<CdpActionResult<TResultBody>>
+    )(args);
   }
 
   /**
@@ -120,7 +120,7 @@ export class CdpAgentkit {
    */
   async exportWallet(): Promise<string> {
     if (!this.wallet) {
-      throw Error("Unable to export wallet. Agentkit is not configured with a wallet.");
+      throw Error('Unable to export wallet. Agentkit is not configured with a wallet.');
     }
 
     const walletData = this.wallet.export();

@@ -4,7 +4,6 @@ import { cn } from '@/lib/utils';
 import { capitalizeWords, getConfidenceLabel } from '@/lib/string-utils';
 import VarApyTooltip from '@/components/var-apy-tooltip';
 import posthog from 'posthog-js';
-import { Loader2 } from 'lucide-react';
 
 interface PoolData {
   name: string;
@@ -25,49 +24,53 @@ interface PoolData {
 interface PoolDetailsCardProps<T extends PoolData> {
   pool: T;
   index: number;
-  onClick: (pool: T) => void | Promise<void>;
-  onMoreDetailsClick: (pool: T, event: React.MouseEvent) => void;
+  primaryActionLabel: string;
+  onPrimaryAction: (pool: T) => void | Promise<void>;
+  onOpenDetails: (pool: T) => void;
   disabled?: boolean;
   highlightIndex?: number;
-  isPending?: boolean;
 }
 
 function PoolDetailsCard<T extends PoolData>({
   pool,
   index,
-  onClick,
-  onMoreDetailsClick,
+  primaryActionLabel,
+  onPrimaryAction,
+  onOpenDetails,
   disabled = false,
   highlightIndex = 0,
-  isPending = false,
 }: PoolDetailsCardProps<T>) {
-  const handleClick = (event: React.MouseEvent) => {
+  const handleOpenDetails = (event: React.MouseEvent) => {
     event.stopPropagation();
-    posthog.capture('pool_details_card_clicked', {
+    posthog.capture('pool_details_card_opened', {
       pool_name: pool.name,
       pool_project: pool.project,
     });
-    onClick(pool);
+    onOpenDetails(pool);
+  };
+
+  const handlePrimaryAction = (event: React.MouseEvent) => {
+    event.stopPropagation();
+    posthog.capture('pool_details_primary_action_clicked', {
+      pool_name: pool.name,
+      pool_project: pool.project,
+      action: primaryActionLabel,
+    });
+    onPrimaryAction(pool);
   };
   return (
     <Card
       key={`${pool.name}-${pool.project}-${index}`}
       className={cn(
-        'group relative flex flex-col gap-2 items-center p-4 transition-all duration-300 overflow-hidden',
+        'group relative flex flex-col gap-2 items-center p-4 overflow-hidden transition-colors duration-150',
         disabled
-          ? 'opacity-50 cursor-not-allowed'
+          ? 'cursor-not-allowed opacity-60'
           : 'cursor-pointer hover:border-brand-600/50 dark:hover:border-brand-600/50',
         index === highlightIndex &&
           'border-brand-600 dark:border-brand-600 !shadow-[0_0_4px_rgba(234,179,8,0.25)] dark:!shadow-[0_0_4px_rgba(234,179,8,0.25)]',
-        isPending && 'ring-2 ring-brand-600/50',
       )}
-      onClick={(e) => !disabled && handleClick(e)}
+      onClick={(e) => !disabled && handleOpenDetails(e)}
     >
-      {isPending && (
-        <div className="absolute inset-0 bg-black/40 dark:bg-black/50 flex items-center justify-center rounded-xl z-10">
-          <Loader2 className="w-6 h-6 animate-spin text-white" />
-        </div>
-      )}
       <div className="items-center flex-col justify-between gap-2 mb-2 hidden md:flex">
         <div className="flex items-center gap-2">
           <TokenIcon
@@ -165,16 +168,27 @@ function PoolDetailsCard<T extends PoolData>({
         </div>
       </div>
 
-      <div className="mt-4 md:absolute md:bottom-0 md:left-0 md:right-0 md:transform md:translate-y-full md:group-hover:translate-y-0 md:transition-transform md:duration-300 md:ease-in-out md:bg-white md:dark:bg-neutral-800 md:border-t md:border-gray-200 md:dark:border-gray-700 md:p-3">
-        <Button
-          variant="outline"
-          size="sm"
-          className="w-full"
-          onClick={(e) => !disabled && onMoreDetailsClick(pool, e)}
-          disabled={disabled}
-        >
-          More Details
-        </Button>
+      <div className="mt-4 w-full md:bg-white md:dark:bg-neutral-800 md:border-t md:border-gray-200 md:dark:border-gray-700 md:p-3">
+        <div className="grid grid-cols-2 gap-2">
+          <Button
+            variant="brand"
+            size="sm"
+            className="w-full"
+            onClick={(e) => !disabled && handlePrimaryAction(e)}
+            disabled={disabled}
+          >
+            {primaryActionLabel}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full"
+            onClick={(e) => !disabled && handleOpenDetails(e)}
+            disabled={disabled}
+          >
+            More details
+          </Button>
+        </div>
       </div>
     </Card>
   );

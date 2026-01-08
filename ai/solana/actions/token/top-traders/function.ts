@@ -1,4 +1,5 @@
 import { getTopTradersByToken } from "@/services/birdeye";
+import { toUserFacingErrorTextWithContext } from "@/lib/user-facing-error";
 
 import type { TopTokenTradersArgumentsType, TopTokenTradersResultBodyType } from "./types";
 import type { SolanaActionResult } from "../../solana-action";
@@ -21,7 +22,7 @@ export async function getTopTokenTraders(
     };
   } catch (error) {
     return {
-      message: `Error getting top traders: ${error}`,
+      message: toUserFacingErrorTextWithContext("Couldn't load top traders right now.", error),
     };
   }
 } 

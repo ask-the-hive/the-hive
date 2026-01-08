@@ -18,6 +18,7 @@ import SwapFailedModal from '@/app/(app)/portfolio/[address]/_components/swap-fa
 import type { TokenChatData } from '@/types';
 import type { Token } from '@/db/types';
 import { useIsMobile } from '@/hooks/utils/use-mobile';
+import { toUserFacingErrorTextWithContext } from '@/lib/user-facing-error';
 
 // SOL token metadata
 const SOL_METADATA: Token = {
@@ -121,7 +122,7 @@ const SidePanel: React.FC<Props> = ({ address }) => {
         }
       } catch (error) {
         console.error(error);
-        setError(error instanceof Error ? error.message : 'An unknown error occurred');
+        setError(toUserFacingErrorTextWithContext("Couldn't load token data right now.", error));
       } finally {
         setLoading(false);
       }

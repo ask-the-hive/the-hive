@@ -5,6 +5,7 @@ import { useLoginWithEmail } from '@privy-io/react-auth';
 import { Button, Input } from '@/components/ui';
 import { Loader2, Mail, KeyRound } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { toUserFacingErrorTextWithContext } from '@/lib/user-facing-error';
 
 export function EmailLogin() {
   const [email, setEmail] = useState('');
@@ -27,7 +28,7 @@ export function EmailLogin() {
       router.push('/chat');
     },
     onError: (error) => {
-      setError(error || 'Authentication failed. Please try again.');
+      setError(toUserFacingErrorTextWithContext('Authentication failed. Please try again.', error));
     },
   });
 
@@ -37,7 +38,7 @@ export function EmailLogin() {
       await sendCode({ email });
       setIsCodeSent(true);
     } catch (err: any) {
-      setError(err?.message || String(err) || 'Failed to send code. Please try again.');
+      setError(toUserFacingErrorTextWithContext('Failed to send code. Please try again.', err));
     }
   };
 
@@ -46,7 +47,7 @@ export function EmailLogin() {
       setError('');
       await loginWithCode({ code });
     } catch (err: any) {
-      setError(err?.message || String(err) || 'Invalid code. Please try again.');
+      setError(toUserFacingErrorTextWithContext('Invalid code. Please try again.', err));
     }
   };
 

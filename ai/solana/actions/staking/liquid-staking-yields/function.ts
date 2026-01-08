@@ -5,6 +5,7 @@ import { getTokenBySymbol } from '@/db/services';
 import type { LiquidStakingYieldsResultBodyType } from './types';
 import type { SolanaActionResult } from '../../solana-action';
 import type { LiquidStakingYieldsArgumentsType } from './types';
+import { isSupportedSolanaStakingLst, SOLANA_STAKING_LST_SYMBOLS } from '@/lib/yield-support';
 
 /**
  * Gets the best liquid staking yields from Staking Rewards API.
@@ -34,26 +35,11 @@ export async function getLiquidStakingYields(
       'blazestake', // BlazeStake (BSOL)
     ];
 
-    // Liquid staking tokens that appear in other protocols
-    const liquidStakingTokens = [
-      'MSOL', // Marinade
-      'JITOSOL', // Jito
-      'BSOL', // BlazeStake
-      'DSOL', // Drift
-      'BNSOL', // Binance
-      'BBSOL', // Bybit
-      'HSOL', // Helius
-      'JUPSOL', // Jupiter
-      'INF', // Sanctum
-      'STSOL', // Lido
-      'JSOL', // Jupiter
-    ];
-
     const solLiquidStakingPools = solanaPools.filter((pool) => {
       // Check if it's a direct liquid staking protocol
       const isDirectProtocol = directLiquidStakingProtocols.includes(pool.project);
       // Check if it's a liquid staking token (but exclude LP pairs)
-      const isLiquidStakingToken = liquidStakingTokens.includes(pool.symbol);
+      const isLiquidStakingToken = isSupportedSolanaStakingLst(pool.symbol);
 
       const isLPPair = pool.symbol.includes('-') || pool.symbol.includes('/');
       const hasAPY = pool.apy && pool.apy > 0;
@@ -93,6 +79,7 @@ export async function getLiquidStakingYields(
     // Transform to the expected format
     const body = await Promise.all(
       sortedPools.map(async (pool) => {
+        if (!isSupportedSolanaStakingLst(pool.symbol)) return null;
         const tokenData = await getTokenBySymbol(pool.symbol);
         return {
           name: pool.symbol,
@@ -111,18 +98,20 @@ export async function getLiquidStakingYields(
         };
       }),
     );
+    const cleanedBody = body.filter(Boolean) as LiquidStakingYieldsResultBodyType;
 
     const isSingle = limit === 1;
     return {
       message: isSingle
         ? `The safest pool (by TVL proxy) is displayed as a card above. Tell the user to click it to continue.`
-        : `Top pools are displayed as cards above. Do NOT list or repeat them in text—ask the user to pick a provider card to continue staking.`,
-      body,
+        : `Pools are displayed as cards above. Do not list or repeat pools in text. If the user asked for "best/safest/optimal", use the decision response tool to recommend one with a brief rationale (no APY numbers). Otherwise, give one short sentence explaining what the cards represent and tell them to click a card to continue.`,
+      body: cleanedBody,
     };
   } catch (error) {
     console.error(error);
     return {
-      message: `Error getting best liquid staking yields: ${error}`,
+      message: 'Something went wrong while fetching staking yields. Please try again.',
+      body: null,
     };
   }
 }

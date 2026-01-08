@@ -43,6 +43,18 @@ interface Props {
   autoConnectOnMount?: boolean;
 }
 
+const withTimeout = async <T,>(promise: Promise<T>, ms: number, message: string): Promise<T> => {
+  let timeoutId: number | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timeoutId = window.setTimeout(() => reject(new Error(message)), ms);
+  });
+  try {
+    return await Promise.race([promise, timeout]);
+  } finally {
+    if (timeoutId !== undefined) window.clearTimeout(timeoutId);
+  }
+};
+
 const Swap: React.FC<Props> = ({
   initialInputToken,
   initialOutputToken,
@@ -64,8 +76,8 @@ const Swap: React.FC<Props> = ({
   eventName,
   autoConnectOnMount = false,
 }) => {
-  const { mutate } = useSWRConfig();
-  const { currentChain } = useChain();
+  const { mutate, cache } = useSWRConfig();
+  const { currentChain, walletAddresses } = useChain();
   const { login, connectWallet, user, ready } = useLogin();
   const [inputAmount, setInputAmount] = useState<string>(initialInputAmount || '');
   const [inputToken, setInputToken] = useState<Token | null>(initialInputToken);
@@ -126,14 +138,15 @@ const Swap: React.FC<Props> = ({
   const lastQuoteParamsRef = useRef<string | null>(null);
 
   const { sendTransaction, wallet } = useSendTransaction();
+  const fallbackWalletAddress = currentChain === 'solana' ? walletAddresses.solana : '';
+  const hasConnectedWalletAddress = Boolean(fallbackWalletAddress);
   const { balance: inputBalance, isLoading: inputBalanceLoading } = useTokenBalance(
     inputToken?.id || '',
-    wallet?.address || '',
+    wallet?.address || fallbackWalletAddress || '',
   );
 
   const hasAutoConnected = useRef(false);
 
-  // Auto prompt connect/login when requested (e.g., staking flow) so users aren't stuck on the button
   useEffect(() => {
     if (!autoConnectOnMount) return;
     if (hasAutoConnected.current) return;
@@ -148,22 +161,86 @@ const Swap: React.FC<Props> = ({
     }
   }, [autoConnectOnMount, wallet, user, connectWallet, login, ready]);
 
+  // Intentionally avoid delayed "checking wallet" states to prevent UI flashing when this
+  // component mounts/unmounts quickly (e.g., after a card click).
+
   const refreshBalances = useCallback(
     async (tokenIds: Array<string | null | undefined>) => {
-      if (!wallet?.address) return;
+      const windowSolanaAddress =
+        typeof window !== 'undefined' && (window as any)?.solana?.publicKey
+          ? String((window as any).solana.publicKey)
+          : '';
 
-      const keys = tokenIds
-        .filter((id): id is string => !!id)
-        .flatMap((id) => [
-          `token-balance-${id}-${wallet.address}`,
-          `token-balance-${currentChain}-${id}-${wallet.address}`,
-        ]);
+      const addresses = Array.from(
+        new Set([wallet?.address, fallbackWalletAddress, windowSolanaAddress].filter(Boolean)),
+      );
+      if (!addresses.length) return;
 
-      if (!keys.length) return;
+      const ids = tokenIds.filter((id): id is string => !!id);
+      if (!ids.length) return;
+
+      const keys = addresses.flatMap((address) =>
+        ids.flatMap((id) => [
+          `token-balance-${id}-${address}`,
+          `token-balance-${currentChain}-${id}-${address}`,
+        ]),
+      );
 
       await Promise.all(keys.map((key) => mutate(key, undefined, { revalidate: true })));
     },
-    [wallet?.address, currentChain, mutate],
+    [wallet?.address, fallbackWalletAddress, currentChain, mutate],
+  );
+
+  const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+  const refreshBalancesUntilChanged = useCallback(
+    async (tokenIds: Array<string | null | undefined>) => {
+      const windowSolanaAddress =
+        typeof window !== 'undefined' && (window as any)?.solana?.publicKey
+          ? String((window as any).solana.publicKey)
+          : '';
+
+      const addresses = Array.from(
+        new Set([wallet?.address, fallbackWalletAddress, windowSolanaAddress].filter(Boolean)),
+      );
+      const ids = tokenIds.filter((id): id is string => !!id);
+
+      if (!addresses.length || !ids.length) return;
+
+      const keys = addresses.flatMap((address) =>
+        ids.flatMap((id) => [
+          `token-balance-${id}-${address}`,
+          `token-balance-${currentChain}-${id}-${address}`,
+        ]),
+      );
+
+      const startSnapshot = new Map<string, unknown>();
+      for (const key of keys) {
+        startSnapshot.set(key, cache.get(key));
+      }
+
+      const start = Date.now();
+      const timeoutMs = 30_000;
+      const intervalMs = 500;
+
+      while (Date.now() - start < timeoutMs) {
+        await refreshBalances(tokenIds);
+
+        let changed = false;
+        for (const key of keys) {
+          const before = startSnapshot.get(key);
+          const after = cache.get(key);
+          if (!Object.is(before, after)) {
+            changed = true;
+            break;
+          }
+        }
+
+        if (changed) return;
+        await sleep(intervalMs);
+      }
+    },
+    [cache, currentChain, fallbackWalletAddress, refreshBalances, wallet?.address],
   );
 
   const onChangeInputOutput = () => {
@@ -182,6 +259,22 @@ const Swap: React.FC<Props> = ({
   const onSwap = async () => {
     if (!wallet || !quoteResponse) return;
 
+    // If we're using a browser wallet (e.g. Phantom), connect it before any async network calls.
+    // Otherwise the wallet UI may be blocked because the user-gesture context is lost.
+    if (
+      (wallet?.walletClientType === 'phantom' || wallet?.connectorType === 'solana_adapter') &&
+      typeof window !== 'undefined' &&
+      (window as any).solana &&
+      typeof (window as any).solana.connect === 'function' &&
+      (window as any).solana.isConnected !== true
+    ) {
+      await withTimeout(
+        (window as any).solana.connect(),
+        15_000,
+        'Timed out connecting to your wallet. Please try again.',
+      );
+    }
+
     posthog.capture(`${eventName}_initiated`, {
       inputToken: inputToken?.symbol,
       outputToken: outputToken?.symbol,
@@ -189,19 +282,31 @@ const Swap: React.FC<Props> = ({
 
     setIsSwapping(true);
     try {
-      const swapResponse = await getSwapObj(wallet.address, quoteResponse);
+      const swapResponse = await withTimeout(
+        getSwapObj(wallet.address, quoteResponse),
+        20_000,
+        'Timed out preparing the swap. Please try again.',
+      );
       const transactionBase64 = swapResponse.swapTransaction;
       const transaction = VersionedTransaction.deserialize(
         Buffer.from(transactionBase64, 'base64'),
       );
 
-      const txHash = await sendTransaction(transaction);
+      const txHash = await withTimeout(
+        sendTransaction(transaction),
+        60_000,
+        "Timed out waiting for wallet approval. Please open your wallet and approve, or try again.",
+      );
 
       const connection = new Connection(
         process.env.NEXT_PUBLIC_SOLANA_RPC_URL || 'https://api.mainnet-beta.solana.com',
       );
 
-      const confirmation = await connection.confirmTransaction(txHash, 'confirmed');
+      const confirmation = await withTimeout(
+        connection.confirmTransaction(txHash, 'confirmed'),
+        60_000,
+        'Timed out confirming the transaction. Check your wallet activity, then try again.',
+      );
       if (confirmation.value.err) {
         onError?.('Transaction failed on-chain. Please try again.');
         return;
@@ -213,12 +318,27 @@ const Swap: React.FC<Props> = ({
         outputToken: outputToken?.symbol,
       });
 
-      void refreshBalances([inputToken?.id, outputToken?.id]);
-
+      try {
+        await withTimeout(
+          refreshBalancesUntilChanged([inputToken?.id, outputToken?.id]),
+          35_000,
+          'Timed out refreshing balances.',
+        );
+      } catch {
+        // If balance refresh fails or is slow, still allow the swap flow to complete.
+      }
       onSuccess?.(txHash);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      const rejected = /reject|denied|declined|cancel/i.test(message);
+      const lower = message.toLowerCase();
+      const rejected =
+        lower.includes('user rejected') ||
+        lower.includes('user denied') ||
+        lower.includes('user declined') ||
+        lower.includes('declined') ||
+        lower.includes('rejected') ||
+        lower.includes('denied') ||
+        lower.includes('cancel');
       if (rejected) {
         onCancel?.();
         return;
@@ -313,7 +433,7 @@ const Swap: React.FC<Props> = ({
   ]);
 
   const isSwapDisabled = useMemo(() => {
-    return (
+    if (
       isSwapping ||
       isQuoteLoading ||
       !quoteResponse ||
@@ -321,10 +441,15 @@ const Swap: React.FC<Props> = ({
       !outputToken ||
       !inputAmount ||
       !outputAmount ||
-      !inputBalance ||
-      inputBalanceLoading ||
-      Number(inputAmount) > Number(inputBalance)
-    );
+      inputBalanceLoading
+    ) {
+      return true;
+    }
+
+    // `useTokenBalance` returns `null` when balance can't be fetched. Never treat that as 0.
+    if (inputBalance === null) return true;
+
+    return Number(inputAmount) > Number(inputBalance);
   }, [
     isSwapping,
     isQuoteLoading,
@@ -339,10 +464,11 @@ const Swap: React.FC<Props> = ({
 
   const buttonText = useMemo(() => {
     if (isQuoteLoading) return 'Loading...';
+    if (inputBalanceLoading || inputBalance === null) return 'Checking balance...';
     if (Number(inputAmount) > Number(inputBalance)) return 'Insufficient balance';
     if (isSwapping) return swappingText || 'Swapping...';
     return swapText || 'Swap';
-  }, [isQuoteLoading, inputAmount, inputBalance, isSwapping, swappingText, swapText]);
+  }, [isQuoteLoading, inputAmount, inputBalance, inputBalanceLoading, isSwapping, swappingText, swapText]);
 
   return (
     <div className={cn('flex flex-col gap-4 max-w-full', className)}>
@@ -353,7 +479,7 @@ const Swap: React.FC<Props> = ({
           onChange={handleInputAmountChange}
           token={inputToken}
           onChangeToken={setInputToken}
-          address={wallet?.address}
+          address={wallet?.address || fallbackWalletAddress}
         />
         <div className="relative flex items-center justify-center -my-5 z-10">
           <Button
@@ -370,7 +496,7 @@ const Swap: React.FC<Props> = ({
           amount={outputAmount}
           token={outputToken}
           onChangeToken={setOutputToken}
-          address={wallet?.address}
+          address={wallet?.address || fallbackWalletAddress}
           tooltip={receiveTooltip}
         />
       </div>
@@ -383,6 +509,10 @@ const Swap: React.FC<Props> = ({
             disabled={isSwapDisabled}
           >
             {buttonText}
+          </Button>
+        ) : hasConnectedWalletAddress ? (
+          <Button variant="brand" className="w-full h-12 text-base" disabled>
+            Connecting wallet...
           </Button>
         ) : (
           <LogInButton />

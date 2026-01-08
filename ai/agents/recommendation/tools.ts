@@ -13,8 +13,11 @@ import {
   SOLANA_LENDING_YIELDS_ACTION,
   SOLANA_LIQUID_STAKING_YIELDS_ACTION,
 } from '@/ai/action-names';
+import { UI_DECISION_RESPONSE_NAME } from '@/ai/ui/decision-response/name';
+import { decisionResponseTool } from '@/ai/ui/decision-response/tool';
 
 export const RECOMMENDATION_TOOLS = {
+  [`recommendation-${UI_DECISION_RESPONSE_NAME}`]: decisionResponseTool,
   [`recommendation-${SOLANA_GET_WALLET_ADDRESS_ACTION}`]: solanaTool(
     new SolanaGetWalletAddressAction(),
     new Connection(process.env.NEXT_PUBLIC_SOLANA_RPC_URL!),
@@ -32,4 +35,3 @@ export const RECOMMENDATION_TOOLS = {
     new Connection(process.env.NEXT_PUBLIC_SOLANA_RPC_URL!),
   ),
 };
-

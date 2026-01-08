@@ -91,10 +91,8 @@ const StakingPositions: React.FC<Props> = ({
 
   if (currentChain !== 'solana') return null;
 
-  // Show skeleton while loading
-  if (stakingPositions === null || portfolioLoading) {
-    return <Skeleton className="h-64 w-full" />;
-  }
+  // Avoid rendering placeholder skeleton bars; render nothing until data is ready.
+  if (stakingPositions === null || portfolioLoading) return null;
 
   if (!stakingPositions?.length) {
     return null; // Don't show anything if no positions

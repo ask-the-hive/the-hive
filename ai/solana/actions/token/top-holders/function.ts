@@ -3,6 +3,7 @@ import type { SolanaActionResult } from "../../solana-action";
 import { getTokenLargestAccounts } from "@/services/helius";
 import { Connection, PublicKey } from "@solana/web3.js";
 import { getAccount } from "@solana/spl-token";
+import { toUserFacingErrorTextWithContext } from "@/lib/user-facing-error";
 
 export async function getTopHolders(
   args: TopHoldersArgumentsType
@@ -34,7 +35,7 @@ export async function getTopHolders(
     };
   } catch (error) {
     return {
-      message: `Error getting top holders: ${error}`,
+      message: toUserFacingErrorTextWithContext("Couldn't load top holders right now.", error),
     };
   }
 } 

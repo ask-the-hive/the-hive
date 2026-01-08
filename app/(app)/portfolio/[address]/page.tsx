@@ -56,26 +56,13 @@ const PortfolioContent = ({ params }: { params: Promise<{ address: string }> }) 
 
     // Wait for portfolio to load before processing staking positions
     if (!portfolio || !portfolio.items) {
-      console.log('[Portfolio Page] Portfolio not loaded yet, skipping staking positions fetch');
       return;
     }
 
-    console.log('[Portfolio Page] Fetching staking positions for:', address);
     try {
       const positions = await getAllLiquidStakingPositions(address, currentChain);
-      console.log('[Portfolio Page] Successfully fetched positions:', {
-        count: positions.length,
-        positions: positions.map((p) => ({
-          id: p.id,
-          symbol: p.lstToken.symbol,
-        })),
-      });
 
       // Check each position against portfolio and delete if token balance is 0
-      console.log('[Portfolio Page] Checking positions against portfolio', {
-        portfolioItemCount: portfolio.items.length,
-      });
-
       const validPositions = await Promise.all(
         positions.map(async (position) => {
           // Find the token in portfolio
@@ -83,13 +70,6 @@ const PortfolioContent = ({ params }: { params: Promise<{ address: string }> }) 
             (item) =>
               item.address === position.lstToken.id || item.symbol === position.lstToken.symbol,
           );
-
-          console.log('[Portfolio Page] Checking position', {
-            symbol: position.lstToken.symbol,
-            lstTokenId: position.lstToken.id,
-            foundInPortfolio: !!portfolioToken,
-            balance: portfolioToken?.balance,
-          });
 
           // If token not found in portfolio or balance is 0, consider deleting
           const rawBalance = portfolioToken?.balance;
@@ -102,18 +82,8 @@ const PortfolioContent = ({ params }: { params: Promise<{ address: string }> }) 
             position.createdAt && new Date(position.createdAt).getTime() < twoMinutesAgo;
 
           if (hasZeroBalance && isOlderThan2Minutes) {
-            console.log('🗑️ [Portfolio Page] Deleting staking position', {
-              symbol: position.lstToken.symbol,
-              reason: 'zero balance in portfolio',
-              rawBalance,
-              createdAt: position.createdAt,
-            });
-
             try {
               await deleteLiquidStakingPosition(position.id, position.walletAddress);
-              console.log('✅ [Portfolio Page] Successfully deleted position', {
-                symbol: position.lstToken.symbol,
-              });
               return null; // Filter out this position
             } catch (deleteError) {
               console.error('❌ [Portfolio Page] Failed to delete position', {
@@ -134,19 +104,9 @@ const PortfolioContent = ({ params }: { params: Promise<{ address: string }> }) 
         (p): p is LiquidStakingPosition => p !== null,
       );
 
-      console.log('[Portfolio Page] Setting filtered positions', {
-        original: positions.length,
-        deleted: positions.length - filteredPositions.length,
-        final: filteredPositions.length,
-      });
-
       setStakingPositions(filteredPositions);
     } catch (error) {
       console.error('❌ [Portfolio Page] Error fetching staking positions:', error);
-      console.error('[Portfolio Page] Error details:', {
-        message: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined,
-      });
       setStakingPositions([]);
     }
   }, [address, currentChain, portfolio]);
@@ -160,7 +120,6 @@ const PortfolioContent = ({ params }: { params: Promise<{ address: string }> }) 
 
     try {
       const positions = await getAllLendingPositions(address, currentChain);
-      console.log('lending positions', positions);
       setLendingPositions(positions);
     } catch (error) {
       console.error('Error fetching lending positions:', error);
@@ -182,7 +141,6 @@ const PortfolioContent = ({ params }: { params: Promise<{ address: string }> }) 
   // Fetch staking positions when portfolio loads
   useEffect(() => {
     if (portfolio && portfolio.items) {
-      console.log('[Portfolio Page] Portfolio loaded, fetching staking positions');
       fetchStakingPositions();
     }
   }, [portfolio, fetchStakingPositions]);

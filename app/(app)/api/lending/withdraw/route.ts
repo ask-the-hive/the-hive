@@ -23,6 +23,8 @@ import {
   type Rpc,
 } from '@solana/kit';
 import * as Sentry from '@sentry/nextjs';
+import { toUserFacingErrorTextWithContext } from '@/lib/user-facing-error';
+import { toUserFacingSolanaSimulationError } from '@/lib/solana-simulation-error';
 
 const KAMINO_MAIN_MARKET = new PublicKey('7u3HeHxYDLhnCoErrtycNokbQYbWGzLs6JSDqGAv5PfF');
 const KAMINO_PROGRAM_ID = new PublicKey('KLend2g3cP87fffoy8q1mQqGKjrxjC8boSyAYavgmjD');
@@ -163,19 +165,16 @@ async function buildKaminoWithdrawTx(
       BigInt(currentSlot), // currentSlot
     );
 
-    // Get all instructions from the action
     const allInstructions = [
       ...(withdrawAction.setupIxs || []),
       ...withdrawAction.lendingIxs,
       ...(withdrawAction.cleanupIxs || []),
     ] as any;
 
-    // Convert Kamino instructions to legacy TransactionInstructions
     const legacyInstructions = allInstructions.map((instruction: any) =>
       convertKaminoInstructionToLegacy(instruction),
     );
 
-    // Build the transaction
     const { blockhash } = await connection.getLatestBlockhash();
     const messageV0 = new TransactionMessage({
       payerKey: wallet,
@@ -199,7 +198,7 @@ async function buildKaminoWithdrawTx(
  */
 export async function POST(req: NextRequest) {
   try {
-  const body = await req.json();
+    const body = await req.json();
     const { protocol, tokenMint, tokenSymbol, amount, walletAddress, shares } = body;
 
     if (!protocol || !tokenMint || !tokenSymbol || !amount || !walletAddress) {
@@ -216,7 +215,6 @@ export async function POST(req: NextRequest) {
 
     let transaction: VersionedTransaction;
 
-    // Route to protocol-specific withdraw builder
     switch (protocol.toLowerCase()) {
       case 'kamino-lend':
       case 'kamino':
@@ -237,18 +235,22 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: `Unsupported protocol: ${protocol}` }, { status: 400 });
     }
 
-    // Pre-flight simulate to avoid wallet warnings about unsimulatable TXs
+    const { blockhash } = await connection.getLatestBlockhash();
+    (transaction as any).message.recentBlockhash = blockhash;
+
     try {
       const simResult = await connection.simulateTransaction(transaction, {
         sigVerify: false,
+        replaceRecentBlockhash: true,
       });
       if (simResult.value.err) {
         console.error('Withdraw TX simulation failed', simResult.value.err);
         return NextResponse.json(
           {
-            error: 'Transaction simulation failed',
-            logs: simResult.value.logs,
-            simError: simResult.value.err,
+            error: toUserFacingSolanaSimulationError(
+              "We couldn't prepare that withdrawal transaction.",
+              simResult.value.logs,
+            ),
           },
           { status: 400 },
         );
@@ -257,8 +259,10 @@ export async function POST(req: NextRequest) {
       console.error('Withdraw TX simulation exception', simErr);
       return NextResponse.json(
         {
-          error: 'Transaction simulation failed',
-          details: simErr instanceof Error ? simErr.message : String(simErr),
+          error: toUserFacingErrorTextWithContext(
+            "We couldn't prepare that withdrawal transaction.",
+            simErr,
+          ),
         },
         { status: 400 },
       );
@@ -274,7 +278,7 @@ export async function POST(req: NextRequest) {
   } catch (error: any) {
     console.error('Error building withdraw transaction:', error);
     return NextResponse.json(
-      { error: error.message || 'Failed to build withdraw transaction' },
+      { error: toUserFacingErrorTextWithContext('Failed to build withdraw transaction.', error) },
       { status: 500 },
     );
   }

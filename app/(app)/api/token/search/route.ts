@@ -3,17 +3,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { ChainType } from '@/app/_contexts/chain-context';
 import type { TokenSearchResult } from '@/services/birdeye/types/search';
 import { withErrorHandling } from '@/lib/api-error-handler';
+import { looksLikeChainAddress } from '@/lib/address';
 
 const PLACEHOLDER_ICON = 'https://www.birdeye.so/images/unknown-token-icon.svg';
-
-// Helper to check if a string looks like an address
-const isAddress = (query: string): boolean => {
-  // Solana addresses are base58 encoded and typically 32-44 characters
-  const isSolanaAddress = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(query);
-  // BSC/Base addresses are hex and start with 0x
-  const isEvmAddress = /^0x[a-fA-F0-9]{40}$/.test(query);
-  return isSolanaAddress || isEvmAddress;
-};
 
 export const GET = withErrorHandling(async (req: NextRequest) => {
   const searchParams = req.nextUrl.searchParams;
@@ -25,7 +17,7 @@ export const GET = withErrorHandling(async (req: NextRequest) => {
   }
 
   // If it looks like an address, preserve case. Otherwise, convert to uppercase for symbol search
-  const searchQuery = isAddress(query) ? query : query.toUpperCase();
+  const searchQuery = looksLikeChainAddress(query) ? query : query.toUpperCase();
   let allTokens: TokenSearchResult[] = [];
 
   const searchResponse = await searchTokens({
@@ -56,7 +48,6 @@ export const GET = withErrorHandling(async (req: NextRequest) => {
           const overview = await getTokenOverview(token.address, chain);
           logoUri = overview.logoURI || PLACEHOLDER_ICON;
         } catch (error) {
-          console.log(`Failed to fetch overview for token ${token.address}:`, error);
           logoUri = PLACEHOLDER_ICON;
         }
       }
@@ -81,7 +72,7 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
   const { search, chain = 'solana' } = await req.json();
 
   // If it looks like an address, preserve case. Otherwise, convert to uppercase for symbol search
-  const searchQuery = isAddress(search) ? search : search.toUpperCase();
+  const searchQuery = looksLikeChainAddress(search) ? search : search.toUpperCase();
   let allTokenResults: TokenSearchResult[] = [];
 
   const searchResponse = await searchTokens({
@@ -113,7 +104,6 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
           const overview = await getTokenOverview(token.address, chain);
           logoUri = overview.logoURI || PLACEHOLDER_ICON;
         } catch (error) {
-          console.log(`Failed to fetch overview for token ${token.address}:`, error);
           logoUri = PLACEHOLDER_ICON;
         }
       }

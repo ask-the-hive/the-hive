@@ -10,39 +10,28 @@ export async function classifyIntent(args: {
 
   const intentSystem: CoreMessage = {
     role: 'system',
-    content: `You are an intent classifier for a crypto assistant.${chain ? ` Chain: ${chain}.` : ''}
+    content: `Return one JSON object matching the schema exactly.${chain ? ` Chain: ${chain}.` : ''}
 
-Return a single JSON object that matches the provided schema exactly.
+Enums:
+- domain: yield|staking|lending|trading|knowledge|portfolio|market|token-analysis|liquidity|unknown
+- goal: learn|explore|decide|execute
+- decisionStrength: strong|weak|none
+- objective: safest|highest_yield|unknown
+- assetScope: sol|stablecoins|both|unknown
 
-Definitions:
-- domain: the product area this request belongs to.
-- goal:
-  - learn: user wants explanations/definitions.
-  - explore: user is browsing options without asking you to choose.
-  - decide: user asks you to pick/recommend the best/safest/optimal option.
-  - execute: user wants to perform an action now (stake/lend/withdraw/swap/transfer).
-- decisionStrength:
-  - strong: "best/safest/optimal/right now/decide for me/just tell me what to do".
-  - weak: "recommend" without forcing a single best answer.
-  - none: no decision request.
-- assetScope:
-  - sol: SOL / liquid staking.
-  - stablecoins: USDC/USDT/etc lending.
-  - both: explicitly comparing staking vs lending.
-  - unknown: not specified.
-- explicitTrading: true ONLY if the user explicitly asks to trade/swap/buy/sell.
-- explicitExecution: true ONLY if the user explicitly asks to execute a transaction now (stake/lend/withdraw/swap/transfer) versus just viewing options.
-- needsWalletForPersonalization: true ONLY if the user is asking to optimize for their holdings/portfolio (e.g., "for my assets", "what should I do with my wallet").
+Primary: classify the MOST RECENT user message (ignore earlier context unless latest is ambiguous).
 
-Important rules:
-- Never set explicitTrading=true for "earn/yield/help/what should I do" unless the user explicitly requested trading.
-- If the user asks for a decision ("best/safest/optimal/right now"), goal must be decide (not learn).
-- If the user is only asking to view yields/options, goal must be explore and explicitExecution must be false.
-- If the user says "lend X" or "stake SOL" without a specific protocol/pool selected, treat it as explore (they want to see options first), NOT execute.
-- Set explicitExecution=true when the user specifies an amount and/or a protocol/pool (or says "lend/stake now", "do it", "execute", "confirm").
+Rules:
+- Portfolio/balances ("what tokens do I have", "show my balances"): domain=portfolio, goal=explore, confidence>=0.8
+- Explicit stake into a specific LST ("stake SOL for DSOL"): domain=staking, goal=execute, explicitExecution=true, confidence>=0.8
+- Global yield decision ("where should I earn yield right now"): domain=yield, goal=decide, decisionStrength=strong, objective=highest_yield
+- "best/safest/optimal/right now/decide for me" => goal=decide, decisionStrength=strong
+- explicitTrading=true ONLY if user explicitly asked to trade/swap/buy/sell
+- explicitExecution=true if user says "now/confirm/do it" OR provides amount/protocol/pool
+- needsWalletForPersonalization=true ONLY if user explicitly asks "for my assets/portfolio/wallet"
+- Short confirmations only ("yes/ok/continue") => domain=unknown, goal=explore, confidence<=0.4
 
-Confidence:
-- Set confidence closer to 1 when the intent is explicit; closer to 0 when ambiguous.`,
+Confidence: higher when explicit.`,
   };
 
   try {
@@ -57,6 +46,7 @@ Confidence:
       domain: 'unknown',
       goal: 'explore',
       decisionStrength: 'none',
+      objective: 'unknown',
       assetScope: 'unknown',
       explicitTrading: false,
       explicitExecution: false,

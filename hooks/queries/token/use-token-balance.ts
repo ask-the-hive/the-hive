@@ -14,6 +14,22 @@ const ERC20_ABI = [
   'function decimals() view returns (uint8)',
 ];
 
+const isSolanaTokenAccountMissingError = (error: unknown): boolean => {
+  if (!error) return false;
+  const message =
+    error instanceof Error
+      ? error.message
+      : typeof (error as any)?.message === 'string'
+        ? (error as any).message
+        : String(error);
+  const lower = message.toLowerCase();
+  return (
+    lower.includes('could not find account') ||
+    lower.includes('account does not exist') ||
+    lower.includes('invalid param') && lower.includes('could not find account')
+  );
+};
+
 export const useTokenBalance = (tokenAddress: string, walletAddress: string) => {
   const { currentChain: chain } = useChain();
 
@@ -89,6 +105,10 @@ export const useTokenBalance = (tokenAddress: string, walletAddress: string) => 
               const token_account = await connection.getTokenAccountBalance(token_address);
               return token_account.value.uiAmount ?? 0;
             } catch (err) {
+              if (isSolanaTokenAccountMissingError(err)) {
+                // Missing ATA is a normal "0 balance" state on Solana.
+                return 0;
+              }
               Sentry.captureException(err, {
                 extra: {
                   tokenAddress,
@@ -115,6 +135,15 @@ export const useTokenBalance = (tokenAddress: string, walletAddress: string) => 
           return Number(ethers.formatUnits(balance, decimals));
         }
       }
+    },
+    {
+      // Keep balances up-to-date without requiring a tab focus event.
+      // `isLoading` only applies to the first fetch; periodic refreshes won't cause UI skeletons.
+      refreshInterval: chain === 'solana' ? 15_000 : 0,
+      refreshWhenHidden: false,
+      refreshWhenOffline: false,
+      revalidateOnFocus: true,
+      dedupingInterval: 5_000,
     },
   );
 

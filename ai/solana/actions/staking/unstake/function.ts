@@ -1,5 +1,6 @@
 import { Connection } from '@solana/web3.js';
 import { getToken } from '@/db/services';
+import { toUserFacingErrorTextWithContext } from '@/lib/user-facing-error';
 
 import type { UnstakeArgumentsType, UnstakeResultBodyType } from './types';
 import type { SolanaActionResult } from '../../solana-action';
@@ -48,7 +49,7 @@ export async function unstakeSol(
   } catch (error) {
     console.error('Error in unstakeSol:', error);
     return {
-      message: `Error preparing unstaking: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      message: toUserFacingErrorTextWithContext("Couldn't prepare an unstake transaction right now.", error),
     };
   }
 }

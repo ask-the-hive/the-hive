@@ -1,10 +1,10 @@
-import { Wallet } from "@coinbase/coinbase-sdk";
-
-import type { TradeArgumentsType, TradeActionResultType } from "./types";
+import { Wallet } from '@coinbase/coinbase-sdk';
+import { toUserFacingErrorTextWithContext } from '@/lib/user-facing-error';
+import type { TradeArgumentsType, TradeActionResultType } from './types';
 
 export async function trade(
   wallet: Wallet,
-  args: TradeArgumentsType
+  args: TradeArgumentsType,
 ): Promise<TradeActionResultType> {
   try {
     const tradeResult = await wallet.createTrade({
@@ -17,13 +17,13 @@ export async function trade(
     const transaction = result.getTransaction();
 
     if (!transaction) {
-      throw new Error("Failed to get transaction");
+      throw new Error('Failed to get transaction');
     }
 
     const transactionHash = transaction.getTransactionHash();
 
     if (!transactionHash) {
-      throw new Error("Failed to get transaction hash");
+      throw new Error('Failed to get transaction hash');
     }
 
     return {
@@ -31,11 +31,11 @@ export async function trade(
       body: {
         transactionHash,
         toAmount: result.getToAmount(),
-      }
+      },
     };
   } catch (error) {
     return {
-      message: `Error trading assets: ${error}`
+      message: toUserFacingErrorTextWithContext("Couldn't prepare that trade right now.", error),
     };
   }
-} 
+}

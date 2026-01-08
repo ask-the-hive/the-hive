@@ -8,10 +8,11 @@ import { bscLiquidityAgent } from '@/ai/agents/bsc-liquidity';
 import { bscTradingAgent } from '@/ai/agents/bsc-trading';
 import { Agent } from '@/ai/agent';
 import { classifyIntent } from '@/ai/routing/classify-intent';
-import { deriveFlowStateFromIntent } from '@/ai/routing/flow-state';
 import { Intent } from '@/ai/routing/intent';
 import { routeIntent } from '@/ai/routing/route-intent';
 import { RouteDecision } from '@/ai/routing/route-intent';
+import { deriveFlowStateFromConversation } from '@/ai/routing/derive-flow-state';
+import { getLastClientAction, intentFromClientAction } from '@/ai/routing/client-action';
 
 // List of BSC-specific agents
 const bscAgents = [
@@ -39,11 +40,14 @@ export const chooseRoute = async (
   model: LanguageModelV1,
   messages: Message[],
 ): Promise<ChooseRouteResult> => {
-  const intent = await classifyIntent({
-    model,
-    messages: toCoreMessages(messages),
-    chain: 'bsc',
-  });
+  const clientAction = getLastClientAction(messages);
+  const intent = clientAction
+    ? intentFromClientAction(clientAction)
+    : await classifyIntent({
+        model,
+        messages: toCoreMessages(messages),
+        chain: 'bsc',
+      });
 
   const decision = routeIntent(
     intent,
@@ -57,11 +61,11 @@ export const chooseRoute = async (
         'token-analysis': bscTokenAnalysisAgent.name,
       },
     },
-    deriveFlowStateFromIntent(intent),
+    deriveFlowStateFromConversation({ intent, messages }),
   );
 
   const agent = decision.agentName
-    ? bscAgents.find((a) => a.name === decision.agentName) ?? null
+    ? (bscAgents.find((a) => a.name === decision.agentName) ?? null)
     : null;
 
   return { agent, intent, decision };

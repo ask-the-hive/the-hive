@@ -9,6 +9,13 @@ The app expects the following server-side env vars:
 - `BSCSCAN_API_KEY`
 - `JUPITER_LEND_API_KEY` (required for Jupiter Lend Earn API at https://api.jup.ag/lend)
 
+### Routing (dev)
+- Validate deterministic routing fixtures: `yarn -s validate:routing`
+- Log routing decisions (no PII): `ROUTING_DEBUG=true yarn dev`
+- Inspect LLM intent classification vs fixtures (requires a provider API key):
+  - `yarn -s inspect:routing --provider openai --compare --diff-only`
+  - `yarn -s inspect:routing --provider openai --with-history --compare --diff-only`
+
 First, run the development server:
 
 ```bash

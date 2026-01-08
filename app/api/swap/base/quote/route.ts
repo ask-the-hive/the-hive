@@ -1,5 +1,7 @@
 import { NextRequest } from 'next/server';
 import { withErrorHandling } from '@/lib/api-error-handler';
+import { isEvmAddress } from '@/lib/address';
+import { toUserFacingErrorTextWithContext } from '@/lib/user-facing-error';
 
 const ZEROX_API_URL = 'https://api.0x.org';
 const WETH_ADDRESS = '0x4200000000000000000000000000000000000006'; // Base WETH
@@ -30,8 +32,7 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
   }
 
   // Validate token addresses
-  const addressRegex = /^0x[a-fA-F0-9]{40}$/;
-  if (!addressRegex.test(sellToken) || !addressRegex.test(buyToken)) {
+  if (!isEvmAddress(sellToken) || !isEvmAddress(buyToken)) {
     return new Response(JSON.stringify({ error: 'Invalid token address format' }), { status: 400 });
   }
 
@@ -45,13 +46,6 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
       sellAmount,
       taker,
     }).toString();
-  console.log('0x API Request:', {
-    url: requestUrl,
-    sellToken,
-    buyToken,
-    sellAmount,
-    taker,
-  });
 
   // Forward the request to 0x API quote endpoint
   const response = await fetch(requestUrl, {
@@ -63,18 +57,12 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
   });
 
   const data = await response.json();
-  console.log('0x API Response:', {
-    status: response.status,
-    data,
-  });
 
   if (!response.ok) {
     console.error('0x API error:', data);
     return new Response(
       JSON.stringify({
-        error: 'Failed to get quote',
-        reason: data.reason || data.message,
-        details: data,
+        error: toUserFacingErrorTextWithContext('Failed to get quote.', data?.reason || data),
       }),
       { status: response.status },
     );
@@ -85,9 +73,10 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
     console.error('Invalid quote response:', data);
     return new Response(
       JSON.stringify({
-        error: 'Invalid quote response',
-        reason: 'Missing transaction data',
-        details: data,
+        error: toUserFacingErrorTextWithContext(
+          'Invalid quote response.',
+          'Missing transaction data',
+        ),
       }),
       { status: 400 },
     );

@@ -1,9 +1,12 @@
-import { getNumMentions as getNumMentionsService } from "@/services/twitter";
-import { calculateDailyMetrics, calculateHourlyStats, calculateTimeOfDayStats } from "./utils";
+import { getNumMentions as getNumMentionsService } from '@/services/twitter';
+import { calculateDailyMetrics, calculateHourlyStats, calculateTimeOfDayStats } from './utils';
+import { toUserFacingErrorTextWithContext } from '@/lib/user-facing-error';
 
-import type { TokenPageActionResult } from "../token-page-action";
-import type { TokenPageNumMentionsResultBodyType, TokenPageNumMentionsArgumentsType } from "./types";
-import type { TokenChatData } from "@/types";
+import type { TokenPageActionResult } from '../token-page-action';
+import type {
+  TokenPageNumMentionsResultBodyType,
+  TokenPageNumMentionsArgumentsType,
+} from './types';
 
 /**, TwitterSearchRecentArgumentsType, TwitterSearchRecentResultBodyType
  * Gets the balance of a Solana wallet or token account.
@@ -12,8 +15,10 @@ import type { TokenChatData } from "@/types";
  * @param args - The input arguments for the action
  * @returns A message containing the tweets information
  */
-export async function getNumMentions(username: string, _: TokenPageNumMentionsArgumentsType): Promise<TokenPageActionResult<TokenPageNumMentionsResultBodyType>> {
-
+export async function getNumMentions(
+  username: string,
+  _: TokenPageNumMentionsArgumentsType,
+): Promise<TokenPageActionResult<TokenPageNumMentionsResultBodyType>> {
   try {
     const numMentionsResponse = await getNumMentionsService(username);
 
@@ -29,15 +34,15 @@ export async function getNumMentions(username: string, _: TokenPageNumMentionsAr
         mostActiveHour: '',
         averageHourlyMentions: 0,
         quietestHour: '',
-        minHourlyMentions: Infinity
+        minHourlyMentions: Infinity,
       },
       timeOfDayStats: {
         morningAvg: 0,
         afternoonAvg: 0,
         eveningAvg: 0,
         nightAvg: 0,
-        mostActiveTimeOfDay: ''
-      }
+        mostActiveTimeOfDay: '',
+      },
     };
 
     if (numMentionsResponse?.data && numMentionsResponse.data.length > 0) {
@@ -48,23 +53,24 @@ export async function getNumMentions(username: string, _: TokenPageNumMentionsAr
       trendMetrics = {
         ...dailyMetrics,
         hourlyStats,
-        timeOfDayStats
+        timeOfDayStats,
       };
     }
 
     return {
-      message: `The token has been mentioned ${numMentions} times in the last 7 days. ` +
+      message:
+        `The token has been mentioned ${numMentions} times in the last 7 days. ` +
         `Daily average: ${trendMetrics.dailyAverage.toFixed(1)} mentions. ` +
         `Most active time: ${trendMetrics.timeOfDayStats.mostActiveTimeOfDay} with peak of ${trendMetrics.hourlyStats.maxHourlyMentions} mentions. ` +
         `Growth rate: ${trendMetrics.growthRate.toFixed(1)}%.`,
       body: {
         numMentions,
-        trendMetrics
-      }
+        trendMetrics,
+      },
     };
   } catch (error) {
     return {
-      message: `Error getting tweets: ${error}`,
+      message: toUserFacingErrorTextWithContext("Couldn't load recent mentions right now.", error),
     };
   }
-} 
+}

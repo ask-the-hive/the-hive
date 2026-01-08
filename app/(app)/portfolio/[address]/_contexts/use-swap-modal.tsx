@@ -305,6 +305,7 @@ export const SwapModalProvider: React.FC<{ children: React.ReactNode }> = ({ chi
             eventName="swap"
             onSuccess={onSuccess}
             onError={onError}
+            onCancel={onClose}
             onInputChange={() => setSwapError(null)}
             setSwapResult={setSwapResult}
           />

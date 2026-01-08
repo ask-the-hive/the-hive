@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
-import { getBestLendingYields } from '@/services/lending/get-best-lending-yields';
 import { getLendingYields } from '@/ai/solana/actions/lending/lending-yields/function';
+import { isSupportedSolanaLendingStablecoin } from '@/lib/yield-support';
+
+const normalizeProject = (value: string) => value.toLowerCase().replace(/[^a-z0-9]/g, '');
 
 export async function GET(request: Request) {
   try {
@@ -9,7 +11,7 @@ export async function GET(request: Request) {
     const symbol = searchParams.get('symbol');
 
     if (project && symbol && project.toLowerCase() === 'all' && symbol.toLowerCase() === 'all') {
-      const result = await getLendingYields();
+      const result = await getLendingYields({ limit: 50 });
       const pools = result.body || [];
 
       if (!pools.length) {
@@ -38,21 +40,23 @@ export async function GET(request: Request) {
       });
     }
 
-    const allPools = await getBestLendingYields();
-    const stableSymbols = ['USDC', 'USDT', 'USDG', 'EURC', 'FDUSD', 'PYUSD', 'USDS'];
-    const solLendingPools = (allPools.data || []).filter(
-      (pool: any) =>
-        pool.chain === 'Solana' && stableSymbols.includes((pool.symbol || '').toUpperCase()),
+    const yields = await getLendingYields({ limit: 50 });
+    const solLendingPools = (yields.body || []).filter((pool) =>
+      isSupportedSolanaLendingStablecoin(pool.symbol),
     );
 
     let matchingPool: any | undefined;
     if (project && symbol) {
+      const normalizedProject = normalizeProject(project);
       matchingPool = solLendingPools.find((pool: any) => {
-        const isMatch =
-          pool.project?.toLowerCase() === project.toLowerCase() &&
-          pool.symbol?.toLowerCase() === symbol.toLowerCase();
+        const poolProject = normalizeProject(String(pool.project || ''));
+        const isProjectMatch =
+          poolProject === normalizedProject ||
+          poolProject.startsWith(normalizedProject) ||
+          normalizedProject.startsWith(poolProject);
+        const isSymbolMatch = pool.symbol?.toLowerCase() === symbol.toLowerCase();
 
-        return isMatch;
+        return isProjectMatch && isSymbolMatch;
       });
     }
 
@@ -66,7 +70,7 @@ export async function GET(request: Request) {
     return NextResponse.json({
       project: matchingPool.project,
       symbol: matchingPool.symbol,
-      yield: matchingPool.apy || 0,
+      yield: matchingPool.yield || 0,
       apyBase: matchingPool.apyBase || 0,
       apyReward: matchingPool.apyReward || 0,
       tvlUsd: matchingPool.tvlUsd || 0,
@@ -75,6 +79,8 @@ export async function GET(request: Request) {
       underlyingTokens: matchingPool.underlyingTokens || [],
       poolMeta: matchingPool.poolMeta,
       predictions: matchingPool.predictions,
+      tokenData: matchingPool.tokenData || null,
+      tokenMintAddress: matchingPool.tokenMintAddress || matchingPool.underlyingTokens?.[0] || null,
     });
   } catch (error) {
     console.error('Error fetching lending pool:', error);

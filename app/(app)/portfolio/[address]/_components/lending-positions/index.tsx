@@ -8,7 +8,6 @@ import {
   TableRow,
   TableHead,
   TableCell,
-  Skeleton,
   Button,
   TokenIcon,
   BalanceTableCell,
@@ -129,22 +128,17 @@ const LendingPositions: React.FC<Props> = ({
 
   if (currentChain !== 'solana') return null;
 
-  // Show skeleton while loading
-  if (lendingPositions === null || portfolioLoading) {
-    return <Skeleton className="h-64 w-full" />;
-  }
+  if (lendingPositions === null || portfolioLoading) return null;
 
   if (!lendingPositions?.length) {
     return null; // Don't show anything if no positions
   }
 
-  // Calculate total value of lending positions
   const totalValue = lendingPositions.reduce((sum, pos) => {
     const portfolioToken = portfolio?.items?.find(
       (item) => item.address === pos.token.id || item.symbol === pos.token.symbol,
     );
 
-    // Fallback: calculate from position amount and pool data
     const price = portfolioToken?.priceUsd || 1;
     return sum + pos.amount * price;
   }, 0);
@@ -171,7 +165,6 @@ const LendingPositions: React.FC<Props> = ({
           </TableHeader>
           <TableBody className="max-h-96 overflow-y-auto">
             {lendingPositions.map((position, index) => {
-              // Find current balance from portfolio
               const portfolioToken = portfolio?.items?.find(
                 (item) =>
                   item.address === position.token.id || item.symbol === position.token.symbol,
@@ -180,11 +173,8 @@ const LendingPositions: React.FC<Props> = ({
               const price = portfolioToken?.priceUsd || 0;
               const decimals = portfolioToken?.decimals || position.token.decimals || 6;
 
-              // For lending, the position amount is the deposited amount
-              // We can show the current balance from portfolio (which includes accrued interest)
               const depositedAmount = position.amount;
 
-              // Use position amount if portfolio doesn't have balance
               const displayBalanceRaw = (depositedAmount * Math.pow(10, decimals)).toString();
 
               return (

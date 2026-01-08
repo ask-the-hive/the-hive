@@ -4,7 +4,6 @@ import { getTokenMetadata } from '@/services/birdeye';
 import { ChainType } from '@/app/_contexts/chain-context';
 import { withErrorHandling } from '@/lib/api-error-handler';
 
-// SOL token metadata
 const SOL_METADATA = {
   name: 'Solana',
   symbol: 'SOL',
@@ -14,10 +13,9 @@ const SOL_METADATA = {
     'https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/So11111111111111111111111111111111111111112/logo.png',
 };
 
-// SOL token addresses
 const SOL_TOKEN_ADDRESSES = [
-  'so11111111111111111111111111111111111111112', // Standard SOL token
-  'so11111111111111111111111111111111111111111', // Alternative SOL token
+  'so11111111111111111111111111111111111111112',
+  'so11111111111111111111111111111111111111111',
 ];
 
 export const GET = withErrorHandling(
@@ -25,18 +23,13 @@ export const GET = withErrorHandling(
     const { address } = await params;
     const normalizedAddress = address.toLowerCase();
 
-    // Get chain from query parameters, default to 'solana'
     const searchParams = request.nextUrl.searchParams;
     const chainParam = searchParams.get('chain') || 'solana';
     const chain =
       chainParam === 'solana' || chainParam === 'bsc' || chainParam === 'base'
         ? (chainParam as ChainType)
         : 'solana';
-
-    console.log(`API route: Fetching metadata for token ${address} on chain ${chain}`);
-
     try {
-      // Special handling for SOL token
       if (
         chain === 'solana' &&
         (SOL_TOKEN_ADDRESSES.includes(normalizedAddress) || normalizedAddress === 'sol')
@@ -48,9 +41,7 @@ export const GET = withErrorHandling(
       }
 
       const metadata = await getTokenMetadata(address, chain);
-      console.log(`API route: Successfully fetched metadata for ${address}:`, metadata);
 
-      // If the token is SOL (by symbol), use SOL metadata
       if (chain === 'solana' && metadata.symbol?.toUpperCase() === 'SOL') {
         return NextResponse.json({
           ...SOL_METADATA,
@@ -62,7 +53,6 @@ export const GET = withErrorHandling(
     } catch (error) {
       console.error(`API route: Error fetching metadata for ${address}:`, error);
 
-      // If error occurs for SOL token, return hardcoded metadata
       if (
         chain === 'solana' &&
         (SOL_TOKEN_ADDRESSES.includes(normalizedAddress) || normalizedAddress === 'sol')
@@ -82,7 +72,7 @@ export const GET = withErrorHandling(
           extensions: {},
           logo_uri: 'https://www.birdeye.so/images/unknown-token-icon.svg',
         },
-        { status: 200 }, // Return 200 with fallback data instead of error
+        { status: 200 },
       );
     }
   },

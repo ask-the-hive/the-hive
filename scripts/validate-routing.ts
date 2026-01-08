@@ -2,6 +2,7 @@ import { routingFixtures } from '@/scripts/routing-fixtures';
 import { routeIntent } from '@/ai/routing/route-intent';
 import { gateToolsByMode } from '@/ai/routing/gate-tools';
 import { deriveFlowStateFromIntent } from '@/ai/routing/flow-state';
+import { deriveFlowStateFromConversation } from '@/ai/routing/derive-flow-state';
 
 type FakeTool = Record<string, unknown>;
 
@@ -19,7 +20,10 @@ const makeFakeTools = (chain: 'solana' | 'base' | 'bsc'): Record<string, any> =>
     t['staking-solana_unstake'] = {};
     t['staking-solana_get_wallet_address'] = {};
     t['wallet-solana_get_wallet_address'] = {};
+    t['wallet-solana_balance'] = {};
+    t['wallet-solana_all_balances'] = {};
     t['wallet-solana_transfer'] = {};
+    t['recommendation-solana_all_balances'] = {};
     t['trading-solana_trade'] = {};
     t['raydium-solana_deposit_liquidity'] = {};
     t['raydium-solana_withdraw_liquidity'] = {};
@@ -28,6 +32,8 @@ const makeFakeTools = (chain: 'solana' | 'base' | 'bsc'): Record<string, any> =>
   if (chain === 'base') {
     t['baseknowledge-search'] = {};
     t['basewallet-base-get-wallet-address'] = {};
+    t['basewallet-base_balance'] = {};
+    t['basewallet-all-balances'] = {};
     t['basewallet-base_transfer'] = {};
     t['basetrading-base-get-wallet-address'] = {};
     t['basetrading-trade'] = {};
@@ -36,6 +42,8 @@ const makeFakeTools = (chain: 'solana' | 'base' | 'bsc'): Record<string, any> =>
   if (chain === 'bsc') {
     t['bscknowledge-search'] = {};
     t['bscwallet-bsc-get-wallet-address'] = {};
+    t['bscwallet-bsc_balance'] = {};
+    t['bscwallet-all-balances'] = {};
     t['bscwallet-bsc_transfer'] = {};
     t['bsctrading-bsc-get-wallet-address'] = {};
     t['bsctrading-bsc_trade'] = {};
@@ -44,19 +52,46 @@ const makeFakeTools = (chain: 'solana' | 'base' | 'bsc'): Record<string, any> =>
   return t as any;
 };
 
-const makeAgentConfig = () => ({
-  agents: {
-    recommendation: 'recommendation',
-    lending: 'lending',
-    staking: 'staking',
-    wallet: 'wallet',
-    trading: 'trading',
-    market: 'market',
-    'token-analysis': 'token-analysis',
-    liquidity: 'liquidity',
-    knowledge: 'knowledge',
-  } as const,
-});
+const makeAgentConfig = (chain: 'solana' | 'base' | 'bsc') => {
+  if (chain === 'solana') {
+    return {
+      agents: {
+        recommendation: 'recommendation',
+        lending: 'lending',
+        staking: 'staking',
+        wallet: 'wallet',
+        trading: 'trading',
+        market: 'market',
+        'token-analysis': 'token-analysis',
+        liquidity: 'liquidity',
+        knowledge: 'knowledge',
+      } as const,
+    };
+  }
+
+  if (chain === 'base') {
+    return {
+      agents: {
+        knowledge: 'knowledge',
+        wallet: 'wallet',
+        market: 'market',
+        liquidity: 'liquidity',
+        trading: 'trading',
+        'token-analysis': 'token-analysis',
+      } as const,
+    };
+  }
+
+  return {
+    agents: {
+      knowledge: 'knowledge',
+      wallet: 'wallet',
+      market: 'market',
+      trading: 'trading',
+      'token-analysis': 'token-analysis',
+    } as const,
+  };
+};
 
 const fail = (message: string) => {
   throw new Error(message);
@@ -73,8 +108,24 @@ const run = () => {
 
   for (const fixture of routingFixtures) {
     try {
-      const flowState = deriveFlowStateFromIntent(fixture.intent);
-      const decision = routeIntent(fixture.intent, makeAgentConfig(), flowState);
+      const flowState = fixture.conversation?.lastToolName
+        ? deriveFlowStateFromConversation({
+            intent: fixture.intent,
+            messages: [
+              {
+                role: 'assistant',
+                content: '',
+                parts: [
+                  {
+                    type: 'tool-invocation',
+                    toolInvocation: { toolName: fixture.conversation.lastToolName },
+                  },
+                ],
+              } as any,
+            ],
+          })
+        : deriveFlowStateFromIntent(fixture.intent);
+      const decision = routeIntent(fixture.intent, makeAgentConfig(fixture.chain), flowState);
 
       assert(
         decision.mode === fixture.expected.mode,
@@ -90,6 +141,7 @@ const run = () => {
       const gated = gateToolsByMode(tools, {
         mode: decision.mode,
         allowWalletConnect: fixture.gating.allowWalletConnect,
+        hasWalletAddress: fixture.gating.hasWalletAddress ?? false,
       });
 
       const gatedKeys = Object.keys(gated);
@@ -127,6 +179,18 @@ const run = () => {
             includesSuffix(gatedKeys, 'base-get-wallet-address') ||
             includesSuffix(gatedKeys, 'bsc-get-wallet-address'),
           `[${fixture.name}] expected a wallet-connect tool to be available`,
+        );
+      }
+
+      if (decision.mode !== 'execute' && !fixture.gating.allowWalletConnect) {
+        assert(
+          fixture.gating.hasWalletAddress ||
+            (!includesSuffix(gatedKeys, 'solana_balance') &&
+              !includesSuffix(gatedKeys, 'solana_all_balances') &&
+              !includesSuffix(gatedKeys, 'base_balance') &&
+              !includesSuffix(gatedKeys, 'all-balances') &&
+              !includesSuffix(gatedKeys, 'bsc_balance')),
+          `[${fixture.name}] wallet-dependent balance tools should be gated in mode=${decision.mode}`,
         );
       }
 

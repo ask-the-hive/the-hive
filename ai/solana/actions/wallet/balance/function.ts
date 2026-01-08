@@ -48,41 +48,33 @@ export async function getBalance(
         throw new Error('Token address is required for SPL token balance check');
       }
 
-      let token_address = getAssociatedTokenAddressSync(
+      const token2022Ata = getAssociatedTokenAddressSync(
         new PublicKey(tokenAddress),
         new PublicKey(args.walletAddress),
         false,
         TOKEN_2022_PROGRAM_ID,
       );
 
-      try {
-        const token_account = await connection.getTokenAccountBalance(token_address);
-        balance = token_account.value.uiAmount ?? 0;
-      } catch {
-        token_address = getAssociatedTokenAddressSync(
-          new PublicKey(tokenAddress),
-          new PublicKey(args.walletAddress),
-          false,
-          TOKEN_PROGRAM_ID,
-        );
+      const tokenAta = getAssociatedTokenAddressSync(
+        new PublicKey(tokenAddress),
+        new PublicKey(args.walletAddress),
+        false,
+        TOKEN_PROGRAM_ID,
+      );
 
-        try {
-          const token_account = await connection.getTokenAccountBalance(token_address);
-          balance = token_account.value.uiAmount ?? 0;
-        } catch {
-          console.error('❌ No token account found (tried both Token-2022 and SPL Token)');
-          console.error(
-            '❌ Token-2022 ATA:',
-            getAssociatedTokenAddressSync(
-              new PublicKey(tokenAddress),
-              new PublicKey(args.walletAddress),
-              false,
-              TOKEN_2022_PROGRAM_ID,
-            ).toBase58(),
-          );
-          console.error('❌ SPL Token ATA:', token_address.toBase58());
-          balance = 0;
-        }
+      const [token2022Info, tokenInfo] = await Promise.all([
+        connection.getAccountInfo(token2022Ata),
+        connection.getAccountInfo(tokenAta),
+      ]);
+
+      if (token2022Info) {
+        const tokenAccount = await connection.getTokenAccountBalance(token2022Ata);
+        balance = tokenAccount.value.uiAmount ?? 0;
+      } else if (tokenInfo) {
+        const tokenAccount = await connection.getTokenAccountBalance(tokenAta);
+        balance = tokenAccount.value.uiAmount ?? 0;
+      } else {
+        balance = 0;
       }
     }
 
@@ -144,7 +136,7 @@ export async function getBalance(
   } catch (error) {
     console.error(error);
     return {
-      message: `Error getting balance: ${error}`,
+      message: "Couldn't load that balance right now. Next: try again.",
     };
   }
 }

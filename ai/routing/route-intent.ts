@@ -5,6 +5,7 @@ export type FlowMode = 'explore' | 'decide' | 'execute';
 export type FlowState = {
   mode: FlowMode;
   hasWalletAddress?: boolean;
+  lastAgentKey?: AgentKey;
 };
 
 export type AgentKey =
@@ -66,6 +67,13 @@ export function routeIntent(
   }
 
   if (intent.goal === 'decide' || intent.decisionStrength !== 'none') {
+    if (
+      (intent.domain === 'lending' || intent.domain === 'staking') &&
+      intent.assetScope === 'unknown'
+    ) {
+      return { agentName: get('recommendation'), mode: 'decide', reason: 'decision_request' };
+    }
+
     if (intent.domain === 'lending' || intent.assetScope === 'stablecoins') {
       return {
         agentName: get('lending') ?? get('recommendation'),
@@ -88,7 +96,6 @@ export function routeIntent(
     return { agentName: get('knowledge'), mode: 'explore', reason: 'learn_request' };
   }
 
-  // explore / unknown
   if (intent.domain === 'lending' || intent.assetScope === 'stablecoins') {
     return { agentName: get('lending'), mode: flowState.mode, reason: 'explore_specific' };
   }
@@ -111,6 +118,19 @@ export function routeIntent(
   }
   if (intent.domain === 'portfolio') {
     return { agentName: get('wallet'), mode: flowState.mode, reason: 'explore_specific' };
+  }
+
+  if (intent.confidence < 0.5 && flowState.lastAgentKey) {
+    return {
+      agentName: get(flowState.lastAgentKey),
+      mode: flowState.mode,
+      reason: 'explore_ambiguous',
+    };
+  }
+
+  const fallback = get('recommendation');
+  if (fallback) {
+    return { agentName: fallback, mode: flowState.mode, reason: 'explore_ambiguous' };
   }
 
   return { agentName: null, mode: flowState.mode, reason: 'explore_ambiguous' };

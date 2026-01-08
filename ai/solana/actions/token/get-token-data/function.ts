@@ -1,6 +1,7 @@
 import type { SolanaActionResult } from "../../solana-action";
 import type { GetTokenDataArgumentsType, GetTokenDataResultBodyType } from "./types";
 import { searchTokens, getTokenOverview } from "@/services/birdeye";
+import { toUserFacingErrorTextWithContext } from "@/lib/user-facing-error";
 
 export async function getTokenData(args: GetTokenDataArgumentsType): Promise<SolanaActionResult<GetTokenDataResultBodyType>> {
   try {
@@ -32,7 +33,7 @@ export async function getTokenData(args: GetTokenDataArgumentsType): Promise<Sol
   } catch (error) {
     console.error(error);
     return {
-      message: `Error getting token data: ${error}`,
+      message: toUserFacingErrorTextWithContext("Couldn't load token data right now.", error),
     };
   }
 }

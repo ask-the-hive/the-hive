@@ -1,11 +1,12 @@
 'use client';
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useLoginWithOAuth } from '@privy-io/react-auth';
 import { Button } from '@/components/ui';
 import { Loader2 } from 'lucide-react';
 import { FaGoogle, FaTwitter, FaDiscord, FaGithub } from 'react-icons/fa6';
 import { useRouter } from 'next/navigation';
+import { toUserFacingErrorTextWithContext } from '@/lib/user-facing-error';
 
 const socialOptions = [
   {
@@ -48,7 +49,7 @@ export function SocialLogin() {
       router.push('/chat');
     },
     onError: (error) => {
-      setError(error || 'Authentication failed. Please try again.');
+      setError(toUserFacingErrorTextWithContext('Authentication failed. Please try again.', error));
     },
   });
 
@@ -58,7 +59,7 @@ export function SocialLogin() {
       setConnectingProvider(provider);
       initOAuth({ provider });
     } catch (err: any) {
-      setError(err?.message || String(err) || 'Failed to initiate login.');
+      setError(toUserFacingErrorTextWithContext('Failed to initiate login.', err));
       setConnectingProvider(null);
     }
   };
