@@ -1,8 +1,7 @@
-import { Wallet } from "@coinbase/coinbase-sdk";
-
-import type { CdpActionResult } from "@/ai";
-
-import type { GetBalanceArgumentsType, GetBalanceResultBodyType } from "./types";
+import { Wallet } from '@coinbase/coinbase-sdk';
+import { toUserFacingErrorTextWithContext } from '@/lib/user-facing-error';
+import type { CdpActionResult } from '@/ai';
+import type { GetBalanceArgumentsType, GetBalanceResultBodyType } from './types';
 
 /**
  * Gets balance for all addresses in the wallet for a given asset.
@@ -21,12 +20,12 @@ export async function getBalance(
     return {
       message: `Balances for wallet ${wallet.getId()}:\n${balance}`,
       body: {
-        balance
-      }
+        balance,
+      },
     };
   } catch (error) {
     return {
-      message: `Error getting balance for all addresses in the wallet: ${error}`,
+      message: toUserFacingErrorTextWithContext("Couldn't load that balance right now.", error),
     };
   }
-} 
+}

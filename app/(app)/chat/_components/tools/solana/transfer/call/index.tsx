@@ -15,6 +15,7 @@ import { useChat } from '@/app/(app)/chat/_contexts/chat';
 import { useSendTransaction, useTokenBalance, useTokenDataByAddress } from '@/hooks';
 
 import { buildTransferTx } from './build-tx';
+import { toUserFacingErrorTextWithContext } from '@/lib/user-facing-error';
 
 import type { SolanaTransferArgumentsType } from '@/ai';
 import type { Token } from '@/db/types';
@@ -65,8 +66,9 @@ const TransferCall: React.FC<Props> = ({ args, toolCallId }) => {
         },
       });
     } catch (e) {
+      const message = toUserFacingErrorTextWithContext('Transfer failed.', e);
       addToolResult(toolCallId, {
-        message: `Failed to transfer: ${e instanceof Error ? e.message : 'Unknown error'}`,
+        message,
       });
     } finally {
       setIsTransferring(false);

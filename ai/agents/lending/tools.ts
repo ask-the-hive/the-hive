@@ -23,8 +23,11 @@ import {
   SOLANA_TRADE_ACTION,
 } from '@/ai/solana/actions/names';
 import { solanaTool } from '@/ai/solana';
+import { UI_DECISION_RESPONSE_NAME } from '@/ai/ui/decision-response/name';
+import { decisionResponseTool } from '@/ai/ui/decision-response/tool';
 
 export const LENDING_TOOLS = {
+  [`lending-${UI_DECISION_RESPONSE_NAME}`]: decisionResponseTool,
   [`lending-${SOLANA_LEND_ACTION}`]: solanaTool(
     new SolanaLendAction(),
     new Connection(process.env.NEXT_PUBLIC_SOLANA_RPC_URL!),

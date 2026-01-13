@@ -66,7 +66,8 @@ const GetWalletAddress: React.FC<Props> = ({ tool, prevToolAgent }) => {
 
 const GetWalletAddressAction = ({ toolCallId }: { toolCallId: string }) => {
   const { setCurrentChain, walletAddresses } = useChain();
-  const { addToolResult, isLoading } = useChat();
+  const { addToolResult } = useChat();
+  const hasCompletedRef = React.useRef(false);
 
   // Set the current chain to Solana
   useEffect(() => {
@@ -79,15 +80,15 @@ const GetWalletAddressAction = ({ toolCallId }: { toolCallId: string }) => {
   // - user.wallet
   // - user.linkedAccounts
   useEffect(() => {
-    if (!isLoading && walletAddresses.solana) {
-      addToolResult(toolCallId, {
-        message: 'Solana Wallet connected',
-        body: {
-          address: walletAddresses.solana,
-        },
-      });
-    }
-  }, [walletAddresses.solana, isLoading, addToolResult, toolCallId]);
+    if (!walletAddresses.solana || hasCompletedRef.current) return;
+    hasCompletedRef.current = true;
+    addToolResult(toolCallId, {
+      message: 'Solana Wallet connected',
+      body: {
+        address: walletAddresses.solana,
+      },
+    });
+  }, [walletAddresses.solana, addToolResult, toolCallId]);
 
   const onComplete = (wallet: Wallet) => {
     // Only use the wallet if it's a Solana wallet (not starting with 0x)
@@ -108,6 +109,10 @@ const GetWalletAddressAction = ({ toolCallId }: { toolCallId: string }) => {
       });
     }
   };
+
+  if (walletAddresses.solana) {
+    return null;
+  }
 
   return (
     <div className="flex flex-col items-center gap-2">

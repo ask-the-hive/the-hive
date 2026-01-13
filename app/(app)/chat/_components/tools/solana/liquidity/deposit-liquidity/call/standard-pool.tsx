@@ -25,6 +25,7 @@ import { useChat } from '@/app/(app)/chat/_contexts/chat';
 
 import { raydiumApiClient, raydiumTransactionClient } from '@/services/raydium';
 import { SolanaDepositLiquidityResultBodyType } from '@/ai/solana/actions/raydium/deposit/types';
+import { toUserFacingErrorTextWithContext } from '@/lib/user-facing-error';
 
 interface Props {
   pool: ApiV3PoolInfoStandardItem;
@@ -129,8 +130,9 @@ const StandardPool: React.FC<Props> = ({ pool, toolCallId }) => {
       });
     } catch (error) {
       console.error(error);
+      const message = toUserFacingErrorTextWithContext('Deposit failed.', error);
       addToolResult(toolCallId, {
-        message: `Failed to deposit liquidity: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        message,
       });
     }
     setIsDepositing(false);

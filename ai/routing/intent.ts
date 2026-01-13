@@ -23,6 +23,10 @@ export const DecisionStrengthSchema = z.enum(['none', 'weak', 'strong']);
 
 export type DecisionStrength = z.infer<typeof DecisionStrengthSchema>;
 
+export const DecisionObjectiveSchema = z.enum(['safest', 'highest_yield', 'unknown']);
+
+export type DecisionObjective = z.infer<typeof DecisionObjectiveSchema>;
+
 export const AssetScopeSchema = z.enum(['sol', 'stablecoins', 'both', 'unknown']);
 
 export type AssetScope = z.infer<typeof AssetScopeSchema>;
@@ -31,6 +35,7 @@ export const IntentSchema = z.object({
   domain: IntentDomainSchema,
   goal: IntentGoalSchema,
   decisionStrength: DecisionStrengthSchema,
+  objective: DecisionObjectiveSchema,
   assetScope: AssetScopeSchema,
   explicitTrading: z.boolean(),
   explicitExecution: z.boolean(),

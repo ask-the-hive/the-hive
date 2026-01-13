@@ -1,12 +1,13 @@
-import { BaseTopTokenTradersAction } from "@/ai/base/actions/token/top-traders";
-import { getTokenOverview } from "@/services/birdeye";
-import { TopTradersByTokenTimeFrame } from "@/services/birdeye/types";
+import { BaseTopTokenTradersAction } from '@/ai/base/actions/token/top-traders';
+import { getTokenOverview } from '@/services/birdeye';
+import { TopTradersByTokenTimeFrame } from '@/services/birdeye/types';
+import { toUserFacingErrorTextWithContext } from '@/lib/user-facing-error';
 
-import type { TokenChatData } from "@/types";
-import type { TokenPageActionResult } from "../types";
+import type { TokenChatData } from '@/types';
+import type { TokenPageActionResult } from '../types';
 
 // Using the same types as the BSC trading activity function
-export interface TokenPageTradingActivityArgumentsType {}
+export type TokenPageTradingActivityArgumentsType = object;
 
 export interface TokenPageTradingActivityResultBodyType {
   topTraders: any[];
@@ -30,26 +31,29 @@ function formatNumber(num: number): string {
 // Helper function to describe volume
 function describeVolume(volume: number): string {
   if (volume > 1000000) {
-    return "very high trading volume";
+    return 'very high trading volume';
   } else if (volume > 500000) {
-    return "high trading volume";
+    return 'high trading volume';
   } else if (volume > 100000) {
-    return "moderate trading volume";
+    return 'moderate trading volume';
   } else if (volume > 10000) {
-    return "low trading volume";
+    return 'low trading volume';
   } else {
-    return "very low trading volume";
+    return 'very low trading volume';
   }
 }
 
-export async function getBaseTokenPageTradingActivity(token: TokenChatData, _: TokenPageTradingActivityArgumentsType): Promise<TokenPageActionResult<TokenPageTradingActivityResultBodyType>> {
+export async function getBaseTokenPageTradingActivity(
+  token: TokenChatData,
+  _: TokenPageTradingActivityArgumentsType,
+): Promise<TokenPageActionResult<TokenPageTradingActivityResultBodyType>> {
   try {
     // Use the existing Base top traders action
     const baseAction = new BaseTopTokenTradersAction();
-    
+
     // Get token overview for volume data
     const overview = await getTokenOverview(token.address, 'base');
-    
+
     if (!overview) {
       return {
         message: `Could not find trading data for this Base token.`,
@@ -58,33 +62,34 @@ export async function getBaseTokenPageTradingActivity(token: TokenChatData, _: T
           volume24h: 0,
           volumeChange: 0,
           tradeCount: 0,
-          averageTradeSize: 0
-        }
+          averageTradeSize: 0,
+        },
       };
     }
-    
+
     // Call the action with the token address as search term
     const topTradersResult = await baseAction.func({
       search: token.address,
-      timeFrame: TopTradersByTokenTimeFrame.TwentyFourHours
+      timeFrame: TopTradersByTokenTimeFrame.TwentyFourHours,
     });
-    
+
     // Ensure we have top traders and format their data
-    const topTraders = topTradersResult.body?.topTraders?.map(trader => ({
-      address: trader.owner || 'Unknown',
-      volume: trader.volume || 0
-    })) || [];
-    
+    const topTraders =
+      topTradersResult.body?.topTraders?.map((trader) => ({
+        address: trader.owner || 'Unknown',
+        volume: trader.volume || 0,
+      })) || [];
+
     // Calculate metrics using the correct property names
     const volume24h = overview.v24hUSD || 0;
     const volumeChange = overview.v24hChangePercent || 0;
     const tradeCount = overview.trade24h || 0;
     const averageTradeSize = tradeCount > 0 ? volume24h / tradeCount : 0;
-    
+
     // Format numbers for display
     const formattedVolume = formatNumber(volume24h);
     const formattedAvgSize = formatNumber(averageTradeSize);
-    
+
     return {
       message: `Trading Activity Analysis for ${token.symbol}:
 
@@ -101,20 +106,23 @@ Note: The top traders for this token are displayed in the UI. DO NOT list or rei
         volume24h,
         volumeChange,
         tradeCount,
-        averageTradeSize
-      }
+        averageTradeSize,
+      },
     };
   } catch (error) {
     console.error(`Error analyzing trading activity: ${error}`);
     return {
-      message: `Error analyzing trading activity: ${error}`,
+      message: toUserFacingErrorTextWithContext(
+        "Couldn't analyze trading activity right now.",
+        error,
+      ),
       body: {
         topTraders: [],
         volume24h: 0,
         volumeChange: 0,
         tradeCount: 0,
-        averageTradeSize: 0
-      }
+        averageTradeSize: 0,
+      },
     };
   }
 }
@@ -122,14 +130,14 @@ Note: The top traders for this token are displayed in the UI. DO NOT list or rei
 // Helper function to describe trader activity
 function describeTraderActivity(tradeCount: number): string {
   if (tradeCount > 1000) {
-    return "very active trading";
+    return 'very active trading';
   } else if (tradeCount > 500) {
-    return "active trading";
+    return 'active trading';
   } else if (tradeCount > 100) {
-    return "moderate trading activity";
+    return 'moderate trading activity';
   } else if (tradeCount > 10) {
-    return "low trading activity";
+    return 'low trading activity';
   } else {
-    return "very little trading activity";
+    return 'very little trading activity';
   }
-} 
+}

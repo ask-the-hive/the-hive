@@ -1,20 +1,20 @@
 import { z } from 'zod';
 
 export const WithdrawArgumentsType = z.object({
-  amount: z.number(),
-  tokenAddress: z.string(),
-  protocolAddress: z.string(),
+  tokenAddress: z.string().optional(),
+  protocolAddress: z.string().optional(),
   walletAddress: z.string(),
+  amount: z.number().positive().optional(),
 });
 
 export type WithdrawArgumentsType = z.infer<typeof WithdrawArgumentsType>;
 
 export const WithdrawResultBodyType = z.object({
-  success: z.boolean(),
-  transactionHash: z.string().optional(),
+  status: z.enum(['pending', 'complete', 'failed', 'cancelled']),
+  tx: z.string().optional(),
   amount: z.number(),
-  tokenSymbol: z.string(),
-  protocolName: z.string(),
+  tokenSymbol: z.string().optional(),
+  protocolName: z.string().optional(),
   yieldEarned: z.number().optional(),
   error: z.string().optional(),
 });

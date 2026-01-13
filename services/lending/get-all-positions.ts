@@ -29,7 +29,9 @@ function buildTokenObject(
 ): Token {
   if (tokenData) {
     return {
-      id: tokenData.id,
+      // Always prefer the on-chain mint as the canonical identifier for Solana tokens.
+      // This prevents mismatches where a DB token record has a stale/incorrect `id`.
+      id: mintAddress,
       name: tokenData.name,
       symbol: tokenData.symbol,
       decimals: tokenData.decimals,
@@ -311,10 +313,14 @@ async function getJupiterLendingPositions(
     const tokenInfo = pos.token;
     const assetMint = tokenInfo?.assetAddress;
     const assetSymbol = tokenInfo?.asset?.symbol || tokenInfo?.symbol?.replace(/^jl/i, '') || '';
-    if (!assetMint || !assetSymbol) continue;
+    if (!assetMint) continue;
 
     const pool = pools.find((p) => p.mintAddress === assetMint);
     if (!pool || !isFinite(pool.apy) || pool.apy <= 0) continue;
+
+    // Prefer the pool symbol keyed by mint (more reliable than upstream position token symbol).
+    const symbol = pool.symbol || assetSymbol;
+    if (!symbol) continue;
 
     const decimals = tokenInfo?.asset?.decimals ?? tokenInfo?.decimals ?? 6;
     const amountRaw = Number(pos.underlyingAssets || 0);
@@ -322,11 +328,12 @@ async function getJupiterLendingPositions(
     const amount = amountRaw / Math.pow(10, decimals);
     if (amount <= 0) continue;
 
-    const tokenData = await getTokenBySymbol(assetSymbol);
+    const tokenData = await getTokenBySymbol(symbol);
     const token: Token = {
-      id: tokenData?.id || assetMint,
-      name: tokenData?.name || assetSymbol,
-      symbol: tokenData?.symbol || assetSymbol,
+      // Always use the on-chain mint as the canonical token id.
+      id: assetMint,
+      name: tokenData?.name || symbol,
+      symbol: tokenData?.symbol || symbol,
       decimals: tokenData?.decimals ?? decimals,
       tags: tokenData?.tags || [],
       logoURI: tokenData?.logoURI || tokenInfo?.asset?.logoUrl || '',
@@ -337,7 +344,7 @@ async function getJupiterLendingPositions(
       contractAddress: assetMint,
     };
 
-    const poolData = buildJupiterPoolDataObject(pool, assetSymbol, assetMint, token);
+    const poolData = buildJupiterPoolDataObject(pool, symbol, assetMint, token);
 
     positions.push({
       walletAddress,

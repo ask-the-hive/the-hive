@@ -1,4 +1,5 @@
 import { resolveAssetSymbolToAddress } from '@/services/tokens/resolve-asset-symbol-to-address';
+import { toUserFacingErrorTextWithContext } from '@/lib/user-facing-error';
 
 import type { SolanaActionResult } from '../../solana-action';
 import type { GetTokenAddressArgumentsType, GetTokenAddressResultBodyType } from './types';
@@ -20,7 +21,7 @@ export async function getTokenAddress(
     };
   } catch (error) {
     return {
-      message: `Error getting token data: ${error}`,
+      message: toUserFacingErrorTextWithContext("Couldn't resolve that token address right now.", error),
     };
   }
 }

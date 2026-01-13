@@ -1,38 +1,25 @@
-import type { SolanaActionResult } from '@/ai/solana/actions/solana-action';
-import { WithdrawResultBodyType } from './schema';
-import type { z } from 'zod';
-import type { WithdrawInputSchema } from './input-schema';
+import type { WithdrawArgumentsType, WithdrawResultType } from './types';
 
-export async function withdraw(
-  args: z.infer<typeof WithdrawInputSchema>,
-): Promise<SolanaActionResult<WithdrawResultBodyType>> {
+export async function withdraw(args: WithdrawArgumentsType): Promise<WithdrawResultType> {
   try {
-    // TODO: Implement actual withdrawal transaction
-    // For now, return a success message as a stub
-    const amount = args.amount ?? 0;
-
     return {
-      message: `Successfully withdrew ${amount} ${args.tokenAddress} from protocol ${args.protocolAddress}`,
+      message:
+        "CRITICAL: The withdrawal UI is now showing with status='pending'. The user has NOT initiated the transaction yet. Explain what will happen when they click Withdraw and that they'll confirm in their wallet. Do NOT claim the withdrawal succeeded until the UI returns status='complete'.",
       body: {
-        success: true,
-        transactionHash: 'stubbed-transaction-hash',
-        amount,
-        tokenSymbol: args.tokenAddress, // TODO: Get actual symbol from token address
-        protocolName: args.protocolAddress, // TODO: Get actual protocol name
-        yieldEarned: 0, // TODO: Calculate actual yield earned
+        status: 'pending',
+        tx: '',
+        amount: args.amount ?? 0,
       },
     };
   } catch (error) {
     console.error('Error executing withdraw:', error);
-    const amount = args.amount ?? 0;
     return {
-      message: `Failed to execute withdraw: ${error}`,
+      message: "Couldn't prepare the withdrawal right now. Next: try again.",
       body: {
-        success: false,
-        error: error instanceof Error ? error.message : String(error),
-        amount,
-        tokenSymbol: args.tokenAddress,
-        protocolName: args.protocolAddress,
+        status: 'failed',
+        tx: '',
+        amount: args.amount ?? 0,
+        error: 'Withdrawal failed',
       },
     };
   }

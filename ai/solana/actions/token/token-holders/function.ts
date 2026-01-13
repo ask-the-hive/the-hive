@@ -1,6 +1,7 @@
 import type { TokenHoldersArgumentsType, TokenHoldersResultBodyType } from "./types";
 import type { SolanaActionResult } from "../../solana-action";
 import { getTokenAccountsByMint } from "@/services/helius";
+import { toUserFacingErrorTextWithContext } from "@/lib/user-facing-error";
 
 export async function getNumHolders(
   args: TokenHoldersArgumentsType
@@ -20,7 +21,7 @@ export async function getNumHolders(
     };
   } catch (error) {
     return {
-      message: `Error getting top holders: ${error}`,
+      message: toUserFacingErrorTextWithContext("Couldn't load holder data right now.", error),
     };
   }
 } 

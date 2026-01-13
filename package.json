@@ -14,7 +14,15 @@
     "lint": "next lint",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "format:staged": "prettier --write --ignore-unknown"
+    "format:staged": "prettier --write --ignore-unknown",
+    "validate:routing": "ts-node -P tsconfig.scripts.json -r tsconfig-paths/register scripts/validate-routing.ts && ts-node -P tsconfig.scripts.json -r tsconfig-paths/register scripts/validate-router.ts",
+    "validate:router": "ts-node -P tsconfig.scripts.json -r tsconfig-paths/register scripts/validate-router.ts && ts-node -P tsconfig.scripts.json -r tsconfig-paths/register scripts/validate-router-context.ts && ts-node -P tsconfig.scripts.json -r tsconfig-paths/register scripts/validate-router-plan.ts",
+    "validate:messages": "ts-node -P tsconfig.scripts.json -r tsconfig-paths/register scripts/validate-message-sanitization.ts",
+    "validate:client-action": "ts-node -P tsconfig.scripts.json -r tsconfig-paths/register scripts/validate-client-action.ts",
+    "validate:simulation-error": "ts-node -P tsconfig.scripts.json -r tsconfig-paths/register scripts/validate-simulation-error.ts",
+    "inspect:routing": "ts-node -P tsconfig.scripts.json -r tsconfig-paths/register scripts/inspect-routing.ts",
+    "audit:prompts": "ts-node -P tsconfig.scripts.json -r tsconfig-paths/register scripts/audit-prompts.ts",
+    "check:prompts": "yarn -s audit:prompts --maxTokens=450 --quiet"
   },
   "dependencies": {
     "@0x/contract-addresses": "^8.13.0",

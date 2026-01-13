@@ -8,6 +8,7 @@ import { openai } from '@ai-sdk/openai';
 import { addKnowledge } from '@/db/services/knowledge';
 import { KnowledgeInput } from '@/db/types';
 import { withErrorHandling } from '@/lib/api-error-handler';
+import { toUserFacingErrorTextWithContext } from '@/lib/user-facing-error';
 
 export const POST = withErrorHandling(async (req: NextRequest) => {
   const { url, name, includePaths, excludePaths, authCode } = await req.json();
@@ -24,7 +25,10 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
   });
 
   if (!crawlResponse.success) {
-    return NextResponse.json({ error: crawlResponse.error }, { status: 500 });
+    return NextResponse.json(
+      { error: toUserFacingErrorTextWithContext('Failed to start crawl.', crawlResponse.error) },
+      { status: 500 },
+    );
   }
 
   let status = 'scraping';
@@ -32,7 +36,15 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
   do {
     const statusResponse = await firecrawl.checkCrawlStatus(crawlResponse.id);
     if (!statusResponse.success) {
-      return NextResponse.json({ error: statusResponse.error }, { status: 500 });
+      return NextResponse.json(
+        {
+          error: toUserFacingErrorTextWithContext(
+            'Failed to check crawl status.',
+            statusResponse.error,
+          ),
+        },
+        { status: 500 },
+      );
     }
     status = statusResponse.status;
     if (statusResponse.status === 'completed') {

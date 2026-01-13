@@ -20,8 +20,11 @@ import {
   SOLANA_TRADE_ACTION,
 } from '@/ai/action-names';
 import { solanaTool } from '@/ai/solana';
+import { UI_DECISION_RESPONSE_NAME } from '@/ai/ui/decision-response/name';
+import { decisionResponseTool } from '@/ai/ui/decision-response/tool';
 
 export const STAKING_TOOLS = {
+  [`staking-${UI_DECISION_RESPONSE_NAME}`]: decisionResponseTool,
   [`staking-${SOLANA_STAKE_ACTION}`]: solanaTool(
     new SolanaStakeAction(),
     new Connection(process.env.NEXT_PUBLIC_SOLANA_RPC_URL!),

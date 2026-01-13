@@ -1,10 +1,7 @@
 import React from 'react';
-
 import ToolCard from '../../../tool-card';
-
 import StakeCallBody from './call';
 import StakeResult from './stake-result';
-
 import type { StakeResultType, StakeArgumentsType } from '@/ai';
 import type { ToolInvocation } from 'ai';
 
@@ -20,12 +17,13 @@ const Stake: React.FC<Props> = ({ tool, prevToolAgent }) => {
       loadingText="Staking..."
       result={{
         heading: (result: StakeResultType) => {
-          // If status is pending, this is awaiting user confirmation - don't show a heading
-          if (result.body?.status === 'pending') {
-            return 'Stake';
-          }
-          // If status is complete or failed, show appropriate heading
-          return result.body?.status === 'complete' ? 'Stake Complete' : 'Failed to Stake';
+          const status = result.body?.status;
+          if (status === 'pending') return 'Stake';
+          if (status === 'complete') return 'Stake Complete';
+          if (status === 'cancelled') return 'Stake cancelled';
+          if (status === 'failed') return 'Stake unavailable';
+          if (!result.body) return 'Stake unavailable';
+          return 'Stake';
         },
         body: (result: StakeResultType) => {
           // If status is complete, show the result
@@ -44,6 +42,19 @@ const Stake: React.FC<Props> = ({ tool, prevToolAgent }) => {
             );
           }
 
+          if (
+            !result.body ||
+            result.body.status === 'failed' ||
+            result.body.status === 'cancelled'
+          ) {
+            return (
+              <p className="text-sm text-neutral-600 dark:text-neutral-400">
+                {result.message || 'This staking action is not available right now.'}
+              </p>
+            );
+          }
+
+          // status === 'pending'
           const args = tool.args as StakeArgumentsType;
           return <StakeCallBody toolCallId={tool.toolCallId} args={args} />;
         },

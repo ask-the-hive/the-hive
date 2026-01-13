@@ -51,6 +51,7 @@ import { SearchKnowledge } from './knowledge';
 import { InvokeAgent } from './invoke';
 import { GetKnowledge } from './bsc-knowledge';
 import { GetKnowledge as BaseGetKnowledge } from './base-knowledge';
+import DecisionResponseTool from './decision/decision-response';
 import BaseGetTokenData from './base/get-token-data';
 import { GetTokenAddress as BaseGetTokenAddress } from './base';
 import { BASE_BUBBLE_MAPS_NAME } from '@/ai/base/actions/token/bubble-maps/name';
@@ -112,6 +113,7 @@ import {
   BASE_GET_TRADER_TRADES_NAME,
   BASE_TRADE_NAME,
 } from '@/ai/action-names';
+import { UI_DECISION_RESPONSE_NAME } from '@/ai/ui/decision-response/name';
 
 import { BSC_BUBBLE_MAPS_NAME } from '@/ai/bsc/actions/token/bubble-maps/name';
 import { BSC_TOP_HOLDERS_NAME } from '@/ai/bsc/actions/token/top-holders/name';
@@ -148,6 +150,10 @@ const ToolInvocation: React.FC<Props> = ({ tool, prevToolAgent }) => {
   const toolParts = tool.toolName.split('-');
   const toolAgent = toolParts[0];
   const toolName = toolParts.slice(1).join('-');
+
+  if (toolName === UI_DECISION_RESPONSE_NAME) {
+    return <DecisionResponseTool tool={tool} />;
+  }
 
   // Handle Base knowledge tools
   if (toolAgent === 'baseknowledge') {
@@ -349,7 +355,7 @@ const ToolInvocation: React.FC<Props> = ({ tool, prevToolAgent }) => {
       case SOLANA_LEND_ACTION:
         return <LendTool tool={tool} prevToolAgent={prevToolAgent} />;
       case SOLANA_WITHDRAW_ACTION:
-        return <WithdrawCallBody tool={tool} args={tool.args} prevToolAgent={prevToolAgent} />;
+        return <WithdrawCallBody tool={tool} prevToolAgent={prevToolAgent} />;
       case SOLANA_GET_TOKEN_ADDRESS_ACTION:
         return <GetTokenAddress tool={tool} prevToolAgent={prevToolAgent} />;
       case SOLANA_GET_WALLET_ADDRESS_ACTION:
@@ -381,7 +387,7 @@ const ToolInvocation: React.FC<Props> = ({ tool, prevToolAgent }) => {
     case SOLANA_LEND_ACTION:
       return <LendTool tool={tool} prevToolAgent={prevToolAgent} />;
     case SOLANA_WITHDRAW_ACTION:
-      return <WithdrawCallBody tool={tool} args={tool.args} prevToolAgent={prevToolAgent} />;
+      return <WithdrawCallBody tool={tool} prevToolAgent={prevToolAgent} />;
     case SOLANA_LIQUID_STAKING_YIELDS_ACTION:
       return <LiquidStakingYields tool={tool} prevToolAgent={prevToolAgent} />;
     case SOLANA_TRANSFER_NAME:

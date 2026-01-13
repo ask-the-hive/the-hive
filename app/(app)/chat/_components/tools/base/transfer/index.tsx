@@ -13,6 +13,7 @@ import { ethers } from 'ethers';
 import { useState, useEffect } from 'react';
 import { ETH_METADATA, WETH_ADDRESS, WETH_METADATA } from '@/lib/config/base';
 import { ERC20_ABI } from '@/lib/config/abis/erc20';
+import { toUserFacingErrorTextWithContext } from '@/lib/user-facing-error';
 import ToolCard from '../../tool-card';
 import { Card } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
@@ -59,7 +60,6 @@ const TransferCall: React.FC<TransferCallProps> = ({ args, toolCallId }) => {
   const [amount, setAmount] = useState<string>(args.amount.toString());
   const [toAddress, setToAddress] = useState<string>(args.to);
 
-  // Set the current chain to BASE
   useEffect(() => {
     console.log('Setting current chain to BASE');
     setCurrentChain('base');
@@ -67,14 +67,12 @@ const TransferCall: React.FC<TransferCallProps> = ({ args, toolCallId }) => {
 
   console.log('Current chain in TransferCall:', currentChain);
 
-  // Get the BASE wallet from args.walletAddress
   const baseWallet =
     wallets.find((w) => w.address === args.walletAddress) ||
     (user?.wallet?.address === args.walletAddress ? user.wallet : null);
 
   console.log('BASE wallet:', baseWallet?.address);
 
-  // Default to ETH or WETH based on address
   const [token, setToken] = useState<BaseToken | null>(() => {
     if (!args.tokenAddress || args.tokenAddress === 'ETH') {
       return ETH_METADATA;
@@ -82,25 +80,16 @@ const TransferCall: React.FC<TransferCallProps> = ({ args, toolCallId }) => {
     if (args.tokenAddress.toLowerCase() === WETH_ADDRESS) {
       return WETH_METADATA;
     }
-    return null; // Will be set once we get token data
+    return null;
   });
 
-  // Only fetch token metadata if we have a token address
   const {
     data: tokenData,
     isLoading: tokenLoading,
     error: tokenError,
   } = useTokenMetadata(args.tokenAddress && args.tokenAddress !== 'ETH' ? args.tokenAddress : '');
 
-  // Add console logs to debug token metadata
   useEffect(() => {
-    console.log('Token metadata request params:', {
-      tokenAddress: args.tokenAddress,
-      tokenSymbol: args.tokenSymbol,
-      isLoading: tokenLoading,
-      error: tokenError,
-    });
-
     if (tokenError) {
       console.error('Token metadata fetch error:', tokenError);
     }
@@ -134,8 +123,6 @@ const TransferCall: React.FC<TransferCallProps> = ({ args, toolCallId }) => {
         extensions: {},
       });
     } else if (!tokenData && args.tokenSymbol && !args.tokenAddress) {
-      console.log('Setting token data from symbol:', args.tokenSymbol);
-      // Check if it's ETH/WETH by symbol
       if (args.tokenSymbol.toUpperCase() === 'ETH') {
         setToken(ETH_METADATA);
       } else if (args.tokenSymbol.toUpperCase() === 'WETH') {
@@ -155,13 +142,11 @@ const TransferCall: React.FC<TransferCallProps> = ({ args, toolCallId }) => {
         });
       }
     } else if (!tokenData && args.tokenAddress && args.tokenAddress !== 'ETH') {
-      console.log('No token data received, using fallback data for address:', args.tokenAddress);
-      // Check if it's WETH by address
       if (args.tokenAddress.toLowerCase() === WETH_ADDRESS) {
         setToken(WETH_METADATA);
         return;
       }
-      // Fallback for when token metadata fails
+
       setToken({
         id: args.tokenAddress,
         name: args.tokenSymbol || 'Unknown Token',
@@ -237,9 +222,7 @@ const TransferCall: React.FC<TransferCallProps> = ({ args, toolCallId }) => {
           symbol = tokenSymbol;
         } catch (error) {
           console.error('Error interacting with token contract:', error);
-          throw new Error(
-            `Failed to interact with token contract: ${error instanceof Error ? error.message : String(error)}`,
-          );
+          throw new Error('Failed to interact with token contract');
         }
       }
 
@@ -257,11 +240,12 @@ const TransferCall: React.FC<TransferCallProps> = ({ args, toolCallId }) => {
       });
     } catch (error) {
       console.error('Transfer error:', error);
+      const message = toUserFacingErrorTextWithContext('Transfer failed.', error);
       addToolResult<TransferResult>(toolCallId, {
-        message: `Transfer failed: ${error instanceof Error ? error.message : String(error)}`,
+        message,
         body: {
           success: false,
-          error: error instanceof Error ? error.message : String(error),
+          error: message,
         },
       });
     } finally {

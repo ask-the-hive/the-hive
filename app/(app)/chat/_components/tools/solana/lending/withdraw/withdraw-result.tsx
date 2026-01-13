@@ -8,7 +8,9 @@ interface Props {
   yieldEarned?: number;
 }
 
-const WithdrawResult: React.FC<Props> = ({ amount, tokenSymbol, yieldEarned = 0 }) => {
+const WithdrawResult: React.FC<Props> = ({ amount, tokenSymbol, yieldEarned }) => {
+  const hasYield = typeof yieldEarned === 'number' && Number.isFinite(yieldEarned) && yieldEarned > 0;
+
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center gap-2 mb-2">
@@ -28,12 +30,16 @@ const WithdrawResult: React.FC<Props> = ({ amount, tokenSymbol, yieldEarned = 0 
               <p className="text-gray-600 text-sm dark:text-gray-400">Amount Withdrawn</p>
             </div>
             <div className="flex flex-col items-center">
-              <p className="text-xl font-semibold text-green-600">${yieldEarned.toFixed(2)}</p>
-              <p className="text-gray-600 dark:text-gray-400 text-sm">Yield Earned</p>
+              <p className="text-xl font-semibold text-green-600">
+                {hasYield ? `$${yieldEarned.toFixed(2)}` : '—'}
+              </p>
+              <p className="text-gray-600 dark:text-gray-400 text-sm">
+                Yield Earned {hasYield ? '' : '(available after refresh)'}
+              </p>
             </div>
           </div>
 
-          {yieldEarned > 0 && (
+          {hasYield && (
             <div className="p-3 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800">
               <div className="flex items-center gap-2">
                 <TrendingUp className="h-4 w-4 text-green-600" />

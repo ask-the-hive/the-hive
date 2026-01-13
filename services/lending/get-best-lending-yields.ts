@@ -37,7 +37,10 @@ async function refreshCache(forceRefresh = false) {
   inFlight = fetchAndCache()
     .catch((err) => {
       console.error('Failed to refresh lending yields cache:', err);
-      throw err;
+      if (cachedResponse) return cachedResponse;
+      cachedResponse = { status: 'error', data: [] };
+      cachedAt = Date.now();
+      return cachedResponse;
     })
     .finally(() => {
       inFlight = null;

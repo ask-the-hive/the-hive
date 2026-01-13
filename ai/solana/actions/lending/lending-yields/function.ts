@@ -6,6 +6,8 @@ import { getTokenBySymbol } from '@/db/services/tokens';
 import { LendingYieldsResultBodyType } from './schema';
 import { z } from 'zod';
 import { LendingYieldsInputSchema } from './input-schema';
+import { isSupportedSolanaLendingStablecoin } from '@/lib/yield-support';
+import { resolveLendingProjectKey } from '@/lib/lending';
 
 let cachedLendingYields: {
   timestamp: number;
@@ -13,6 +15,7 @@ let cachedLendingYields: {
 } | null = null;
 
 const LENDING_YIELDS_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+const MIN_LENDING_POOL_TVL_USD = 1_000_000;
 
 export async function getLendingYields(
   args: z.infer<typeof LendingYieldsInputSchema> = {},
@@ -39,11 +42,9 @@ export async function getLendingYields(
 
     const lendingProtocols = ['kamino-lend', 'jupiter-lend', 'jup-lend'];
 
-    const stableCoins = ['USDC', 'USDT', 'EURC', 'FDUSD', 'PYUSD', 'USDS', 'USDY', 'USDS', 'USDG'];
-
     const defiLlamaPools = solanaPools.filter((pool: any) => {
       const isLendingProtocol = lendingProtocols.includes(pool.project);
-      const isStableCoin = stableCoins.includes(pool.symbol);
+      const isStableCoin = isSupportedSolanaLendingStablecoin(pool.symbol);
       const isLPPair = pool.symbol.includes('-') || pool.symbol.includes('/');
 
       const hasAPY = pool.apy && pool.apy > 0;
@@ -71,9 +72,9 @@ export async function getLendingYields(
 
     kaminoPools
       .filter((pool) => {
-        const isStableCoin = stableCoins.includes(pool.symbol);
+        const isStableCoin = isSupportedSolanaLendingStablecoin(pool.symbol);
         const isLPPair = pool.symbol.includes('-') || pool.symbol.includes('/');
-        return pool.apy > 0 && !isLPPair && isStableCoin;
+        return pool.apy > 0 && !isLPPair && isStableCoin && pool.tvlUsd >= MIN_LENDING_POOL_TVL_USD;
       })
       .forEach((pool) => {
         const mint = pool.mintAddress;
@@ -86,8 +87,8 @@ export async function getLendingYields(
           apyBase: pool.apyBase,
           apyReward: null,
           apy: pool.apy,
-      rewardTokens: [],
-      projectLogoURI: null,
+          rewardTokens: [],
+          projectLogoURI: null,
           poolMeta: null,
           url: null,
           underlyingTokens: [pool.mintAddress],
@@ -107,9 +108,12 @@ export async function getLendingYields(
         kaminoPoolsByMint.set(mint, enrichedKaminoPool);
       });
 
-    jupiterPools.forEach((pool) => {
+    jupiterPools
+      .filter((pool) => pool.tvlUsd >= MIN_LENDING_POOL_TVL_USD)
+      .forEach((pool) => {
       const mint = pool.mintAddress;
       if (!mint) return;
+      if (!isSupportedSolanaLendingStablecoin(pool.symbol)) return;
 
       const basePool = {
         project: 'jupiter-lend',
@@ -118,8 +122,8 @@ export async function getLendingYields(
         apyBase: pool.apyBase,
         apyReward: null,
         apy: pool.apy,
-      rewardTokens: [],
-      projectLogoURI: null,
+        rewardTokens: [],
+        projectLogoURI: null,
         poolMeta: pool.address ?? null,
         url: null,
         underlyingTokens: [pool.mintAddress],
@@ -142,11 +146,11 @@ export async function getLendingYields(
     const solLendingPools = [
       ...Array.from(kaminoPoolsByMint.values()),
       ...Array.from(jupiterPoolsByMint.values()),
-    ];
+    ].filter((p: any) => (p?.tvlUsd || 0) >= MIN_LENDING_POOL_TVL_USD);
 
     if (solLendingPools.length === 0) {
       return {
-        message: `No Solana lending pools found for the target protocols (Kamino, Jupiter Lend, Marginfi, Maple, Save). Please try again.`,
+        message: `No Solana lending pools found for the supported protocols (Kamino, Jupiter Lend). Please try again.`,
       };
     }
 
@@ -183,6 +187,7 @@ export async function getLendingYields(
 
     const body = await Promise.all(
       selectedPools.map(async (pool: any) => {
+        if (!isSupportedSolanaLendingStablecoin(pool.symbol)) return null;
         const tokenMintAddress = pool.underlyingTokens?.[0];
 
         if (!tokenMintAddress) {
@@ -210,18 +215,20 @@ export async function getLendingYields(
             pool.project === 'kamino-lend'
               ? '/logos/kamino.svg'
               : pool.project === 'jupiter-lend' || pool.project === 'jup-lend'
-              ? '/logos/jupiter.png'
-              : null,
+                ? '/logos/jupiter.png'
+                : null,
         };
       }),
     );
 
+    const cleanedBody = body.filter(Boolean) as LendingYieldsResultBodyType;
+
     cachedLendingYields = {
       timestamp: Date.now(),
-      body,
+      body: cleanedBody,
     };
 
-    const filtered = applyLendingYieldsArgs(body, args);
+    const filtered = applyLendingYieldsArgs(cleanedBody, args);
     return {
       message: buildLendingYieldsMessage(filtered, args),
       body: filtered,
@@ -229,7 +236,8 @@ export async function getLendingYields(
   } catch (error) {
     console.error(error);
     return {
-      message: `Error getting best lending yields: ${error}`,
+      message: 'Something went wrong while fetching lending yields. Please try again.',
+      body: [],
     };
   }
 }
@@ -242,12 +250,22 @@ const applyLendingYieldsArgs = (
 
   if (args.symbol) {
     const symbol = args.symbol.toUpperCase();
+    if (!isSupportedSolanaLendingStablecoin(symbol)) return [];
     filtered = filtered.filter((p) => (p.symbol || '').toUpperCase() === symbol);
   }
 
   if (args.project) {
-    const project = args.project.toLowerCase();
-    filtered = filtered.filter((p) => String(p.project || '').toLowerCase() === project);
+    const projectArg = args.project;
+    const resolvedProjectKey = resolveLendingProjectKey(projectArg);
+    if (resolvedProjectKey) {
+      filtered = filtered.filter(
+        (p) => String(p.project || '').toLowerCase() === resolvedProjectKey,
+      );
+    } else {
+      filtered = filtered.filter(
+        (p) => String(p.project || '').toLowerCase() === projectArg.toLowerCase(),
+      );
+    }
   }
 
   const sortBy = args.sortBy ?? 'apy';
@@ -256,9 +274,8 @@ const applyLendingYieldsArgs = (
     return (b.yield || 0) - (a.yield || 0);
   });
 
-  if (typeof args.limit === 'number') {
-    filtered = filtered.slice(0, args.limit);
-  }
+  const limit = typeof args.limit === 'number' ? args.limit : 3;
+  filtered = filtered.slice(0, limit);
 
   return filtered;
 };

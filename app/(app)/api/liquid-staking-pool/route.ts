@@ -3,11 +3,19 @@ import { getBestLiquidStaking } from '@/services/staking-rewards/get-best-liquid
 import { withErrorHandling } from '@/lib/api-error-handler';
 import { getLiquidStakingYields } from '@/ai/solana/actions/staking/liquid-staking-yields/function';
 import { getTokenBySymbol } from '@/db/services/tokens';
+import { isSupportedSolanaStakingLst } from '@/lib/yield-support';
 
 export const GET = withErrorHandling(async (request: Request) => {
   const { searchParams } = new URL(request.url);
   const project = searchParams.get('project');
   const symbol = searchParams.get('symbol');
+  if (
+    symbol &&
+    symbol.toLowerCase() !== 'all' &&
+    !isSupportedSolanaStakingLst(symbol.toUpperCase())
+  ) {
+    return NextResponse.json({ error: 'Unsupported staking token' }, { status: 404 });
+  }
 
   if (project && symbol && project.toLowerCase() === 'all' && symbol.toLowerCase() === 'all') {
     const result = await getLiquidStakingYields();

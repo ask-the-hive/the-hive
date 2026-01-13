@@ -1,41 +1,80 @@
-import { z } from "zod";
+import { CoreMessage, LanguageModelV1, Message } from 'ai';
 
-import { generateObject, LanguageModelV1, Message } from "ai";
-
-import { bscTokenAnalysisAgent } from "@/ai/agents/bsc-token-analysis";
-import { bscMarketAgent } from "@/ai/agents/bsc-market";
-import { bscWalletAgent } from "@/ai/agents/bsc-wallet";
-import { bscKnowledgeAgent } from "@/ai/agents/bsc-knowledge";
-import { bscLiquidityAgent } from "@/ai/agents/bsc-liquidity";
-import { bscTradingAgent } from "@/ai/agents/bsc-trading";
-import { Agent } from "@/ai/agent";
+import { bscTokenAnalysisAgent } from '@/ai/agents/bsc-token-analysis';
+import { bscMarketAgent } from '@/ai/agents/bsc-market';
+import { bscWalletAgent } from '@/ai/agents/bsc-wallet';
+import { bscKnowledgeAgent } from '@/ai/agents/bsc-knowledge';
+import { bscLiquidityAgent } from '@/ai/agents/bsc-liquidity';
+import { bscTradingAgent } from '@/ai/agents/bsc-trading';
+import { Agent } from '@/ai/agent';
+import { classifyIntent } from '@/ai/routing/classify-intent';
+import { Intent } from '@/ai/routing/intent';
+import { routeIntent } from '@/ai/routing/route-intent';
+import { RouteDecision } from '@/ai/routing/route-intent';
+import { deriveFlowStateFromConversation } from '@/ai/routing/derive-flow-state';
+import { getLastClientAction, intentFromClientAction } from '@/ai/routing/client-action';
 
 // List of BSC-specific agents
 const bscAgents = [
-    bscTokenAnalysisAgent,
-    bscMarketAgent,
-    bscWalletAgent,
-    bscKnowledgeAgent,
-    bscLiquidityAgent,
-    bscTradingAgent
+  bscTokenAnalysisAgent,
+  bscMarketAgent,
+  bscWalletAgent,
+  bscKnowledgeAgent,
+  bscLiquidityAgent,
+  bscTradingAgent,
 ];
 
-export const system = 
-`You are the orchestrator of a swarm of blockchain agents that each have specialized tasks on the Binance Smart Chain (BSC).
+const toCoreMessages = (messages: Message[], limit = 8): CoreMessage[] =>
+  messages.slice(-limit).map((m) => ({
+    role: m.role === 'assistant' || m.role === 'user' || m.role === 'system' ? m.role : 'user',
+    content: typeof m.content === 'string' ? m.content : String(m.content ?? ''),
+  }));
 
-Given this list of agents and their capabilities, choose the one that is most appropriate for the user's request.
+export type ChooseRouteResult = {
+  agent: Agent | null;
+  intent: Intent;
+  decision: RouteDecision;
+};
 
-${bscAgents.map(agent => `${agent.name}: ${agent.systemPrompt}`).join("\n")}`
-
-export const chooseAgent = async (model: LanguageModelV1, messages: Message[]): Promise<Agent | null> => {
-    const { object } = await generateObject({
+export const chooseRoute = async (
+  model: LanguageModelV1,
+  messages: Message[],
+): Promise<ChooseRouteResult> => {
+  const clientAction = getLastClientAction(messages);
+  const intent = clientAction
+    ? intentFromClientAction(clientAction)
+    : await classifyIntent({
         model,
-        schema: z.object({
-            agent: z.enum(bscAgents.map(agent => agent.name) as [string, ...string[]])
-        }),
-        messages,
-        system
-    })
+        messages: toCoreMessages(messages),
+        chain: 'bsc',
+      });
 
-    return bscAgents.find(agent => agent.name === object.agent) ?? null;
-} 
+  const decision = routeIntent(
+    intent,
+    {
+      agents: {
+        knowledge: bscKnowledgeAgent.name,
+        wallet: bscWalletAgent.name,
+        market: bscMarketAgent.name,
+        liquidity: bscLiquidityAgent.name,
+        trading: bscTradingAgent.name,
+        'token-analysis': bscTokenAnalysisAgent.name,
+      },
+    },
+    deriveFlowStateFromConversation({ intent, messages }),
+  );
+
+  const agent = decision.agentName
+    ? (bscAgents.find((a) => a.name === decision.agentName) ?? null)
+    : null;
+
+  return { agent, intent, decision };
+};
+
+export const chooseAgent = async (
+  model: LanguageModelV1,
+  messages: Message[],
+): Promise<Agent | null> => {
+  const { agent } = await chooseRoute(model, messages);
+  return agent;
+};

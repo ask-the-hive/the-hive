@@ -13,6 +13,9 @@ import { KaminoMarket, KaminoAction, VanillaObligation } from '@kamino-finance/k
 import { createSolanaRpc, address as createAddress, Instruction } from '@solana/kit';
 import { getMintDecimals } from '@/services/solana/get-mint-decimals';
 import { BN } from '@project-serum/anchor';
+import { toUserFacingErrorTextWithContext } from '@/lib/user-facing-error';
+import { toUserFacingSolanaSimulationError } from '@/lib/solana-simulation-error';
+import { TOKEN_2022_PROGRAM_ID } from '@solana/spl-token';
 
 /**
  * Kamino Lending Market Configuration
@@ -25,6 +28,43 @@ import { BN } from '@project-serum/anchor';
  */
 const KAMINO_MAIN_MARKET = new PublicKey('7u3HeHxYDLhnCoErrtycNokbQYbWGzLs6JSDqGAv5PfF');
 const KAMINO_PROGRAM_ID = new PublicKey('KLend2g3cP87fffoy8q1mQqGKjrxjC8boSyAYavgmjD');
+
+function parseDecimalToBaseUnits(value: unknown, decimals: number): string {
+  const raw = String(value ?? '').trim();
+  if (!raw) throw new Error('Amount is required.');
+
+  let seenDot = false;
+  let whole = '';
+  let fraction = '';
+
+  for (let i = 0; i < raw.length; i += 1) {
+    const char = raw[i];
+    const code = char.charCodeAt(0);
+    const isDigit = code >= 48 && code <= 57;
+
+    if (isDigit) {
+      if (seenDot) fraction += char;
+      else whole += char;
+      continue;
+    }
+
+    if (char === '.' && !seenDot) {
+      seenDot = true;
+      continue;
+    }
+
+    throw new Error('Amount format is invalid.');
+  }
+
+  if (!whole && !fraction) throw new Error('Amount format is invalid.');
+  if (!whole) whole = '0';
+
+  const paddedFraction = (fraction + '0'.repeat(decimals)).slice(0, decimals);
+  const combined = `${whole}${paddedFraction}`;
+  let start = 0;
+  while (start < combined.length - 1 && combined[start] === '0') start += 1;
+  return combined.slice(start);
+}
 
 /**
  * POST /api/lending/build-transaction
@@ -105,14 +145,27 @@ export async function POST(req: NextRequest) {
     try {
       const simResult = await connection.simulateTransaction(transaction, {
         sigVerify: false,
+        replaceRecentBlockhash: true,
       });
       if (simResult.value.err) {
         console.error('Lending build TX simulation failed', simResult.value.err);
+        Sentry.captureException(new Error('Lending build TX simulation failed'), {
+          extra: {
+            err: simResult.value.err,
+            logs: simResult.value.logs,
+            walletAddress,
+            tokenMint,
+            tokenSymbol,
+            amount,
+            protocol,
+          },
+        });
         return NextResponse.json(
           {
-            error: 'Transaction simulation failed',
-            logs: simResult.value.logs,
-            simError: simResult.value.err,
+            error: toUserFacingSolanaSimulationError(
+              "We couldn't prepare that lending transaction.",
+              simResult.value.logs,
+            ),
           },
           { status: 400 },
         );
@@ -121,8 +174,10 @@ export async function POST(req: NextRequest) {
       console.error('Lending build TX simulation exception', simErr);
       return NextResponse.json(
         {
-          error: 'Transaction simulation failed',
-          details: simErr instanceof Error ? simErr.message : String(simErr),
+          error: toUserFacingErrorTextWithContext(
+            "We couldn't prepare that lending transaction.",
+            simErr,
+          ),
         },
         { status: 400 },
       );
@@ -139,8 +194,7 @@ export async function POST(req: NextRequest) {
     console.error('Error building lending transaction:', error);
     return NextResponse.json(
       {
-        error: error instanceof Error ? error.message : 'Failed to build transaction',
-        details: error instanceof Error ? error.stack : undefined,
+        error: toUserFacingErrorTextWithContext('Failed to build transaction.', error),
       },
       { status: 500 },
     );
@@ -168,7 +222,10 @@ async function buildJupiterLendTx(
   const decimals =
     (await getMintDecimals(tokenMint).catch(() => undefined)) ??
     (tokenSymbol.toUpperCase() === 'SOL' ? 9 : 6);
-  const amountBase = Math.floor(amount * Math.pow(10, decimals)).toString();
+  const amountBase = parseDecimalToBaseUnits(amount, decimals);
+  if (new BN(amountBase).lte(new BN(0))) {
+    throw new Error('Amount is too small.');
+  }
 
   const res = await fetch('https://api.jup.ag/lend/v1/earn/deposit-instructions', {
     method: 'POST',
@@ -366,6 +423,15 @@ async function buildKaminoLendTx(
   amount: number,
 ): Promise<VersionedTransaction> {
   try {
+    // Token-2022 mints can have extensions (fees, etc) that break Kamino deposits.
+    // Detect early and return a clear error instead of an opaque simulation "Custom: 60xx".
+    const mintInfo = await connection.getAccountInfo(new PublicKey(tokenMint));
+    if (mintInfo?.owner?.equals(TOKEN_2022_PROGRAM_ID)) {
+      throw new Error(
+        `${tokenSymbol.toUpperCase()} uses Token-2022 and isn’t supported for Kamino deposits right now. Try Jupiter Lend for this token, or choose a different asset/protocol.`,
+      );
+    }
+
     // Create Kamino-compatible RPC and addresses
     const kaminoRpc = createSolanaRpc(process.env.NEXT_PUBLIC_SOLANA_RPC_URL!) as any;
     const marketAddress = createAddress(KAMINO_MAIN_MARKET.toBase58()) as any;
@@ -379,9 +445,14 @@ async function buildKaminoLendTx(
       throw new Error('Failed to load Kamino market');
     }
 
-    // Convert amount to base units (lamports/smallest unit)
-    const decimals = tokenSymbol.toUpperCase() === 'SOL' ? 9 : 6;
-    const amountBase = Math.floor(amount * Math.pow(10, decimals));
+    // Convert amount to base units (lamports/smallest unit) using on-chain mint decimals.
+    const decimals =
+      (await getMintDecimals(tokenMint).catch(() => undefined)) ??
+      (tokenSymbol.toUpperCase() === 'SOL' ? 9 : 6);
+    const amountBase = new BN(parseDecimalToBaseUnits(amount, decimals));
+    if (amountBase.lte(new BN(0))) {
+      throw new Error('Amount is too small.');
+    }
 
     // Create a transaction signer for Kamino SDK
     const signer: any = {
@@ -389,37 +460,37 @@ async function buildKaminoLendTx(
       signTransactions: async (txs: any) => txs,
     };
 
-    // Create a vanilla obligation (for first-time users)
-    const obligation = new VanillaObligation(programId);
-
     // Get current slot for Address Lookup Table creation
     const currentSlot = await connection.getSlot();
 
-    // Check if user's obligation account exists using Kamino SDK's official method
-    // This ensures we use the correct PDA derivation that Kamino expects
-    // Note: getUserVanillaObligation throws an error if obligation doesn't exist
+    // Resolve the user's obligation:
+    // - If it exists, use the fetched obligation object.
+    // - If it doesn't, create a new vanilla obligation so Kamino can initialize it.
     const walletAddressForObligation = createAddress(wallet.toBase58()) as any;
     let obligationExists = false;
+    let obligation: any;
 
     try {
-      await market.getUserVanillaObligation(walletAddressForObligation);
+      const existing = await market.getUserVanillaObligation(walletAddressForObligation);
       obligationExists = true;
+      obligation = existing;
     } catch {
       // Obligation doesn't exist yet (first-time user)
       obligationExists = false;
+      obligation = new VanillaObligation(programId);
     }
 
     // Build deposit action
     const depositAction = await KaminoAction.buildDepositTxns(
       market,
-      new BN(amountBase),
+      amountBase,
       mintAddress,
       signer,
       obligation,
       true, // useV2Ixs
       undefined, // scopeRefreshConfig
       undefined, // extraComputeBudget
-      undefined, // includeAtaIxs
+      undefined, // includeAtaIxs (disabled; can fail if ATA already exists depending on SDK impl)
       undefined, // requestElevationGroup
       {
         skipInitialization: obligationExists, // Skip only if user already has an obligation account

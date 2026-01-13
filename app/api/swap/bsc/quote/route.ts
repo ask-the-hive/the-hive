@@ -1,5 +1,7 @@
 import { NextRequest } from 'next/server';
 import { withErrorHandling } from '@/lib/api-error-handler';
+import { isEvmAddress } from '@/lib/address';
+import { toUserFacingErrorTextWithContext } from '@/lib/user-facing-error';
 
 const ZEROX_API_URL = 'https://api.0x.org';
 const WBNB_ADDRESS = '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c';
@@ -30,8 +32,7 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
   }
 
   // Validate token addresses
-  const addressRegex = /^0x[a-fA-F0-9]{40}$/;
-  if (!addressRegex.test(sellToken) || !addressRegex.test(buyToken)) {
+  if (!isEvmAddress(sellToken) || !isEvmAddress(buyToken)) {
     return new Response(JSON.stringify({ error: 'Invalid token address format' }), { status: 400 });
   }
 
@@ -57,9 +58,12 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
 
   if (!response.ok) {
     console.error('0x API error:', data);
-    return new Response(JSON.stringify({ error: 'Failed to get quote', reason: data.reason }), {
-      status: response.status,
-    });
+    return new Response(
+      JSON.stringify({
+        error: toUserFacingErrorTextWithContext('Failed to get quote.', data?.reason || data),
+      }),
+      { status: response.status },
+    );
   }
 
   return new Response(JSON.stringify(data), {

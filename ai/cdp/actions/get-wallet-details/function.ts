@@ -1,7 +1,7 @@
-import type { Wallet } from "@coinbase/coinbase-sdk";
-
-import type { CdpActionResult } from "@/ai";
-import type { GetWalletDetailsArgumentsType, GetWalletDetailsResultBodyType } from "./types";
+import type { Wallet } from '@coinbase/coinbase-sdk';
+import type { CdpActionResult } from '@/ai';
+import type { GetWalletDetailsArgumentsType, GetWalletDetailsResultBodyType } from './types';
+import { toUserFacingErrorTextWithContext } from '@/lib/user-facing-error';
 
 /**
  * Gets a wallet's details.
@@ -19,12 +19,12 @@ export async function getWalletDetails(
     return {
       message: `Wallet: ${wallet.getId()} on network: ${wallet.getNetworkId()} with default address: ${defaultAddress.getId()}`,
       body: {
-        address: defaultAddress.getId()
-      }
+        address: defaultAddress.getId(),
+      },
     };
   } catch (error) {
     return {
-      message: `Error getting wallet details: ${error}`,
+      message: toUserFacingErrorTextWithContext("Couldn't load wallet details right now.", error),
     };
   }
-} 
+}

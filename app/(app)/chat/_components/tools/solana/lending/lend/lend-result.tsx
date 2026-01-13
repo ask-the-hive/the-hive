@@ -70,7 +70,8 @@ const LendResult: React.FC<Props> = ({ tokenData, poolData, amount, tx }) => {
   return (
     <div className="flex flex-col gap-2">
       <p className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
-        You have successfully lent {tokenData?.symbol}!
+        You have successfully deposited {tokenData?.symbol}{' '}
+        {poolData?.project ? `into ${capitalizeWords(poolData.project)}` : 'into Jupiter Lend'}!
       </p>
 
       {(poolData || chartData.length > 0) && (

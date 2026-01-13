@@ -211,3 +211,8 @@ body {
     position: relative;
   }
 }
+
+/* Privy modals should always be above app chrome (TopBar, sheets, dialogs). */
+#privy-dialog {
+  z-index: 2147483647 !important;
+}

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withErrorHandling } from '@/lib/api-error-handler';
+import { toUserFacingErrorTextWithContext } from '@/lib/user-facing-error';
 
 const ZEROX_API_URL = 'https://bsc.api.0x.org';
 
@@ -22,11 +23,6 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
     takerAddress,
   });
 
-  console.log(
-    'Forwarding request to 0x API:',
-    `${ZEROX_API_URL}/swap/permit2/price?${queryParams.toString()}`,
-  );
-
   const response = await fetch(`${ZEROX_API_URL}/swap/permit2/price?${queryParams}`, {
     headers: {
       '0x-api-key': process.env.ZEROX_API_KEY || '',
@@ -42,7 +38,7 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
       body: errorData,
     });
     return NextResponse.json(
-      { error: errorData.reason || 'Failed to get price quote' },
+      { error: toUserFacingErrorTextWithContext('Failed to get price quote.', errorData?.reason) },
       { status: response.status },
     );
   }

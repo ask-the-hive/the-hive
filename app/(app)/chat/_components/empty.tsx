@@ -51,6 +51,7 @@ async function fetchBestLendingPool(): Promise<BestPool | null> {
     apy: best.yield || best.apy || 0,
     tvlUsd: best.tvlUsd,
     tokenLogoURI: best.tokenData?.logoURI ?? null,
+    tokenMintAddress: best.tokenMintAddress || best.underlyingTokens?.[0] || null,
   };
 }
 
@@ -84,7 +85,8 @@ const setCachedPool = (key: string, pool: BestPool | null) => {
 
 const EmptyChat: React.FC = () => {
   const { currentChain } = useChain();
-  const { sendMessage, isLoading: chatIsLoading, isResponseLoading } = useChat();
+  const { sendMessage, sendClientAction, isLoading: chatIsLoading, isResponseLoading } =
+    useChat();
 
   const [staking, setStaking] = React.useState<BestPool | null>(null);
   const [lending, setLending] = React.useState<BestPool | null>(null);
@@ -265,7 +267,7 @@ const EmptyChat: React.FC = () => {
                 staking && !chatIsLoading && !isResponseLoading
                   ? () => {
                       const symbol = staking.symbol;
-                      sendMessage(`I want to stake SOL for ${symbol}`);
+                      sendMessage(`I want to stake SOL into ${symbol}`);
                     }
                   : undefined
               }
@@ -279,20 +281,32 @@ const EmptyChat: React.FC = () => {
               onClick={
                 lending && !chatIsLoading && !isResponseLoading
                   ? () => {
-                      const symbol = lending.symbol;
+                      const symbol = lending.symbol || '';
                       const tokenAddress = lending.tokenMintAddress || '';
-                      const projectName = lending.project
-                        ? capitalizeWords(lending.project)
+                      const protocolKey = lending.project || '';
+                      const projectName = protocolKey
+                        ? capitalizeWords(protocolKey.replace('-', ' '))
                         : 'the selected lending protocol';
+                      const message = tokenAddress
+                        ? `I want to deposit ${symbol} (${tokenAddress}) into ${projectName}.`
+                        : `I want to deposit ${symbol} into ${projectName}.`;
 
-                      if (tokenAddress) {
-                        sendMessage(
-                          `I want to lend ${symbol} (${tokenAddress}) to ${projectName}.`,
+                      if (symbol && tokenAddress && protocolKey) {
+                        sendClientAction(
+                          message,
+                          {
+                            type: 'execute_lend',
+                            chain: 'solana',
+                            tokenSymbol: symbol,
+                            tokenAddress,
+                            protocol: protocolKey,
+                          },
+                          { visible: true },
                         );
                       } else {
-                        sendMessage(`I want to lend ${symbol} using ${projectName}.`);
+                        sendMessage(message);
                       }
-                    }
+                  }
                   : undefined
               }
             />

@@ -14,6 +14,15 @@ interface Props {
 }
 
 const Lend: React.FC<Props> = ({ tool, prevToolAgent }) => {
+  const resultStatus =
+    tool.state === 'result' && 'result' in tool
+      ? (tool.result as LendResultType).body?.status
+      : undefined;
+
+  if (resultStatus === 'cancelled') {
+    return null;
+  }
+
   return (
     <ToolCard
       tool={tool}
@@ -23,6 +32,9 @@ const Lend: React.FC<Props> = ({ tool, prevToolAgent }) => {
           // If status is pending, this is awaiting user confirmation - don't show a heading
           if (result.body?.status === 'pending') {
             return 'Lend';
+          }
+          if (result.body?.status === 'cancelled') {
+            return 'Lend cancelled';
           }
           // If status is complete or failed, show appropriate heading
           return result.body?.status === 'complete' ? 'Lend Complete' : 'Failed to Lend';
@@ -42,6 +54,11 @@ const Lend: React.FC<Props> = ({ tool, prevToolAgent }) => {
                 </div>
               </div>
             );
+          }
+
+          // On cancel, dismiss the interface entirely (the user can reopen from a card / prompt).
+          if (result.body?.status === 'cancelled') {
+            return null;
           }
 
           const args = tool.args as LendArgumentsType;

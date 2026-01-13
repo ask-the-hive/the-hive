@@ -1,6 +1,6 @@
 import { Connection } from '@solana/web3.js';
 import { getToken } from '@/db/services';
-
+import { isSupportedSolanaStakingLst } from '@/lib/yield-support';
 import type { StakeArgumentsType, StakeResultBodyType } from './types';
 import type { SolanaActionResult } from '../../solana-action';
 
@@ -17,33 +17,55 @@ export async function stakeSol(
   args: StakeArgumentsType,
 ): Promise<SolanaActionResult<StakeResultBodyType>> {
   try {
-    // SOL mint address
-    // const SOL_MINT = "So11111111111111111111111111111111111111112";
-
-    // Get token data for the liquid staking token
     const outputToken = await getToken(args.contractAddress);
     if (!outputToken) {
       return {
-        message: `Error: Could not find token data for contract address ${args.contractAddress}`,
+        message:
+          "Couldn't find that staking option. Please pick a SOL staking pool card above to continue.",
+        body: {
+          status: 'failed',
+          tx: '',
+          symbol: '',
+        },
       };
     }
 
-    const amount = args.amount || 1; // Default to 1 SOL if not specified
+    if (!isSupportedSolanaStakingLst(outputToken.symbol)) {
+      return {
+        message:
+          `${outputToken.symbol} isn’t a supported SOL liquid-staking token here. ` +
+          `Liquid staking supports SOL → LSTs (e.g., DSOL/JUPSOL/JITOSOL/MSOL). ` +
+          `If you’re trying to earn yield on ${outputToken.symbol}, use stablecoin lending instead.`,
+        body: {
+          status: 'failed',
+          tx: '',
+          symbol: outputToken.symbol,
+          contractAddress: args.contractAddress,
+        },
+      };
+    }
 
-    // Return the data needed for the Swap component to execute the staking
+    const amount = args.amount || 1;
+
     return {
       message: `Ready to stake ${amount} SOL for ${outputToken.symbol}. The Swap component will handle getting quotes and executing the transaction.`,
       body: {
         status: 'pending',
-        tx: '', // Will be filled by the UI component after transaction execution
+        tx: '',
         symbol: outputToken.symbol,
         amount: amount,
+        contractAddress: args.contractAddress,
       },
     };
   } catch (error) {
     console.error('Error in stakeSol:', error);
     return {
-      message: `Error preparing staking: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      message: 'Something went wrong while preparing staking. Please try again.',
+      body: {
+        status: 'failed',
+        tx: '',
+        symbol: '',
+      },
     };
   }
 }

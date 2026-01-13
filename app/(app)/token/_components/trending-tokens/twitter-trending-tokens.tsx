@@ -4,6 +4,7 @@ import { Skeleton } from '@/components/ui';
 import { AlertCircle } from 'lucide-react';
 import { ChainType } from '@/app/_contexts/chain-context';
 import type { TrendingToken } from '@/services/birdeye/types/trending';
+import { toUserFacingErrorTextWithContext } from '@/lib/user-facing-error';
 
 interface TwitterTrendingTokensProps {
   chain: ChainType;
@@ -29,7 +30,9 @@ const TwitterTrendingTokens: React.FC<TwitterTrendingTokensProps> = ({ chain, he
             setUnsupportedChain(true);
             setError(`Trending on Twitter is not yet available for ${chain.toUpperCase()}.`);
           } else {
-            throw new Error(data.error || `Failed to fetch Twitter trending tokens for ${chain} chain`);
+            throw new Error(
+              data.error || `Failed to fetch Twitter trending tokens for ${chain} chain`,
+            );
           }
         } else {
           setTokens(
@@ -39,18 +42,24 @@ const TwitterTrendingTokens: React.FC<TwitterTrendingTokensProps> = ({ chain, he
               symbol: token.symbol,
               logoURI: token.logoURI || token.logo_uri || '',
               price: token.price ?? 0,
-              price24hChangePercent: token.price24hChangePercent ?? token.price_change_24h_percent ?? 0,
+              price24hChangePercent:
+                token.price24hChangePercent ?? token.price_change_24h_percent ?? 0,
               volume24hUSD: token.volume24hUSD ?? token.volume_24h_usd ?? 0,
               decimals: token.decimals ?? 0,
               liquidity: token.liquidity ?? 0,
               rank: token.rank ?? 0,
               // mentions: token.mentions ?? 0, // Remove mentions
-            }))
+            })),
           );
         }
       } catch (error) {
         console.error(error);
-        setError(error instanceof Error ? error.message : 'An unknown error occurred');
+        setError(
+          toUserFacingErrorTextWithContext(
+            "Couldn't load Twitter trending tokens right now.",
+            error,
+          ),
+        );
         setTokens([]);
       } finally {
         setLoading(false);
@@ -75,7 +84,9 @@ const TwitterTrendingTokens: React.FC<TwitterTrendingTokensProps> = ({ chain, he
         <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 p-4 rounded-md">
           <div className="flex items-center gap-2">
             <AlertCircle className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
-            <h3 className="font-medium text-yellow-600 dark:text-yellow-400">Chain Not Supported</h3>
+            <h3 className="font-medium text-yellow-600 dark:text-yellow-400">
+              Chain Not Supported
+            </h3>
           </div>
           <p className="text-sm text-yellow-600 dark:text-yellow-400 mt-1">{error}</p>
         </div>
@@ -91,7 +102,9 @@ const TwitterTrendingTokens: React.FC<TwitterTrendingTokensProps> = ({ chain, he
         <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 p-4 rounded-md">
           <div className="flex items-center gap-2">
             <AlertCircle className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
-            <h3 className="font-medium text-yellow-600 dark:text-yellow-400">No trending tokens found</h3>
+            <h3 className="font-medium text-yellow-600 dark:text-yellow-400">
+              No trending tokens found
+            </h3>
           </div>
           <p className="text-sm text-yellow-600 dark:text-yellow-400 mt-1">
             No trending tokens are available for the selected chain.
@@ -108,4 +121,4 @@ const TwitterTrendingTokens: React.FC<TwitterTrendingTokensProps> = ({ chain, he
   );
 };
 
-export default TwitterTrendingTokens; 
+export default TwitterTrendingTokens;
