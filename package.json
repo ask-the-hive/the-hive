@@ -36,7 +36,7 @@
     "@jup-ag/core": "4.0.0-beta.21",
     "@jup-ag/lend": "0.0.42",
     "@jup-ag/react-hook": "^6.2.0",
-    "@kamino-finance/klend-sdk": "^7.2.4",
+    "@kamino-finance/klend-sdk": "^7.3.13",
     "@mendable/firecrawl-js": "^1.11.2",
     "@mercurial-finance/dynamic-amm-sdk": "^1.1.23",
     "@meteora-ag/dlmm": "^1.3.8",
