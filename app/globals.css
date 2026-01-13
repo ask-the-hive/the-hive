@@ -210,4 +210,14 @@ body {
     animation: apy-flash 0.6s ease-out;
     position: relative;
   }
+
+  /* Shiny text animation for home page */
+  @keyframes shiny-text-home {
+    0%, 100% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+  }
 }

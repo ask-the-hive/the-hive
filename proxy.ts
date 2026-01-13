@@ -7,10 +7,10 @@ export function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Redirect root path to /chat
-  if (request.nextUrl.pathname === '/') {
-    return NextResponse.redirect(new URL('/chat', request.url));
-  }
+  // Root path now shows the home page - no redirect
+  // if (request.nextUrl.pathname === '/') {
+  //   return NextResponse.redirect(new URL('/chat', request.url));
+  // }
 
   // Add a new header x-current-path which passes the path to downstream components
   const headers = new Headers(request.headers);
