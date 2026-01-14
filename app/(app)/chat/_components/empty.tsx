@@ -1,20 +1,15 @@
 'use client';
 
-import React, { useMemo, useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import ChatInput from './input';
 import Logo from '@/components/ui/logo';
-import { Card, TokenIcon, Skeleton } from '@/components/ui';
-import { usePrice } from '@/hooks/queries/price/use-price';
-import { SOL_MINT, SOL_LOGO_URL } from '@/lib/constants';
+import { Card, Button, TokenIcon, Skeleton } from '@/components/ui';
 import { useChain } from '@/app/_contexts/chain-context';
-import { usePriceChart } from '@/hooks/queries/price/use-price-chart';
-import { CandlestickGranularity } from '@/services/hellomoon/types';
-import { ChartContainer } from '@/components/ui/chart';
-import { AreaChart, Area, YAxis } from 'recharts';
 import { capitalizeWords } from '@/lib/string-utils';
 import { useChat } from '../_contexts/chat';
 import { cn } from '@/lib/utils';
 import OnboardingModal from './onboarding-modal';
+import { HelpCircle } from 'lucide-react';
 
 type BestPool = {
   symbol: string;
@@ -90,15 +85,6 @@ const EmptyChat: React.FC = () => {
   const [lending, setLending] = React.useState<BestPool | null>(null);
   const [showOnboarding, setShowOnboarding] = React.useState(false);
 
-  React.useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const hasBeenOnboarded = localStorage.getItem(ONBOARDING_STORAGE_KEY);
-      if (!hasBeenOnboarded) {
-        setShowOnboarding(true);
-      }
-    }
-  }, []);
-
   const handleOnboardingComplete = () => {
     if (typeof window !== 'undefined') {
       localStorage.setItem(ONBOARDING_STORAGE_KEY, 'true');
@@ -139,107 +125,22 @@ const EmptyChat: React.FC = () => {
     };
   }, [currentChain]);
 
-  const { data: solPrice, isLoading: solPriceLoading } = usePrice(SOL_MINT);
-  const { data: solPriceCandles, isLoading: solChartLoading } = usePriceChart(
-    SOL_MINT,
-    CandlestickGranularity.ONE_HOUR,
-    7,
-  );
-
-  const formattedSolPrice = useMemo(() => {
-    if (!solPrice || typeof solPrice.value !== 'number') return null;
-    return solPrice.value.toLocaleString(undefined, {
-      style: 'currency',
-      currency: 'USD',
-      maximumFractionDigits: 2,
-    });
-  }, [solPrice]);
-
-  const changeValue = solPrice?.priceChange24h ?? 0;
-  const formattedChange = useMemo(() => {
-    if (typeof changeValue !== 'number') return null;
-    const sign = changeValue > 0 ? '+' : '';
-    return `${sign}${changeValue.toFixed(2)}%`;
-  }, [changeValue]);
-
-  const sparklineColor = changeValue < 0 ? '#f87171' : '#22c55e';
-
-  const sparklineData = useMemo(() => {
-    if (!Array.isArray(solPriceCandles)) return [];
-    return solPriceCandles.map((candle) => ({
-      time: candle.timestamp,
-      price: candle.close,
-    }));
-  }, [solPriceCandles]);
-
   return (
     <div className="flex flex-col items-center justify-start md:justify-center w-full flex-1 px-4 pt-0 relative">
-      <div className="fixed top-4 left-1/2 -translate-x-1/2 md:left-auto md:right-6 lg:right-10 md:translate-x-0 z-20 flex items-center gap-3 rounded-xl bg-neutral-900/80 border border-neutral-700 px-4 py-2 shadow-sm min-w-[200px]">
-        <TokenIcon
-          src={SOL_LOGO_URL}
-          alt="Solana"
-          tokenSymbol="SOL"
-          width={20}
-          height={20}
-          className="w-5 h-5 rounded-full"
-        />
-        <div className="flex flex-col flex-1 min-w-0">
-          {solPriceLoading || !formattedSolPrice ? (
-            <div className="flex flex-col gap-1">
-              <Skeleton className="h-5 w-12" />
-              <Skeleton className="h-3 w-12" />
-            </div>
-          ) : (
-            <div className="flex flex-col leading-tight">
-              <span className="text-sm font-semibold text-neutral-50">{formattedSolPrice}</span>
-              {formattedChange ? (
-                <span
-                  className={cn(
-                    'text-xs font-semibold',
-                    changeValue > 0
-                      ? 'text-emerald-400'
-                      : changeValue < 0
-                        ? 'text-rose-400'
-                        : 'text-neutral-400',
-                  )}
-                >
-                  {formattedChange}
-                </span>
-              ) : null}
-            </div>
-          )}
-        </div>
-        <div className="w-24">
-          {solChartLoading || sparklineData.length === 0 ? (
-            <Skeleton className="w-full aspect-video rounded-sm" />
-          ) : (
-            <ChartContainer className="w-full" config={{}}>
-              <AreaChart data={sparklineData}>
-                <YAxis hide domain={['dataMin', 'dataMax']} />
-                <defs>
-                  <linearGradient id="solanaSparkline" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor={sparklineColor} stopOpacity={0.8} />
-                    <stop offset="95%" stopColor={sparklineColor} stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <Area
-                  type="monotone"
-                  dataKey="price"
-                  stroke={sparklineColor}
-                  strokeWidth={1.5}
-                  fillOpacity={1}
-                  fill="url(#solanaSparkline)"
-                  dot={false}
-                  baseValue="dataMin"
-                  isAnimationActive={false}
-                />
-              </AreaChart>
-            </ChartContainer>
-          )}
-        </div>
+      {/* Help Button - Small, unobtrusive */}
+      <div className="fixed top-4 right-4 md:right-6 z-20">
+        <Button
+          onClick={() => setShowOnboarding(true)}
+          variant="ghost"
+          size="icon"
+          className="h-9 w-9 rounded-full backdrop-blur-sm bg-white/5 dark:bg-neutral-800/30 border border-white/20 dark:border-neutral-700/50 hover:bg-white/10 dark:hover:bg-neutral-800/40"
+        >
+          <HelpCircle className="w-4 h-4 text-neutral-400 dark:text-neutral-500" />
+          <span className="sr-only">Learn how to use</span>
+        </Button>
       </div>
 
-      <div className="flex flex-col items-center justify-center w-full max-w-2xl gap-4 md:gap-6 relative z-10 pb-8 mt-20 md:mt-0">
+      <div className="flex flex-col items-center justify-center w-full max-w-2xl gap-4 md:gap-6 relative z-10 pb-8 mt-0 md:mt-0">
         <div className="flex flex-col gap-4 items-center justify-center">
           <Logo className="w-20 h-20" />
           <div className="flex flex-col gap-1">
