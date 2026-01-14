@@ -79,7 +79,7 @@ const setCachedPool = (key: string, pool: BestPool | null) => {
 
 const EmptyChat: React.FC = () => {
   const { currentChain } = useChain();
-  const { sendMessage, isLoading: chatIsLoading, isResponseLoading } = useChat();
+  const { sendMessage, isLoading: chatIsLoading, isResponseLoading, messages } = useChat();
 
   const [staking, setStaking] = React.useState<BestPool | null>(null);
   const [lending, setLending] = React.useState<BestPool | null>(null);
@@ -91,6 +91,9 @@ const EmptyChat: React.FC = () => {
     }
     setShowOnboarding(false);
   };
+
+  // Hide button when user has messages (has left the home page)
+  const showButton = messages.length === 0;
 
   React.useEffect(() => {
     if (currentChain !== 'solana') return;
@@ -127,18 +130,20 @@ const EmptyChat: React.FC = () => {
 
   return (
     <div className="flex flex-col items-center justify-start md:justify-center w-full flex-1 px-4 pt-0 relative">
-      {/* Help Button - Small, unobtrusive */}
-      <div className="fixed top-4 right-4 md:right-6 z-20">
-        <Button
-          onClick={() => setShowOnboarding(true)}
-          variant="ghost"
-          size="icon"
-          className="h-9 w-9 rounded-full backdrop-blur-sm bg-white/5 dark:bg-neutral-800/30 border border-white/20 dark:border-neutral-700/50 hover:bg-white/10 dark:hover:bg-neutral-800/40"
-        >
-          <HelpCircle className="w-4 h-4 text-neutral-400 dark:text-neutral-500" />
-          <span className="sr-only">Learn how to use</span>
-        </Button>
-      </div>
+      {/* Help Button - Only visible on home page (no messages) */}
+      {showButton && (
+        <div className="fixed top-4 right-4 md:right-6 z-20">
+          <Button
+            onClick={() => setShowOnboarding(true)}
+            variant="ghost"
+            size="icon"
+            className="h-9 w-9 rounded-full backdrop-blur-sm bg-white/5 dark:bg-neutral-800/30 border border-white/20 dark:border-neutral-700/50 hover:bg-white/10 dark:hover:bg-neutral-800/40"
+          >
+            <HelpCircle className="w-4 h-4 text-neutral-400 dark:text-neutral-500" />
+            <span className="sr-only">Learn how to use</span>
+          </Button>
+        </div>
+      )}
 
       <div className="flex flex-col items-center justify-center w-full max-w-2xl gap-4 md:gap-6 relative z-10 pb-8 mt-0 md:mt-0">
         <div className="flex flex-col gap-4 items-center justify-center">
