@@ -342,30 +342,24 @@ const LendingYields: React.FC<{
     handleLendClick(matchingPool);
   }, [poolsToShow, messages, isResponseLoading, handleLendClick]);
 
-  if (autoSelected && requestedSymbol) {
-    return null;
-  }
-
   return (
     <>
-      {!autoSelected && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4 mt-4">
-          {displayPools?.map((pool, index) => (
-            <PoolDetailsCard
-              key={`${pool.name}-${pool.project}-${index}`}
-              pool={pool}
-              index={index}
-              highlightIndex={highlightIndex}
-              onClick={handleLendClick}
-              onMoreDetailsClick={handleMoreDetailsClick}
-              disabled={isDisabled}
-              isPending={
-                pendingPoolId === (pool.tokenMintAddress || pool.tokenData?.id || pool.name)
-              }
-            />
-          ))}
-        </div>
-      )}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4 mt-4">
+        {displayPools?.map((pool, index) => (
+          <PoolDetailsCard
+            key={`${pool.name}-${pool.project}-${index}`}
+            pool={pool}
+            index={index}
+            highlightIndex={highlightIndex}
+            onClick={handleLendClick}
+            onMoreDetailsClick={handleMoreDetailsClick}
+            disabled={isDisabled}
+            isPending={
+              pendingPoolId === (pool.tokenMintAddress || pool.tokenData?.id || pool.name)
+            }
+          />
+        ))}
+      </div>
 
       <PoolDetailsModal
         pool={selectedPool}
