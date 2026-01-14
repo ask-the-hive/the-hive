@@ -12,6 +12,10 @@ export default function HomePage() {
 
   const handleEnter = () => {
     setIsDissolving(true);
+    // Mark that user is coming from home page to show concierge modal
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('showConciergeFromHome', 'true');
+    }
     // Wait for wave animation to complete (1.2s wave + 0.3s fade), then navigate
     setTimeout(() => {
       setIsExiting(true);
@@ -26,9 +30,9 @@ export default function HomePage() {
         {/* Honeycomb Background */}
         <div className="absolute inset-0">
           <HoneycombBackground 
-            rows={20} 
-            cols={30} 
-            cellSize={400}
+            rows={30} 
+            cols={50} 
+            cellSize={100}
             isDissolving={isDissolving}
           />
         </div>
@@ -37,7 +41,7 @@ export default function HomePage() {
         <AnimatePresence>
           {!isExiting && (
             <motion.div
-              className="relative z-10 flex flex-col items-center justify-center h-full pointer-events-none"
+              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 flex flex-col items-center pointer-events-none"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
@@ -45,7 +49,7 @@ export default function HomePage() {
             >
               {/* Hive Labs Branding */}
               <motion.h1
-                className="text-4xl md:text-5xl font-bold mb-12 tracking-tight pointer-events-none relative"
+                className="text-4xl md:text-5xl font-bold mb-12 tracking-tight pointer-events-none text-center whitespace-nowrap"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, delay: 0.2 }}
