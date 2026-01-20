@@ -10,6 +10,7 @@ import {
   Trade,
   LiquidStakingYields,
   LendingYieldsTool,
+  GlobalYieldsTool,
   LendTool,
   WithdrawCallBody,
   Transfer as SolanaTransfer,
@@ -79,6 +80,7 @@ import {
   SOLANA_TRADE_ACTION,
   SOLANA_LIQUID_STAKING_YIELDS_ACTION,
   SOLANA_LENDING_YIELDS_ACTION,
+  SOLANA_GLOBAL_YIELDS_ACTION,
   SOLANA_LEND_ACTION,
   SOLANA_WITHDRAW_ACTION,
   SOLANA_TRANSFER_NAME,
@@ -341,6 +343,17 @@ const ToolInvocation: React.FC<Props> = ({ tool, prevToolAgent }) => {
     }
   }
 
+  // Handle Yield tools
+  if (toolAgent === 'yield') {
+    switch (toolName) {
+      case SOLANA_GLOBAL_YIELDS_ACTION:
+        return <GlobalYieldsTool tool={tool} prevToolAgent={prevToolAgent} />;
+      default:
+        console.log(`Unknown yield tool: ${toolName}`);
+        return <pre className="whitespace-pre-wrap">{JSON.stringify(tool, null, 2)}</pre>;
+    }
+  }
+
   // Handle Lending tools
   if (toolAgent === 'lending') {
     switch (toolName) {
@@ -384,6 +397,8 @@ const ToolInvocation: React.FC<Props> = ({ tool, prevToolAgent }) => {
       return <WithdrawCallBody tool={tool} args={tool.args} prevToolAgent={prevToolAgent} />;
     case SOLANA_LIQUID_STAKING_YIELDS_ACTION:
       return <LiquidStakingYields tool={tool} prevToolAgent={prevToolAgent} />;
+    case SOLANA_GLOBAL_YIELDS_ACTION:
+      return <GlobalYieldsTool tool={tool} prevToolAgent={prevToolAgent} />;
     case SOLANA_TRANSFER_NAME:
       return <SolanaTransfer tool={tool} prevToolAgent={prevToolAgent} />;
     case TWITTER_SEARCH_RECENT_NAME:

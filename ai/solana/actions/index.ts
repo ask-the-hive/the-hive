@@ -8,6 +8,7 @@ import {
 } from './wallet';
 import { SolanaStakeAction, SolanaUnstakeAction, SolanaLiquidStakingYieldsAction } from './staking';
 import { SolanaLendingYieldsAction, SolanaLendAction, SolanaWithdrawAction } from './lending';
+import { SolanaGlobalYieldsAction } from './yield';
 import {
   SolanaGetTokenDataAction,
   SolanaGetTokenAddressAction,
@@ -36,6 +37,8 @@ export function getAllSolanaActions(): SolanaAction<SolanaActionSchemaAny, any>[
     new SolanaLendingYieldsAction(),
     new SolanaLendAction(),
     new SolanaWithdrawAction(),
+    // Yield Actions
+    new SolanaGlobalYieldsAction(),
   ];
 }
 
@@ -51,3 +54,4 @@ export * from './staking';
 export * from './wallet';
 export * from './token';
 export * from './lending';
+export * from './yield';
