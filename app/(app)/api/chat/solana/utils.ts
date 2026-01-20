@@ -171,6 +171,5 @@ export const chooseAgent = async (
 
   // Find agent by name (matches the enum value)
   const found = solanaAgents.find((a) => a.name === object.agent) ?? null;
-  console.log('util chosen agent', object.agent, found?.name);
   return found;
 };
