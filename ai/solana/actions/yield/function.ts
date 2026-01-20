@@ -64,7 +64,7 @@ export async function getGlobalYields(): Promise<
 
     const result: SolanaActionResult<GlobalYieldsResultBodyType> = {
       message: `${bestSummary}Found ${topPools.length} yield opportunities across lending and staking. Compare the cards (APY and strategy type are shown in the UI) and pick the best fit to continue.\n\nText rules: keep to one short sentence, do NOT list pool names/symbols/APYs in text, do NOT mention other tokens unless the user asked for them. DO NOT CHECK BALANCES YET - wait for the user to select a specific pool first.`,
-      body: topPools,
+      body: topPools as GlobalYieldsResultBodyType,
     };
 
     cachedGlobalYields = {
