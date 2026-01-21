@@ -1,6 +1,7 @@
 import { marketAgent } from './market';
 import { stakingAgent } from './staking';
 import { lendingAgent } from './lending';
+import { yieldAgent } from './yield';
 import { recommendationAgent } from './recommendation';
 import { walletAgent } from './wallet';
 import { knowledgeAgent } from './knowledge';
@@ -23,6 +24,7 @@ export const agents = [
   recommendationAgent,
   stakingAgent,
   lendingAgent,
+  yieldAgent,
   walletAgent,
   marketAgent,
   tradingAgent,

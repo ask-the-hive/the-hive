@@ -43,6 +43,11 @@ async function fetchAndCache(): Promise<KaminoPoolData[]> {
 
   for (const reserve of market.reserves.values()) {
     try {
+      const deprecated = reserve.stats.isUIDeprecated;
+      if(deprecated) {
+        console.log(`Skipping deprecated Kamino reserve ${reserve.symbol}`);
+        continue;
+      }
       const symbol = reserve.symbol;
       const mintAddress = reserve.state.liquidity.mintPubkey.toString();
       const supplyAPYDecimal = reserve.totalSupplyAPY(currentSlot);
