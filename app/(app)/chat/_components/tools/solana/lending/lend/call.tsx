@@ -177,6 +177,7 @@ const LendCallBody: React.FC<Props> = ({ toolCallId, args }) => {
       if (!response.ok) {
         // const errorData = await response.json();
         setErrorMessage('Failed to build transaction. Please try again.');
+        setIsLending(false);
         return;
       }
 

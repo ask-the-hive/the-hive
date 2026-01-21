@@ -2,6 +2,7 @@ export * from './wallet/name';
 export * from './staking/name';
 export * from './lending/name';
 export * from './recommendation/name';
+export * from './yield/name';
 export * from './market/name';
 export * from './knowledge/name';
 export * from './token-analysis/name';
