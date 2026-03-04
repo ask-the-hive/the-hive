@@ -46,6 +46,20 @@ export const HoneycombBackground: React.FC<HoneycombBackgroundProps> = ({
     return hexArray;
   }, [rows, cols, hexWidth, hexHeight]);
 
+  // Calculate normalized X position for each hexagon (0 to 1) for wave animation
+  const hexagonNormalizedX = useMemo(() => {
+    if (hexagons.length === 0) return new Map();
+    const minX = Math.min(...hexagons.map(h => h.x));
+    const maxX = Math.max(...hexagons.map(h => h.x));
+    const rangeX = maxX - minX;
+    const normalizedMap = new Map<string, number>();
+    hexagons.forEach(hex => {
+      const normalizedX = rangeX > 0 ? (hex.x - minX) / rangeX : 0.5;
+      normalizedMap.set(hex.id, normalizedX);
+    });
+    return normalizedMap;
+  }, [hexagons]);
+
   // Calculate distance from mouse to hexagon center
   // Note: hex positions are in the transformed coordinate system (after translate and rotate)
   const getDistance = useCallback(
@@ -63,9 +77,9 @@ export const HoneycombBackground: React.FC<HoneycombBackgroundProps> = ({
   const getGlowIntensity = useCallback(
     (hex: Hexagon, mouse: { x: number; y: number }) => {
       const distance = getDistance(hex, mouse);
-      const maxRadius = hexWidth * 1.5; // Glow radius
+      const maxRadius = hexWidth * 4; // Larger glow radius for smoother effect
       const intensity = Math.max(0, 1 - distance / maxRadius);
-      return Math.pow(intensity, 2); // Square for smoother falloff
+      return Math.pow(intensity, 1.5); // Smoother falloff
     },
     [getDistance, hexWidth],
   );
@@ -73,6 +87,72 @@ export const HoneycombBackground: React.FC<HoneycombBackgroundProps> = ({
   // Add lingering effect state
   const [lingeringGlow, setLingeringGlow] = useState<Map<string, number>>(new Map());
   const [lingeringTimeout, setLingeringTimeout] = useState<NodeJS.Timeout | null>(null);
+  
+  // Wave animation state
+  const [waveTime, setWaveTime] = useState(0);
+  
+  // Wave animation loop
+  useEffect(() => {
+    if (isDissolving) return;
+    
+    let animationFrame: number;
+    let startTime: number | null = null;
+    
+    const animate = (timestamp: number) => {
+      if (startTime === null) startTime = timestamp;
+      const elapsed = (timestamp - startTime) / 1000; // Convert to seconds
+      
+      // Wave cycle: 8 seconds total
+      // 0-3.2s: Left to right
+      // 3.2-4s: Pause
+      // 4-7.2s: Right to left
+      // 7.2-8s: Pause
+      const cycleTime = elapsed % 8;
+      setWaveTime(cycleTime);
+      
+      animationFrame = requestAnimationFrame(animate);
+    };
+    
+    animationFrame = requestAnimationFrame(animate);
+    
+    return () => {
+      if (animationFrame) {
+        cancelAnimationFrame(animationFrame);
+      }
+    };
+  }, [isDissolving]);
+  
+  // Calculate wave intensity for a hexagon based on its X position and current time
+  const getWaveIntensity = useCallback((hex: Hexagon) => {
+    if (isDissolving) return 0;
+    
+    const normalizedX = hexagonNormalizedX.get(hex.id) || 0.5;
+    const waveWidth = 0.2; // Width of the wave pulse (20% of screen)
+    
+    // Left to right wave (0-3.2s)
+    if (waveTime >= 0 && waveTime < 3.2) {
+      const wavePosition = waveTime / 3.2; // 0 to 1
+      const distanceFromWave = Math.abs(normalizedX - wavePosition);
+      if (distanceFromWave < waveWidth) {
+        const intensity = 1 - (distanceFromWave / waveWidth);
+        // Return intensity 0-1, where 1 means full pulse (30% opacity), 0 means base (10% opacity)
+        return Math.max(0, Math.min(1, intensity));
+      }
+    }
+    
+    // Right to left wave (4-7.2s)
+    if (waveTime >= 4 && waveTime < 7.2) {
+      const wavePosition = 1 - ((waveTime - 4) / 3.2); // 1 to 0
+      const distanceFromWave = Math.abs(normalizedX - wavePosition);
+      if (distanceFromWave < waveWidth) {
+        const intensity = 1 - (distanceFromWave / waveWidth);
+        // Return intensity 0-1, where 1 means full pulse (30% opacity), 0 means base (10% opacity)
+        return Math.max(0, Math.min(1, intensity));
+      }
+    }
+    
+    return 0;
+  }, [waveTime, hexagonNormalizedX, isDissolving]);
 
   // Update lingering glow effect when hovering
   useEffect(() => {
@@ -96,10 +176,10 @@ export const HoneycombBackground: React.FC<HoneycombBackgroundProps> = ({
           const distance = Math.sqrt(
             (hexCenterX - hoveredCenterX) ** 2 + (hexCenterY - hoveredCenterY) ** 2
           );
-          const maxRadius = hexWidth * 2;
+          const maxRadius = hexWidth * 2; // Smaller radius - fewer hexagons light up
           const intensity = Math.max(0, 1 - distance / maxRadius);
           if (intensity > 0) {
-            newLingeringGlow.set(hex.id, Math.pow(intensity, 1.5));
+            newLingeringGlow.set(hex.id, Math.pow(intensity, 1.2)); // Smoother falloff
           }
         });
       }
@@ -123,7 +203,7 @@ export const HoneycombBackground: React.FC<HoneycombBackgroundProps> = ({
   // Calculate viewBox - make it bigger to fill more screen
   const baseWidth = cols * hexWidth * 0.75 + hexWidth;
   const baseHeight = rows * hexHeight + hexHeight;
-  const finalWidth = baseWidth * 0.5; // Make it larger to fill corners
+  const finalWidth = baseWidth; // Full width to fill screen
   const finalHeight = baseHeight;
 
   // Calculate center point for wave animation
@@ -165,9 +245,9 @@ export const HoneycombBackground: React.FC<HoneycombBackgroundProps> = ({
           const distance = Math.sqrt(
             (hexCenterX - hoveredCenterX) ** 2 + (hexCenterY - hoveredCenterY) ** 2
           );
-          const maxRadius = hexWidth * 2; // Glow radius
+          const maxRadius = hexWidth * 2; // Smaller glow radius - fewer hexagons light up
           const intensity = Math.max(0, 1 - distance / maxRadius);
-          return Math.pow(intensity, 1.5); // Smooth falloff
+          return Math.pow(intensity, 1.2); // Smoother falloff
         }
       }
       
@@ -205,12 +285,13 @@ export const HoneycombBackground: React.FC<HoneycombBackgroundProps> = ({
 
           {/* Glow filter */}
           <filter id="honey-glow" x="0%" y="0%" width="500%" height="500%">
-            <feGaussianBlur stdDeviation="8" result="coloredBlur" />
+            <feGaussianBlur stdDeviation="4" result="coloredBlur" />
             <feMerge>
               <feMergeNode in="coloredBlur" />
               <feMergeNode in="SourceGraphic" />
             </feMerge>
           </filter>
+
         </defs>
 
         <g
@@ -218,7 +299,10 @@ export const HoneycombBackground: React.FC<HoneycombBackgroundProps> = ({
         >
           {hexagons.map((hex) => {
             const glowIntensity = isDissolving ? 0 : getFinalGlowIntensity(hex);
-            const strokeWidth = 2.5 + glowIntensity * 6; // 2.5 to 8.5px (much thicker glow)
+            const strokeWidth = 1 + glowIntensity * 3; // 1 to 4px (proportional to smaller hexagons)
+            
+            // Get wave intensity (0-1, where 1 = full pulse)
+            const waveIntensity = getWaveIntensity(hex);
             
             // Calculate dissolve delay based on distance from center (wave pattern)
             const distanceFromCenter = getHexagonDistanceFromCenter(hex);
@@ -226,9 +310,20 @@ export const HoneycombBackground: React.FC<HoneycombBackgroundProps> = ({
             const dissolveDelay = isDissolving ? normalizedDistance * 1.2 : 0; // 1.2s total wave duration
             const dissolveOpacity = isDissolving ? Math.max(0, 1 - (normalizedDistance * 1.5)) : 1;
             
-            const strokeOpacity = isDissolving 
-              ? (0.6 + glowIntensity * 0.4) * dissolveOpacity
-              : (0.6 + glowIntensity * 0.4);
+            // Calculate stroke opacity
+            // If hovering/glowing, use the glow opacity
+            // Otherwise, use wave animation: 0.2 (base) to 0.8 (pulse) based on wave intensity
+            let strokeOpacity: number;
+            if (isDissolving) {
+              const baseOpacity = glowIntensity > 0 ? (0.6 + glowIntensity * 0.4) : 0.6;
+              strokeOpacity = baseOpacity * dissolveOpacity;
+            } else if (glowIntensity > 0) {
+              // When hovering, use glow opacity
+              strokeOpacity = 0.6 + glowIntensity * 0.4;
+            } else {
+              // Wave animation: interpolate from 0.2 (base) to 0.8 (pulse) for much more visibility
+              strokeOpacity = 0.2 + waveIntensity * 0.6;
+            }
 
             return (
               <g key={hex.id}>
@@ -266,10 +361,22 @@ export const HoneycombBackground: React.FC<HoneycombBackgroundProps> = ({
                   strokeOpacity={strokeOpacity}
                   filter={glowIntensity > 0 ? 'url(#honey-glow)' : 'none'}
                   style={{
-                    transition: isDissolving
-                      ? `stroke-opacity 0.6s ease-out, opacity 0.6s ease-out`
-                      : 'stroke 0.2s ease-out, stroke-width 0.2s ease-out, stroke-opacity 0.2s ease-out, filter 0.2s ease-out',
-                    transitionDelay: isDissolving ? `${dissolveDelay}s` : (glowIntensity > 0 ? '0s' : '0s'),
+                    transitionProperty: isDissolving
+                      ? 'stroke-opacity, opacity'
+                      : glowIntensity > 0 
+                        ? 'stroke, stroke-width, stroke-opacity, filter'
+                        : 'stroke-opacity',
+                    transitionDuration: isDissolving
+                      ? '0.6s'
+                      : glowIntensity > 0
+                        ? '0.4s'
+                        : '0.15s',
+                    transitionTimingFunction: isDissolving
+                      ? 'ease-out'
+                      : glowIntensity > 0
+                        ? 'cubic-bezier(0.4, 0, 0.2, 1)'
+                        : 'ease-out',
+                    transitionDelay: isDissolving ? `${dissolveDelay}s` : '0s',
                     opacity: dissolveOpacity,
                     pointerEvents: 'none',
                   }}
