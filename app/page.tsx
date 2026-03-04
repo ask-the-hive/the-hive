@@ -1029,7 +1029,6 @@ export default function LandingPage() {
             <p className="sub">Idle tokens are a bug. Hive fixes it. Answer 3 questions - risk, timeline, capital. One signature. Done in 2 minutes.</p>
             <div className="cta-row">
               <a href="#waitlist" className="btn-primary">Join the Waitlist</a>
-              <a href="https://the-hive-docs.gitbook.io/the-hive-docs/" target="_blank" rel="noopener noreferrer" className="btn-secondary">Read the Docs</a>
             </div>
           </div>
         </div>
