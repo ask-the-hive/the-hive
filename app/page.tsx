@@ -1103,7 +1103,6 @@ export default function LandingPage() {
             <a href="https://the-hive-docs.gitbook.io/the-hive-docs/" target="_blank" rel="noopener noreferrer">Docs</a>
             <a href="https://x.com/askthehive_ai" target="_blank" rel="noopener noreferrer">X</a>
             <a href="https://discord.gg/8TVcFvySWG" target="_blank" rel="noopener noreferrer">Discord</a>
-            <a href="mailto:moshe@askthehive.ai">Contact</a>
           </div>
           <div className="footer-copy">© 2026 Hive Labs &middot; askthehive.ai</div>
         </footer>
