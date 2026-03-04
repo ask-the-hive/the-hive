@@ -1070,7 +1070,6 @@ export default function LandingPage() {
       <div className="content">
         <section className="problem-section">
           <div className="section-label">The Problem</div>
-          <h2 className="section-title">$245B in stablecoins. 85% earning nothing.</h2>
           <div className="problem-hero">
             <div className="big-stat" id="bigStat">$0</div>
             <div className="big-label">in stablecoins earning nothing.</div>
