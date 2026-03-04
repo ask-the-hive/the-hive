@@ -26,6 +26,7 @@ html {
   color: var(--white);
   font-family: var(--font-sans);
   overflow-x: hidden;
+  max-width: 100%;
 }
 
 .noise {
@@ -134,6 +135,8 @@ nav {
   overflow: hidden;
   cursor: crosshair;
   height: 740px;
+  width: 100%;
+  max-width: 100%;
 }
 
 .hero-full img {
@@ -174,6 +177,7 @@ nav {
   left: 48px;
   max-width: 600px;
   z-index: 3;
+  box-sizing: border-box;
 }
 
 .hero-text-overlay h1 {
@@ -186,6 +190,8 @@ nav {
   margin-bottom: 20px;
   opacity: 0;
   animation: fade-up 0.8s ease forwards 0.3s;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 .hero-text-overlay h1 em {
@@ -786,32 +792,43 @@ footer {
   color: #444;
 }
 
-/* === RESPONSIVE === */
+/* === RESPONSIVE (mobile-first: 860px, 480px, 390px) === */
 @media (max-width: 860px) {
-  .hero-full { height: 580px; }
-  .hero-text-overlay { left: 24px; max-width: 90%; bottom: 60px; }
+  .hero-full { height: 580px; width: 100%; max-width: 100%; }
+  .hero-full .content { width: 100%; max-width: 100%; padding-left: max(24px, env(safe-area-inset-left)); padding-right: max(24px, env(safe-area-inset-right)); box-sizing: border-box; }
+  .hero-text-overlay { left: 0; right: 0; width: 100%; max-width: 100%; padding-left: max(24px, env(safe-area-inset-left)); padding-right: max(24px, env(safe-area-inset-right)); bottom: 56px; }
   .flow-steps { grid-template-columns: repeat(4, 1fr); gap: 16px; }
   .flow-line { display: none; }
   .flow-detail { grid-template-columns: 1fr; text-align: center; }
   .pain-grid { grid-template-columns: repeat(3, 1fr); }
   .section { padding: 64px 0; }
-  /* Prevent scroll from overlapping: reserve space for scrollbar, add top padding under fixed nav */
   html { scrollbar-gutter: stable; }
   .content { padding-right: max(24px, env(safe-area-inset-right)); }
   .problem-section { padding-top: 72px; }
+  .content { width: 100%; max-width: 100%; box-sizing: border-box; }
+  .nav-wrap { width: 100%; max-width: 100%; left: 0; right: 0; }
 }
 
 @media (max-width: 480px) {
-  .hero-full { height: 500px; }
+  .hero-full { height: 460px; width: 100%; max-width: 100%; }
+  .hero-full .content { padding-left: max(20px, env(safe-area-inset-left)); padding-right: max(20px, env(safe-area-inset-right)); }
+  .hero-text-overlay { padding-left: max(20px, env(safe-area-inset-left)); padding-right: max(20px, env(safe-area-inset-right)); bottom: 32px; padding-bottom: 0; }
+  .hero-text-overlay .sub { margin-bottom: 20px; }
+  .cta-row { margin-bottom: 0; }
   .flow-steps { grid-template-columns: repeat(2, 1fr); gap: 24px; }
   .pain-grid { grid-template-columns: 1fr 1fr; }
   .counter-row { grid-template-columns: 1fr; }
   .waitlist-form { flex-direction: column; }
   .waitlist-form input { border-right: 1px solid #ffffff10; border-bottom: none; }
   .nav-links a:not(:last-child) { display: none; }
-  .hero-text-overlay { bottom: 88px; padding-bottom: 12px; }
   .problem-section { padding-top: 64px; }
   .content { padding-left: 16px; padding-right: max(16px, env(safe-area-inset-right)); }
+}
+
+@media (max-width: 390px) {
+  .hero-full { height: 440px; }
+  .hero-text-overlay { padding-left: max(16px, env(safe-area-inset-left)); padding-right: max(16px, env(safe-area-inset-right)); bottom: 28px; }
+  .hero-text-overlay h1 { font-size: 32px; }
 }
 `;
 
@@ -1009,7 +1026,7 @@ export default function LandingPage() {
         <div className="content">
           <div className="hero-text-overlay">
             <h1>The decision engine for <em>digital capital.</em></h1>
-            <p className="sub">Idle tokens are a bug. Hive fixes it. Answer 3 questions — risk, timeline, capital. Hive routes your allocation across Solana&apos;s best lending protocols. One signature. Done in 2 minutes.</p>
+            <p className="sub">Idle tokens are a bug. Hive fixes it. Answer 3 questions - risk, timeline, capital. One signature. Done in 2 minutes.</p>
             <div className="cta-row">
               <a href="#waitlist" className="btn-primary">Join the Waitlist</a>
               <a href="https://the-hive-docs.gitbook.io/the-hive-docs/" target="_blank" rel="noopener noreferrer" className="btn-secondary">Read the Docs</a>
