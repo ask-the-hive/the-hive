@@ -257,47 +257,6 @@ nav {
   box-shadow: 0 8px 32px var(--gold-dim), 0 0 20px var(--gold-glow);
 }
 
-/* === SCROLL INDICATOR === */
-.scroll-indicator {
-  position: absolute;
-  bottom: 28px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 10;
-  text-align: center;
-  animation: fade-up 0.8s ease forwards 1.2s;
-  opacity: 0;
-}
-
-.scroll-indicator span {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-  color: var(--gold);
-  opacity: 0.5;
-  display: block;
-  margin-bottom: 6px;
-}
-
-.scroll-chevron {
-  width: 20px;
-  height: 20px;
-  margin: 0 auto;
-  border-right: 1.5px solid var(--gold);
-  border-bottom: 1.5px solid var(--gold);
-  transform: rotate(45deg);
-  opacity: 0.4;
-  animation: scroll-bounce 2s ease-in-out infinite;
-}
-
-@keyframes scroll-bounce {
-  0%, 100% { transform: rotate(45deg) translateY(0); opacity: 0.4; }
-  50% { transform: rotate(45deg) translateY(6px); opacity: 0.7; }
-}
-
-
-
 .btn-secondary {
   font-family: var(--font-mono);
   font-size: 14px;
@@ -840,7 +799,6 @@ footer {
   html { scrollbar-gutter: stable; }
   .content { padding-right: max(24px, env(safe-area-inset-right)); }
   .problem-section { padding-top: 72px; }
-  .scroll-indicator { bottom: 24px; }
 }
 
 @media (max-width: 480px) {
@@ -851,9 +809,7 @@ footer {
   .waitlist-form { flex-direction: column; }
   .waitlist-form input { border-right: 1px solid #ffffff10; border-bottom: none; }
   .nav-links a:not(:last-child) { display: none; }
-  /* More space so hero text and scroll indicator don't overlap on small screens */
-  .hero-text-overlay { bottom: 72px; padding-bottom: 8px; }
-  .scroll-indicator { bottom: 16px; }
+  .hero-text-overlay { bottom: 88px; padding-bottom: 12px; }
   .problem-section { padding-top: 64px; }
   .content { padding-left: 16px; padding-right: max(16px, env(safe-area-inset-right)); }
 }
@@ -888,8 +844,6 @@ export default function LandingPage() {
       if (heroImg && y < heroHeight) {
         heroImg.style.transform = `scale(1.04) translateY(${y * 0.25}px)`;
       }
-      const scrollInd = document.querySelector(".scroll-indicator") as HTMLElement | null;
-      if (scrollInd) scrollInd.style.opacity = String(Math.max(0, 1 - y / 200));
     };
 
     const handleMouseMove = (e: MouseEvent) => {
@@ -1061,10 +1015,6 @@ export default function LandingPage() {
               <a href="https://the-hive-docs.gitbook.io/the-hive-docs/" target="_blank" rel="noopener noreferrer" className="btn-secondary">Read the Docs</a>
             </div>
           </div>
-        </div>
-        <div className="scroll-indicator">
-          <span>Scroll</span>
-          <div className="scroll-chevron" />
         </div>
       </div>
       <div className="content">
