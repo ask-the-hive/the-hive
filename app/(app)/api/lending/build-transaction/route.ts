@@ -223,7 +223,7 @@ async function buildJupiterLendTx(
   }
 
   const instructionSet = ixData.map((ix) => {
-    if (!ix.programId || !Array.isArray(ix.accounts) || !ix.data) {
+    if (!ix.programId || !Array.isArray(ix.accounts) || ix.data === undefined || ix.data === null) {
       throw new Error('Invalid instruction format from Jupiter');
     }
     return new TransactionInstruction({

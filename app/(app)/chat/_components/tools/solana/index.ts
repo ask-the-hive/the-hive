@@ -17,3 +17,4 @@ export { default as PriceChart } from './price-chart';
 export * from './liquidity';
 export * from './staking';
 export * from './lending';
+export * from './yield';
